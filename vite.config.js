@@ -35,4 +35,11 @@ export default defineConfig({
       '@': resolve(__dirname, 'src/renderer'),
     },
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: `@import "@/assets/style/color.scss";`,
+      },
+    },
+  },
 })

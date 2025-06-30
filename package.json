@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "electron": "^37.1.0",
+    "sass": "^1.89.2",
     "unplugin-vue-components": "^28.8.0",
     "vue": "^3.5.17"
   },
