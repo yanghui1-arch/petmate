@@ -1,0 +1,22 @@
+{
+  "dependencies": {
+    "electron": "^37.1.0",
+    "vue": "^3.5.17"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.7",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "concurrently": "^9.2.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.0"
+  },
+  "main": "dist/main/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:ts\" \"npm run dev:electron\" \"npm run dev:vite\"",
+    "dev:electron": "electron .",
+    "dev:vite": "vite",
+    "dev:ts": "tsc --watch"
+  }
+}
