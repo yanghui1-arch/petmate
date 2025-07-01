@@ -1,12 +1,12 @@
 <template>
-    <n-button color="#ced6e0" class="wish-item"><label>{{ wishItemName }}</label></n-button>
+    <n-button color="white" class="wish-item"><label>{{ wishItemName }}</label></n-button>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue'
 
 
-const wishItemName = ref("信息1")
+const wishItemName = ref("心愿1")
 
 </script>
 
@@ -20,7 +20,7 @@ const wishItemName = ref("信息1")
     align-items: center;
     text-align: center;
     label {
-        color: $font-gray;
+        color: $font-blue;
         font-weight: bold;
     }
 }

@@ -1,11 +1,10 @@
 <template>
   <div id="wish" class="vertical">
     <!-- petmate好感度信息展示 -->
-    <div class="petmate-affection-overview dark-white border-view">
+    <div class="petmate-affection-overview border-view slide-in-from-left slide-item">
       <div class="avator">
-        <Avator />
       </div>
-      <div class="affection-label-info dark-white vertical">
+      <div class="affection-label-info vertical">
         <div class="petmate-info"><label>{{ petmateName }}</label></div>
         <div class="petmate-info"><label>好感 LV. {{ affenctionLevel }}</label></div>
         <div class="petmate-info">
@@ -15,8 +14,8 @@
     </div>
 
     <!-- 完成心愿和正在进行的心愿的总览 -->
-    <div class="wish-completion-overview medium-white border-view">
-      <div class="wish-completed light-white dashboard">
+    <div class="wish-completion-overview border-view slide-in-from-right slide-item">
+      <div class="wish-completed medium-white dashboard">
         <div class="wish-statics"><label>完成心愿</label></div>
         <div class="wish-statics">
           <label>
@@ -24,7 +23,7 @@
           </label>
         </div>
       </div>
-      <div class="wish-to-do light-white dashboard">
+      <div class="wish-to-do medium-white dashboard">
         <div class="wish-statics"><label>正在进行</label></div>
         <div class="wish-statics">
           <label>
@@ -35,20 +34,17 @@
     </div>
 
     <!-- 所有的心愿信息，可以查看 -->
-    <div class="wish-container dark-white border-view">
-      <div class="wish-container-header medium-white">
-        <div class="header-label dark-white">
-          <label>{{ petmateName }}的心愿📩</label>
-        </div>
-      </div>
-      <div class="to-do-wishes medium-white wish-item">
+    <div class="wish-container border-view slide-in-from-left slide-item">
+      
+      <div class="wish-item">
         <!-- 正常显示滚动 -->
-        <n-infinite-scroll v-if="check===false" style="height: 100%">
-          <div v-for="i in 15" :key="i" class="item" style="height: 33%;">
-            <WishItem @click="check = !check" />
-          </div>
-        </n-infinite-scroll>
-
+        <div v-if="check===false" class="scroll">
+          <n-infinite-scroll style="height: 100%">
+            <div v-for="i in 15" :key="i" style="height: 33%; width: 30%; margin-left: auto; margin-right: 5px;">
+              <WishItem @click="check = !check" />
+            </div>
+          </n-infinite-scroll>
+        </div>
         <!-- 查看某个特定心愿情况 -->
         <div v-else class="wish-completion-info">
           <!-- 心愿得基本信息 -->
@@ -175,9 +171,13 @@ let itemProgress = ref([
   height: 30%;
   padding: 5px;
   align-items: center;
+  background-image: url("../assets/image/wishBg.jpg");
+  background-size: cover;
+  background-position: center;
   .affection-label-info {
     width: 40%;
     text-align: center;
+    margin-left: auto;
     .petmate-info {
       background-color: $bg-white-100;
       border-radius: 10px;
@@ -189,7 +189,11 @@ let itemProgress = ref([
 
 .wish-completion-overview {
   display: flex;
-  height: 20%;
+  flex-direction: column;
+  background-image: url("../assets/image/petmate-1.jpg");
+  background-position: 60px;
+  background-size: cover;
+  background-repeat: no-repeat;
   .dashboard {
     padding: 5px;
     margin: 10px 20px 10px 20px;
@@ -204,16 +208,22 @@ let itemProgress = ref([
 
 .wish-container {
   display: flex;
-  height: 50%;
-  flex-direction: column;
+  height: 40%;
   border-radius: 10px;
   padding: 10px;
-  row-gap: 5px;
+  column-gap: 10px;
   .wish-item {
     padding: 10px;
     width: 100%;
     border-radius: 10px;
     height: 80%;
+    .scroll {
+      height: 100%;
+      border-radius: 10px;
+      background-image: url("../assets/image/petmate-3.jpg");
+      background-position: center;
+      background-size: cover;
+    }
   }
   .wish-container-header {
     text-align: center;
@@ -239,6 +249,7 @@ label {
   padding: 10px;
   margin: 10px;
 }
+
 
 .wish-completion-info {
   display: flex;
@@ -285,4 +296,33 @@ label {
   color: $font-gray;
   font-size: 16px;
 }
+
+.slide-in-from-left {
+  animation: slideFromLeft 1s ease-out forwards;
+}
+.slide-in-from-right {
+  animation: slideFromRight 1s ease-out forwards;
+}
+
+@keyframes slideFromLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes slideFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 </style>
