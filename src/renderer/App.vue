@@ -1,7 +1,5 @@
 <template>
-  <n-message-provider>
-    <Home />
-  </n-message-provider>
+  <Wish/>
 </template>
 
 <script setup lang="ts">

@@ -3,8 +3,8 @@ import * as path from 'path'
 
 const createWindow = () => {
   const win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 400,
+    height: 580,
     webPreferences: {
       preload: "../preload.js",
     },
