@@ -51,11 +51,14 @@
                 </div>
             </div>
             <div class="to-do-wishes medium-white wish-item">
+                <!-- 正常显示滚动 -->
                 <n-infinite-scroll v-if="check===false" style="height: 100%">
                     <div v-for="i in 15" :key="i" class="item" style="height: 33%;">
                         <WishItem @click="check = !check"/>
                     </div>
                 </n-infinite-scroll>
+
+                <!-- 查看某个特定心愿情况 -->
                 <div v-else class="wish-completion-info">
                     <!-- 心愿得基本信息 -->
                     <div class="wish-completion-basic-info">
@@ -66,6 +69,7 @@
                             </n-button>
                         </div>
                         <img src="../../assets/image/wish.png" style="width: 50px; height: 50px;"/>
+                        <!-- 名字+ 描述 -->
                         <div class="wish-completion-baisc-info-item">
                             <div class="wish-name" style="font-size: 16px;">
                                 夏日清凉小确幸
@@ -74,8 +78,13 @@
                                 <label style="font-size: 13px;">战斗双！</label>
                             </div>
                         </div>
+                        <div class="wish-completion-end-time">
+                            2025/6/7结束
+                        </div>
                     </div>
+
                     <div><label>目前进度</label></div>
+
                     <!-- 完成心愿得要求和玩家目前的进度 -->
                     <div class="wish-completion-requirements">
                         <div class="wish-completion-requirements-activity wish-completion-requirements-item">
@@ -105,7 +114,7 @@
 import { ref } from 'vue'
 import Avator from '../components/Avator.vue'
 import WishItem from '../components/wish/WishItem.vue'
-import WishCompletionInfo from '../components/wish/WishCompletionInfo.vue'
+
 
 const petmateName = "Dass"
 const affenctionLevel = ref(1)
@@ -256,6 +265,10 @@ label {
             flex-direction: column;
             column-gap: 5px;
             padding-top: 10px;
+        }
+        .wish-completion-end-time {
+            margin-left: auto;
+            margin-top: auto;
         }
     }
     .wish-completion-requirements {
