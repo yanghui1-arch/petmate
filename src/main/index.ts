@@ -7,6 +7,7 @@ const createWindow = () => {
     height: 580,
     webPreferences: {
       preload: "../preload.js",
+      
     },
   })
 
