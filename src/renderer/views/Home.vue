@@ -90,7 +90,6 @@
 import { ref } from "vue";
 import { onMounted, onBeforeUnmount } from "vue";
 import AttributeBar from "@/components/AttributeBar.vue";
-import GradeBar from "@/components/GradeBar.vue";
 
 const hp = ref(80);
 onMounted(() => {
