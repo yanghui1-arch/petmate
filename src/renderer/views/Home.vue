@@ -2,16 +2,16 @@
   <div class="home-container">
     <div class="home-layout">
       <div class="home-panel-layout">
-        <div class="home-title-wrapper">
+        <!-- <div class="home-title-wrapper">
           <div class="home-title">
             角色状态
           </div>
-        </div>
+        </div> -->
         <div class="home-panel-wrapper">
           <div class="home-panel-content">
             <div class="home-panel-info">
               <div class="home-panel-image">
-                <n-image width="70" src="https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg" />
+                <n-image width="70" src="../assets/image/petmate.png" />
               </div>
               <div class="home-panel-grade">
                 <span class="grade-value">LEVEL 1</span>
@@ -65,21 +65,29 @@
           <GradeBar />
         </div>
       </div> -->
-      <div class="home-log-layout">
-        <div class="home-log-nav">
-          <n-tabs type="line" animated>
-            <n-tab-pane name="item-log" tab="物品日志">
-              <div class="home-item-log-wrapper">
-                <div class="home-item-log" v-for="i in 10" :key="i">
-                  <span class="log-time" style="margin-right: 10px;">12:17:55</span>
-                  <span class="log-content">随机掉落了[金币] + 10</span>
+      <div class="home-package-layout">
+        <div class="home-package-type">
+          <button type="button">食物</button>
+          <button>药品</button>
+          <button>礼物</button>
+          <button>饮料</button>
+        </div>
+        <div class="home-package-wrapper">
+
+          <div class="home-package-content">
+            <n-grid x-gap="5" y-gap="5" :cols="6">
+              <n-gi v-for="i in 18" :key="i" style="display: flex; justify-content: center;">
+                <div class="package-item">
+                  <n-image width="38" src="../assets/image/item/burger.png" preview-disabled />
+                  <span class="package-item-num">99</span>
                 </div>
-              </div>
-            </n-tab-pane>
-            <n-tab-pane name="activity-log" tab="活动日志">
-              活动日志
-            </n-tab-pane>
-          </n-tabs>
+              </n-gi>
+            </n-grid>
+          </div>
+          <div class="home-package-footer">
+            <div class="prev-page">上一页</div>
+            <div class="next-page">下一页</div>
+          </div>
         </div>
       </div>
     </div>
@@ -93,7 +101,7 @@ import AttributeBar from "@/components/AttributeBar.vue";
 
 const hp = ref(80);
 onMounted(() => {
-  document.body.style.backgroundColor = "#f9f9f9"; // 你想要的灰色
+  document.body.style.backgroundColor = "#f9f9f9";
 });
 
 onBeforeUnmount(() => {
@@ -122,9 +130,9 @@ onBeforeUnmount(() => {
         height: 35vh;
       }
     }
-  }
-  .home-log-layout {
-    margin-top: 20px;
+    .home-package-layout {
+      margin-top: 20px;
+    }
   }
 }
 
@@ -184,11 +192,59 @@ onBeforeUnmount(() => {
   background-color: $color-white;
 }
 
-.home-log-nav {
-  .home-item-log-wrapper {
+.home-package-type {
+  display: flex;
+  column-gap: 5px;
+  button {
+    padding: 3px 15px;
+    border: 1px solid $border-orange-300;
+    border-bottom: none;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    cursor: pointer;
+  }
+}
+
+.home-package-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid $border-orange-300;
+  padding: 10px;
+  .home-package-content {
+    width: 100%;
+    .package-item {
+      width: 50px;
+      height: 50px;
+      border: 1px solid $color-white;
+      border-radius: 5px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      background-color: $border-orange-300;
+      .package-item-num {
+        position: absolute;
+        bottom: 1px;
+        right: 2px;
+        font-size: 12px;
+        color: #fff;
+      }
+    }
+  }
+
+  .home-package-footer {
+    width: 100%;
     display: flex;
-    flex-direction: column;
-    row-gap: 10px;
+    justify-content: center;
+    align-items: center;
+    column-gap: 10px;
+    margin-top: 10px;
+    .prev-page,
+    .next-page {
+      border: 1px solid $border-orange-300;
+      padding: 2px 10px;
+    }
   }
 }
 </style>
