@@ -34,11 +34,9 @@ const back = () => {};
   height: 100%;
 }
 .settings-drawer {
-  position: fixed;
-  top: 15px;
-  left: 15px;
+  height: 20px;
+  padding-left: 20px;
   cursor: pointer;
-  z-index: 1000;
 }
 </style>
 
