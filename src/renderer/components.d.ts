@@ -8,10 +8,14 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    NAvatar: typeof import('naive-ui')['NAvatar']
     NButton: typeof import('naive-ui')['NButton']
+    NC: typeof import('naive-ui')['NC']
+    NCarousel: typeof import('naive-ui')['NCarousel']
     NDrawer: typeof import('naive-ui')['NDrawer']
     NGi: typeof import('naive-ui')['NGi']
     NGrid: typeof import('naive-ui')['NGrid']
+    NIcon: typeof import('naive-ui')['NIcon']
     NImage: typeof import('naive-ui')['NImage']
     NInfiniteScroll: typeof import('naive-ui')['NInfiniteScroll']
     NNumberAnimation: typeof import('naive-ui')['NNumberAnimation']
