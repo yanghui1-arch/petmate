@@ -31,6 +31,11 @@ export function calcMaxAttribute(level: number): number {
     return Math.floor(value);
 }
 
+/**
+ * 计算buff效果
+ * @param buffs 当前buff列表
+ * @returns 当前buff效果
+ */
 export function calcBuffEffect(buffs: Buff[]): BuffEffect {
     const finalBuffEffect: BuffEffect = DEFAULT_BUFF_EFFECT;
     buffs.forEach(buff => {
