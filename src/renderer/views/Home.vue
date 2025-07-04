@@ -11,7 +11,8 @@
           <div class="home-panel-content">
             <div class="home-panel-info">
               <div class="home-panel-image">
-                <n-image width="70" src="../assets/image/petmate.png" />
+                <!-- <n-image width="70" src="../assets/image/petmate.png" /> -->
+                <n-avatar round :size="70" src="../assets/image/petmate.png" />
               </div>
               <div class="home-panel-grade">
                 <span class="grade-value">LEVEL 1</span>
@@ -73,20 +74,40 @@
           <button>饮料</button>
         </div>
         <div class="home-package-wrapper">
+          <n-carousel :show-arrow="false" :show-dots="false" :loop="false" :transition-style="{ transitionDuration: '500ms', transitionTimingFunction: 'ease' }" ref="packagePageRef">
+            <div class="home-package-content">
+              <n-grid x-gap="5" y-gap="5" :cols="6">
+                <n-gi v-for="(item, i) in packagePrevItemList" :key="i" style="display: flex; justify-content: center;">
+                  <div class="package-item">
+                    <n-image width="38" src="../assets/image/item/burger.png" preview-disabled />
+                    <span class="package-item-num">99</span>
+                  </div>
+                </n-gi>
+                <n-gi v-for="i in packagePageNum - packagePrevItemList.length" :key="i" style="display: flex; justify-content: center;">
+                  <div class="package-item">
+                  </div>
+                </n-gi>
+              </n-grid>
+            </div>
+            <div class="home-package-content">
+              <n-grid x-gap="5" y-gap="5" :cols="6">
+                <n-gi v-for="(item, i) in packageNextItemList" :key="i" style="display: flex; justify-content: center;">
+                  <div class="package-item">
+                    <n-image width="38" src="../assets/image/item/burger.png" preview-disabled />
+                    <span class="package-item-num">99</span>
+                  </div>
+                </n-gi>
+                <n-gi v-for="i in packagePageNum - packageNextItemList.length" :key="i" style="display: flex; justify-content: center;">
+                  <div class="package-item">
+                  </div>
+                </n-gi>
+              </n-grid>
+            </div>
+          </n-carousel>
 
-          <div class="home-package-content">
-            <n-grid x-gap="5" y-gap="5" :cols="6">
-              <n-gi v-for="i in 18" :key="i" style="display: flex; justify-content: center;">
-                <div class="package-item">
-                  <n-image width="38" src="../assets/image/item/burger.png" preview-disabled />
-                  <span class="package-item-num">99</span>
-                </div>
-              </n-gi>
-            </n-grid>
-          </div>
           <div class="home-package-footer">
-            <div class="prev-page">上一页</div>
-            <div class="next-page">下一页</div>
+            <button class="prev-page" @click="prevPage">上一页</button>
+            <button class="next-page" @click="nextPage">下一页</button>
           </div>
         </div>
       </div>
@@ -100,6 +121,17 @@ import { onMounted, onBeforeUnmount } from "vue";
 import AttributeBar from "@/components/AttributeBar.vue";
 
 const hp = ref(80);
+const packagePageNum = ref(18);
+const packagePrevItemList = ref([
+  { num: 10 },
+  { num: 10 },
+  { num: 10 },
+  { num: 10 },
+  { num: 10 },
+  { num: 10 },
+  { num: 10 },
+]);
+const packageNextItemList = ref([{ num: 10 }, { num: 10 }, { num: 10 }]);
 onMounted(() => {
   document.body.style.backgroundColor = "#f9f9f9";
 });
@@ -107,12 +139,20 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.body.style.backgroundColor = ""; // 恢复默认
 });
+const packagePageRef = ref(null);
+
+const prevPage = () => {
+  packagePageRef.value?.prev();
+};
+
+const nextPage = () => {
+  packagePageRef.value?.next();
+};
 </script>
 
 <style lang="scss" scoped>
 .home-container {
-  height: 100%;
-  min-height: 100vh;
+  flex: 1;
   padding: 0 6%;
   background-color: $color-white-200;
   .home-layout {
@@ -218,6 +258,7 @@ onBeforeUnmount(() => {
       height: 50px;
       border: 1px solid $color-white;
       border-radius: 5px;
+      border-style: groove;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -228,7 +269,7 @@ onBeforeUnmount(() => {
         bottom: 1px;
         right: 2px;
         font-size: 12px;
-        color: #fff;
+        color: $color-white;
       }
     }
   }
@@ -244,6 +285,7 @@ onBeforeUnmount(() => {
     .next-page {
       border: 1px solid $border-orange-300;
       padding: 2px 10px;
+      cursor: pointer;
     }
   }
 }

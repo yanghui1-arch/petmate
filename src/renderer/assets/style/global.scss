@@ -28,3 +28,13 @@ a {
   height: 100%;
 }
 
+select:focus,
+a:focus,
+input:focus,
+textarea:focus,
+button:focus {
+  outline: none;
+  box-shadow: none;
+  border-color: inherit;
+}
+
