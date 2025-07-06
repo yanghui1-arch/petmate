@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite'
-import AutoImport from 'unplugin-auto-import/vite'
-import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
-import Components from 'unplugin-vue-components/vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
+import electron from 'vite-plugin-electron'
 
 export default defineConfig({
   root: 'src/renderer',
@@ -26,6 +27,7 @@ export default defineConfig({
       resolvers: [NaiveUiResolver()]
     })
   ],
+  base: './',
   build: {
     outDir: '../../dist/renderer',
     emptyOutDir: true,
@@ -41,5 +43,5 @@ export default defineConfig({
         additionalData: `@import "@/assets/style/color.scss";`,
       },
     },
-  },
+  }
 })

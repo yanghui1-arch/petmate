@@ -3,84 +3,144 @@
  */
 
 import Store from 'electron-store';
-import { ipcMain } from 'electron';
+import { PetMate } from './petmate/petmate';
+import { PetMateAttribute } from '../types/petmate';
+import { Item } from '../types/item';
+import { PlayerInfo } from '../types/player';
+import { Dass, DEFAULT_DASS_ATTRIBUTE } from './petmate/dass';
 
-export type PlayerInfo = {
-    steam_id?: string | null,
-    name: string,
-    qq?: string | null,
-    petmates: Array<number>,
-}
-
-interface StoreSchema {
+type StoreData = {
     playerInfo: PlayerInfo;
 }
 
-// Define the schema for type safety and validation
-const schema = {
-    playerInfo: {
-        type: 'object',
-        properties: {
-            steam_id: {
-                type: ['string', 'null'],
-                default: null
-            },
-            name: {
-                type: 'string',
-                default: '主人'
-            },
-            qq: {
-                type: ['string', 'null'],
-                default: null
-            },
-            petmates: {
-                type: 'array',
-                items: {
-                    type: 'number'
-                },
-                default: []
+/**
+ * 玩家信息管理器
+ * 负责玩家信息的读取、更新和持久化
+ */
+class PlayerManager {
+    private store: Store<StoreData>;
+    private currentPlayer: PlayerInfo = {
+        name: '主人',
+        petmates: [new Dass(DEFAULT_DASS_ATTRIBUTE)],
+        steam_id: null,
+        qq: null,
+        cash: 500,
+        items: new Map()
+    };
+
+    constructor() {
+        this.store = new Store<StoreData>();
+        this.loadPlayer();
+    }
+
+    /**
+     * 从存储中加载玩家信息
+     */
+    private loadPlayer(): void {
+        const stored = (this.store as any).get('playerInfo') as PlayerInfo | undefined;
+        if (!stored) {
+            // 先发http请求获取玩家信息
+            const result = null;
+            // 如果没有获取到，使用默认值
+            if (!result) {
+                this.savePlayer(); // 保存默认值
             }
-        },
-        required: ['name', 'petmates']
+        } else {
+            this.currentPlayer = stored;
+        }
     }
-} as const;
 
-// Initialize store with schema and type assertion
-const store = new Store<StoreSchema>({
-    schema
-}) as Store<StoreSchema> & {
-    get<K extends keyof StoreSchema>(key: K): StoreSchema[K];
-    set<K extends keyof StoreSchema>(key: K, value: StoreSchema[K]): void;
-};
-
-// IPC处理渲染进程的请求
-ipcMain.handle('store:savePlayerInfo', async (_event, playerInfo: PlayerInfo) => {
-    try {
-        store.set('playerInfo', playerInfo);
-        return { success: true };
-    } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        console.error('无法保存玩家信息:', errorMessage);
-        return { success: false, error: errorMessage };
+    /**
+     * 保存当前玩家信息到存储
+     */
+    private savePlayer(): void {
+        (this.store as any).set('playerInfo', this.currentPlayer);
     }
-});
 
-ipcMain.handle('store:loadPlayerInfo', async () => {
-    try {
-        const playerInfo = store.get('playerInfo');
-        return { success: true, data: playerInfo };
-    } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        console.error('Failed to load player info:', errorMessage);
-        return { success: false, error: errorMessage };
+    /**
+     * 获取玩家信息
+     */
+    getPlayer(): PlayerInfo {
+        return { ...this.currentPlayer };
     }
-});
 
-// Export functions for main process use
-export function savePlayerInfo(playerInfo: PlayerInfo): void {
-    store.set('playerInfo', playerInfo);
+    /**
+     * 更新玩家信息
+     */
+    updatePlayer(updates: Partial<PlayerInfo>): void {
+        this.currentPlayer = {
+            ...this.currentPlayer,
+            ...updates
+        };
+        this.savePlayer();
+    }
+
+    /**
+     * 添加petmate
+     */
+    addPetmate(petmate: PetMate): void {
+        this.currentPlayer.petmates.push(petmate);
+        this.savePlayer();
+    }
+
+    /**
+     * 移除petmate
+     */
+    removePetmate(id: number): void {
+        this.currentPlayer.petmates = this.currentPlayer.petmates.filter(pet => pet.attrs.id !== id);
+        this.savePlayer();
+    }
+
+    /**
+     * 更新petmate信息
+     */
+    updatePetmate(id:number, updatedPet: Partial<PetMateAttribute>): void {
+        const index = this.currentPlayer.petmates.findIndex(petmate => petmate.attrs.id === id);
+        if (index !== -1) {
+            const newAttrs:PetMateAttribute = {
+                ...this.currentPlayer.petmates[index].attrs,
+                ...updatedPet   
+            };
+            this.currentPlayer.petmates[index].attrs = newAttrs;
+            this.savePlayer();
+        }
+    }
+
+    /**
+     * 更新金钱
+     */
+    updateCash(amount: number): void {
+        this.currentPlayer.cash += amount;
+        this.savePlayer();
+    }
+
+    /**
+     * 添加物品
+     * @param item 物品
+     */
+    addItem(item: Item): void {
+        this.currentPlayer.items.set(item.id, (this.currentPlayer.items.get(item.id) || 0) + 1);
+        this.savePlayer();
+    }
+    
+    /**
+     * 减少物品
+     * @param id 物品id
+     * @returns 是否减少成功
+     */
+    removeItem(id: number): boolean {
+        const count = this.currentPlayer.items.get(id);
+        if (count === undefined) {
+            return false;
+        }
+        this.currentPlayer.items.set(id, count - 1);
+        if (count === 1) {
+            this.currentPlayer.items.delete(id);
+        }
+        this.savePlayer();
+        return true;
+    }
 }
 
-export function loadPlayerInfo(): PlayerInfo {
-    return store.get('playerInfo');
-}
+// Create a singleton instance
+export const playerManager = new PlayerManager();
