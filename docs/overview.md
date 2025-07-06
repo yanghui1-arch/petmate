@@ -35,11 +35,13 @@
   ├── 📄 player.ts          <----- 玩家行为相关
   ├── 📄 shop.ts            <----- 商店的逻辑代码
   ├── 📄 store.ts           <----- 存储管理器的代码
-└── 📂 types/
-  ├── 📄 buff.ts
-  ├── 📄 item.ts
-  ├── 📄 petmate.ts
-  ├── 📄 player.ts
-├── 📄 utils.ts
-├── 📄 window.ts
+└── 📂 types/               <----- 所有类型
+  ├── 📄 buff.ts            <----- buff类型
+  ├── 📄 item.ts            <----- 物品类型
+  ├── 📄 petmate.ts         <----- petmate的属性类型
+  ├── 📄 player.ts          <----- 玩家信息类型
+├── 📄 utils.ts             <----- 工具方法文件
+├── 📄 window.ts            <----- 窗口文件
 ```
+### renderer
+比较麻烦先不写了
