@@ -8,9 +8,13 @@ import { PetMateAttribute } from "../../types/petmate";
 import { calcNextExp, calcMaxAttribute, calcBuffEffect } from "../utils/calc";
 
 export abstract class PetMate {
-    attrs: PetMateAttribute
+    id: number;
+    name: string;
+    attrs: PetMateAttribute;
 
-    constructor(attrs: PetMateAttribute) {
+    constructor(id:number, name:string, attrs: PetMateAttribute) {
+        this.id = id;
+        this.name = name;
         this.attrs = attrs;
     }
 

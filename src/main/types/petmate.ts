@@ -1,8 +1,6 @@
 import { ActiveBuff } from "./buff"
 
 export type PetMateAttribute = {
-    id: number,
-    name: String,
     // 所有等级
     level: number,
     exp: number,

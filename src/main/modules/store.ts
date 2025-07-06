@@ -7,10 +7,13 @@ import { PetMate } from './petmate/petmate';
 import { PetMateAttribute } from '../types/petmate';
 import { Item } from '../types/item';
 import { PlayerInfo } from '../types/player';
+import { ActivityInfo } from '../types/activity';
 import { Dass, DEFAULT_DASS_ATTRIBUTE } from './petmate/dass';
+import { readJsonFile } from './utils/file';
 
 type StoreData = {
     playerInfo: PlayerInfo;
+    activityInfo: ActivityInfo;
 }
 
 /**
@@ -21,7 +24,7 @@ class PlayerManager {
     private store: Store<StoreData>;
     private currentPlayer: PlayerInfo = {
         name: '主人',
-        petmates: [new Dass(DEFAULT_DASS_ATTRIBUTE)],
+        petmates: [new Dass(0, "Dass", DEFAULT_DASS_ATTRIBUTE)],
         steam_id: null,
         qq: null,
         cash: 500,
@@ -87,7 +90,7 @@ class PlayerManager {
      * 移除petmate
      */
     removePetmate(id: number): void {
-        this.currentPlayer.petmates = this.currentPlayer.petmates.filter(pet => pet.attrs.id !== id);
+        this.currentPlayer.petmates = this.currentPlayer.petmates.filter(pet => pet.id !== id);
         this.savePlayer();
     }
 
@@ -95,7 +98,7 @@ class PlayerManager {
      * 更新petmate信息
      */
     updatePetmate(id:number, updatedPet: Partial<PetMateAttribute>): void {
-        const index = this.currentPlayer.petmates.findIndex(petmate => petmate.attrs.id === id);
+        const index = this.currentPlayer.petmates.findIndex(petmate => petmate.id === id);
         if (index !== -1) {
             const newAttrs:PetMateAttribute = {
                 ...this.currentPlayer.petmates[index].attrs,
@@ -142,5 +145,50 @@ class PlayerManager {
     }
 }
 
+/**
+ * 活动管理器
+ * 负责活动信息的读取、更新和持久化
+ */ 
+class ActivityManager {
+    private store: Store<StoreData>;
+    private allActivities: ActivityInfo[] = [];
+
+    constructor() {
+        this.store = new Store<StoreData>();
+        this.loadActivity();
+    }
+
+    loadActivity(): void {
+        const stored = (this.store as any).get('allActivities') as ActivityInfo[] | undefined;
+        // 不存在的话就从assets中读取官方初始的活动
+        if (!stored) {
+            const activities = readJsonFile<ActivityInfo>('../../assets/activity.json');
+            (this.store as any).set('allActivities', activities);
+            this.allActivities = activities;
+        } else {
+            this.allActivities = stored;
+        }
+    }
+
+    /**
+     * 获取所有活动
+     * @returns 所有活动
+     */
+    getAllActivities(): ActivityInfo[] {
+        return this.allActivities.map(activity => ({ ...activity }));
+    }
+
+    /**
+     * 获取活动
+     * @param id 活动id
+     * @returns 活动信息，如果不存在就返回undefined
+     */
+    getActivity(id: number): ActivityInfo | undefined {
+        return this.allActivities.find(activity => activity.id === id);
+    }
+
+}
+
 // Create a singleton instance
 export const playerManager = new PlayerManager();
+export const activityManager = new ActivityManager();

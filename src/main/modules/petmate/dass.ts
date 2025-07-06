@@ -6,8 +6,8 @@ import { PetMate } from "./petmate";
  * 继承Petmate，基本的属性增删不需要写，主要写动作
  */
 export class Dass extends PetMate {
-    constructor(attrs: PetMateAttribute) {
-        super(attrs);
+    constructor(id:number, name:string, attrs: PetMateAttribute) {
+        super(id, name, attrs);
     }
 }
 
@@ -15,8 +15,6 @@ export class Dass extends PetMate {
  * Dass的默认属性
  */
 export const DEFAULT_DASS_ATTRIBUTE: PetMateAttribute = {
-    id: 0,
-    name: "Dass",
     level: 1,
     exp: 0,
     next_exp: 100,
