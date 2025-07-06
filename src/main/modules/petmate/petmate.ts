@@ -2,9 +2,10 @@
  * Petmate 相关的操作
  */
 
-import { NotEnoughError } from "../../error";
+import { NotEnoughError, NotFoundError } from "../../error";
+import { ActiveBuff, Buff } from "../../types/buff";
 import { PetMateAttribute } from "../../types/petmate";
-import { calcNextExp, calcMaxAttribute, calcBuffEffect } from "../../utils";
+import { calcNextExp, calcMaxAttribute, calcBuffEffect } from "../utils/calc";
 
 export abstract class PetMate {
     attrs: PetMateAttribute
@@ -172,4 +173,39 @@ export abstract class PetMate {
         return this.attrs.health;
     }
 
+    /**
+     * 增加Buff
+     * @param buff 需要增加的Buff
+     * @returns 增加的Buff
+     */
+    addBuff(buff: Buff): ActiveBuff {
+        const activeBuff: ActiveBuff = {
+            buff: buff,
+            endTime: new Date(new Date().getTime() + buff.duration * 1000)
+        }
+        this.attrs.buffs.push(activeBuff);
+        return activeBuff;
+    }
+
+    /**
+     * 移除Buff
+     * @param buff 需要移除的Buff
+     * @returns 移除的Buff
+     */
+    removeBuff(buffID: number): ActiveBuff {
+        const activeBuff: ActiveBuff | undefined = this.attrs.buffs.find(b => b.buff.id === buffID);
+        if (!activeBuff) {
+            throw new NotFoundError(`移除Buff时出错，要移除的BuffID为${buffID}，该Buff不存在`);
+        }
+        this.attrs.buffs = this.attrs.buffs.filter(b => b.buff.id !== buffID);
+        return activeBuff;
+    }
+
+    /**
+     * 显示Buff
+     * @returns 当前可用的Buff列表
+     */
+    showBuffs(): ActiveBuff[] {
+        return this.attrs.buffs.filter(b => b.endTime > new Date());
+    }
 }
