@@ -7,6 +7,7 @@ import { PetMate } from './petmate/petmate';
 import { PetMateAttribute } from '../types/petmate';
 import { Item } from '../types/item';
 import { PlayerInfo } from '../types/player';
+import { Dass, DEFAULT_DASS_ATTRIBUTE } from './petmate/dass';
 
 type StoreData = {
     playerInfo: PlayerInfo;
@@ -20,7 +21,7 @@ class PlayerManager {
     private store: Store<StoreData>;
     private currentPlayer: PlayerInfo = {
         name: '主人',
-        petmates: [],
+        petmates: [new Dass(DEFAULT_DASS_ATTRIBUTE)],
         steam_id: null,
         qq: null,
         cash: 500,
