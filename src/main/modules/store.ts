@@ -5,14 +5,8 @@
 import Store from 'electron-store';
 import { PetMate } from './petmate/petmate';
 import { PetMateAttribute } from '../types/petmate';
-
-export type PlayerInfo = {
-    steam_id?: string | null;
-    name: string;
-    qq?: string | null;
-    petmates: Array<PetMate>;
-    cash: number;
-}
+import { Item } from '../types/item';
+import { PlayerInfo } from '../types/player';
 
 type StoreData = {
     playerInfo: PlayerInfo;
@@ -29,7 +23,8 @@ class PlayerManager {
         petmates: [],
         steam_id: null,
         qq: null,
-        cash: 500
+        cash: 500,
+        items: new Map()
     };
 
     constructor() {
@@ -116,6 +111,33 @@ class PlayerManager {
     updateCash(amount: number): void {
         this.currentPlayer.cash += amount;
         this.savePlayer();
+    }
+
+    /**
+     * 添加物品
+     * @param item 物品
+     */
+    addItem(item: Item): void {
+        this.currentPlayer.items.set(item.id, (this.currentPlayer.items.get(item.id) || 0) + 1);
+        this.savePlayer();
+    }
+    
+    /**
+     * 减少物品
+     * @param id 物品id
+     * @returns 是否减少成功
+     */
+    removeItem(id: number): boolean {
+        const count = this.currentPlayer.items.get(id);
+        if (count === undefined) {
+            return false;
+        }
+        this.currentPlayer.items.set(id, count - 1);
+        if (count === 1) {
+            this.currentPlayer.items.delete(id);
+        }
+        this.savePlayer();
+        return true;
     }
 }
 

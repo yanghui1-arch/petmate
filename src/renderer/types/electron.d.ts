@@ -5,12 +5,21 @@ interface PlayerInfo {
     petmates: number[];
 }
 
+interface IElectronAPI {
+  send(channel: 'toMain', payload: unknown): void
+  receive(channel: 'fromMain', listener: (...args: any[]) => void): void
+  invoke(
+    channel: 'load-data',
+    payload?: unknown
+  ): any
+}
+
 interface Window {
     versions: {
         __versions__: string;
     };
     electronStore: {
-        savePlayerInfo: (playerInfo: PlayerInfo) => Promise<{ success: boolean; error?: string }>;
-        loadPlayerInfo: () => Promise<{ success: boolean; data?: PlayerInfo; error?: string }>;
+        loadPlayerInfo: () => { success: boolean; data?: PlayerInfo; error?: string };
     };
+    api: IElectronAPI
 }

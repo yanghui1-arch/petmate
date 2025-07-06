@@ -43,6 +43,11 @@ type Buff = {
     maxStack: number;  // 最大叠加层数
 }
 
+type ActiveBuff = {
+    buff: Buff;
+    endTime: Date;
+}
+
 // 默认的buff效果（无任何加成）
 const DEFAULT_BUFF_EFFECT: BuffEffect = {
     expGainRate: 1,
@@ -62,5 +67,5 @@ const DEFAULT_BUFF_EFFECT: BuffEffect = {
     cashGainRate: 1
 };
 
-export type { Buff, BuffEffect };
+export type { Buff, BuffEffect, ActiveBuff };
 export { DEFAULT_BUFF_EFFECT };

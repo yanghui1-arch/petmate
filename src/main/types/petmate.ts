@@ -1,4 +1,4 @@
-import { Buff } from "./buff"
+import { ActiveBuff } from "./buff"
 
 export type PetMateAttribute = {
     id: number,
@@ -31,5 +31,5 @@ export type PetMateAttribute = {
     max_energy: number,
     max_health: number,
 
-    buffs: Buff[]
+    buffs: ActiveBuff[]
 }

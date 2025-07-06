@@ -1,13 +1,15 @@
 import { app, BrowserWindow } from 'electron'
 import * as path from 'path'
+import './ipc'
 
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 400,
     height: 580,
     webPreferences: {
-      preload: "../preload.js",
-      
+      preload: path.join(__dirname, '../preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
     },
   })
 

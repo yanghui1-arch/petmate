@@ -1,4 +1,4 @@
-import { Buff, BuffEffect, DEFAULT_BUFF_EFFECT } from "./types/buff"
+import { ActiveBuff, BuffEffect, DEFAULT_BUFF_EFFECT } from "./types/buff"
 
 /**
  *  计算下一级所需经验
@@ -36,28 +36,32 @@ export function calcMaxAttribute(level: number): number {
  * @param buffs 当前buff列表
  * @returns 当前buff效果
  */
-export function calcBuffEffect(buffs: Buff[]): BuffEffect {
+export function calcBuffEffect(buffs: ActiveBuff[]): BuffEffect {
     const finalBuffEffect: BuffEffect = DEFAULT_BUFF_EFFECT;
-    buffs.forEach(buff => {
-        // 经验
-        finalBuffEffect.expGainRate *= buff.effect.expGainRate;
-        finalBuffEffect.gameExpGainRate *= buff.effect.gameExpGainRate;
-        finalBuffEffect.singExpGainRate *= buff.effect.singExpGainRate;
-        finalBuffEffect.drawExpGainRate *= buff.effect.drawExpGainRate;
-        finalBuffEffect.affectionExpGainRate *= buff.effect.affectionExpGainRate;
-        // 属性消耗
-        finalBuffEffect.energyCostRate *= buff.effect.energyCostRate;
-        finalBuffEffect.hungryCostRate *= buff.effect.hungryCostRate;
-        finalBuffEffect.healthCostRate *= buff.effect.healthCostRate;
-        finalBuffEffect.emotionCostRate *= buff.effect.emotionCostRate;
-        // 属性获取
-        finalBuffEffect.energyGainRate *= buff.effect.energyGainRate;
-        finalBuffEffect.hungryGainRate *= buff.effect.hungryGainRate;
-        finalBuffEffect.healthGainRate *= buff.effect.healthGainRate;
-        finalBuffEffect.emotionGainRate *= buff.effect.emotionGainRate;
-        // 其他效果
-        finalBuffEffect.spendingTimeRate *= buff.effect.spendingTimeRate;
-        finalBuffEffect.cashGainRate *= buff.effect.cashGainRate;
+    buffs.forEach(activeBuff => {
+        // 确保Buff生效才会计算，以防万一
+        if (activeBuff.endTime >= new Date()) {
+            const buffEffect:BuffEffect = activeBuff.buff.effect;
+            // 经验
+            finalBuffEffect.expGainRate *= buffEffect.expGainRate;
+            finalBuffEffect.gameExpGainRate *= buffEffect.gameExpGainRate;
+            finalBuffEffect.singExpGainRate *= buffEffect.singExpGainRate;
+            finalBuffEffect.drawExpGainRate *= buffEffect.drawExpGainRate;
+            finalBuffEffect.affectionExpGainRate *= buffEffect.affectionExpGainRate;
+            // 属性消耗
+            finalBuffEffect.energyCostRate *= buffEffect.energyCostRate;
+            finalBuffEffect.hungryCostRate *= buffEffect.hungryCostRate;
+            finalBuffEffect.healthCostRate *= buffEffect.healthCostRate;
+            finalBuffEffect.emotionCostRate *= buffEffect.emotionCostRate;
+            // 属性获取
+            finalBuffEffect.energyGainRate *= buffEffect.energyGainRate;
+            finalBuffEffect.hungryGainRate *= buffEffect.hungryGainRate;
+            finalBuffEffect.healthGainRate *= buffEffect.healthGainRate;
+            finalBuffEffect.emotionGainRate *= buffEffect.emotionGainRate;
+            // 其他效果
+            finalBuffEffect.spendingTimeRate *= buffEffect.spendingTimeRate;
+            finalBuffEffect.cashGainRate *= buffEffect.cashGainRate;
+        }
     });
 
     return finalBuffEffect;
