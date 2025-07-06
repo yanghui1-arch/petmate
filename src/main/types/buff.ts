@@ -17,6 +17,7 @@ type BuffEffect = {
     hungryCostRate: number;       // 饱食度消耗倍率
     healthCostRate: number;       // 健康消耗倍率
     emotionCostRate: number;      // 心情消耗倍率
+    cashCostRate: number;         // 金币消耗倍率
 
     // 属性获取相关
     energyGainRate: number;       // 精力恢复倍率
@@ -59,6 +60,7 @@ const DEFAULT_BUFF_EFFECT: BuffEffect = {
     hungryCostRate: 1,
     healthCostRate: 1,
     emotionCostRate: 1,
+    cashCostRate: 1,
     energyGainRate: 1,
     hungryGainRate: 1,
     healthGainRate: 1,

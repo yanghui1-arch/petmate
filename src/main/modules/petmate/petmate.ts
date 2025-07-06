@@ -20,6 +20,7 @@ export abstract class PetMate {
 
     /**
      * 加经验
+     * 这个函数会自动计算buff效果
      * @param exp 需要增加的经验值
      * @returns 增加完经验后的等级
      */
@@ -43,6 +44,7 @@ export abstract class PetMate {
 
     /**
      * 加游戏经验
+     * 这个函数会自动计算buff效果
      * @param exp 需要增加的游戏经验值
      * @returns 增加完游戏经验后的等级
      */
@@ -59,6 +61,7 @@ export abstract class PetMate {
 
     /**
      * 加唱歌经验
+     * 这个函数会自动计算buff效果
      * @param exp 需要增加的唱歌经验值
      * @returns 增加完唱歌经验后的等级
      */
@@ -75,6 +78,7 @@ export abstract class PetMate {
 
     /**
      * 加画画经验
+     * 这个函数会自动计算buff效果
      * @param exp 需要增加的画画经验值
      * @returns 增加完画画经验后的等级
      */
@@ -90,9 +94,10 @@ export abstract class PetMate {
     }
 
     /**
-     * 加亲密度经验
-     * @param exp 需要增加的亲密度经验值
-     * @returns 增加完亲密度经验后的等级
+     * 加好感度经验
+     * 这个函数会自动计算buff效果
+     * @param exp 需要增加的好感度经验值
+     * @returns 增加完好感度经验后的等级
      */
     addAffectionExp(exp: number): number {
         exp = calcBuffEffect(this.attrs.buffs).affectionExpGainRate * exp;
@@ -107,6 +112,7 @@ export abstract class PetMate {
 
     /**
      * 更新饱食度
+     * 这个函数会自动计算buff效果
      * @param hungry 需要增加的饱食度，为正数时是增加，为负数时是减少
      * @returns 当前饱食度，不可能小于0也不会超过上限
      */
@@ -125,6 +131,7 @@ export abstract class PetMate {
 
     /**
      * 更新情绪
+     * 这个函数会自动计算buff效果
      * @param emotion 需要增加的情绪，为正数时是增加，为负数时是减少
      * @returns 当前情绪，不可能小于0也不会超过上限
      */
@@ -143,7 +150,9 @@ export abstract class PetMate {
 
     /**
      * 更新能量
+     * 这个函数会自动计算buff效果
      * @param energy 需要增加的能量，为正数时是增加，为负数时是减少
+     * @throws 如果能量不足则抛出NotEnoughError
      * @returns 当前能量，不可能小于0也不会超过上限
      */
     updateEnergy(energy: number): number {
@@ -161,6 +170,7 @@ export abstract class PetMate {
 
     /**
      * 更新健康
+     * 这个函数会自动计算buff效果
      * @param health 需要增加的健康，为正数时是增加，为负数时是减少
      * @returns 当前健康，不可能小于0也不会超过上限
      */
