@@ -8,3 +8,13 @@ export class NotEnoughError extends Error {
         this.name = "NotEnoughError";
     }
 }
+
+/**
+ * 不存在导致的错误
+ */
+export class NotFoundError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "NotFoundError";
+    }
+}

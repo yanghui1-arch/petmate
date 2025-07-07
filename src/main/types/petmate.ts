@@ -1,8 +1,7 @@
+import { ActivityInfo } from "./activity"
 import { ActiveBuff } from "./buff"
 
 export type PetMateAttribute = {
-    id: number,
-    name: String,
     // 所有等级
     level: number,
     exp: number,
@@ -32,4 +31,15 @@ export type PetMateAttribute = {
     max_health: number,
 
     buffs: ActiveBuff[]
+}
+
+export type PetMateStatus = {
+    status: "idle" | ActivityInfo["type"];
+    startTime?: Date;
+    endTime?: Date;
+    activity?: ActivityInfo;
+}
+
+export const notActivityPetmateStatus: PetMateStatus = {
+    status: "idle",
 }

@@ -1,4 +1,4 @@
-import { ActiveBuff, BuffEffect, DEFAULT_BUFF_EFFECT } from "./types/buff"
+import { ActiveBuff, BuffEffect, DEFAULT_BUFF_EFFECT } from "../../types/buff"
 
 /**
  *  计算下一级所需经验
@@ -16,7 +16,7 @@ export function calcNextExp(currentLevel: number): number {
 }
 
 /**
- * 计算当前等级对应的属性值上限
+ * 计算当前等级对应的属性值上限, 这个属性值上限的计算公式需要更改，还没完全确定下来的！！
  * @param level 当前等级
  * @returns 属性值上限
  */
