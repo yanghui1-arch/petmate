@@ -2,15 +2,46 @@
   <n-drawer v-model:show="show" :width="200" :placement="placement">
     <div class="settings-layout">
       <div class="page-navigator">
-
-        <router-link to="/" class="page-navigator-item" @click="show = false">主页</router-link>
+        <router-link
+          to="/home"
+          class="page-navigator-item"
+          @click="show = false"
+          >主页</router-link
+        >
         <!-- <router-link to="/package" class="page-navigator-item" @click="show = false">背包</router-link> -->
-        <router-link to="/shop" class="page-navigator-item" @click="show = false">商店</router-link>
-        <router-link to="/activity" class="page-navigator-item" @click="show = false">活动</router-link>
-        <router-link to="/wish" class="page-navigator-item" @click="show = false">心愿</router-link>
-        <router-link to="/card" class="page-navigator-item" @click="show = false">卡组</router-link>
-        <router-link to="/log" class="page-navigator-item" @click="show = false">点滴</router-link>
-        <router-link to="/settings" class="page-navigator-item" @click="show = false">设置</router-link>
+        <router-link
+          to="/shop"
+          class="page-navigator-item"
+          @click="show = false"
+          >商店</router-link
+        >
+        <router-link
+          to="/activity"
+          class="page-navigator-item"
+          @click="show = false"
+          >活动</router-link
+        >
+        <router-link
+          to="/wish"
+          class="page-navigator-item"
+          @click="show = false"
+          >心愿</router-link
+        >
+        <router-link
+          to="/card"
+          class="page-navigator-item"
+          @click="show = false"
+          >卡组</router-link
+        >
+        <router-link to="/log" class="page-navigator-item" @click="show = false"
+          >点滴</router-link
+        >
+        <router-link
+          to="/settings"
+          class="page-navigator-item"
+          @click="show = false"
+          >设置</router-link
+        >
       </div>
     </div>
   </n-drawer>

@@ -1,12 +1,13 @@
 <template>
   <div class="attribute-bar" :style="{ width: width, height: height }">
-    <div class="attribute-bar-filled" :style="{
+    <div
+      class="attribute-bar-filled"
+      :style="{
         width: filledWidth,
-        backgroundColor: barColor
-      }" />
-    <div class="attribute-bar-label">
-      {{ value }} / {{ max }}
-    </div>
+        backgroundColor: barColor,
+      }"
+    />
+    <div class="attribute-bar-label">{{ value }} / {{ max }}</div>
   </div>
 </template>
 
@@ -46,8 +47,29 @@ const barColor = computed(() => {
 }
 
 .attribute-bar-filled {
+  position: relative;
   height: 100%;
   transition: width 0.3s ease;
+  overflow: hidden;
+
+  /* glossy moving highlight */
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -50%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    transform: skewX(-20deg);
+    animation: glossMove 2s infinite;
+    pointer-events: none;
+  }
 }
 
 .attribute-bar-label {
@@ -60,5 +82,14 @@ const barColor = computed(() => {
   color: #fff;
   line-height: inherit;
   pointer-events: none;
+}
+
+@keyframes glossMove {
+  0% {
+    left: -50%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 </style>

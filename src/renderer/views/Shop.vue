@@ -3,11 +3,7 @@
     <div class="shop-layout">
       <div class="shop-head-layout">
         <div class="shop-head-wrapper">
-          <!-- <div class="shop-head-title">
-            <h1 class="shop-title">商城</h1>
-            <p class="shop-subtitle">为Petmate挑选最好的商品</p>
-          </div> -->
-          <div class="shop-head-info">
+          <!-- <div class="shop-head-info">
             <div class="money-box">
               <span class="money-icon">💵</span>
               <span class="money-value">1999</span>
@@ -16,46 +12,35 @@
               <span class="market-icon">🏪</span>
               黑市交易
             </div>
-          </div>
-          <!-- <div class="shop-head-notice">
-            <div class="notice-header">
-              <span class="notice-icon">📢</span>
-              <span>今日公告</span>
-            </div>
-            <div class="notice-content">新商品上架！限时特价，快来抢购吧！</div>
           </div> -->
+
+          <img
+            src="../assets/image/shop-petmate.png"
+            alt="petmate"
+            style="flex: 1; max-height: 100%; object-fit: contain"
+          />
         </div>
       </div>
       <div class="shop-content-layout">
-        <div class="shop-type">
-          <button
-            type="button"
-            v-for="item in shopTypeList"
-            :key="item.name"
-            @click="shopCurrType = item.name"
-            :class="{ 'active-shop-type': shopCurrType === item.name }"
-            class="type-btn"
-          >
-            {{ item.label }}
-          </button>
-        </div>
         <div class="shop-content-wrapper">
-          <div class="shop-prev-page-arrow" @click="prevPage">
-            <n-image
-              preview-disabled
-              width="50"
-              height="50"
-              src="../assets/image/greater-than.png"
-              style="transform: rotate(180deg)"
-            ></n-image>
+          <div class="shop-content-head-wrapper">
+            <div class="shop-content-head-title">欢迎来到黑市</div>
+            <div class="money-box">
+              <span class="money-icon">💵</span>
+              <span class="money-value">500</span>
+            </div>
           </div>
-          <div class="shop-next-page-arrow" @click="nextPage">
-            <n-image
-              preview-disabled
-              width="50"
-              height="50"
-              src="../assets/image/greater-than.png"
-            ></n-image>
+          <div class="shop-type">
+            <button
+              type="button"
+              v-for="item in shopTypeList"
+              :key="item.name"
+              @click="shopCurrType = item.name"
+              :class="{ 'active-shop-type': shopCurrType === item.name }"
+              class="type-btn"
+            >
+              {{ item.label }}
+            </button>
           </div>
           <div class="shop-content-head">
             <div class="sort-wrapper">
@@ -78,6 +63,23 @@
             </div>
           </div>
           <div class="shop-content">
+            <div class="shop-prev-page-arrow" @click="prevPage">
+              <n-image
+                preview-disabled
+                width="50"
+                height="50"
+                src="../assets/image/greater-than.png"
+                style="transform: rotate(180deg)"
+              ></n-image>
+            </div>
+            <div class="shop-next-page-arrow" @click="nextPage">
+              <n-image
+                preview-disabled
+                width="50"
+                height="50"
+                src="../assets/image/greater-than.png"
+              ></n-image>
+            </div>
             <n-carousel
               :show-arrow="false"
               :show-dots="false"
@@ -155,7 +157,7 @@
           <Pagedot
             :pageNum="shopPageNum"
             :currentPage="shopCurrPage"
-            :activeColor="'#f36912'"
+            :activeColor="'#914141'"
           />
         </div>
       </div>
@@ -209,7 +211,9 @@ const nextPage = () => {
 .shop-container {
   flex: 1;
   padding: 0 6%;
-  background: linear-gradient(to bottom, #fdc07f 0%, #fed7aa 50%, #fff7ed 100%);
+  // background: linear-gradient(to bottom, #fdc07f 0%, #fed7aa 50%, #fff7ed 100%);
+  // background: #fff;
+  background: #231e1f;
   // background: linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 100%);
   .shop-layout {
     width: 100%;
@@ -224,14 +228,17 @@ const nextPage = () => {
       // );
       // background: #fff;
       border-radius: 20px;
-      box-shadow: 0 8px 32px rgba(255, 154, 158, 0.3);
-      margin-top: 10px;
-      margin-bottom: 15px;
+      // box-shadow: 0 8px 32px rgba(255, 154, 158, 0.3);
+      // margin-top: 10px;
+      // margin-bottom: 22px;
+      margin-bottom: -10px;
       border: none;
       position: relative;
       // overflow: hidden;
     }
     .shop-content-layout {
+      position: relative;
+      z-index: 10;
     }
   }
 }
@@ -243,7 +250,7 @@ const nextPage = () => {
   flex-direction: column;
   justify-content: space-around;
   position: relative;
-
+  // overflow: hidden;
   .shop-head-title {
     display: flex;
     flex-direction: column;
@@ -269,30 +276,6 @@ const nextPage = () => {
     justify-content: space-between;
     align-items: center;
 
-    .money-box {
-      width: 45%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      column-gap: 5px;
-      background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-      border-radius: 25px;
-      // border: 2px solid rgba(255, 255, 255, 0.3);
-      padding: 5px 0;
-
-      .money-icon {
-        font-size: 16px;
-        margin-top: -5px; // 对齐
-      }
-
-      .money-value {
-        font-size: 14px;
-        font-weight: bold;
-        color: #8b4513;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-      }
-    }
-
     .to-black-market {
       width: 45%;
       display: flex;
@@ -303,7 +286,7 @@ const nextPage = () => {
       padding: 5px 0;
       color: white;
       border-radius: 20px;
-      cursor: pointer;
+      // cursor: pointer;
       transition: all 0.3s ease;
       // border: 2px solid rgba(255, 255, 255, 0.2);
       font-weight: 500;
@@ -341,81 +324,84 @@ const nextPage = () => {
   }
 }
 
-.shop-type {
-  display: flex;
-  column-gap: 5px;
-  margin-bottom: 5px;
-  .type-btn {
-    padding: 8px 0;
-    flex: 1;
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
-    text-align: center;
-    transition: all 0.3s ease;
-    background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
-    color: #8b4513;
-    box-shadow: 0 2px 10px rgba(253, 203, 110, 0.3);
+.shop-content-wrapper {
+  .shop-content-head-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+  .shop-content-head-title {
+    // flex: 1;
+    // text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #e0a6a6;
+  }
+  .money-box {
+    // width: 100%;
+    // width: 30%;
+    column-gap: 5px;
+    // background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    border-radius: 25px;
+    // border: 2px solid rgba(255, 255, 255, 0.3);
+    padding: 0 10px;
 
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(253, 203, 110, 0.4);
+    .money-icon {
+      font-size: 22px;
+      margin-top: -5px; // 对齐
+    }
+
+    .money-value {
+      font-size: 16px;
+      font-weight: bold;
+      // color: #8b4513;
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
     }
   }
-  .active-shop-type {
-    background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
-    color: white;
-    box-shadow: 0 4px 15px rgba(255, 118, 117, 0.4);
-  }
-}
+  .shop-type {
+    width: 100%;
+    display: flex;
+    column-gap: 5px;
+    margin-bottom: 5px;
+    .type-btn {
+      padding: 8px 0;
+      flex: 1;
+      border: none;
+      border-radius: 20px;
+      //cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+      transition: all 0.3s ease;
+      background: linear-gradient(135deg, #f7f5f5 0%, #fad2d2 100%);
+      color: #8b4513;
+      box-shadow: 0 2px 10px rgba(253, 203, 110, 0.3);
 
-.shop-content-wrapper {
-  height: 52vh;
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(253, 203, 110, 0.4);
+      }
+    }
+    .active-shop-type {
+      background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(255, 118, 117, 0.4);
+    }
+  }
+  height: 65vh;
   padding: 0 10px;
   display: flex;
   flex-direction: column;
   justify-content: space-around;
   align-items: center;
   // border: 1px solid $border-orange-300;
+  background: #55484b;
   border-radius: 10px;
   box-shadow: 0 10px 40px rgba(253, 203, 110, 0.2);
   position: relative;
   backdrop-filter: blur(10px);
-
-  .shop-prev-page-arrow,
-  .shop-next-page-arrow {
-    position: absolute;
-    top: 50%;
-    width: 50px;
-    height: 50px;
-    // background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-    cursor: pointer;
-    z-index: 10;
-    // border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    // box-shadow: 0 6px 20px rgba(255, 118, 117, 0.4);
-    transition: all 0.3s ease;
-    border: none;
-
-    &:hover {
-      transform: translateY(-50%) scale(1.1);
-      // box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
-    }
-  }
-
-  .shop-prev-page-arrow {
-    left: -30px;
-    transform: translateY(-50%);
-  }
-  .shop-next-page-arrow {
-    right: -30px;
-    transform: translateY(-50%);
-  }
 
   .shop-content-head {
     display: flex;
@@ -431,7 +417,7 @@ const nextPage = () => {
         border-radius: 5px;
         background: white;
         color: #8b4513;
-        cursor: pointer;
+        //cursor: pointer;
         transition: all 0.3s ease;
         &:focus {
           border-color: #ff7675;
@@ -467,7 +453,7 @@ const nextPage = () => {
       }
       .search-btn {
         padding: 1px 10px;
-        cursor: pointer;
+        // cursor: pointer;
         background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
         border: none;
         border-radius: 5px;
@@ -485,6 +471,39 @@ const nextPage = () => {
   }
   .shop-content {
     width: 100%;
+    position: relative;
+    .shop-prev-page-arrow,
+    .shop-next-page-arrow {
+      position: absolute;
+      top: 50%;
+      width: 50px;
+      height: 50px;
+      // background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      // cursor: pointer;
+      z-index: 10;
+      // border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      // box-shadow: 0 6px 20px rgba(255, 118, 117, 0.4);
+      transition: all 0.3s ease;
+      border: none;
+
+      &:hover {
+        transform: translateY(-50%) scale(1.1);
+        // box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+      }
+    }
+
+    .shop-prev-page-arrow {
+      left: -40px;
+      transform: translateY(-50%);
+    }
+    .shop-next-page-arrow {
+      right: -40px;
+      transform: translateY(-50%);
+    }
     .shop-item {
       width: 95px;
       height: 95px;
@@ -500,11 +519,11 @@ const nextPage = () => {
       // background-color: $border-orange-300;
       background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
       transition: all 0.3s ease;
-      cursor: pointer;
+      // cursor: pointer;
       box-shadow: 0 4px 15px rgba(255, 234, 167, 0.3);
       .special-label {
         position: absolute;
-        top: 4px;
+        top: 5px;
         left: -3px;
         width: 100%;
         max-width: 120px;
@@ -525,7 +544,8 @@ const nextPage = () => {
           display: block;
           padding: 0 8px;
           height: 20px;
-          background: linear-gradient(137deg, #ff5b5b 0%, #db0113 100%);
+          // background: linear-gradient(137deg, #ff5b5b 0%, #db0113 100%);
+          background: #c55151;
           border-radius: 0 20px 20px 0;
           color: #fff;
           text-align: center;
@@ -540,14 +560,14 @@ const nextPage = () => {
       }
 
       .item-image {
-        background: white;
+        // background: white;
         border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        // box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
 
       .item-name {
         width: 100%;
-        font-size: 12px;
+        font-size: 14px;
         text-align: center;
         color: #8b4513;
         font-weight: 600;
@@ -561,12 +581,14 @@ const nextPage = () => {
         display: flex;
         justify-content: center;
         align-items: center;
-        column-gap: 5px;
-        background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+        column-gap: 2px;
+        // background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+
         border-radius: 10px;
         color: #8b4513;
         font-weight: bold;
         .price-icon {
+          font-size: 14px;
           margin-top: -3px; //对齐
         }
       }
