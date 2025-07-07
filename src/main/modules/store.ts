@@ -4,7 +4,7 @@
 
 import Store from 'electron-store';
 import { PetMate } from './petmate/petmate';
-import { PetMateAttribute } from '../types/petmate';
+import { notActivityPetmateStatus, PetMateAttribute } from '../types/petmate';
 import { Item } from '../types/item';
 import { PlayerInfo } from '../types/player';
 import { ActivityInfo } from '../types/activity';
@@ -25,7 +25,7 @@ class PlayerManager {
     private store: Store<StoreData>;
     private currentPlayer: PlayerInfo = {
         name: '主人',
-        petmates: [new Dass(0, "Dass", DEFAULT_DASS_ATTRIBUTE)],
+        petmates: [new Dass(0, "Dass", DEFAULT_DASS_ATTRIBUTE, notActivityPetmateStatus)],
         steam_id: null,
         qq: null,
         cash: 500,
@@ -169,7 +169,7 @@ class ActivityManager {
         const stored = (this.store as any).get('allActivities') as ActivityInfo[] | undefined;
         // 不存在的话就从assets中读取官方初始的活动
         if (!stored) {
-            const activities = readJsonFile<ActivityInfo>('../../assets/activity.json');
+            const activities = readJsonFile<ActivityInfo>('src/main/assets/activity.json');
             (this.store as any).set('allActivities', activities);
             this.allActivities = activities;
         } else {
