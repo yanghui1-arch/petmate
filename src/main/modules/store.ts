@@ -15,8 +15,9 @@ import { Buff } from '../types/buff';
 
 type StoreData = {
     playerInfo: PlayerInfo;
-    activityInfo: ActivityInfo;
-    buffInfo: Buff;
+    activityInfo: ActivityInfo[];
+    buffInfo: Buff[];
+    itemInfo: Item[];
 }
 
 /**
@@ -233,7 +234,46 @@ class BuffManager {
     }
 }
 
+class ItemManager {
+    private store: Store<StoreData>;
+    private items: Item[] = [];
+
+    constructor() {
+        this.store = new Store<StoreData>();
+        this.loadItem();
+    }
+
+    loadItem(): void {
+        const stored = (this.store as any).get('itemInfo') as Item[] | undefined;
+        if (!stored) {
+            const items = readJsonFile<Item>('src/main/assets/item.json');
+            (this.store as any).set('itemInfo', items);
+            this.items = items;
+        } else {
+            this.items = stored;
+        }
+    }
+
+    /**
+     * 获取所有物品
+     * @returns 所有物品
+     */
+    getAllItems(): Item[] {
+        return this.items.map(item => ({ ...item }));
+    }
+
+    /**
+     * 获取物品
+     * @param id 物品id
+     * @returns 物品信息，如果不存在就返回undefined
+     */
+    getItem(id: number): Item | undefined {
+        return this.items.find(item => item.id === id);
+    }
+}
+
 // Create a singleton instance
 export const playerManager = new PlayerManager();
 export const activityManager = new ActivityManager();
 export const buffManager = new BuffManager();
+export const itemManager = new ItemManager();
