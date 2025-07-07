@@ -21,30 +21,30 @@
             <div class="home-panel-stat">
               <div class="home-panel-view">
                 <span>Dass</span>
-                <span style="width: 60%; text-align: center;">(已喂养2天)</span>
+                <span style="width: 60%; text-align: center">(已喂养2天)</span>
               </div>
 
               <div class="attribute-item">
                 <span>饱食度</span>
                 <!-- <AttributeBar :value="hp" color="#ff9812" /> -->
-                <AttributeBar :value="hp" color="#ff9812" />
+                <AttributeBar :value="attributeHpDic.satiety" />
               </div>
               <div class="attribute-item">
                 <span>精力</span>
-                <AttributeBar :value="hp" color="#ff9812" />
+                <AttributeBar :value="attributeHpDic.energy" />
               </div>
               <div class="attribute-item">
                 <span>心情</span>
-                <AttributeBar :value="hp" color="#ff9812" />
+                <AttributeBar :value="attributeHpDic.mood" />
               </div>
               <div class="attribute-item">
                 <span>健康</span>
-                <AttributeBar :value="hp" color="#ff9812" />
+                <AttributeBar :value="attributeHpDic.health" />
               </div>
             </div>
           </div>
           <div class="home-grade-detail">
-            <AttributeBar :value="hp" color="#ff9812" :width="'100%'" />
+            <AttributeBar :value="gradeHp" color="#e28fac" :width="'100%'" />
           </div>
         </div>
       </div>
@@ -68,46 +68,91 @@
       </div> -->
       <div class="home-package-layout">
         <div class="home-package-type">
-          <button type="button">食物</button>
-          <button>药品</button>
-          <button>礼物</button>
-          <button>饮料</button>
+          <button
+            type="button"
+            v-for="item in packageTypeList"
+            :key="item.name"
+            @click="packageCurrType = item.name"
+            :class="{ 'active-package-type': packageCurrType === item.name }"
+          >
+            {{ item.label }}
+          </button>
         </div>
         <div class="home-package-wrapper">
-          <n-carousel :show-arrow="false" :show-dots="false" :loop="false" :transition-style="{ transitionDuration: '500ms', transitionTimingFunction: 'ease' }" ref="packagePageRef">
+          <n-carousel
+            :show-arrow="false"
+            :show-dots="false"
+            :loop="false"
+            :transition-style="{
+              transitionDuration: '500ms',
+              transitionTimingFunction: 'ease',
+            }"
+            ref="packagePageRef"
+          >
             <div class="home-package-content">
               <n-grid x-gap="5" y-gap="5" :cols="6">
-                <n-gi v-for="(item, i) in packagePrevItemList" :key="i" style="display: flex; justify-content: center;">
+                <n-gi
+                  v-for="(item, i) in packagePrevItemList"
+                  :key="i"
+                  style="display: flex; justify-content: center"
+                >
                   <div class="package-item">
-                    <n-image width="38" src="../assets/image/item/burger.png" preview-disabled />
+                    <n-image
+                      width="38"
+                      src="../assets/image/item/burger.png"
+                      preview-disabled
+                    />
                     <span class="package-item-num">99</span>
                   </div>
                 </n-gi>
-                <n-gi v-for="i in packagePageNum - packagePrevItemList.length" :key="i" style="display: flex; justify-content: center;">
-                  <div class="package-item">
-                  </div>
+                <n-gi
+                  v-for="i in packagePageSize - packagePrevItemList.length"
+                  :key="i"
+                  style="display: flex; justify-content: center"
+                >
+                  <div class="package-item"></div>
                 </n-gi>
               </n-grid>
             </div>
             <div class="home-package-content">
               <n-grid x-gap="5" y-gap="5" :cols="6">
-                <n-gi v-for="(item, i) in packageNextItemList" :key="i" style="display: flex; justify-content: center;">
+                <n-gi
+                  v-for="(item, i) in packageNextItemList"
+                  :key="i"
+                  style="display: flex; justify-content: center"
+                >
                   <div class="package-item">
-                    <n-image width="38" src="../assets/image/item/burger.png" preview-disabled />
+                    <n-image
+                      width="38"
+                      src="../assets/image/item/burger.png"
+                      preview-disabled
+                    />
                     <span class="package-item-num">99</span>
                   </div>
                 </n-gi>
-                <n-gi v-for="i in packagePageNum - packageNextItemList.length" :key="i" style="display: flex; justify-content: center;">
-                  <div class="package-item">
-                  </div>
+                <n-gi
+                  v-for="i in packagePageSize - packageNextItemList.length"
+                  :key="i"
+                  style="display: flex; justify-content: center"
+                >
+                  <div class="package-item"></div>
                 </n-gi>
               </n-grid>
             </div>
           </n-carousel>
 
           <div class="home-package-footer">
-            <button class="prev-page" @click="prevPage">上一页</button>
-            <button class="next-page" @click="nextPage">下一页</button>
+            <div class="home-package-footer-left">
+              <Pagedot
+                :pageNum="packagePageNum"
+                :currentPage="packageCurrPage"
+                :activeColor="'#5b76f2'"
+              />
+            </div>
+            <div class="home-package-footer-right">
+              <button class="prev-page" @click="prevPage">上一页</button>
+              <button class="next-page" @click="nextPage">下一页</button>
+            </div>
           </div>
         </div>
       </div>
@@ -119,9 +164,36 @@
 import { ref } from "vue";
 import { onMounted, onBeforeUnmount } from "vue";
 import AttributeBar from "@/components/AttributeBar.vue";
+import Pagedot from "@/components/Pagedot.vue";
 
-const hp = ref(80);
-const packagePageNum = ref(18);
+onMounted(() => {
+  document.body.style.backgroundColor = "#f9f9f9";
+});
+
+onBeforeUnmount(() => {
+  document.body.style.backgroundColor = ""; // 恢复默认
+});
+
+// 角色相關
+const attributeHpDic = ref({
+  satiety: 10,
+  energy: 40,
+  mood: 60,
+  health: 100,
+});
+const gradeHp = ref(80);
+
+// 背包相關
+const packageCurrType = ref("food");
+const packagePageNum = ref(2);
+const packageCurrPage = ref(1);
+const packagePageSize = ref(18);
+const packageTypeList = ref([
+  { name: "food", label: "🍔食物" },
+  { name: "medicine", label: "💊药品" },
+  { name: "gift", label: "🎁礼物" },
+  { name: "drink", label: "🥤饮料" },
+]);
 const packagePrevItemList = ref([
   { num: 10 },
   { num: 10 },
@@ -132,20 +204,20 @@ const packagePrevItemList = ref([
   { num: 10 },
 ]);
 const packageNextItemList = ref([{ num: 10 }, { num: 10 }, { num: 10 }]);
-onMounted(() => {
-  document.body.style.backgroundColor = "#f9f9f9";
-});
 
-onBeforeUnmount(() => {
-  document.body.style.backgroundColor = ""; // 恢复默认
-});
 const packagePageRef = ref(null);
 
 const prevPage = () => {
+  if (packageCurrPage.value > 1) {
+    packageCurrPage.value--;
+  }
   packagePageRef.value?.prev();
 };
 
 const nextPage = () => {
+  if (packageCurrPage.value < packagePageNum.value) {
+    packageCurrPage.value++;
+  }
   packagePageRef.value?.next();
 };
 </script>
@@ -154,11 +226,12 @@ const nextPage = () => {
 .home-container {
   flex: 1;
   padding: 0 6%;
-  background-color: $color-white-200;
+  background: linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 100%);
   .home-layout {
     width: 100%;
     height: 100%;
     .home-panel-layout {
+      margin-top: 10px;
       .home-title-wrapper {
         padding: 15px 0;
         .home-title {
@@ -168,6 +241,9 @@ const nextPage = () => {
       }
       .home-panel-wrapper {
         height: 35vh;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 24px 0 rgba(80, 120, 200, 0.08);
       }
     }
     .home-package-layout {
@@ -186,7 +262,7 @@ const nextPage = () => {
     display: flex;
     flex-direction: row;
     align-items: center;
-    column-gap: 20px;
+    column-gap: 15px;
     .home-panel-info {
       display: flex;
       flex-direction: column;
@@ -211,6 +287,10 @@ const nextPage = () => {
       .home-panel-view {
         display: flex;
         justify-content: space-between;
+        span {
+          width: 60px;
+          text-align: center;
+        }
       }
       .attribute-item {
         display: flex;
@@ -218,6 +298,10 @@ const nextPage = () => {
         justify-content: space-between;
         span {
           width: 60px;
+          color: #64748b;
+          font-weight: 500;
+          letter-spacing: 3px;
+          text-align: center;
         }
       }
     }
@@ -235,13 +319,28 @@ const nextPage = () => {
 .home-package-type {
   display: flex;
   column-gap: 5px;
+  margin-bottom: 5px;
+  .active-package-type {
+    color: #fff;
+    background: linear-gradient(90deg, #38bdf8 0%, #6366f1 100%);
+  }
   button {
-    padding: 3px 15px;
-    border: 1px solid $border-orange-300;
-    border-bottom: none;
-    border-top-left-radius: 3px;
-    border-top-right-radius: 3px;
+    flex: 1;
+    background: linear-gradient(90deg, #7dd3fc 0%, #a5b4fc 100%);
+    // color: #fff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 6px 0;
+    font-weight: 500;
+    box-shadow: 0 2px 8px 0 rgba(80, 120, 200, 0.08);
+    transition: background 0.2s;
     cursor: pointer;
+    transition: all 0.3s ease;
+    &:hover {
+      transform: translateY(-2px);
+      background: linear-gradient(90deg, #38bdf8 0%, #6366f1 100%);
+    }
   }
 }
 
@@ -249,7 +348,8 @@ const nextPage = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  border: 1px solid $border-orange-300;
+  border: 1px solid #5d73f2;
+  border-radius: 5px;
   padding: 10px;
   .home-package-content {
     width: 100%;
@@ -263,7 +363,9 @@ const nextPage = () => {
       justify-content: center;
       align-items: center;
       position: relative;
-      background-color: $border-orange-300;
+      cursor: pointer;
+      background-color: rgba(72, 156, 245, 0.6);
+      box-shadow: 0 1px 4px 0 rgba(80, 120, 200, 0.04);
       .package-item-num {
         position: absolute;
         bottom: 1px;
@@ -277,15 +379,30 @@ const nextPage = () => {
   .home-package-footer {
     width: 100%;
     display: flex;
-    justify-content: center;
+    justify-content: space-around;
     align-items: center;
     column-gap: 10px;
     margin-top: 10px;
-    .prev-page,
-    .next-page {
-      border: 1px solid $border-orange-300;
-      padding: 2px 10px;
-      cursor: pointer;
+    .home-package-footer-left,
+    .home-package-footer-right {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+    }
+    .home-package-footer-right {
+      justify-content: flex-start;
+      column-gap: 10px;
+      .prev-page,
+      .next-page {
+        border: 1px solid #fff;
+        padding: 3px 10px;
+        cursor: pointer;
+        border-radius: 3px;
+        background: linear-gradient(to bottom, #5b76f2, #6f87f1);
+        box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4),
+          /* 内发光鼓起 */ 0 5px 15px rgba(0, 0, 0, 0.2); /* 外投影 */
+        color: #fff;
+      }
     }
   }
 }
