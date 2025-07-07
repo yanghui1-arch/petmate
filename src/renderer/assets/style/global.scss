@@ -4,13 +4,19 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   font-family: sans-serif;
   line-height: 1.5;
+  /* Stardew Valley style cursors */
+  cursor: url(#{$cursor-default}) 0 0,
+  auto;
 }
 
-ol, ul ,li {
+ol,
+ul,
+li {
   list-style: none;
 }
 
@@ -38,3 +44,14 @@ button:focus {
   border-color: inherit;
 }
 
+/* Interactive elements get pointer-style cursor */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+select,
+label,
+.clickable {
+  cursor: url(#{$cursor-pointer}) 10 0,
+  pointer;
+}

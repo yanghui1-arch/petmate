@@ -2,17 +2,23 @@
   <div class="home-container">
     <div class="home-layout">
       <div class="home-panel-layout">
-        <!-- <div class="home-title-wrapper">
+        <div class="home-title-wrapper">
           <div class="home-title">
-            角色状态
+            <span style="font-family: Petmate; font-size: 30px">Petmate</span>
+            <!-- <span>の档案馆</span> -->
           </div>
-        </div> -->
+        </div>
         <div class="home-panel-wrapper">
           <div class="home-panel-content">
             <div class="home-panel-info">
               <div class="home-panel-image">
                 <!-- <n-image width="70" src="../assets/image/petmate.png" /> -->
-                <n-avatar round :size="70" src="../assets/image/petmate.png" />
+                <n-avatar
+                  round
+                  :size="70"
+                  src="../assets/image/petmate-1.jpg"
+                  object-fit="cover"
+                />
               </div>
               <div class="home-panel-grade">
                 <span class="grade-value">LEVEL 1</span>
@@ -146,7 +152,7 @@
               <Pagedot
                 :pageNum="packagePageNum"
                 :currentPage="packageCurrPage"
-                :activeColor="'#5b76f2'"
+                :activeColor="'#914141'"
               />
             </div>
             <div class="home-package-footer-right">
@@ -160,11 +166,12 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { onMounted, onBeforeUnmount } from "vue";
 import AttributeBar from "@/components/AttributeBar.vue";
 import Pagedot from "@/components/Pagedot.vue";
+import type { CarouselInst } from "naive-ui";
 
 onMounted(() => {
   document.body.style.backgroundColor = "#f9f9f9";
@@ -205,7 +212,7 @@ const packagePrevItemList = ref([
 ]);
 const packageNextItemList = ref([{ num: 10 }, { num: 10 }, { num: 10 }]);
 
-const packagePageRef = ref(null);
+const packagePageRef = ref<CarouselInst | null>(null);
 
 const prevPage = () => {
   if (packageCurrPage.value > 1) {
@@ -226,24 +233,28 @@ const nextPage = () => {
 .home-container {
   flex: 1;
   padding: 0 6%;
-  background: linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 100%);
+  background: $system-bgc;
   .home-layout {
     width: 100%;
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     .home-panel-layout {
-      margin-top: 10px;
+      // margin-top: 25px;
       .home-title-wrapper {
-        padding: 15px 0;
+        padding: 0 0 5px 0;
         .home-title {
           font-size: 18px;
           text-align: center;
+          color: $font-light;
         }
       }
       .home-panel-wrapper {
         height: 35vh;
-        background: #fff;
+        background: $content-bgc;
         border-radius: 8px;
-        box-shadow: 0 4px 24px 0 rgba(80, 120, 200, 0.08);
+        box-shadow: 0 4px 24px 0 rgba(253, 203, 110, 0.2);
       }
     }
     .home-package-layout {
@@ -257,7 +268,7 @@ const nextPage = () => {
   flex-direction: column;
   justify-content: space-around;
   padding: 0 15px;
-  background-color: $color-white;
+  background-color: $content-bgc;
   .home-panel-content {
     display: flex;
     flex-direction: row;
@@ -290,6 +301,7 @@ const nextPage = () => {
         span {
           width: 60px;
           text-align: center;
+          color: $font-light;
         }
       }
       .attribute-item {
@@ -298,7 +310,7 @@ const nextPage = () => {
         justify-content: space-between;
         span {
           width: 60px;
-          color: #64748b;
+          color: $font-light;
           font-weight: 500;
           letter-spacing: 3px;
           text-align: center;
@@ -313,7 +325,7 @@ const nextPage = () => {
 .home-grade-wrapper {
   height: 30%;
   margin-top: 15px;
-  background-color: $color-white;
+  background-color: $content-bgc;
 }
 
 .home-package-type {
@@ -321,25 +333,28 @@ const nextPage = () => {
   column-gap: 5px;
   margin-bottom: 5px;
   .active-package-type {
-    color: #fff;
-    background: linear-gradient(90deg, #38bdf8 0%, #6366f1 100%);
+    background: linear-gradient(
+      135deg,
+      $btn-active-grad-start 0%,
+      $btn-active-grad-end 100%
+    );
+    color: $color-white;
+    box-shadow: 0 4px 15px rgba(255, 118, 117, 0.4);
   }
   button {
     flex: 1;
-    background: linear-gradient(90deg, #7dd3fc 0%, #a5b4fc 100%);
-    // color: #fff;
-    color: #fff;
+    background: linear-gradient(135deg, $btn-grad-start 0%, $btn-grad-end 100%);
+    color: $accent-brown;
     border: none;
-    border-radius: 5px;
+    border-radius: 20px;
     padding: 6px 0;
     font-weight: 500;
-    box-shadow: 0 2px 8px 0 rgba(80, 120, 200, 0.08);
-    transition: background 0.2s;
+    box-shadow: 0 2px 10px rgba(253, 203, 110, 0.3);
     cursor: pointer;
     transition: all 0.3s ease;
     &:hover {
       transform: translateY(-2px);
-      background: linear-gradient(90deg, #38bdf8 0%, #6366f1 100%);
+      box-shadow: 0 4px 15px rgba(253, 203, 110, 0.4);
     }
   }
 }
@@ -348,7 +363,8 @@ const nextPage = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  border: 1px solid #5d73f2;
+  border: 1px solid $accent-brown;
+  background: $content-bgc;
   border-radius: 5px;
   padding: 10px;
   .home-package-content {
@@ -364,14 +380,14 @@ const nextPage = () => {
       align-items: center;
       position: relative;
       cursor: pointer;
-      background-color: rgba(72, 156, 245, 0.6);
-      box-shadow: 0 1px 4px 0 rgba(80, 120, 200, 0.04);
+      background: linear-gradient(135deg, $item-bg-start 0%, $item-bg-end 100%);
+      box-shadow: 0 2px 8px 0 rgba(253, 203, 110, 0.15);
       .package-item-num {
         position: absolute;
         bottom: 1px;
         right: 2px;
         font-size: 12px;
-        color: $color-white;
+        color: $accent-brown;
       }
     }
   }
@@ -394,14 +410,18 @@ const nextPage = () => {
       column-gap: 10px;
       .prev-page,
       .next-page {
-        border: 1px solid #fff;
+        border: 1px solid $color-white;
         padding: 3px 10px;
         cursor: pointer;
         border-radius: 3px;
-        background: linear-gradient(to bottom, #5b76f2, #6f87f1);
+        background: linear-gradient(
+          135deg,
+          $btn-grad-start 0%,
+          $btn-grad-end 100%
+        );
         box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4),
-          /* 内发光鼓起 */ 0 5px 15px rgba(0, 0, 0, 0.2); /* 外投影 */
-        color: #fff;
+          0 5px 15px rgba(0, 0, 0, 0.2);
+        color: $accent-brown;
       }
     }
   }
