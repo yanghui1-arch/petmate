@@ -10,6 +10,7 @@ import { PlayerInfo } from '../types/player';
 import { ActivityInfo } from '../types/activity';
 import { Dass, DEFAULT_DASS_ATTRIBUTE } from './petmate/dass';
 import { readJsonFile } from './utils/file';
+import { NotEnoughError } from '../error';
 
 type StoreData = {
     playerInfo: PlayerInfo;
@@ -111,8 +112,14 @@ class PlayerManager {
 
     /**
      * 更新金钱
+     * 该方法不会计算buff效果，需要先计算好buff的加值以后再调用该方法
+     * @param amount 增加的金额，为正数时是增加，为负数时是减少
+     * @throws 如果金钱不足则抛出NotEnoughError
      */
     updateCash(amount: number): void {
+        if (this.currentPlayer.cash + amount < 0) {
+            throw new NotEnoughError("金钱不足");
+        }
         this.currentPlayer.cash += amount;
         this.savePlayer();
     }
