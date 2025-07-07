@@ -1,4 +1,4 @@
-type Reward = {
+export type Reward = {
     exp: number;
     gameExp: number;
     singExp: number;
@@ -11,7 +11,7 @@ type Reward = {
     cash: number;
 }
 
-type Consume = {
+export type Consume = {
     energy: number;
     hungry: number;
     health: number;

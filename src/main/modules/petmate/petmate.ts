@@ -4,18 +4,20 @@
 
 import { NotEnoughError, NotFoundError } from "../../error";
 import { ActiveBuff, Buff } from "../../types/buff";
-import { PetMateAttribute } from "../../types/petmate";
+import { PetMateAttribute, PetMateStatus } from "../../types/petmate";
 import { calcNextExp, calcMaxAttribute, calcBuffEffect } from "../utils/calc";
 
 export abstract class PetMate {
     id: number;
     name: string;
     attrs: PetMateAttribute;
+    status: PetMateStatus;
 
-    constructor(id:number, name:string, attrs: PetMateAttribute) {
+    constructor(id:number, name:string, attrs: PetMateAttribute, status: PetMateStatus) {
         this.id = id;
         this.name = name;
         this.attrs = attrs;
+        this.status = status;
     }
 
     /**
@@ -221,5 +223,23 @@ export abstract class PetMate {
      */
     showBuffs(): ActiveBuff[] {
         return this.attrs.buffs.filter(b => b.endTime > new Date());
+    }
+
+    /**
+     * 设置状态
+     * @param status 需要设置的状态
+     * @returns 设置后的状态
+     */
+    setStatus(status: PetMateStatus): PetMateStatus {
+        this.status = status;
+        return this.status;
+    }
+
+    /**
+     * 获取状态
+     * @returns 当前状态
+     */
+    getStatus(): PetMateStatus {
+        return this.status;
     }
 }
