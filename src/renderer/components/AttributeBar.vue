@@ -2,7 +2,7 @@
   <div class="attribute-bar" :style="{ width: width, height: height }">
     <div class="attribute-bar-filled" :style="{
         width: filledWidth,
-        backgroundColor: color
+        backgroundColor: barColor
       }" />
     <div class="attribute-bar-label">
       {{ value }} / {{ max }}
@@ -16,14 +16,23 @@ import { computed, defineProps } from "vue";
 const props = defineProps({
   value: { type: Number, required: true },
   max: { type: Number, default: 100 },
-  color: { type: String, default: "#42b983" },
+  color: { type: String },
   width: { type: String, default: "60%" },
   height: { type: String, default: "18px" },
 });
 
+const percent = computed(() => {
+  return Math.min(100, Math.max(0, (props.value / props.max) * 100));
+});
+
 const filledWidth = computed(() => {
-  const percent = Math.min(100, Math.max(0, (props.value / props.max) * 100));
-  return `${percent}%`;
+  return `${percent.value}%`;
+});
+
+const barColor = computed(() => {
+  // 色相 H 从 0（红）到 120（绿）
+  const hue = (percent.value * 120) / 100;
+  return props.color == null ? `hsl(${hue}, 70%, 50%)` : props.color;
 });
 </script>
 
