@@ -10,11 +10,13 @@ import { PlayerInfo } from '../types/player';
 import { ActivityInfo } from '../types/activity';
 import { Dass, DEFAULT_DASS_ATTRIBUTE } from './petmate/dass';
 import { readJsonFile } from './utils/file';
-import { NotEnoughError } from '../error';
+import { NotEnoughError, NotFoundError } from '../error';
+import { Buff } from '../types/buff';
 
 type StoreData = {
     playerInfo: PlayerInfo;
     activityInfo: ActivityInfo;
+    buffInfo: Buff;
 }
 
 /**
@@ -97,16 +99,17 @@ class PlayerManager {
 
     /**
      * 更新petmate信息
+     * 会同步到文件中且会改变内存中的值，这意味着你无需手动修改this.currentPlayer.petmates中的值
+     * @param updatedPetmate 更新的petmate
+     * @throws 如果petmate不存在则抛出NotFoundError
      */
-    updatePetmate(id:number, updatedPet: Partial<PetMateAttribute>): void {
-        const index = this.currentPlayer.petmates.findIndex(petmate => petmate.id === id);
+    updatePetmate(updatedPetmate: PetMate): void {
+        const index = this.currentPlayer.petmates.findIndex(petmate => petmate.id === updatedPetmate.id);
         if (index !== -1) {
-            const newAttrs:PetMateAttribute = {
-                ...this.currentPlayer.petmates[index].attrs,
-                ...updatedPet   
-            };
-            this.currentPlayer.petmates[index].attrs = newAttrs;
+            this.currentPlayer.petmates[index] = updatedPetmate;
             this.savePlayer();
+        } else {
+            throw new NotFoundError(`Petmate不存在: ${updatedPetmate.id}`);
         }
     }
 
@@ -196,6 +199,41 @@ class ActivityManager {
 
 }
 
+
+/**
+ * Buff管理器
+ * 负责buff信息的读取、更新和持久化
+ */
+class BuffManager {
+    private store: Store<StoreData>;
+    private buffs: Buff[] = [];
+
+    constructor() {
+        this.store = new Store<StoreData>();
+        this.loadBuff();
+    }
+
+    loadBuff(): void {
+        const stored = (this.store as any).get('buffInfo') as Buff[] | undefined;
+        if (!stored) {
+            const buffs = readJsonFile<Buff>('src/main/assets/buff.json');
+            (this.store as any).set('buffInfo', buffs);
+            this.buffs = buffs;
+        } else {
+            this.buffs = stored;
+        }
+    }
+
+    /**
+     * 获取所有buff
+     * @returns 所有buff
+     */
+    getAllBuffs(): Buff[] {
+        return this.buffs.map(buff => ({ ...buff }));
+    }
+}
+
 // Create a singleton instance
 export const playerManager = new PlayerManager();
 export const activityManager = new ActivityManager();
+export const buffManager = new BuffManager();

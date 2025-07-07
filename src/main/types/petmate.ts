@@ -30,7 +30,8 @@ export type PetMateAttribute = {
     max_energy: number,
     max_health: number,
 
-    buffs: ActiveBuff[]
+    buffs: ActiveBuff[],
+    max_buffs: number
 }
 
 export type PetMateStatus = {
