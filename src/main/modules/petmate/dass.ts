@@ -1,4 +1,4 @@
-import { PetMateAttribute } from "../../types/petmate";
+import { PetMateAttribute, PetMateStatus } from "../../types/petmate";
 import { PetMate } from "./petmate";
 
 /**
@@ -6,8 +6,8 @@ import { PetMate } from "./petmate";
  * 继承Petmate，基本的属性增删不需要写，主要写动作
  */
 export class Dass extends PetMate {
-    constructor(id:number, name:string, attrs: PetMateAttribute) {
-        super(id, name, attrs);
+    constructor(id:number, name:string, attrs: PetMateAttribute, status: PetMateStatus) {
+        super(id, name, attrs, status);
     }
 }
 
