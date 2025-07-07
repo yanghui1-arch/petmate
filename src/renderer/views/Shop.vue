@@ -3,6 +3,10 @@
     <div class="shop-layout">
       <div class="shop-head-layout">
         <div class="shop-head-wrapper">
+          <!-- <div class="shop-head-title">
+            <h1 class="shop-title">商城</h1>
+            <p class="shop-subtitle">为Petmate挑选最好的商品</p>
+          </div> -->
           <div class="shop-head-info">
             <div class="money-box">
               <span class="money-icon">💵</span>
@@ -13,6 +17,13 @@
               黑市交易
             </div>
           </div>
+          <!-- <div class="shop-head-notice">
+            <div class="notice-header">
+              <span class="notice-icon">📢</span>
+              <span>今日公告</span>
+            </div>
+            <div class="notice-content">新商品上架！限时特价，快来抢购吧！</div>
+          </div> -->
         </div>
       </div>
       <div class="shop-content-layout">
@@ -233,6 +244,26 @@ const nextPage = () => {
   justify-content: space-around;
   position: relative;
 
+  .shop-head-title {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    .shop-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #8b4513;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .shop-subtitle {
+      font-size: 12px;
+      color: #a0522d;
+      opacity: 0.9;
+    }
+  }
+
   .shop-head-info {
     display: flex;
     justify-content: space-between;
@@ -281,6 +312,31 @@ const nextPage = () => {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
       }
+    }
+  }
+
+  .shop-head-notice {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    padding: 5px 15px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+
+    .notice-header {
+      display: flex;
+      align-items: center;
+      column-gap: 5px;
+      font-weight: bold;
+      color: #8b4513;
+
+      .notice-icon {
+        font-size: 16px;
+        margin-top: -4px; // 对齐
+      }
+    }
+
+    .notice-content {
+      color: #a0522d;
+      font-size: 13px;
     }
   }
 }
