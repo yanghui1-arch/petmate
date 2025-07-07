@@ -38,5 +38,6 @@ export const DEFAULT_DASS_ATTRIBUTE: PetMateAttribute = {
     max_emotion: 100,
     max_energy: 100,
     max_health: 100,
-    buffs: []
+    buffs: [],
+    max_buffs: 10
 }

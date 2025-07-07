@@ -190,17 +190,37 @@ export abstract class PetMate {
     }
 
     /**
-     * 增加Buff
+     * 增加一个Buff
      * @param buff 需要增加的Buff
-     * @returns 增加的Buff
+     * @returns 增加的Buff，如果Buff数量超过上限则返回undefined
      */
-    addBuff(buff: Buff): ActiveBuff {
-        const activeBuff: ActiveBuff = {
-            buff: buff,
-            endTime: new Date(new Date().getTime() + buff.duration * 1000)
+    addBuff(buff: Buff): ActiveBuff | undefined {
+        if (this.attrs.buffs.length < this.attrs.max_buffs) {
+            const activeBuff: ActiveBuff = {
+                buff: buff,
+                endTime: new Date(new Date().getTime() + buff.duration * 1000)
+            }
+            this.attrs.buffs.push(activeBuff);
+            return activeBuff;   
         }
-        this.attrs.buffs.push(activeBuff);
-        return activeBuff;
+        return undefined;
+    }
+
+    /**
+     * 增加多个Buff
+     * @param buffs 需要增加的Buff列表
+     * @returns 现在petmate的活跃Buff列表，如果Buff数量超过上限则返回undefined
+     */
+    addBuffs(buffs: Buff[]): ActiveBuff[] | undefined {
+        if (this.attrs.buffs.length + buffs.length <= this.attrs.max_buffs) {
+            const activeBuffs: ActiveBuff[] = buffs.map(buff => ({
+                buff: buff,
+                endTime: new Date(new Date().getTime() + buff.duration * 1000)
+            }));
+            this.attrs.buffs.push(...activeBuffs);
+            return this.attrs.buffs;
+        }
+        return undefined;
     }
 
     /**

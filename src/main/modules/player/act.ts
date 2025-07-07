@@ -1,14 +1,17 @@
 import { NotEnoughError, NotFoundError } from "../../error";
-import { activityManager, playerManager } from "../store";
+import { activityManager, buffManager, playerManager } from "../store";
 import { PetMate } from "../petmate/petmate";
 import { calcBuffEffect } from "../utils/calc";
-import { BuffEffect } from "../../types/buff";
+import { ActiveBuff, Buff, BuffEffect } from "../../types/buff";
 import logger from "../../log";
 import { ActivityInfo, Reward } from "../../types/activity";
 import { notActivityPetmateStatus } from "../../types/petmate";
+import { GET_BUFF_NUM_THROUGH_ACT, GET_BUFF_PROB_THROUGH_ACT, RETRY_TIMES_GET_BUFF_THROUGH_ACT } from "../../constant";
 
 /**
  * 开始活动
+ * 会计算所有的消耗， 如果消耗不足则抛出NotEnoughError
+ * 会将所有的状态同步，但是如果中途发生错误，则不会同步状态
  * @param petmateId petmate的id
  * @param activityId 活动的id
  * @throws 如果活动不存在则抛出NotFoundError
@@ -48,7 +51,8 @@ export function startActivity(petmateId: number, activityId: number) {
             endActivity(petmateId);
         }, consume.spendingTime * buffEffect.spendingTimeRate * 1000);
 
-
+        // 同步文件中的数据
+        playerManager.updatePetmate(petmate);
     } catch (error) {
         if (error instanceof NotEnoughError) {
             throw new NotEnoughError(`${error.message}`);
@@ -59,7 +63,7 @@ export function startActivity(petmateId: number, activityId: number) {
 
 /**
  * 结束活动
- * 活动只会按照结束时的buff效果计算奖励
+ * 活动只会按照结束时的buff效果计算奖励，最后会同步到文件数据中
  * @param petmateId petmate的id
  * @returns 是否结束成功
  */
@@ -69,11 +73,13 @@ export function endActivity(petmateId: number): boolean {
     if (petmate === undefined) {
         throw new NotFoundError(`Petmate不存在: ${petmateId}`);
     }
+
     const status = petmate.getStatus();
     if (status.status === "idle") {
         logger.warning(`Petmate [${petmateId}] 当前状态为idle，无法结束活动`);
         return false;
     }
+
     const activity: ActivityInfo | undefined = status.activity;
     const reward: Reward | undefined = activity?.reward;
     const buffEffect:BuffEffect = calcBuffEffect(petmate.attrs.buffs);
@@ -90,8 +96,54 @@ export function endActivity(petmateId: number): boolean {
     playerManager.updateCash(reward?.cash ?? 0 * buffEffect.cashGainRate);
 
     // 尝试获取buff
+    const toPickBuffs: Buff[] = getBuffThroughAct(petmate);
+    const validToPickBuffsNum: number = petmate.attrs.max_buffs - petmate.showBuffs().length;
+    const validToPickBuffs: Buff[] = toPickBuffs.slice(0, validToPickBuffsNum);
+    const newBuffs: ActiveBuff[] | undefined = petmate.addBuffs(validToPickBuffs);
+
+    if (newBuffs === undefined) {
+        logger.info(`Petmate [${petmateId}] 活动结束时Buff数量超过上限，无法获取Buff`);
+    }
 
     // 结束活动
     petmate.setStatus(notActivityPetmateStatus);
+    // 同步文件中的数据
+    playerManager.updatePetmate(petmate);
     return true;
+}
+
+/**
+ * 获取Buff
+ * @param petmate petmate实例对象
+ * @returns 获取到的buff
+ * @throws 如果petmate不存在则抛出NotFoundError
+ */
+export function getBuffThroughAct(petmate: PetMate): Buff[] {
+    const allAvailableBuffs: Buff[] = buffManager.getAllBuffs();
+    const random = Math.random();
+
+    const petmateActiveBuffs: ActiveBuff[] = petmate.attrs.buffs;
+    const toPickBuffs: Buff[] = [];
+
+    // 如果随机数小于概率，则获取buff
+    if (random < GET_BUFF_PROB_THROUGH_ACT) {
+        for (let i = 0; i < GET_BUFF_NUM_THROUGH_ACT; i++) {
+            let retryTimes = RETRY_TIMES_GET_BUFF_THROUGH_ACT;
+            // 给retryTimes机会，如果retryTimes次都是已经到了叠加上限的buff，则就没Buff了
+            while (retryTimes > 0) {
+                const toPickBuff:Buff = allAvailableBuffs[Math.floor(Math.random() * allAvailableBuffs.length)];
+                // 确保buff叠加层数不会超过上限
+                const sameBuffs: ActiveBuff[] = petmateActiveBuffs.filter(buff => buff.buff.id === toPickBuff.id);
+                const currentStacks: number = sameBuffs.length;
+                // 如果buff叠加层数小于上限，则添加buff
+                if (currentStacks < toPickBuff.maxStack) {
+                    toPickBuffs.push(toPickBuff);
+                    break;
+                }
+                retryTimes--;
+            }
+        }
+    }
+
+    return toPickBuffs;
 }
