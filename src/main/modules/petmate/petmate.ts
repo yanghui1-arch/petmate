@@ -260,7 +260,7 @@ export abstract class PetMate {
      * @returns 当前可用的Buff列表
      */
     showBuffs(): ActiveBuff[] {
-        return this.attrs.buffs.filter(b => b.endTime > new Date());
+        return this.attrs.buffs;
     }
 
     /**
