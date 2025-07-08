@@ -32,7 +32,7 @@ ipcMain.handle("load-player-data", (event: IpcMainInvokeEvent): Response<PlayerI
                 }
             })
         })
-
+        
         // 检查活动是否完成
         petmates.forEach(petmate => {
             // 如果在活动中，先查看一下是否完成了活动（玩家会开始活动然后又退出游戏）
