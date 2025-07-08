@@ -97,7 +97,7 @@ export function endActivity(petmateId: number): boolean {
 
     // 尝试获取buff
     const toPickBuffs: Buff[] = getBuffThroughAct(petmate);
-    const validToPickBuffsNum: number = petmate.attrs.max_buffs - petmate.showBuffs().length;
+    const validToPickBuffsNum: number = petmate.attrs.max_buffs - petmate.getActiveBuffs().length;
     const validToPickBuffs: Buff[] = toPickBuffs.slice(0, validToPickBuffsNum);
     const newBuffs: ActiveBuff[] | undefined = petmate.addBuffs(validToPickBuffs);
 

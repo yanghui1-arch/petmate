@@ -256,14 +256,6 @@ export abstract class PetMate {
     }
 
     /**
-     * 显示Buff
-     * @returns 当前可用的Buff列表
-     */
-    showBuffs(): ActiveBuff[] {
-        return this.attrs.buffs;
-    }
-
-    /**
      * 设置状态
      * @param status 需要设置的状态
      * @returns 设置后的状态
@@ -279,5 +271,13 @@ export abstract class PetMate {
      */
     getStatus(): PetMateStatus {
         return this.status;
+    }
+
+    /**
+     * 显示Buff
+     * @returns 当前可用的Buff列表
+     */
+    getActiveBuffs(): ActiveBuff[] {
+        return this.attrs.buffs;
     }
 }

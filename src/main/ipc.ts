@@ -19,7 +19,7 @@ ipcMain.handle("load-player-data", (event: IpcMainInvokeEvent): Response<PlayerI
         const petmates: PetMate[] = playerInfo.petmates;
         // 检查每一个petmate的Buff是否过期
         petmates.forEach(petmate => {
-            const allActiveBuffs: ActiveBuff[] = petmate.showBuffs();
+            const allActiveBuffs: ActiveBuff[] = petmate.getActiveBuffs();
             allActiveBuffs.forEach(activeBuff => {
                 // 如果已经过期了那就直接删除，没过期的那就继续设置一个定时器
                 if (activeBuff.endTime < new Date()) {
@@ -65,6 +65,11 @@ ipcMain.handle("load-player-data", (event: IpcMainInvokeEvent): Response<PlayerI
                     }
                 }
             }
+        })
+
+        // 同步文件操作
+        petmates.forEach(petmate => {
+            playerManager.updatePetmate(petmate);
         })
         
         return {
