@@ -62,7 +62,7 @@ export function startActivity(petmateId: number, activityId: number) {
 }
 
 /**
- * 结束活动
+ * 结束活动并重置petmate的状态为非活动状态
  * 活动只会按照结束时的buff效果计算奖励，最后会同步到文件数据中
  * @param petmateId petmate的id
  * @returns 是否结束成功
