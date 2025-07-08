@@ -6,20 +6,82 @@ import { ipcMain, IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 import { playerManager } from './modules/store';
 import { PlayerInfo } from './types/player';
 import { Response } from '../types/response';
+import { consumeItem } from './modules/player/useItem';
+import logger from './log';
+import { PetMate } from './modules/petmate/petmate';
+import { endActivity } from './modules/player/act';
 
-
-// 初始化
-ipcMain.handle("load-data", (event: IpcMainInvokeEvent, petmateId: number): Response<PlayerInfo> => {
+// 初始化加载玩家数据
+ipcMain.handle("load-player-data", (event: IpcMainInvokeEvent): Response<PlayerInfo> => {
     try {
         const playerInfo:PlayerInfo = playerManager.getPlayer();
+        // 检查活动是否完成
+        const petmates: PetMate[] = playerInfo.petmates;
+        petmates.forEach(petmate => {
+            // 如果在活动中，先查看一下是否完成了活动（玩家会开始活动然后又退出游戏）
+            if (petmate.status.status !== "idle") {
+                const currentTime: Date = new Date();
+                /**
+                 * 结束活动
+                 * 如果活动已经结束，则结束活动结算奖励并且同步petmate状态
+                 * 如果活动还没结束，则开启延迟任务
+                 */
+                if (currentTime >= (petmate.status.endTime ?? new Date())) {
+                    const endSuccess: boolean = endActivity(petmate.id);
+                    if (endSuccess) {
+                        logger.info("初始化玩家数据时，结束早已结束的活动成功。")
+                    } else {
+                        throw new Error("结束活动失败");
+                    }
+                } else {
+                    if (petmate.status.endTime) {
+                        const remainedTime: Date = new Date(petmate.status.endTime.getTime() - currentTime.getTime());
+                        // 开启延迟任务
+                        setTimeout(() => {
+                            const endSuccess: boolean = endActivity(petmate.id);
+                            if (endSuccess) {
+                                logger.info("初始化玩家数据时，结束早已结束的活动成功。")
+                            } else {
+                                throw new Error("结束活动失败");
+                            }
+                        }, remainedTime.getTime());
+                    }
+                }
+            }
+        })
+        
         return {
             code: 200,
             data: playerInfo
         } as Response<PlayerInfo>;   
     } catch (error) {
+        logger.error(`加载玩家数据失败: ${error}`);
         return {
             code: 400,
             message: "加载数据失败"
         } as Response<PlayerInfo>;
+    }
+})
+
+/**
+ * 消耗物品
+ * @param itemId 物品id
+ * @param count 消耗数量
+ * @param petmateId petmate的id
+ * @returns 消耗物品成功或失败
+ */
+ipcMain.handle("consume-item", (event: IpcMainInvokeEvent, itemId: number, count: number, petmateId: number): Response<void> => {
+    try {
+        consumeItem(itemId, count, petmateId);
+        return {
+            code: 200,
+            message: "消耗物品成功"
+        } as Response<void>;
+    } catch (error) {
+        logger.error(`消耗物品失败: ${error}`);
+        return {
+            code: 400,
+            message: "消耗物品失败"
+        } as Response<void>;
     }
 })

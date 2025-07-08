@@ -5,21 +5,18 @@ interface PlayerInfo {
     petmates: number[];
 }
 
-interface IElectronAPI {
-  send(channel: 'toMain', payload: unknown): void
-  receive(channel: 'fromMain', listener: (...args: any[]) => void): void
-  invoke(
-    channel: 'load-data',
-    payload?: unknown
-  ): any
+/**
+ * 与主进程通信的接口
+ * 所有方法都返回Promise
+ */
+export interface IElectronAPI {
+  loadPlayerData: () => Promise<Response<PlayerInfo>>;
+  consumeItem: (itemId: number, count: number, petmateId: number) => Promise<Response<void>>;
 }
 
-interface Window {
-    versions: {
-        __versions__: string;
-    };
-    electronStore: {
-        loadPlayerInfo: () => { success: boolean; data?: PlayerInfo; error?: string };
-    };
-    api: IElectronAPI
+// 声明全局window对象，之后渲染层直接window.api.function() 调用即可
+declare global {
+  interface Window {
+    api: IElectronAPI;
+  }
 }
