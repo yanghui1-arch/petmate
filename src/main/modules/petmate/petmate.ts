@@ -6,6 +6,7 @@ import { NotEnoughError, NotFoundError } from "../../error";
 import { ActiveBuff, Buff } from "../../types/buff";
 import { PetMateAttribute, PetMateStatus } from "../../types/petmate";
 import { calcNextExp, calcMaxAttribute, calcBuffEffect } from "../utils/calc";
+import { v4 as uuidv4 } from 'uuid';
 
 export abstract class PetMate {
     id: number;
@@ -197,9 +198,14 @@ export abstract class PetMate {
     addBuff(buff: Buff): ActiveBuff | undefined {
         if (this.attrs.buffs.length < this.attrs.max_buffs) {
             const activeBuff: ActiveBuff = {
+                id: uuidv4(),
                 buff: buff,
                 endTime: new Date(new Date().getTime() + buff.duration * 1000)
             }
+            // 为Buff设置一个定时器
+            setTimeout(() => {
+                this.removeBuff(activeBuff.id);
+            }, buff.duration * 1000);
             this.attrs.buffs.push(activeBuff);
             return activeBuff;   
         }
@@ -213,10 +219,22 @@ export abstract class PetMate {
      */
     addBuffs(buffs: Buff[]): ActiveBuff[] | undefined {
         if (this.attrs.buffs.length + buffs.length <= this.attrs.max_buffs) {
-            const activeBuffs: ActiveBuff[] = buffs.map(buff => ({
-                buff: buff,
-                endTime: new Date(new Date().getTime() + buff.duration * 1000)
-            }));
+            const nowDate: Date = new Date();
+
+            const activeBuffs: ActiveBuff[] = buffs.map(buff => {
+                const endTime: Date = new Date(nowDate.getTime() + buff.duration * 1000);
+                const id = uuidv4();
+                // 为每个Buff设置一个定时器
+                setTimeout(() => {
+                    this.removeBuff(id);
+                }, buff.duration * 1000);
+                return {
+                    id: id,
+                    buff: buff,
+                    endTime: endTime
+                }
+            });
+            
             this.attrs.buffs.push(...activeBuffs);
             return this.attrs.buffs;
         }
@@ -225,15 +243,15 @@ export abstract class PetMate {
 
     /**
      * 移除Buff
-     * @param buff 需要移除的Buff
+     * @param activeBuffID 需要移除的还在的活跃Buff的id，不是Buff type的id
      * @returns 移除的Buff
      */
-    removeBuff(buffID: number): ActiveBuff {
-        const activeBuff: ActiveBuff | undefined = this.attrs.buffs.find(b => b.buff.id === buffID);
+    removeBuff(activeBuffID: string): ActiveBuff {
+        const activeBuff: ActiveBuff | undefined = this.attrs.buffs.find(b => b.id === activeBuffID);
         if (!activeBuff) {
-            throw new NotFoundError(`移除Buff时出错，要移除的BuffID为${buffID}，该Buff不存在`);
+            throw new NotFoundError(`移除Buff时出错，要移除的BuffID为${activeBuffID}，该Buff不存在`);
         }
-        this.attrs.buffs = this.attrs.buffs.filter(b => b.buff.id !== buffID);
+        this.attrs.buffs = this.attrs.buffs.filter(b => b.id !== activeBuffID);
         return activeBuff;
     }
 
