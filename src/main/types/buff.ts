@@ -45,6 +45,7 @@ type Buff = {
 }
 
 type ActiveBuff = {
+    id: string;
     buff: Buff;
     endTime: Date;
 }
