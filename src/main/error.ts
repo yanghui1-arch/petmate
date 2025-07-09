@@ -18,3 +18,13 @@ export class NotFoundError extends Error {
         this.name = "NotFoundError";
     }
 }
+
+/**
+ * 超过限制导致的错误
+ */
+export class ExceedError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "ExceedError";
+    }
+}

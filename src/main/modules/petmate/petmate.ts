@@ -2,23 +2,26 @@
  * Petmate 相关的操作
  */
 
-import { NotEnoughError, NotFoundError } from "../../error";
+import { ExceedError, NotEnoughError, NotFoundError } from "../../error";
 import { ActiveBuff, Buff } from "../../types/buff";
 import { PetMateAttribute, PetMateStatus } from "../../types/petmate";
 import { calcNextExp, calcMaxAttribute, calcBuffEffect } from "../utils/calc";
 import { v4 as uuidv4 } from 'uuid';
+import { Wish } from "../../types/wish";
 
 export abstract class PetMate {
     id: number;
     name: string;
     attrs: PetMateAttribute;
     status: PetMateStatus;
+    wishes: Wish[];
 
-    constructor(id:number, name:string, attrs: PetMateAttribute, status: PetMateStatus) {
+    constructor(id:number, name:string, attrs: PetMateAttribute, status: PetMateStatus, wishes: Wish[]) {
         this.id = id;
         this.name = name;
         this.attrs = attrs;
         this.status = status;
+        this.wishes = wishes;
     }
 
     /**
@@ -239,6 +242,33 @@ export abstract class PetMate {
             return this.attrs.buffs;
         }
         return undefined;
+    }
+
+    /**
+     * 添加一个愿望
+     * @param wish 需要添加的愿望
+     * @returns 添加的愿望
+     */
+    addWish(wish: Wish): Wish {
+        if (this.wishes.length > 10) {
+            throw new ExceedError(`愿望数量超过${this.wishes.length}个`);
+        }
+        this.wishes.push(wish);
+        return wish;
+    }
+
+    /**
+     * 移除愿望
+     * @param wishID 需要移除的愿望的id
+     * @returns 移除的愿望
+     */
+    removeWish(wishID: string): Wish {
+        const wish: Wish | undefined = this.wishes.find(w => w.id === wishID);
+        if (!wish) {
+            throw new NotFoundError(`移除愿望时出错，要移除的愿望ID为${wishID}，该愿望不存在`);
+        }
+        this.wishes = this.wishes.filter(w => w.id !== wishID);
+        return wish;
     }
 
     /**
