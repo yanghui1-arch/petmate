@@ -6,7 +6,7 @@ import { ipcMain, IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 import { playerManager } from './modules/store';
 import { PlayerInfo } from './types/player';
 import { Response } from '../types/response';
-import { consumeItem } from './modules/player/useItem';
+import { consumeItem } from './modules/player/basic';
 import logger from './log';
 import { PetMate } from './modules/petmate/petmate';
 import { endActivity } from './modules/player/act';
