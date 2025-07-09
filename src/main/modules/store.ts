@@ -37,7 +37,7 @@ class PlayerManager {
     private store: Store<PlayerStoreData>;
     private currentPlayer: PlayerInfo = {
         name: '主人',
-        petmates: [new Dass(0, "Dass", DEFAULT_DASS_ATTRIBUTE, notActivityPetmateStatus)],
+        petmates: [new Dass(0, "Dass", DEFAULT_DASS_ATTRIBUTE, notActivityPetmateStatus, [])],
         steam_id: null,
         qq: null,
         cash: 500,
