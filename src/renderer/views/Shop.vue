@@ -3,17 +3,6 @@
     <div class="shop-layout">
       <div class="shop-head-layout">
         <div class="shop-head-wrapper">
-          <!-- <div class="shop-head-info">
-            <div class="money-box">
-              <span class="money-icon">💵</span>
-              <span class="money-value">1999</span>
-            </div>
-            <div class="to-black-market">
-              <span class="market-icon">🏪</span>
-              黑市交易
-            </div>
-          </div> -->
-
           <img
             src="../assets/image/shop-petmate.png"
             alt="petmate"
@@ -21,25 +10,26 @@
           />
         </div>
       </div>
+      <!-- 黑市主体 -->
       <div class="shop-content-layout">
         <div class="shop-content-wrapper">
           <div class="shop-content-head-wrapper">
             <div class="shop-content-head-title">欢迎来到黑市</div>
-            <div class="money-box">
+            <div class="money-wrapper">
               <span class="money-icon">💵</span>
               <span class="money-value">500</span>
             </div>
           </div>
-          <div class="shop-type">
+          <div class="shop-type-wrapper">
             <button
               type="button"
-              v-for="item in shopTypeList"
-              :key="item.name"
-              @click="shopCurrType = item.name"
-              :class="{ 'active-shop-type': shopCurrType === item.name }"
-              class="type-btn"
+              v-for="shopType in shopTypeList"
+              :key="shopType.name"
+              @click="shopCurrType = shopType.name"
+              :class="{ 'active-shop-type': shopCurrType === shopType.name }"
+              class="shop-type-btn"
             >
-              {{ item.label }}
+              {{ shopType.label }}
             </button>
           </div>
           <div class="shop-content-head">
@@ -66,8 +56,8 @@
             <div class="shop-prev-page-arrow" @click="prevPage">
               <n-image
                 preview-disabled
-                width="50"
-                height="50"
+                width="40"
+                height="40"
                 src="../assets/image/greater-than.png"
                 style="transform: rotate(180deg)"
               ></n-image>
@@ -75,8 +65,8 @@
             <div class="shop-next-page-arrow" @click="nextPage">
               <n-image
                 preview-disabled
-                width="50"
-                height="50"
+                width="40"
+                height="40"
                 src="../assets/image/greater-than.png"
               ></n-image>
             </div>
@@ -179,7 +169,14 @@ const shopPrevItemList = ref([
   { num: 10 },
   { num: 10 },
 ]);
-const shopNextItemList = ref([{ num: 10 }, { num: 10 }, { num: 10 }]);
+const shopNextItemList = ref([
+  { num: 10 },
+  { num: 10 },
+  { num: 10 },
+  { num: 10 },
+  { num: 10 },
+  { num: 10 },
+]);
 
 const shopTypeList = ref([
   { name: "hot", label: "🔥特卖" },
@@ -211,30 +208,16 @@ const nextPage = () => {
 .shop-container {
   flex: 1;
   padding: 0 6%;
-  // background: linear-gradient(to bottom, #fdc07f 0%, #fed7aa 50%, #fff7ed 100%);
-  // background: #fff;
   background: #231e1f;
-  // background: linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 100%);
   .shop-layout {
     width: 100%;
     height: 100%;
     .shop-head-layout {
       height: 32vh;
-      // background: linear-gradient(
-      //   135deg,
-      //   #ff9a9e 0%,
-      //   #fecfef 50%,
-      //   #fecfef 100%
-      // );
-      // background: #fff;
       border-radius: 20px;
-      // box-shadow: 0 8px 32px rgba(255, 154, 158, 0.3);
-      // margin-top: 10px;
-      // margin-bottom: 22px;
       margin-bottom: -10px;
       border: none;
       position: relative;
-      // overflow: hidden;
     }
     .shop-content-layout {
       position: relative;
@@ -250,7 +233,6 @@ const nextPage = () => {
   flex-direction: column;
   justify-content: space-around;
   position: relative;
-  // overflow: hidden;
   .shop-head-title {
     display: flex;
     flex-direction: column;
@@ -286,9 +268,7 @@ const nextPage = () => {
       padding: 5px 0;
       color: white;
       border-radius: 20px;
-      // cursor: pointer;
       transition: all 0.3s ease;
-      // border: 2px solid rgba(255, 255, 255, 0.2);
       font-weight: 500;
 
       &:hover {
@@ -325,6 +305,17 @@ const nextPage = () => {
 }
 
 .shop-content-wrapper {
+  height: 66vh;
+  padding: 0 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  background: #55484b;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(253, 203, 110, 0.2);
+  position: relative;
+  backdrop-filter: blur(10px);
   .shop-content-head-wrapper {
     display: flex;
     justify-content: space-between;
@@ -332,19 +323,13 @@ const nextPage = () => {
     width: 100%;
   }
   .shop-content-head-title {
-    // flex: 1;
-    // text-align: center;
     font-size: 24px;
     font-weight: bold;
     color: #e0a6a6;
   }
-  .money-box {
-    // width: 100%;
-    // width: 30%;
+  .money-wrapper {
     column-gap: 5px;
-    // background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
     border-radius: 25px;
-    // border: 2px solid rgba(255, 255, 255, 0.3);
     padding: 0 10px;
 
     .money-icon {
@@ -355,22 +340,20 @@ const nextPage = () => {
     .money-value {
       font-size: 16px;
       font-weight: bold;
-      // color: #8b4513;
       color: #fff;
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
     }
   }
-  .shop-type {
+  .shop-type-wrapper {
     width: 100%;
     display: flex;
     column-gap: 5px;
     margin-bottom: 5px;
-    .type-btn {
+    .shop-type-btn {
       padding: 8px 0;
       flex: 1;
       border: none;
       border-radius: 20px;
-      //cursor: pointer;
       font-size: 12px;
       font-weight: 500;
       text-align: center;
@@ -384,31 +367,19 @@ const nextPage = () => {
         box-shadow: 0 4px 15px rgba(253, 203, 110, 0.4);
       }
     }
+    // active优先级更高，放后面
     .active-shop-type {
       background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
       color: white;
       box-shadow: 0 4px 15px rgba(255, 118, 117, 0.4);
     }
   }
-  height: 65vh;
-  padding: 0 10px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  align-items: center;
-  // border: 1px solid $border-orange-300;
-  background: #55484b;
-  border-radius: 10px;
-  box-shadow: 0 10px 40px rgba(253, 203, 110, 0.2);
-  position: relative;
-  backdrop-filter: blur(10px);
-
   .shop-content-head {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-around;
-    padding-bottom: 2px; // 防止页面抖动
+    padding-bottom: 2px;
     .sort-wrapper {
       .sort-select {
         padding: 3px 8px;
@@ -417,7 +388,6 @@ const nextPage = () => {
         border-radius: 5px;
         background: white;
         color: #8b4513;
-        //cursor: pointer;
         transition: all 0.3s ease;
         &:focus {
           border-color: #ff7675;
@@ -453,7 +423,6 @@ const nextPage = () => {
       }
       .search-btn {
         padding: 1px 10px;
-        // cursor: pointer;
         background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
         border: none;
         border-radius: 5px;
@@ -476,32 +445,27 @@ const nextPage = () => {
     .shop-next-page-arrow {
       position: absolute;
       top: 50%;
-      width: 50px;
-      height: 50px;
-      // background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-      // cursor: pointer;
+      width: 40px;
+      height: 40px;
       z-index: 10;
-      // border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
-      // box-shadow: 0 6px 20px rgba(255, 118, 117, 0.4);
       transition: all 0.3s ease;
       border: none;
 
       &:hover {
-        transform: translateY(-50%) scale(1.1);
-        // box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+        transform: translateY(-50%) scale(1.2);
       }
     }
 
     .shop-prev-page-arrow {
-      left: -40px;
+      left: -32px;
       transform: translateY(-50%);
     }
     .shop-next-page-arrow {
-      right: -40px;
+      right: -32px;
       transform: translateY(-50%);
     }
     .shop-item {
@@ -512,14 +476,11 @@ const nextPage = () => {
       border-style: groove;
       display: flex;
       flex-direction: column;
-      // justify-content: center;
       justify-content: space-between;
       align-items: center;
       position: relative;
-      // background-color: $border-orange-300;
       background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
       transition: all 0.3s ease;
-      // cursor: pointer;
       box-shadow: 0 4px 15px rgba(255, 234, 167, 0.3);
       .special-label {
         position: absolute;
@@ -544,7 +505,6 @@ const nextPage = () => {
           display: block;
           padding: 0 8px;
           height: 20px;
-          // background: linear-gradient(137deg, #ff5b5b 0%, #db0113 100%);
           background: #c55151;
           border-radius: 0 20px 20px 0;
           color: #fff;
@@ -560,9 +520,7 @@ const nextPage = () => {
       }
 
       .item-image {
-        // background: white;
         border-radius: 10px;
-        // box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
 
       .item-name {
@@ -582,7 +540,6 @@ const nextPage = () => {
         justify-content: center;
         align-items: center;
         column-gap: 2px;
-        // background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
 
         border-radius: 10px;
         color: #8b4513;
