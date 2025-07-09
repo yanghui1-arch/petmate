@@ -247,6 +247,13 @@ class BuffManager {
     getAllBuffs(): Buff[] {
         return this.buffs.map(buff => ({ ...buff }));
     }
+
+    /**
+     * 获取特定Buff
+     */
+    getBuff(id: number): Buff | undefined {
+        return this.buffs.find(buff => buff.id === id);
+    }
 }
 
 class ItemManager {
