@@ -4,14 +4,17 @@ export type Wish = {
     requirements: WishRequirement[],
     affectionExp: number,
     reward?: WishReward,
-    status: "doing" | "finished" | "failed",
-    duration: number
+    startTime: Date,
+    duration: number,
+    endTime: Date,
+    status: "doing" | "finished" | "failed"
 }
 
 export type WishRequirement = {
     type: "item",
     id: number,
     count: number,
+    userCount: number,
     status: "doing" | "finished"
 } | {
     type: "act",
