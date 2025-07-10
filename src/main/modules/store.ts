@@ -64,7 +64,40 @@ class PlayerManager {
                 this.savePlayer(); // 保存默认值
             }
         } else {
-            this.currentPlayer = stored;
+            // 重建PetMate实例，因为从存储加载的是普通对象，没有方法
+            const reconstructedPetmates: PetMate[] = stored.petmates.map((petmateData: any) => {
+                // 根据petmate的类型创建对应的实例，目前只有Dass类型
+                return new Dass(
+                    petmateData.id,
+                    petmateData.name,
+                    petmateData.attrs,
+                    petmateData.status,
+                    petmateData.wishes,
+                    petmateData.completedWishesNum
+                );
+            });
+
+            // 重建items Map，因为Map在JSON序列化时会丢失
+            const reconstructedItems = new Map<number, number>();
+            if (stored.items) {
+                // 如果items是对象形式（从JSON反序列化），转换为Map
+                if (typeof stored.items === 'object' && !(stored.items instanceof Map)) {
+                    Object.entries(stored.items).forEach(([key, value]) => {
+                        reconstructedItems.set(parseInt(key), value as number);
+                    });
+                } else if (stored.items instanceof Map) {
+                    // 如果已经是Map，直接使用
+                    stored.items.forEach((value, key) => {
+                        reconstructedItems.set(key, value);
+                    });
+                }
+            }
+
+            this.currentPlayer = {
+                ...stored,
+                petmates: reconstructedPetmates,
+                items: reconstructedItems
+            };
         }
     }
 
@@ -72,7 +105,18 @@ class PlayerManager {
      * 保存当前玩家信息到存储
      */
     private savePlayer(): void {
-        (this.store as any).set('playerInfo', this.currentPlayer);
+        // 将Map转换为普通对象以便JSON序列化
+        const itemsAsObject: { [key: string]: number } = {};
+        this.currentPlayer.items.forEach((value, key) => {
+            itemsAsObject[key.toString()] = value;
+        });
+
+        const dataToSave = {
+            ...this.currentPlayer,
+            items: itemsAsObject
+        };
+
+        (this.store as any).set('playerInfo', dataToSave);
     }
 
     /**
