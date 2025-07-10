@@ -24,7 +24,7 @@ export type ActivityInfo = {
     id: number;
     type: "work" | "study" | "entertainment";
     name: string;
-    icon: string;
+    url: string;
     description: string;
     reward: Reward;
     consume: Consume;

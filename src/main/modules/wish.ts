@@ -1,7 +1,6 @@
 import { Wish } from "../types/wish";
 import { PetMate } from "./petmate/petmate";
 import { v4 as uuidv4 } from 'uuid';
-import { MAX_WISHES_STORE_NUM } from "../constant";
 import { PlayerInfo } from "../types/player";
 import logger from "../log";
 import { buffManager } from "./store";
