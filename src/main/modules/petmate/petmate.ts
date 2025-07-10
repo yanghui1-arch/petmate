@@ -312,4 +312,12 @@ export abstract class PetMate {
     getActiveBuffs(): ActiveBuff[] {
         return this.attrs.buffs;
     }
+
+    /**
+     * 获得完成此Petmate的愿望数量
+     * @returns 完成此Petmate的愿望数量
+     */
+    getCompletedWishesNum(): number {
+        return this.completedWishesNum;
+    }
 }
