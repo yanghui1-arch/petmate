@@ -15,13 +15,15 @@ export abstract class PetMate {
     attrs: PetMateAttribute;
     status: PetMateStatus;
     wishes: Wish[];
+    completedWishesNum: number;
 
-    constructor(id:number, name:string, attrs: PetMateAttribute, status: PetMateStatus, wishes: Wish[]) {
+    constructor(id:number, name:string, attrs: PetMateAttribute, status: PetMateStatus, wishes: Wish[], completedWishesNum: number) {
         this.id = id;
         this.name = name;
         this.attrs = attrs;
         this.status = status;
         this.wishes = wishes;
+        this.completedWishesNum = completedWishesNum;
     }
 
     /**
@@ -309,5 +311,13 @@ export abstract class PetMate {
      */
     getActiveBuffs(): ActiveBuff[] {
         return this.attrs.buffs;
+    }
+
+    /**
+     * 获得完成此Petmate的愿望数量
+     * @returns 完成此Petmate的愿望数量
+     */
+    getCompletedWishesNum(): number {
+        return this.completedWishesNum;
     }
 }

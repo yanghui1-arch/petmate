@@ -111,6 +111,8 @@ class WishHandler {
                     if (allFinished) {
                         wish.status = "finished";
                         finishedWishes.push(wish);
+                        // 如果愿望完成，则增加完成该Petmate的愿望的数量
+                        petmate.completedWishesNum++;
                     }
                 }
             })
