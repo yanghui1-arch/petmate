@@ -1,6 +1,6 @@
 import Store from 'electron-store';
 
-type SettingConfig = {
+export type SettingConfig = {
     modelSize: number;
     focusMode: boolean;
     onTop: boolean;
