@@ -3,8 +3,9 @@ import { PetMate } from "./petmate/petmate";
 import { v4 as uuidv4 } from 'uuid';
 import { PlayerInfo } from "../types/player";
 import logger from "../log";
-import { buffManager } from "./store";
+import { buffManager, itemManager } from "./store";
 import { Buff } from "../types/buff";
+import { Item } from "../types/item";
 import { NotFoundError } from "../error";
 
 type PlayerGiveItemEvent = {
@@ -142,7 +143,32 @@ class WishHandler {
             petmate.addAffectionExp(wish.affectionExp);
             if (wish.reward) {
                 if (wish.reward.type === "item") {
-                    player.items.set(wish.reward.id, (player.items.get(wish.reward.id) || 0) + wish.reward.count);
+                    const itemID: number = wish.reward.id;
+                    const rewardCount: number = wish.reward.count;
+                    let rewardItemExist: boolean = false;
+                    // 如果背包中存在这个物品，则将这个物品的数量增加
+                    player.items.forEach(item => {
+                        if (item.id === itemID) {
+                            item.count += rewardCount;
+                            rewardItemExist = true;
+                        }
+                    })
+                    // 如果背包中不存在这个物品，则将这个物品加入到背包中
+                    if (!rewardItemExist) {
+                        const rewardItem: Item | undefined = itemManager.getItem(itemID);
+                        if (!rewardItem) {
+                            logger.error(`[modules/wish.ts/giveReward] 传入的finishedWishes中的奖励存在未找到的物品: ${itemID} | 愿望的名字：${wish.name}`);
+                            return false;
+                        }
+                        player.items.push({
+                            id: itemID,
+                            name: rewardItem.name,
+                            type: rewardItem.type,
+                            description: rewardItem.description,
+                            url: rewardItem.url,
+                            count: rewardCount,
+                        })
+                    }
                 } else if (wish.reward.type === "buff") {
                     const buff:Buff | undefined = buffManager.getBuff(wish.reward.id);
                     if (!buff) {

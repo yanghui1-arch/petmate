@@ -41,7 +41,7 @@ class PlayerManager {
         steam_id: null,
         qq: null,
         cash: 500,
-        items: new Map()
+        items: []
     };
 
     constructor() {
@@ -77,6 +77,7 @@ class PlayerManager {
                 );
             });
 
+<<<<<<< HEAD
             // 重建items Map，因为Map在JSON序列化时会丢失
             const reconstructedItems = new Map<number, number>();
             if (stored.items) {
@@ -97,6 +98,11 @@ class PlayerManager {
                 ...stored,
                 petmates: reconstructedPetmates,
                 items: reconstructedItems
+=======
+            this.currentPlayer = {
+                ...stored,
+                petmates: reconstructedPetmates
+>>>>>>> origin/electron-rewrite
             };
         }
     }
@@ -181,33 +187,6 @@ class PlayerManager {
         }
         this.currentPlayer.cash += amount;
         this.savePlayer();
-    }
-
-    /**
-     * 添加物品
-     * @param item 物品
-     */
-    addItem(item: Item): void {
-        this.currentPlayer.items.set(item.id, (this.currentPlayer.items.get(item.id) || 0) + 1);
-        this.savePlayer();
-    }
-    
-    /**
-     * 减少物品
-     * @param id 物品id
-     * @returns 是否减少成功
-     */
-    removeItem(id: number): boolean {
-        const count = this.currentPlayer.items.get(id);
-        if (count === undefined) {
-            return false;
-        }
-        this.currentPlayer.items.set(id, count - 1);
-        if (count === 1) {
-            this.currentPlayer.items.delete(id);
-        }
-        this.savePlayer();
-        return true;
     }
 }
 
