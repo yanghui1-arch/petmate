@@ -39,10 +39,10 @@ const back = () => {};
 }
 .settings-drawer {
   position: fixed;
-  top: 20px;
-  left: 10px;
-  height: 20px;
-  padding-left: 20px;
+  // top: 20px;
+  // left: 10px;
+  top: 0;
+  left: 0;
   cursor: pointer;
   z-index: 1000;
 }

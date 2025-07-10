@@ -22,6 +22,8 @@ const props = defineProps({
 
 <style scoped>
 .pagedot-wrapper {
+  /* 定高，防止页面抖动 */
+  height: 20px;
   display: flex;
   align-items: center;
   column-gap: 5px;

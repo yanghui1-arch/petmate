@@ -12,7 +12,6 @@
           <div class="home-panel-content">
             <div class="home-panel-info">
               <div class="home-panel-image">
-                <!-- <n-image width="70" src="../assets/image/petmate.png" /> -->
                 <n-avatar
                   round
                   :size="70"
@@ -54,24 +53,6 @@
           </div>
         </div>
       </div>
-
-      <!-- <div class="home-grade-wrapper">
-        <div class="grade-item">
-          <GradeBar />
-        </div>
-        <div class="grade-item">
-          <GradeBar />
-        </div>
-        <div class="grade-item">
-          <GradeBar />
-        </div>
-        <div class="grade-item">
-          <GradeBar />
-        </div>
-        <div class="grade-item">
-          <GradeBar />
-        </div>
-      </div> -->
       <div class="home-package-layout">
         <div class="home-package-type">
           <button
@@ -80,6 +61,7 @@
             :key="item.name"
             @click="packageCurrType = item.name"
             :class="{ 'active-package-type': packageCurrType === item.name }"
+            class="package-type-btn"
           >
             {{ item.label }}
           </button>
@@ -322,26 +304,11 @@ const nextPage = () => {
   }
 }
 
-.home-grade-wrapper {
-  height: 30%;
-  margin-top: 15px;
-  background-color: $content-bgc;
-}
-
 .home-package-type {
   display: flex;
   column-gap: 5px;
   margin-bottom: 5px;
-  .active-package-type {
-    background: linear-gradient(
-      135deg,
-      $btn-active-grad-start 0%,
-      $btn-active-grad-end 100%
-    );
-    color: $color-white;
-    box-shadow: 0 4px 15px rgba(255, 118, 117, 0.4);
-  }
-  button {
+  .package-type-btn {
     flex: 1;
     background: linear-gradient(135deg, $btn-grad-start 0%, $btn-grad-end 100%);
     color: $accent-brown;
@@ -357,11 +324,22 @@ const nextPage = () => {
       box-shadow: 0 4px 15px rgba(253, 203, 110, 0.4);
     }
   }
+  // active优先级更高，放后面
+  .active-package-type {
+    background: linear-gradient(
+      135deg,
+      $btn-active-grad-start 0%,
+      $btn-active-grad-end 100%
+    );
+    color: $color-white;
+    box-shadow: 0 4px 15px rgba(255, 118, 117, 0.4);
+  }
 }
 
 .home-package-wrapper {
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   align-items: center;
   border: 1px solid $accent-brown;
   background: $content-bgc;

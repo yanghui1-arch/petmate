@@ -13,10 +13,19 @@ import { readJsonFile } from './utils/file';
 import { NotEnoughError, NotFoundError } from '../error';
 import { Buff } from '../types/buff';
 
-type StoreData = {
+type PlayerStoreData = {
     playerInfo: PlayerInfo;
+}
+
+type ActivityStoreData = {
     activityInfo: ActivityInfo[];
+}
+
+type BuffStoreData = {
     buffInfo: Buff[];
+}
+
+type ItemStoreData = {
     itemInfo: Item[];
 }
 
@@ -25,10 +34,10 @@ type StoreData = {
  * 负责玩家信息的读取、更新和持久化
  */
 class PlayerManager {
-    private store: Store<StoreData>;
+    private store: Store<PlayerStoreData>;
     private currentPlayer: PlayerInfo = {
         name: '主人',
-        petmates: [new Dass(0, "Dass", DEFAULT_DASS_ATTRIBUTE, notActivityPetmateStatus)],
+        petmates: [new Dass(0, "Dass", DEFAULT_DASS_ATTRIBUTE, notActivityPetmateStatus, [])],
         steam_id: null,
         qq: null,
         cash: 500,
@@ -36,7 +45,9 @@ class PlayerManager {
     };
 
     constructor() {
-        this.store = new Store<StoreData>();
+        this.store = new Store<PlayerStoreData>({
+            name: 'player-store'
+        });
         this.loadPlayer();
     }
 
@@ -161,20 +172,22 @@ class PlayerManager {
  * 负责活动信息的读取、更新和持久化
  */ 
 class ActivityManager {
-    private store: Store<StoreData>;
+    private store: Store<ActivityStoreData>;
     private allActivities: ActivityInfo[] = [];
 
     constructor() {
-        this.store = new Store<StoreData>();
+        this.store = new Store<ActivityStoreData>({
+            name: 'activity-store'
+        });
         this.loadActivity();
     }
 
     loadActivity(): void {
-        const stored = (this.store as any).get('allActivities') as ActivityInfo[] | undefined;
+        const stored = (this.store as any).get('activityInfo') as ActivityInfo[] | undefined;
         // 不存在的话就从assets中读取官方初始的活动
         if (!stored) {
             const activities = readJsonFile<ActivityInfo>('src/main/assets/activity.json');
-            (this.store as any).set('allActivities', activities);
+            (this.store as any).set('activityInfo', activities);
             this.allActivities = activities;
         } else {
             this.allActivities = stored;
@@ -206,11 +219,13 @@ class ActivityManager {
  * 负责buff信息的读取、更新和持久化
  */
 class BuffManager {
-    private store: Store<StoreData>;
+    private store: Store<BuffStoreData>;
     private buffs: Buff[] = [];
 
     constructor() {
-        this.store = new Store<StoreData>();
+        this.store = new Store<BuffStoreData>({
+            name: 'buff-store'
+        });
         this.loadBuff();
     }
 
@@ -232,14 +247,23 @@ class BuffManager {
     getAllBuffs(): Buff[] {
         return this.buffs.map(buff => ({ ...buff }));
     }
+
+    /**
+     * 获取特定Buff
+     */
+    getBuff(id: number): Buff | undefined {
+        return this.buffs.find(buff => buff.id === id);
+    }
 }
 
 class ItemManager {
-    private store: Store<StoreData>;
+    private store: Store<ItemStoreData>;
     private items: Item[] = [];
 
     constructor() {
-        this.store = new Store<StoreData>();
+        this.store = new Store<ItemStoreData>({
+            name: 'item-store'
+        });
         this.loadItem();
     }
 
