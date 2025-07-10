@@ -7,8 +7,8 @@ import { Wish } from "../../types/wish";
  * 继承Petmate，基本的属性增删不需要写，主要写动作
  */
 export class Dass extends PetMate {
-    constructor(id:number, name:string, attrs: PetMateAttribute, status: PetMateStatus, wishes: Wish[]) {
-        super(id, name, attrs, status, wishes);
+    constructor(id:number, name:string, attrs: PetMateAttribute, status: PetMateStatus, wishes: Wish[], completedWishesNum: number) {
+        super(id, name, attrs, status, wishes, completedWishesNum);
     }
 }
 
