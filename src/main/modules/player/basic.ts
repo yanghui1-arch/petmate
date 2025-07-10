@@ -12,7 +12,7 @@
 
 import { NotEnoughError, NotFoundError } from "../../error";
 import { Item } from "../../types/item";
-import { PlayerInfo } from "../../types/player";
+import { PackageItemInfo, PlayerInfo } from "../../types/player";
 import { itemManager, playerManager } from "../store"
 import { PetMate } from "../petmate/petmate";
 import { Buff } from "../../types/buff";
@@ -30,7 +30,7 @@ import { Wish } from "../../types/wish";
  */
 export function buyItem(itemId: number, count: number): Item {
     const player:PlayerInfo = playerManager.getPlayer();
-    const playerItemNum: number = player.items.get(itemId) ?? 0;
+    const playerItemNum: number = player.items.find(item => item.id === itemId)?.count ?? 0;
     const item:Item | undefined = itemManager.getItem(itemId);
     if (!item) {
         throw new NotFoundError(`购买物品的时候发现物品不存在: ${itemId}`);
@@ -41,7 +41,18 @@ export function buyItem(itemId: number, count: number): Item {
         throw new NotEnoughError(`购买物品的时候发现玩家现金不足: 购买${count}个物品id[${itemId}]， 需要${totalPrice}元， 但是只有${playerCash}元`);
     }
     player.cash -= totalPrice;
-    player.items.set(itemId, playerItemNum + count);
+    if (playerItemNum === 0) {
+        player.items.push({ 
+            id: itemId, 
+            count: count,
+            name: item.name,
+            type: item.type,
+            description: item.description,
+            url: item.url
+        });
+    } else {
+        player.items.find(item => item.id === itemId)!.count += count;
+    }
     playerManager.updatePlayer(player);
     return item;
 }
@@ -59,10 +70,17 @@ export function consumeItem(itemId: number, count: number=1, petmateId: number):
     const player:PlayerInfo = playerManager.getPlayer();
     const petmate: PetMate | undefined = player.petmates.find(petmate => petmate.id === petmateId);
     if (!petmate) {
-        throw new NotFoundError(`宠物不存在: ${petmateId}`);
+        throw new NotFoundError(`Petmate不存在: ${petmateId}`);
     }
+
+    // 检查玩家背包中是否有这个物品
+    const consumeItemInPackage:PackageItemInfo | undefined = player.items.find(item => item.id === itemId);
+    if (!consumeItemInPackage) {
+        throw new NotFoundError(`玩家背包中不存在物品: ${itemId}`);
+    }
+
     // 检查玩家是否有这么多的物品
-    const playerItemNum: number = player.items.get(itemId) ?? 0;
+    const playerItemNum: number = consumeItemInPackage.count
     if (playerItemNum < count) {
         throw new NotEnoughError(`玩家没有这么多物品: 物品id[${itemId}]， 需要${count}个， 但是只有${playerItemNum}个`);
     }
@@ -96,8 +114,17 @@ export function consumeItem(itemId: number, count: number=1, petmateId: number):
         wishHandler.giveReward(petmate, player, finishedWishes);
     }
     
+    // 更新背包中的物品数量
+    const idx = player.items.findIndex(item => item.id === itemId);
+    if (idx !== -1) {
+        const packageItem = player.items[idx];
+        packageItem.count -= count;
+        if (packageItem.count <= 0) {
+            player.items.splice(idx, 1);
+        }
+    }
+
     // 同步文件中的数据
-    player.items.set(itemId, playerItemNum - count);
     playerManager.updatePetmate(petmate);
     playerManager.updatePlayer(player);
 }
