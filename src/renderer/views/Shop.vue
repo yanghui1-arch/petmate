@@ -96,7 +96,7 @@
                         <i class="fold-label"></i>
                         <span class="label-text">7折</span>
                       </div>
-                      <div class="item-name">汉堡</div>
+                      <div class="item-name" @click="buyItem(0, 1)">汉堡</div>
                       <n-image
                         width="38"
                         class="item-image"
@@ -157,6 +157,10 @@
 
 <script setup>
 import Pagedot from "@/components/Pagedot.vue";
+import { usePlayer } from "../hooks/usePlayer";
+
+const { buyItem } = usePlayer();
+
 const shopCurrType = ref("food");
 const shopPageNum = ref(2);
 const shopCurrPage = ref(1);
