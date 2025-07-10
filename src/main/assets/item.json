@@ -1,3 +1,16 @@
 [
-    
+    {
+        "id": 0,
+        "name": "汉堡",
+        "type": "food",
+        "description": "汉堡",
+        "url": "../assets/image/item/burger.png",
+        "price": 200,
+        "effect": {
+            "hungry": 10,
+            "emotion": 10,
+            "energy": 10,
+            "health": 10
+        }
+    }
 ]
