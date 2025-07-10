@@ -5,6 +5,7 @@ const { contextBridge, ipcRenderer } = require("electron")
 contextBridge.exposeInMainWorld(
     "api", {
         loadPlayerData: () => ipcRenderer.invoke("load-player-data"),
-        consumeItem: (itemId: number, count: number, petmateId: number) => ipcRenderer.invoke("consume-item", itemId, count, petmateId)
+        consumeItem: (itemId: number, count: number, petmateId: number) => ipcRenderer.invoke("consume-item", itemId, count, petmateId),
+        buyItem: (itemId: number, count: number) => ipcRenderer.invoke("buy-item", itemId, count)
     }
 )

@@ -22,11 +22,13 @@ import { Wish } from "../../types/wish";
 /**
  * 购买物品
  * Buff的CashConsumesRate不会影响到商品的价格
+ * 
  * @param itemId 物品id
  * @param count 购买数量
+ * @returns 购买的物品
  * @throws 如果物品不存在则抛出NotFoundError
  */
-export function buyItem(itemId: number, count: number): void {
+export function buyItem(itemId: number, count: number): Item {
     const player:PlayerInfo = playerManager.getPlayer();
     const playerItemNum: number = player.items.get(itemId) ?? 0;
     const item:Item | undefined = itemManager.getItem(itemId);
@@ -41,6 +43,7 @@ export function buyItem(itemId: number, count: number): void {
     player.cash -= totalPrice;
     player.items.set(itemId, playerItemNum + count);
     playerManager.updatePlayer(player);
+    return item;
 }
 
 /**
