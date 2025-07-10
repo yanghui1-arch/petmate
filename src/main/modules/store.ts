@@ -300,6 +300,10 @@ class BuffManager {
     }
 }
 
+/**
+ * 物品管理器
+ * 负责物品信息的读取、更新和持久化
+ */
 class ItemManager {
     private store: Store<ItemStoreData>;
     private items: Item[] = [];
