@@ -41,7 +41,7 @@ class PlayerManager {
         steam_id: null,
         qq: null,
         cash: 500,
-        items: new Map()
+        items: []
     };
 
     constructor() {
@@ -77,26 +77,9 @@ class PlayerManager {
                 );
             });
 
-            // 重建items Map，因为Map在JSON序列化时会丢失
-            const reconstructedItems = new Map<number, number>();
-            if (stored.items) {
-                // 如果items是对象形式（从JSON反序列化），转换为Map
-                if (typeof stored.items === 'object' && !(stored.items instanceof Map)) {
-                    Object.entries(stored.items).forEach(([key, value]) => {
-                        reconstructedItems.set(parseInt(key), value as number);
-                    });
-                } else if (stored.items instanceof Map) {
-                    // 如果已经是Map，直接使用
-                    stored.items.forEach((value, key) => {
-                        reconstructedItems.set(key, value);
-                    });
-                }
-            }
-
             this.currentPlayer = {
                 ...stored,
-                petmates: reconstructedPetmates,
-                items: reconstructedItems
+                petmates: reconstructedPetmates
             };
         }
     }
@@ -105,18 +88,7 @@ class PlayerManager {
      * 保存当前玩家信息到存储
      */
     private savePlayer(): void {
-        // 将Map转换为普通对象以便JSON序列化
-        const itemsAsObject: { [key: string]: number } = {};
-        this.currentPlayer.items.forEach((value, key) => {
-            itemsAsObject[key.toString()] = value;
-        });
-
-        const dataToSave = {
-            ...this.currentPlayer,
-            items: itemsAsObject
-        };
-
-        (this.store as any).set('playerInfo', dataToSave);
+        (this.store as any).set('playerInfo', this.currentPlayer);
     }
 
     /**
@@ -181,33 +153,6 @@ class PlayerManager {
         }
         this.currentPlayer.cash += amount;
         this.savePlayer();
-    }
-
-    /**
-     * 添加物品
-     * @param item 物品
-     */
-    addItem(item: Item): void {
-        this.currentPlayer.items.set(item.id, (this.currentPlayer.items.get(item.id) || 0) + 1);
-        this.savePlayer();
-    }
-    
-    /**
-     * 减少物品
-     * @param id 物品id
-     * @returns 是否减少成功
-     */
-    removeItem(id: number): boolean {
-        const count = this.currentPlayer.items.get(id);
-        if (count === undefined) {
-            return false;
-        }
-        this.currentPlayer.items.set(id, count - 1);
-        if (count === 1) {
-            this.currentPlayer.items.delete(id);
-        }
-        this.savePlayer();
-        return true;
     }
 }
 
