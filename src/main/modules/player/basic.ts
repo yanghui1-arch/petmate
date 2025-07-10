@@ -16,6 +16,8 @@ import { PlayerInfo } from "../../types/player";
 import { itemManager, playerManager } from "../store"
 import { PetMate } from "../petmate/petmate";
 import { Buff } from "../../types/buff";
+import { wishHandler } from "../wish";
+import { Wish } from "../../types/wish";
 
 /**
  * 购买物品
@@ -48,6 +50,7 @@ export function buyItem(itemId: number, count: number): void {
  * @param petmateId petmate的id
  * @throws 如果物品不存在或者petmate不存在则抛出NotFoundError
  * @throws 如果petmate的属性不够则抛出NotEnoughError
+ * @throws 如果传入的finishedWishes中的愿望的奖励存在未找到的buff，则抛出NotFoundError
  */
 export function consumeItem(itemId: number, count: number=1, petmateId: number): void {
     const player:PlayerInfo = playerManager.getPlayer();
@@ -81,9 +84,17 @@ export function consumeItem(itemId: number, count: number=1, petmateId: number):
     if (toAddBuff) {
         petmate.addBuff(toAddBuff);
     }
+    const finishedWishes: Wish[] = wishHandler.updatePetmateWish(petmate, {
+        type: "item",
+        id: itemId,
+        count: count
+    }, undefined);
+    if (finishedWishes.length > 0) {
+        wishHandler.giveReward(petmate, player, finishedWishes);
+    }
     
     // 同步文件中的数据
     player.items.set(itemId, playerItemNum - count);
-    playerManager.updatePlayer(player);
     playerManager.updatePetmate(petmate);
+    playerManager.updatePlayer(player);
 }

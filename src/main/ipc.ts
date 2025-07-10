@@ -11,8 +11,17 @@ import logger from './log';
 import { PetMate } from './modules/petmate/petmate';
 import { endActivity } from './modules/player/act';
 import { ActiveBuff } from './types/buff';
+import { MAX_WISHES_STORE_NUM } from './constant';
+import { Wish } from './types/wish';
 
-// 初始化加载玩家数据
+/**
+ * 初始化加载玩家数据
+ * 会检查每一个petmate的Buff是否过期，如果过期了则删除，如果没过期则设置一个定时器
+ * 会检查每一个petmate的活动是否完成，如果完成了则结束活动并结算奖励，如果没完成则设置一个定时器
+ * 会检查每一个petmate的心愿信息的数量是否超过了支持的最大心愿数量，如果超过了则按照心愿的开始时间，将之前的心愿删除
+ * 会同步文件中的数据
+ * @returns 加载玩家数据成功或失败，如果失败会返回一个code=400的响应，如果成功会返回一个code=200的响应，并且返回玩家信息
+ */
 ipcMain.handle("load-player-data", (event: IpcMainInvokeEvent): Response<PlayerInfo> => {
     try {
         const playerInfo:PlayerInfo = playerManager.getPlayer();
@@ -64,6 +73,19 @@ ipcMain.handle("load-player-data", (event: IpcMainInvokeEvent): Response<PlayerI
                         }, remainedTime.getTime());
                     }
                 }
+            }
+        })
+
+        // 检查petmate的心愿信息的数量是否超过了支持的最大心愿数量
+        petmates.forEach(petmate => {
+            // 如果超过了，则按照心愿的开始时间，将之前的心愿删除
+            if (petmate.wishes.length > MAX_WISHES_STORE_NUM) {
+                const toDeleteWishesNum: number = petmate.wishes.length - MAX_WISHES_STORE_NUM;
+                const sortedWishes: Wish[] = petmate.wishes.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+                const toDeleteWishes: Wish[] = sortedWishes.slice(0, toDeleteWishesNum);
+                toDeleteWishes.forEach(wish => {
+                    petmate.removeWish(wish.id);
+                })
             }
         })
 
