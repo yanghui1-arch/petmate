@@ -4,7 +4,7 @@
 
 import Store from 'electron-store';
 import { PetMate } from './petmate/petmate';
-import { notActivityPetmateStatus, PetMateAttribute } from '../types/petmate';
+import { notActivityPetmateStatus } from '../types/petmate';
 import { Item } from '../types/item';
 import { PlayerInfo } from '../types/player';
 import { ActivityInfo } from '../types/activity';
