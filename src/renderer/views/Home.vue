@@ -32,24 +32,24 @@
               <div class="attribute-item">
                 <span>饱食度</span>
                 <!-- <AttributeBar :value="hp" color="#ff9812" /> -->
-                <AttributeBar :value="petmateAttribute.hungry" />
+                <AttributeBar :value="petmateAttribute.hungry" :max="petmateAttribute.max_hungry" />
               </div>
               <div class="attribute-item">
                 <span>精力</span>
-                <AttributeBar :value="petmateAttribute.energy" />
+                <AttributeBar :value="petmateAttribute.energy" :max="petmateAttribute.max_energy" />
               </div>
               <div class="attribute-item">
                 <span>心情</span>
-                <AttributeBar :value="petmateAttribute.emotion" />
+                <AttributeBar :value="petmateAttribute.emotion" :max="petmateAttribute.max_emotion" />
               </div>
               <div class="attribute-item">
                 <span>健康</span>
-                <AttributeBar :value="petmateAttribute.health" />
+                <AttributeBar :value="petmateAttribute.health" :max="petmateAttribute.max_health" />
               </div>
             </div>
           </div>
           <div class="home-grade-detail">
-            <AttributeBar :value="gradeHp" color="#e28fac" :width="'100%'" />
+            <AttributeBar :value="exp" color="#e28fac" :width="'100%'" :max="petmateAttribute.next_exp"/>
           </div>
         </div>
       </div>
@@ -173,7 +173,7 @@ const currentPetmateID = 0;
 const currentActivePetmate = ref(playerData.value?.petmates.filter(petmate => petmate.id === currentPetmateID)[0]);
 const petmateAttribute = ref(currentActivePetmate.value?.attrs);
 
-const gradeHp = ref(80);
+const exp = ref(petmateAttribute.value?.exp ?? 0);
 
 // 背包相關
 const packageCurrType = ref("food");
