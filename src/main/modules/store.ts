@@ -77,32 +77,9 @@ class PlayerManager {
                 );
             });
 
-<<<<<<< HEAD
-            // 重建items Map，因为Map在JSON序列化时会丢失
-            const reconstructedItems = new Map<number, number>();
-            if (stored.items) {
-                // 如果items是对象形式（从JSON反序列化），转换为Map
-                if (typeof stored.items === 'object' && !(stored.items instanceof Map)) {
-                    Object.entries(stored.items).forEach(([key, value]) => {
-                        reconstructedItems.set(parseInt(key), value as number);
-                    });
-                } else if (stored.items instanceof Map) {
-                    // 如果已经是Map，直接使用
-                    stored.items.forEach((value, key) => {
-                        reconstructedItems.set(key, value);
-                    });
-                }
-            }
-
-            this.currentPlayer = {
-                ...stored,
-                petmates: reconstructedPetmates,
-                items: reconstructedItems
-=======
             this.currentPlayer = {
                 ...stored,
                 petmates: reconstructedPetmates
->>>>>>> origin/electron-rewrite
             };
         }
     }
@@ -111,18 +88,7 @@ class PlayerManager {
      * 保存当前玩家信息到存储
      */
     private savePlayer(): void {
-        // 将Map转换为普通对象以便JSON序列化
-        const itemsAsObject: { [key: string]: number } = {};
-        this.currentPlayer.items.forEach((value, key) => {
-            itemsAsObject[key.toString()] = value;
-        });
-
-        const dataToSave = {
-            ...this.currentPlayer,
-            items: itemsAsObject
-        };
-
-        (this.store as any).set('playerInfo', dataToSave);
+        (this.store as any).set('playerInfo', this.currentPlayer);
     }
 
     /**
