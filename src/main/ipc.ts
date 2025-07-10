@@ -13,6 +13,8 @@ import { endActivity } from './modules/player/act';
 import { ActiveBuff } from './types/buff';
 import { MAX_WISHES_STORE_NUM } from './constant';
 import { Wish } from './types/wish';
+import { Item } from './types/item';
+import { buyItem } from './modules/player/basic';
 
 /**
  * 初始化加载玩家数据
@@ -41,7 +43,7 @@ ipcMain.handle("load-player-data", (event: IpcMainInvokeEvent): Response<PlayerI
                 }
             })
         })
-
+        
         // 检查活动是否完成
         petmates.forEach(petmate => {
             // 如果在活动中，先查看一下是否完成了活动（玩家会开始活动然后又退出游戏）
@@ -127,5 +129,28 @@ ipcMain.handle("consume-item", (event: IpcMainInvokeEvent, itemId: number, count
             code: 400,
             message: "消耗物品失败"
         } as Response<void>;
+    }
+})
+
+/**
+ * 购买物品
+ * @param itemId 物品id
+ * @param count 购买数量
+ * @returns 购买的物品
+ */
+ipcMain.handle("buy-item", (event: IpcMainInvokeEvent, itemId: number, count: number): Response<Item> => {
+    try {
+        const item: Item = buyItem(itemId, count);
+        return {
+            code: 200,
+            message: "购买物品成功",
+            data: item
+        } as Response<Item>;
+    } catch (error) {
+        logger.error(`购买物品失败: ${error}`);
+        return {
+            code: 400,
+            message: "购买物品失败"
+        } as Response<Item>;
     }
 })
