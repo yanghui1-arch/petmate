@@ -1,5 +1,5 @@
 import { PetMate } from "../modules/petmate/petmate";
-import { Item } from "./item";
+import { ItemType } from "./item";
 
 export type PlayerInfo = {
     steam_id?: string | null;
@@ -7,5 +7,14 @@ export type PlayerInfo = {
     qq?: string | null;
     petmates: Array<PetMate>;
     cash: number;
-    items: Map<number, number>;
+    items: PackageItemInfo[];
+}
+
+export interface PackageItemInfo {
+    id: number;
+    name: string;
+    type: ItemType;
+    description: string;
+    url: string;
+    count: number;
 }

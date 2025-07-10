@@ -41,7 +41,7 @@ class PlayerManager {
         steam_id: null,
         qq: null,
         cash: 500,
-        items: new Map()
+        items: []
     };
 
     constructor() {
@@ -64,7 +64,23 @@ class PlayerManager {
                 this.savePlayer(); // 保存默认值
             }
         } else {
-            this.currentPlayer = stored;
+            // 重建PetMate实例，因为从存储加载的是普通对象，没有方法
+            const reconstructedPetmates: PetMate[] = stored.petmates.map((petmateData: any) => {
+                // 根据petmate的类型创建对应的实例，目前只有Dass类型
+                return new Dass(
+                    petmateData.id,
+                    petmateData.name,
+                    petmateData.attrs,
+                    petmateData.status,
+                    petmateData.wishes,
+                    petmateData.completedWishesNum
+                );
+            });
+
+            this.currentPlayer = {
+                ...stored,
+                petmates: reconstructedPetmates
+            };
         }
     }
 
@@ -137,33 +153,6 @@ class PlayerManager {
         }
         this.currentPlayer.cash += amount;
         this.savePlayer();
-    }
-
-    /**
-     * 添加物品
-     * @param item 物品
-     */
-    addItem(item: Item): void {
-        this.currentPlayer.items.set(item.id, (this.currentPlayer.items.get(item.id) || 0) + 1);
-        this.savePlayer();
-    }
-    
-    /**
-     * 减少物品
-     * @param id 物品id
-     * @returns 是否减少成功
-     */
-    removeItem(id: number): boolean {
-        const count = this.currentPlayer.items.get(id);
-        if (count === undefined) {
-            return false;
-        }
-        this.currentPlayer.items.set(id, count - 1);
-        if (count === 1) {
-            this.currentPlayer.items.delete(id);
-        }
-        this.savePlayer();
-        return true;
     }
 }
 
@@ -256,6 +245,10 @@ class BuffManager {
     }
 }
 
+/**
+ * 物品管理器
+ * 负责物品信息的读取、更新和持久化
+ */
 class ItemManager {
     private store: Store<ItemStoreData>;
     private items: Item[] = [];
