@@ -1,5 +1,6 @@
 import { ref, readonly } from 'vue'
 import type { Response } from '../../types/response'
+import { PackageItemInfo } from '../../main/types/player'
 
 // 将PlayerInfo接口定义在全局，使得在渲染层可以访问
 declare global {
@@ -9,7 +10,7 @@ declare global {
     qq?: string | null;
     petmates: any[];
     cash: number;
-    items: Map<number, number>;
+    items: PackageItemInfo[];
   }
 }
 
