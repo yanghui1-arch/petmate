@@ -33,9 +33,9 @@
           @click="show = false"
           >卡组</router-link
         >
-        <router-link to="/log" class="page-navigator-item" @click="show = false"
+        <!-- <router-link to="/log" class="page-navigator-item" @click="show = false"
           >点滴</router-link
-        >
+        > -->
         <router-link
           to="/settings"
           class="page-navigator-item"
