@@ -1,6 +1,6 @@
 
 // 物品
-export type ItemType = "food" | "drink" | "drug" | "gift" | "exp" | "others"
+export type ItemType = "food" | "drink" | "medicine" | "gift" | "exp" | "others"
 export interface Item {
     id: number,
     name: string,

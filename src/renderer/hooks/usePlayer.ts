@@ -1,18 +1,7 @@
 import { ref, readonly } from 'vue'
 import type { Response } from '../../types/response'
-import { PackageItemInfo } from '../../main/types/player'
+import { PackageItemInfo, PlayerInfo } from '../types/player'
 
-// 将PlayerInfo接口定义在全局，使得在渲染层可以访问
-declare global {
-  interface PlayerInfo {
-    steam_id?: string | null;
-    name: string;
-    qq?: string | null;
-    petmates: any[];
-    cash: number;
-    items: PackageItemInfo[];
-  }
-}
 
 // 全局状态 - 单个实例共享整个应用
 const playerData = ref<PlayerInfo | null>(null)

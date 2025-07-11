@@ -1,6 +1,4 @@
-import { ActivityInfo } from "../../main/types/activity"
-import { Item, ItemType } from "../../main/types/item"
-import { Wish } from "../../main/types/wish"
+import { ActivityInfo, Item, ItemType, Wish } from "../types/common"
 
 export function useShow() {
     /**
