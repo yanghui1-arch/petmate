@@ -4,9 +4,12 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
+import { defineProps } from 'vue'
 
-
-const wishItemName = ref("心愿1")
+// 暴露wishItemName属性
+const props = defineProps<{
+    wishItemName: string
+}>()
 
 </script>
 

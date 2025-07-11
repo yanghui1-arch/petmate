@@ -227,6 +227,30 @@ ipcMain.handle("get-petmate-completed-wishes-num", (event: IpcMainInvokeEvent, p
 })
 
 /**
+ * 获取Petmate的某个特定的心愿
+ * 
+ */
+ipcMain.handle("get-petmate-one-wish", (event: IpcMainInvokeEvent, petmateId: number, wishId: string): Response<Wish> => {
+    try {
+        const petmate: PetMate | undefined = playerManager.getPlayer().petmates.find(petmate => petmate.id === petmateId);
+        if (!petmate) {
+            throw new NotFoundError("petmate不存在");
+        }
+        const wish: Wish = petmate!.getOneWish(wishId);
+        return {
+            code: 200,
+            data: wish
+        } as Response<Wish>;
+    } catch (error) {
+        logger.error(`获取心愿失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取心愿失败"
+        } as Response<Wish>;
+    }
+})
+
+/**
  * 获取模型大小
  * @returns 模型大小
  */

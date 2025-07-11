@@ -1,5 +1,6 @@
 import { ActivityInfo } from "../../main/types/activity"
 import { Item, ItemType } from "../../main/types/item"
+import { Wish } from "../../main/types/wish"
 
 export function useShow() {
     /**
@@ -44,11 +45,6 @@ export function useShow() {
         }
     }
 
-    /**
-     * 获取活动
-     * @param type 活动类型
-     * @returns 活动列表
-     */
     const getActivities = async (type: ActivityInfo["type"]):Promise<Array<ActivityInfo>> => {
         const res = await window.api.showActivities(type)
         try {
@@ -67,10 +63,31 @@ export function useShow() {
         }
     }
 
+    /**
+     * 获取Petmate的某个特定的心愿
+     * @param petmateId petmate的id
+     * @param wishId 需要获取的愿望的id
+     * @returns 获取的愿望
+     */
+    const getPetmateOneWish = async (petmateId: number, wishId: string):Promise<Wish | null> => {
+        const res = await window.api.getPetmateOneWish(petmateId, wishId)
+        try {
+            if (res.code === 200) {
+                return res.data
+            } else {
+                throw new Error(res.message)
+            }
+        } catch (error) {
+            console.error(error)
+            return null
+        }
+    }
+
 
     return {
         getPetmateCompletedWishesNum,
         getShopItems,
         getActivities,
+        getPetmateOneWish
     }
 }

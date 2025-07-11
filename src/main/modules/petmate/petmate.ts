@@ -320,4 +320,18 @@ export abstract class PetMate {
     getCompletedWishesNum(): number {
         return this.completedWishesNum;
     }
+
+    /**
+     * 获取某个愿望
+     * @param wishID 需要获取的愿望的id
+     * @returns 获取的愿望
+     * @throws 如果愿望不存在则抛出NotFoundError
+     */
+    getOneWish(wishID: string): Wish {
+        const wish: Wish | undefined = this.wishes.find(w => w.id === wishID);
+        if (!wish) {
+            throw new NotFoundError(`获取愿望时出错，要获取的愿望ID为${wishID}，该愿望不存在`);
+        }
+        return wish;
+    }
 }
