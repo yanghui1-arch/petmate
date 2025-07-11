@@ -20,7 +20,7 @@
                 />
               </div>
               <div class="home-panel-grade">
-                <span class="grade-value">LEVEL {{ petmateAttribute.level }}</span>
+                <span class="grade-value">LEVEL {{ petmateAttribute?.level }}</span>
               </div>
             </div>
             <div class="home-panel-stat">
@@ -32,24 +32,24 @@
               <div class="attribute-item">
                 <span>饱食度</span>
                 <!-- <AttributeBar :value="hp" color="#ff9812" /> -->
-                <AttributeBar :value="petmateAttribute.hungry" :max="petmateAttribute.max_hungry" />
+                <AttributeBar :value="petmateAttribute?.hungry ?? 0" :max="petmateAttribute?.max_hungry ?? 100" />
               </div>
               <div class="attribute-item">
                 <span>精力</span>
-                <AttributeBar :value="petmateAttribute.energy" :max="petmateAttribute.max_energy" />
+                <AttributeBar :value="petmateAttribute?.energy ?? 0" :max="petmateAttribute?.max_energy ?? 100" />
               </div>
               <div class="attribute-item">
                 <span>心情</span>
-                <AttributeBar :value="petmateAttribute.emotion" :max="petmateAttribute.max_emotion" />
+                <AttributeBar :value="petmateAttribute?.emotion ?? 0" :max="petmateAttribute?.max_emotion ?? 100" />
               </div>
               <div class="attribute-item">
                 <span>健康</span>
-                <AttributeBar :value="petmateAttribute.health" :max="petmateAttribute.max_health" />
+                <AttributeBar :value="petmateAttribute?.health ?? 0" :max="petmateAttribute?.max_health ?? 100" />
               </div>
             </div>
           </div>
           <div class="home-grade-detail">
-            <AttributeBar :value="exp" color="#e28fac" :width="'100%'" :max="petmateAttribute.next_exp"/>
+            <AttributeBar :value="exp" color="#e28fac" :width="'100%'" :max="petmateAttribute?.next_exp ?? 100"/>
           </div>
         </div>
       </div>
@@ -156,7 +156,8 @@ import Pagedot from "@/components/Pagedot.vue";
 import type { CarouselInst } from "naive-ui";
 
 import { usePlayer } from "../hooks/usePlayer";
-import { PackageItemInfo } from "../../main/types/player";
+import { PackageItemInfo } from "../types/player";
+import { PetMate, PetMateAttribute } from "../types/petmate";
 
 onMounted(() => {
   document.body.style.backgroundColor = "#f9f9f9";
@@ -170,10 +171,10 @@ const { playerData, consumeItem } = usePlayer();
 
 // Petmate相关
 const currentPetmateID = 0;
-const currentActivePetmate = ref(playerData.value?.petmates.filter(petmate => petmate.id === currentPetmateID)[0]);
-const petmateAttribute = ref(currentActivePetmate.value?.attrs);
+const currentActivePetmate = ref<PetMate | undefined>(playerData.value?.petmates.filter(petmate => petmate.id === currentPetmateID)[0] as PetMate);
+const petmateAttribute = ref<PetMateAttribute | undefined>(currentActivePetmate.value?.attrs);
 
-const exp = ref(petmateAttribute.value?.exp ?? 0);
+const exp: Ref<number> = ref(petmateAttribute.value?.exp ?? 0);
 
 // 背包相關
 const packageCurrType = ref("food");
