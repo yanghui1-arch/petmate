@@ -30,12 +30,14 @@ jobs:
 
     - name: Run TypeScript compilation
       run: npm run dev:ts &
+      shell: bash
       
     - name: Build application
       run: |
         npm run dev:ts &
         sleep 10
-        kill %1
+        kill %1 || true
+      shell: bash
 
     - name: Run unit tests
       run: npm run test:run
