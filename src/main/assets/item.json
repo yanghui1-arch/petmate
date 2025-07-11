@@ -54,5 +54,47 @@
             "energy": 20,
             "health": 20
         }
+    },
+    {
+        "id": 4,
+        "name": "汉堡123444",
+        "type": "medicine",
+        "description": "汉堡144234",
+        "url": "../assets/image/item/burger.png",
+        "price": 4002,
+        "effect": {
+            "hungry": 20,
+            "emotion": 20,
+            "energy": 20,
+            "health": 20
+        }
+    },
+    {
+        "id": 5,
+        "name": "汉堡123444",
+        "type": "hot",
+        "description": "汉堡144234",
+        "url": "../assets/image/item/burger.png",
+        "price": 4002,
+        "effect": {
+            "hungry": 20,
+            "emotion": 20,
+            "energy": 20,
+            "health": 20
+        }
+    },
+    {
+        "id": 6,
+        "name": "汉堡123444",
+        "type": "hot",
+        "description": "汉堡144234",
+        "url": "../assets/image/item/burger.png",
+        "price": 4002,
+        "effect": {
+            "hungry": 20,
+            "emotion": 20,
+            "energy": 20,
+            "health": 20
+        }
     }
 ]

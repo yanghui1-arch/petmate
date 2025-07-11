@@ -10,7 +10,7 @@ import { PlayerInfo } from '../types/player';
 import { ActivityInfo } from '../types/activity';
 import { Dass, DEFAULT_DASS_ATTRIBUTE } from './petmate/dass';
 import { readJsonFile } from './utils/file';
-import { NotEnoughError, NotFoundError } from '../error';
+import { NotEnoughError, NotFoundError, DataMigrationError } from '../error';
 import { Buff } from '../types/buff';
 
 type PlayerStoreData = {
@@ -172,15 +172,9 @@ class ActivityManager {
     }
 
     loadActivity(): void {
-        const stored = (this.store as any).get('activityInfo') as ActivityInfo[] | undefined;
-        // 不存在的话就从assets中读取官方初始的活动
-        if (!stored) {
-            const activities = readJsonFile<ActivityInfo>('src/main/assets/activity.json');
-            (this.store as any).set('activityInfo', activities);
-            this.allActivities = activities;
-        } else {
-            this.allActivities = stored;
-        }
+        const activities = readJsonFile<ActivityInfo>('src/main/assets/activity.json');
+        (this.store as any).set('activityInfo', activities);
+        this.allActivities = activities;
     }
 
     /**
@@ -219,14 +213,9 @@ class BuffManager {
     }
 
     loadBuff(): void {
-        const stored = (this.store as any).get('buffInfo') as Buff[] | undefined;
-        if (!stored) {
-            const buffs = readJsonFile<Buff>('src/main/assets/buff.json');
-            (this.store as any).set('buffInfo', buffs);
-            this.buffs = buffs;
-        } else {
-            this.buffs = stored;
-        }
+        const buffs = readJsonFile<Buff>('src/main/assets/buff.json');
+        (this.store as any).set('buffInfo', buffs);
+        this.buffs = buffs;
     }
 
     /**
@@ -261,14 +250,10 @@ class ItemManager {
     }
 
     loadItem(): void {
-        const stored = (this.store as any).get('itemInfo') as Item[] | undefined;
-        if (!stored) {
-            const items = readJsonFile<Item>('src/main/assets/item.json');
-            (this.store as any).set('itemInfo', items);
-            this.items = items;
-        } else {
-            this.items = stored;
-        }
+        const items = readJsonFile<Item>('src/main/assets/item.json');
+        (this.store as any).set('itemInfo', items);
+        console.log(items);
+        this.items = items;
     }
 
     /**

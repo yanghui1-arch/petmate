@@ -28,3 +28,13 @@ export class ExceedError extends Error {
         this.name = "ExceedError";
     }
 }
+
+/**
+ * 数据迁移错误的异常
+ */
+export class DataMigrationError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "DataMigrationError";
+    }
+}
