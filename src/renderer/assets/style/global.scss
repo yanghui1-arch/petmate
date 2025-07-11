@@ -38,8 +38,9 @@ select:focus,
 a:focus,
 input:focus,
 textarea:focus,
-button:focus {
-  outline: none;
+button:focus,
+div:focus {
+  outline: none; // 去除默认焦点轮廓，通常是一个橙黄色的边框
   box-shadow: none;
   border-color: inherit;
 }

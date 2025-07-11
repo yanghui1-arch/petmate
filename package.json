@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "animate.css": "^4.1.1",
     "electron": "^37.1.0",
     "electron-store": "^10.1.0",
     "sass": "^1.89.2",
