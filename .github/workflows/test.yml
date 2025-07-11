@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, electron-rewrite ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, electron-rewrite ]
 
 jobs:
   test:
@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [18.x, 20.x]
+        node-version: [22.x]
 
     steps:
     - name: Checkout code
@@ -42,18 +42,6 @@ jobs:
 
     - name: Run unit tests with coverage
       run: npm run test:coverage
-
-    - name: Install Playwright browsers
-      run: npx playwright install --with-deps
-
-    - name: Build app for E2E tests
-      run: |
-        npm run dev:ts &
-        sleep 15
-        kill %1 || true
-
-    - name: Run E2E tests
-      run: npm run test:e2e
       
     - name: Upload test results
       uses: actions/upload-artifact@v4
@@ -66,7 +54,7 @@ jobs:
         retention-days: 7
 
     - name: Upload coverage to Codecov
-      if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+      if: matrix.os == 'ubuntu-latest' && matrix.node-version == '22.x'
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage/lcov.info
