@@ -15,6 +15,7 @@ interface IElectronAPI {
   showActivities: (type: ActivityInfo["type"]) => Promise<Response<ActivityInfo[]>>;
   showItems: (type: ItemType) => Promise<Response<Item[]>>;
   getPetmateCompletedWishesNum: (petmateId: number) => Promise<Response<number>>;
+  getPetmateOneWish: (petmateId: number, wishId: string) => Promise<Response<Wish>>;
   getModelSize: () => Promise<Response<number>>;
   getSettings: () => Promise<Response<SettingConfig>>;
   updateSettings: (settings: Partial<SettingConfig>) => Promise<Response<void>>;

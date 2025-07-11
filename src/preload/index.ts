@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld(
         showActivities: (type: ActivityInfo["type"]) => ipcRenderer.invoke("show-activities", type),
         showItems: (type: ItemType) => ipcRenderer.invoke("show-items", type),
         getPetmateCompletedWishesNum: (petmateId: number) => ipcRenderer.invoke("get-petmate-completed-wishes-num", petmateId),
+        getPetmateOneWish: (petmateId: number, wishId: string) => ipcRenderer.invoke("get-petmate-one-wish", petmateId, wishId),
         getModelSize: () => ipcRenderer.invoke("get-model-size"),
         getSettings: () => ipcRenderer.invoke("get-settings"),
         updateSettings: (settings: Partial<SettingConfig>) => ipcRenderer.invoke("update-settings", settings),
