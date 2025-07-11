@@ -20,6 +20,7 @@
     "naive-ui": "^2.42.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.3",
+    "typedoc": "^0.27.0",
     "typescript": "^5.8.3",
     "unplugin-auto-import": "^19.3.0",
     "vite": "^7.0.0",
@@ -35,6 +36,9 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "docs:generate": "typedoc",
+    "docs:serve": "cd docs-generated && python -m http.server 8889",
+    "docs:build": "npm run docs:generate"
   }
 }
