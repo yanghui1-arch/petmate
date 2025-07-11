@@ -1,8 +1,8 @@
-import { Response } from "../../types/response";
-import { PlayerInfo } from "../../main/types/player";
-import { Item, ItemType } from "../../main/types/item";
-import { ActivityInfo } from "../../main/types/activity"; 
-import { SettingConfig } from "../../main/settings";
+import { Response } from "../types/response";
+import { PlayerInfo } from "../main/types/player";
+import { Item, ItemType } from "../main/types/item";
+import { ActivityInfo } from "../main/types/activity"; 
+import { SettingConfig } from "../main/settings";
 
 /**
  * 与主进程通信的接口

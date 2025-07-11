@@ -1,11 +1,11 @@
-import { PetMate } from "../modules/petmate/petmate";
-import { ItemType } from "./item";
+import { ItemType } from "./common";
+import { PetMate } from "./petmate";
 
-export type PlayerInfo = {
+export interface PlayerInfo {
     steam_id?: string | null;
     name: string;
     qq?: string | null;
-    petmates: Array<PetMate>;
+    petmates: PetMate[];
     cash: number;
     items: PackageItemInfo[];
 }

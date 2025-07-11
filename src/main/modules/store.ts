@@ -4,19 +4,28 @@
 
 import Store from 'electron-store';
 import { PetMate } from './petmate/petmate';
-import { notActivityPetmateStatus, PetMateAttribute } from '../types/petmate';
+import { notActivityPetmateStatus } from '../types/petmate';
 import { Item } from '../types/item';
 import { PlayerInfo } from '../types/player';
 import { ActivityInfo } from '../types/activity';
 import { Dass, DEFAULT_DASS_ATTRIBUTE } from './petmate/dass';
 import { readJsonFile } from './utils/file';
-import { NotEnoughError, NotFoundError } from '../error';
+import { NotEnoughError, NotFoundError, DataMigrationError } from '../error';
 import { Buff } from '../types/buff';
 
-type StoreData = {
+type PlayerStoreData = {
     playerInfo: PlayerInfo;
+}
+
+type ActivityStoreData = {
     activityInfo: ActivityInfo[];
+}
+
+type BuffStoreData = {
     buffInfo: Buff[];
+}
+
+type ItemStoreData = {
     itemInfo: Item[];
 }
 
@@ -25,18 +34,20 @@ type StoreData = {
  * 负责玩家信息的读取、更新和持久化
  */
 class PlayerManager {
-    private store: Store<StoreData>;
+    private store: Store<PlayerStoreData>;
     private currentPlayer: PlayerInfo = {
         name: '主人',
-        petmates: [new Dass(0, "Dass", DEFAULT_DASS_ATTRIBUTE, notActivityPetmateStatus)],
+        petmates: [new Dass(0, "Dass", DEFAULT_DASS_ATTRIBUTE, notActivityPetmateStatus, [], 0)],
         steam_id: null,
         qq: null,
         cash: 500,
-        items: new Map()
+        items: []
     };
 
     constructor() {
-        this.store = new Store<StoreData>();
+        this.store = new Store<PlayerStoreData>({
+            name: 'player-store'
+        });
         this.loadPlayer();
     }
 
@@ -53,7 +64,23 @@ class PlayerManager {
                 this.savePlayer(); // 保存默认值
             }
         } else {
-            this.currentPlayer = stored;
+            // 重建PetMate实例，因为从存储加载的是普通对象，没有方法
+            const reconstructedPetmates: PetMate[] = stored.petmates.map((petmateData: any) => {
+                // 根据petmate的类型创建对应的实例，目前只有Dass类型
+                return new Dass(
+                    petmateData.id,
+                    petmateData.name,
+                    petmateData.attrs,
+                    petmateData.status,
+                    petmateData.wishes,
+                    petmateData.completedWishesNum
+                );
+            });
+
+            this.currentPlayer = {
+                ...stored,
+                petmates: reconstructedPetmates
+            };
         }
     }
 
@@ -127,33 +154,6 @@ class PlayerManager {
         this.currentPlayer.cash += amount;
         this.savePlayer();
     }
-
-    /**
-     * 添加物品
-     * @param item 物品
-     */
-    addItem(item: Item): void {
-        this.currentPlayer.items.set(item.id, (this.currentPlayer.items.get(item.id) || 0) + 1);
-        this.savePlayer();
-    }
-    
-    /**
-     * 减少物品
-     * @param id 物品id
-     * @returns 是否减少成功
-     */
-    removeItem(id: number): boolean {
-        const count = this.currentPlayer.items.get(id);
-        if (count === undefined) {
-            return false;
-        }
-        this.currentPlayer.items.set(id, count - 1);
-        if (count === 1) {
-            this.currentPlayer.items.delete(id);
-        }
-        this.savePlayer();
-        return true;
-    }
 }
 
 /**
@@ -161,24 +161,20 @@ class PlayerManager {
  * 负责活动信息的读取、更新和持久化
  */ 
 class ActivityManager {
-    private store: Store<StoreData>;
+    private store: Store<ActivityStoreData>;
     private allActivities: ActivityInfo[] = [];
 
     constructor() {
-        this.store = new Store<StoreData>();
+        this.store = new Store<ActivityStoreData>({
+            name: 'activity-store'
+        });
         this.loadActivity();
     }
 
     loadActivity(): void {
-        const stored = (this.store as any).get('allActivities') as ActivityInfo[] | undefined;
-        // 不存在的话就从assets中读取官方初始的活动
-        if (!stored) {
-            const activities = readJsonFile<ActivityInfo>('src/main/assets/activity.json');
-            (this.store as any).set('allActivities', activities);
-            this.allActivities = activities;
-        } else {
-            this.allActivities = stored;
-        }
+        const activities = readJsonFile<ActivityInfo>('src/main/assets/activity.json');
+        (this.store as any).set('activityInfo', activities);
+        this.allActivities = activities;
     }
 
     /**
@@ -206,23 +202,20 @@ class ActivityManager {
  * 负责buff信息的读取、更新和持久化
  */
 class BuffManager {
-    private store: Store<StoreData>;
+    private store: Store<BuffStoreData>;
     private buffs: Buff[] = [];
 
     constructor() {
-        this.store = new Store<StoreData>();
+        this.store = new Store<BuffStoreData>({
+            name: 'buff-store'
+        });
         this.loadBuff();
     }
 
     loadBuff(): void {
-        const stored = (this.store as any).get('buffInfo') as Buff[] | undefined;
-        if (!stored) {
-            const buffs = readJsonFile<Buff>('src/main/assets/buff.json');
-            (this.store as any).set('buffInfo', buffs);
-            this.buffs = buffs;
-        } else {
-            this.buffs = stored;
-        }
+        const buffs = readJsonFile<Buff>('src/main/assets/buff.json');
+        (this.store as any).set('buffInfo', buffs);
+        this.buffs = buffs;
     }
 
     /**
@@ -232,26 +225,35 @@ class BuffManager {
     getAllBuffs(): Buff[] {
         return this.buffs.map(buff => ({ ...buff }));
     }
+
+    /**
+     * 获取特定Buff
+     */
+    getBuff(id: number): Buff | undefined {
+        return this.buffs.find(buff => buff.id === id);
+    }
 }
 
+/**
+ * 物品管理器
+ * 负责物品信息的读取、更新和持久化
+ */
 class ItemManager {
-    private store: Store<StoreData>;
+    private store: Store<ItemStoreData>;
     private items: Item[] = [];
 
     constructor() {
-        this.store = new Store<StoreData>();
+        this.store = new Store<ItemStoreData>({
+            name: 'item-store'
+        });
         this.loadItem();
     }
 
     loadItem(): void {
-        const stored = (this.store as any).get('itemInfo') as Item[] | undefined;
-        if (!stored) {
-            const items = readJsonFile<Item>('src/main/assets/item.json');
-            (this.store as any).set('itemInfo', items);
-            this.items = items;
-        } else {
-            this.items = stored;
-        }
+        const items = readJsonFile<Item>('src/main/assets/item.json');
+        (this.store as any).set('itemInfo', items);
+        console.log(items);
+        this.items = items;
     }
 
     /**

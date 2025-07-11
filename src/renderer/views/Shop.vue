@@ -17,7 +17,7 @@
             <div class="shop-content-head-title">欢迎来到黑市</div>
             <div class="money-wrapper">
               <span class="money-icon">💵</span>
-              <span class="money-value">500</span>
+              <span class="money-value"> {{ playerData?.cash }}</span>
             </div>
           </div>
           <div class="shop-type-wrapper">
@@ -25,7 +25,7 @@
               type="button"
               v-for="shopType in shopTypeList"
               :key="shopType.name"
-              @click="shopCurrType = shopType.name"
+              @click="handleTypeClick(shopType.name)"
               :class="{ 'active-shop-type': shopCurrType === shopType.name }"
               class="shop-type-btn"
             >
@@ -83,29 +83,29 @@
               <div>
                 <n-grid x-gap="5" y-gap="5" :cols="3">
                   <n-gi
-                    v-for="i in shopPrevItemList"
-                    :key="i"
+                    v-for="item in shopPrevItemList"
+                    :key="item.id"
                     style="
                       display: flex;
                       justify-content: center;
                       padding: 2px 0;
                     "
                   >
-                    <div class="shop-item">
+                    <div class="shop-item" @click="buyItem(0, 1)">
                       <div class="special-label">
                         <i class="fold-label"></i>
                         <span class="label-text">7折</span>
                       </div>
-                      <div class="item-name">汉堡</div>
+                      <div class="item-name">{{ item.name}}</div>
                       <n-image
                         width="38"
                         class="item-image"
-                        src="../assets/image/item/burger.png"
+                        :src="item.url"
                         preview-disabled
                       />
                       <div class="item-price-wrapper">
                         <span class="price-icon">💵</span>
-                        <span class="item-price">200</span>
+                        <span class="item-price">{{ item.price }}</span>
                       </div>
                     </div>
                   </n-gi>
@@ -155,20 +155,35 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import Pagedot from "@/components/Pagedot.vue";
-const shopCurrType = ref("food");
+import { usePlayer } from "../hooks/usePlayer";
+import { useShow } from "../hooks/useShow";
+import { ItemType, Item } from "../types/common";
+
+
+const { buyItem, playerData } = usePlayer();
+const { getShopItems } = useShow();
+
+const shopCurrType = ref<ItemType>("food");
 const shopPageNum = ref(2);
 const shopCurrPage = ref(1);
 const shopPageSize = ref(6);
-const shopPrevItemList = ref([
-  { num: 10 },
-  { num: 10 },
-  { num: 10 },
-  { num: 10 },
-  { num: 10 },
-  { num: 10 },
-]);
+
+const shopPrevItemList = ref<Item[]>([]);
+
+// 初始化商品类型和显示默认的商品类型的商品列表
+onMounted(async () => {
+  shopPrevItemList.value = await getShopItems(shopCurrType.value);
+});
+
+// 点击切换商品类型
+const handleTypeClick = async (typeName: ItemType) => {
+  shopCurrType.value = typeName;
+  shopPrevItemList.value = await getShopItems(typeName);
+};
+
+
 const shopNextItemList = ref([
   { num: 10 },
   { num: 10 },
@@ -179,11 +194,11 @@ const shopNextItemList = ref([
 ]);
 
 const shopTypeList = ref([
-  { name: "hot", label: "🔥特卖" },
-  { name: "food", label: "食物" },
-  { name: "medicine", label: "药品" },
-  { name: "gift", label: "礼物" },
-  { name: "drink", label: "饮料" },
+  { name: "hot" as ItemType, label: "🔥特卖" },
+  { name: "food" as ItemType, label: "食物" },
+  { name: "medicine" as ItemType, label: "药品" },
+  { name: "gift" as ItemType, label: "礼物" },
+  { name: "drink" as ItemType, label: "饮料" },
 ]);
 
 const shopPageRef = ref(null);

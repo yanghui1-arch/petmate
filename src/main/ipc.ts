@@ -6,13 +6,28 @@ import { ipcMain, IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 import { playerManager } from './modules/store';
 import { PlayerInfo } from './types/player';
 import { Response } from '../types/response';
-import { consumeItem } from './modules/player/useItem';
+import { consumeItem } from './modules/player/basic';
 import logger from './log';
 import { PetMate } from './modules/petmate/petmate';
 import { endActivity } from './modules/player/act';
 import { ActiveBuff } from './types/buff';
+import { MAX_WISHES_STORE_NUM } from './constant';
+import { Wish } from './types/wish';
+import { Item, ItemType } from './types/item';
+import { buyItem } from './modules/player/basic';
+import { ActivityInfo } from './types/activity';
+import { getCompletedWishesNum, showActivities, showItems } from './modules/show';
+import { NotFoundError } from './error';
+import { getModelSize, getSettings, SettingConfig, updateSettings } from './settings';
 
-// 初始化加载玩家数据
+/**
+ * 初始化加载玩家数据
+ * 会检查每一个petmate的Buff是否过期，如果过期了则删除，如果没过期则设置一个定时器
+ * 会检查每一个petmate的活动是否完成，如果完成了则结束活动并结算奖励，如果没完成则设置一个定时器
+ * 会检查每一个petmate的心愿信息的数量是否超过了支持的最大心愿数量，如果超过了则按照心愿的开始时间，将之前的心愿删除
+ * 会同步文件中的数据
+ * @returns 加载玩家数据成功或失败，如果失败会返回一个code=400的响应，如果成功会返回一个code=200的响应，并且返回玩家信息
+ */
 ipcMain.handle("load-player-data", (event: IpcMainInvokeEvent): Response<PlayerInfo> => {
     try {
         const playerInfo:PlayerInfo = playerManager.getPlayer();
@@ -32,7 +47,7 @@ ipcMain.handle("load-player-data", (event: IpcMainInvokeEvent): Response<PlayerI
                 }
             })
         })
-
+        
         // 检查活动是否完成
         petmates.forEach(petmate => {
             // 如果在活动中，先查看一下是否完成了活动（玩家会开始活动然后又退出游戏）
@@ -64,6 +79,19 @@ ipcMain.handle("load-player-data", (event: IpcMainInvokeEvent): Response<PlayerI
                         }, remainedTime.getTime());
                     }
                 }
+            }
+        })
+
+        // 检查petmate的心愿信息的数量是否超过了支持的最大心愿数量
+        petmates.forEach(petmate => {
+            // 如果超过了，则按照心愿的开始时间，将之前的心愿删除
+            if (petmate.wishes.length > MAX_WISHES_STORE_NUM) {
+                const toDeleteWishesNum: number = petmate.wishes.length - MAX_WISHES_STORE_NUM;
+                const sortedWishes: Wish[] = petmate.wishes.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+                const toDeleteWishes: Wish[] = sortedWishes.slice(0, toDeleteWishesNum);
+                toDeleteWishes.forEach(wish => {
+                    petmate.removeWish(wish.id);
+                })
             }
         })
 
@@ -104,6 +132,179 @@ ipcMain.handle("consume-item", (event: IpcMainInvokeEvent, itemId: number, count
         return {
             code: 400,
             message: "消耗物品失败"
+        } as Response<void>;
+    }
+})
+
+/**
+ * 购买物品
+ * @param itemId 物品id
+ * @param count 购买数量
+ * @returns 购买的物品
+ */
+ipcMain.handle("buy-item", (event: IpcMainInvokeEvent, itemId: number, count: number): Response<Item> => {
+    try {
+        const item: Item = buyItem(itemId, count);
+        return {
+            code: 200,
+            message: "购买物品成功",
+            data: item
+        } as Response<Item>;
+    } catch (error) {
+        logger.error(`购买物品失败: ${error}`);
+        return {
+            code: 400,
+            message: "购买物品失败"
+        } as Response<Item>;
+    }
+})
+
+/**
+ * 获取活动
+ * @param type 活动类型
+ * @returns 活动列表
+ */
+ipcMain.handle("show-activities", (event: IpcMainInvokeEvent, type: ActivityInfo["type"]): Response<ActivityInfo[]> => {
+    try {
+        const activities: ActivityInfo[] = showActivities(type);
+        return {
+            code: 200,
+            data: activities
+        } as Response<ActivityInfo[]>;
+    } catch (error) {
+        logger.error(`获取活动失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取活动失败"
+        } as Response<ActivityInfo[]>;
+    }
+})
+
+/**
+ * 获取物品
+ * @param type 物品类型
+ * @returns 物品列表
+ */
+ipcMain.handle("show-items", (event: IpcMainInvokeEvent, type: ItemType): Response<Item[]> => {
+    try {
+        const items: Item[] = showItems(type);
+        return {
+            code: 200,
+            data: items
+        } as Response<Item[]>;
+    } catch (error) {
+        logger.error(`获取物品失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取物品失败"
+        } as Response<Item[]>;
+    }
+})
+
+/**
+ * 获取完成petmate的心愿数量
+ * @param petmateId petmate的id
+ * @returns 完成的心愿数量
+ */
+ipcMain.handle("get-petmate-completed-wishes-num", (event: IpcMainInvokeEvent, petmateId: number): Response<number> => {
+    try {
+        const petmate: PetMate | undefined = playerManager.getPlayer().petmates.find(petmate => petmate.id === petmateId);
+        if (!petmate) {
+            throw new NotFoundError("petmate不存在");
+        }
+        const num: number = getCompletedWishesNum(petmate);
+        return {
+            code: 200,
+            data: num
+        } as Response<number>;
+    } catch (error) {
+        logger.error(`获取完成的心愿数量失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取完成的心愿数量失败"
+        } as Response<number>;
+    }
+})
+
+/**
+ * 获取Petmate的某个特定的心愿
+ * 
+ */
+ipcMain.handle("get-petmate-one-wish", (event: IpcMainInvokeEvent, petmateId: number, wishId: string): Response<Wish> => {
+    try {
+        const petmate: PetMate | undefined = playerManager.getPlayer().petmates.find(petmate => petmate.id === petmateId);
+        if (!petmate) {
+            throw new NotFoundError("petmate不存在");
+        }
+        const wish: Wish = petmate!.getOneWish(wishId);
+        return {
+            code: 200,
+            data: wish
+        } as Response<Wish>;
+    } catch (error) {
+        logger.error(`获取心愿失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取心愿失败"
+        } as Response<Wish>;
+    }
+})
+
+/**
+ * 获取模型大小
+ * @returns 模型大小
+ */
+ipcMain.handle("get-model-size", (event: IpcMainInvokeEvent): Response<number> => {
+    try {
+        const size: number = getModelSize();
+        return {
+            code: 200,
+            data: size
+        } as Response<number>;
+    } catch (error) {
+        logger.error(`获取模型大小失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取模型大小失败"
+        } as Response<number>;
+    }
+})
+
+/**
+ * 获取设置
+ * @returns 设置
+ */
+ipcMain.handle("get-settings", (event: IpcMainInvokeEvent): Response<SettingConfig> => {
+    try {
+        const settings: SettingConfig = getSettings();
+        return {
+            code: 200,
+            data: settings
+        } as Response<SettingConfig>;
+    } catch (error) {
+        logger.error(`获取设置失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取设置失败"
+        } as Response<SettingConfig>;
+    }
+})
+
+/**
+ * 更改设置
+ */
+ipcMain.handle("update-settings", (event: IpcMainInvokeEvent, settings: Partial<SettingConfig>): Response<void> => {
+    try {
+        updateSettings(settings);
+        return {
+            code: 200,
+            message: "更改设置成功"
+        } as Response<void>;
+    } catch (error) {
+        logger.error(`更改设置失败: ${error}`);
+        return {
+            code: 400,
+            message: "更改设置失败"
         } as Response<void>;
     }
 })

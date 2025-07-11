@@ -20,7 +20,7 @@
                 />
               </div>
               <div class="home-panel-grade">
-                <span class="grade-value">LEVEL 1</span>
+                <span class="grade-value">LEVEL {{ petmateAttribute?.level }}</span>
               </div>
             </div>
             <div class="home-panel-stat">
@@ -32,24 +32,24 @@
               <div class="attribute-item">
                 <span>饱食度</span>
                 <!-- <AttributeBar :value="hp" color="#ff9812" /> -->
-                <AttributeBar :value="attributeHpDic.satiety" />
+                <AttributeBar :value="petmateAttribute?.hungry ?? 0" :max="petmateAttribute?.max_hungry ?? 100" />
               </div>
               <div class="attribute-item">
                 <span>精力</span>
-                <AttributeBar :value="attributeHpDic.energy" />
+                <AttributeBar :value="petmateAttribute?.energy ?? 0" :max="petmateAttribute?.max_energy ?? 100" />
               </div>
               <div class="attribute-item">
                 <span>心情</span>
-                <AttributeBar :value="attributeHpDic.mood" />
+                <AttributeBar :value="petmateAttribute?.emotion ?? 0" :max="petmateAttribute?.max_emotion ?? 100" />
               </div>
               <div class="attribute-item">
                 <span>健康</span>
-                <AttributeBar :value="attributeHpDic.health" />
+                <AttributeBar :value="petmateAttribute?.health ?? 0" :max="petmateAttribute?.max_health ?? 100" />
               </div>
             </div>
           </div>
           <div class="home-grade-detail">
-            <AttributeBar :value="gradeHp" color="#e28fac" :width="'100%'" />
+            <AttributeBar :value="exp" color="#e28fac" :width="'100%'" :max="petmateAttribute?.next_exp ?? 100"/>
           </div>
         </div>
       </div>
@@ -84,13 +84,13 @@
                   :key="i"
                   style="display: flex; justify-content: center"
                 >
-                  <div class="package-item">
+                  <div class="package-item" @click="consumeItem(item.id, 1, currentPetmateID)">
                     <n-image
                       width="38"
-                      src="../assets/image/item/burger.png"
+                      :src="item.url"
                       preview-disabled
                     />
-                    <span class="package-item-num">99</span>
+                    <span class="package-item-num">{{ item.count }}</span>
                   </div>
                 </n-gi>
                 <n-gi
@@ -155,6 +155,10 @@ import AttributeBar from "@/components/AttributeBar.vue";
 import Pagedot from "@/components/Pagedot.vue";
 import type { CarouselInst } from "naive-ui";
 
+import { usePlayer } from "../hooks/usePlayer";
+import { PackageItemInfo } from "../types/player";
+import { PetMate, PetMateAttribute } from "../types/petmate";
+
 onMounted(() => {
   document.body.style.backgroundColor = "#f9f9f9";
 });
@@ -163,14 +167,14 @@ onBeforeUnmount(() => {
   document.body.style.backgroundColor = ""; // 恢复默认
 });
 
-// 角色相關
-const attributeHpDic = ref({
-  satiety: 10,
-  energy: 40,
-  mood: 60,
-  health: 100,
-});
-const gradeHp = ref(80);
+const { playerData, consumeItem } = usePlayer();
+
+// Petmate相关
+const currentPetmateID = 0;
+const currentActivePetmate = ref<PetMate | undefined>(playerData.value?.petmates.filter(petmate => petmate.id === currentPetmateID)[0] as PetMate);
+const petmateAttribute = ref<PetMateAttribute | undefined>(currentActivePetmate.value?.attrs);
+
+const exp: Ref<number> = ref(petmateAttribute.value?.exp ?? 0);
 
 // 背包相關
 const packageCurrType = ref("food");
@@ -183,15 +187,13 @@ const packageTypeList = ref([
   { name: "gift", label: "🎁礼物" },
   { name: "drink", label: "🥤饮料" },
 ]);
-const packagePrevItemList = ref([
-  { num: 10 },
-  { num: 10 },
-  { num: 10 },
-  { num: 10 },
-  { num: 10 },
-  { num: 10 },
-  { num: 10 },
-]);
+
+// 背包物品
+const playerItems: PackageItemInfo[] = [...(playerData.value?.items || [])];
+const packagePrevItemList = ref<PackageItemInfo[]>(playerItems);
+
+
+// 只是用来占位的，里面是什么东西无所谓，只要长度正确即可
 const packageNextItemList = ref([{ num: 10 }, { num: 10 }, { num: 10 }]);
 
 const packagePageRef = ref<CarouselInst | null>(null);
@@ -209,6 +211,9 @@ const nextPage = () => {
   }
   packagePageRef.value?.next();
 };
+
+
+
 </script>
 
 <style lang="scss" scoped>
@@ -317,7 +322,6 @@ const nextPage = () => {
     padding: 6px 0;
     font-weight: 500;
     box-shadow: 0 2px 10px rgba(253, 203, 110, 0.3);
-    cursor: pointer;
     transition: all 0.3s ease;
     &:hover {
       transform: translateY(-2px);
@@ -357,7 +361,6 @@ const nextPage = () => {
       justify-content: center;
       align-items: center;
       position: relative;
-      cursor: pointer;
       background: linear-gradient(135deg, $item-bg-start 0%, $item-bg-end 100%);
       box-shadow: 0 2px 8px 0 rgba(253, 203, 110, 0.15);
       .package-item-num {
@@ -390,7 +393,6 @@ const nextPage = () => {
       .next-page {
         border: 1px solid $color-white;
         padding: 3px 10px;
-        cursor: pointer;
         border-radius: 3px;
         background: linear-gradient(
           135deg,

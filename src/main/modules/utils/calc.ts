@@ -21,13 +21,7 @@ export function calcNextExp(currentLevel: number): number {
  * @returns 属性值上限
  */
 export function calcMaxAttribute(level: number): number {
-    const MAX = 1_000_000;
-    const k = 0.08;           // 控制曲线斜率（0.05~0.1间可调）
-    const m = level / 2;   // 中点控制，等级一半时属性接近 MAX/2
-
-    const expPart = Math.exp(-k * (level - m));
-    const value = MAX / (1 + expPart);
-
+    const value = 100 * level;
     return Math.floor(value);
 }
 

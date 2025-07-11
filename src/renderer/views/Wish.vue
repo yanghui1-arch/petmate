@@ -8,7 +8,7 @@
         <div class="petmate-info"><label>{{ petmateName }}</label></div>
         <div class="petmate-info"><label>好感 LV. {{ affenctionLevel }}</label></div>
         <div class="petmate-info">
-          <n-progress type="line" height="10px" :percentage="currentAffenctionExp" :unit="nextAffectionExp" color="#596275" rail-color="#303952" indicator-placement="inside" processing />
+          <n-progress type="line" :height="10" :percentage="currentAffenctionExp" :unit="`/${nextAffectionExp}`" color="#596275" rail-color="#303952" indicator-placement="inside" processing />
         </div>
       </div>
     </div>
@@ -19,7 +19,7 @@
         <div class="wish-statics"><label>完成心愿</label></div>
         <div class="wish-statics">
           <label>
-            <n-number-animation :from="0" :to="1222039" />
+            <n-number-animation :from="0" :to="petmateCompletedWishesNum" />
           </label>
         </div>
       </div>
@@ -27,7 +27,7 @@
         <div class="wish-statics"><label>正在进行</label></div>
         <div class="wish-statics">
           <label>
-            <n-number-animation :from="0" :to="1222039" />
+            <n-number-animation :from="0" :to="progressWishNum" />
           </label>
         </div>
       </div>
@@ -40,8 +40,11 @@
         <!-- 正常显示滚动 -->
         <div v-if="check===false" class="scroll">
           <n-infinite-scroll style="height: 100%">
-            <div v-for="i in 15" :key="i" style="height: 33%; width: 30%; margin-left: auto; margin-right: 5px;">
-              <WishItem @click="check = !check" />
+            <div v-if="wishList.length > 0" v-for="wish in wishList" :key="wish.id" style="height: 33%; width: 30%; margin-left: auto; margin-right: 5px;">
+              <WishItem :wishItemName="wish.name" @click="checkWish(wish.id)" />
+            </div>
+            <div v-else style="height: 33%; width: 30%; margin-left: auto; margin-right: 5px; text-align: center;">
+              <WishItem wishItemName="暂无心愿" />
             </div>
           </n-infinite-scroll>
         </div>
@@ -59,36 +62,34 @@
             <!-- 名字+ 描述 -->
             <div class="wish-completion-baisc-info-item">
               <div class="wish-name" style="font-size: 16px;">
-                夏日清凉小确幸
-              </div>
-              <div class="wish-description">
-                <label style="font-size: 13px;">战斗双！</label>
+                {{ checkWishInfo?.name }}
               </div>
             </div>
             <div class="wish-completion-end-time">
-              2025/6/7结束
+              {{ checkWishInfo?.endTime }}
             </div>
           </div>
 
           <div><label>目前进度</label></div>
 
-          <!-- 完成心愿得要求和玩家目前的进度 -->
+          <!-- 完成心愿得一些活动要求和玩家目前的进度 -->
           <div class="wish-completion-requirements">
             <div class="wish-completion-requirements-activity wish-completion-requirements-item">
-
-            </div>
-
-            <div class="wish-completion-requriements-consume-item wish-completion-requirements-item">
-              <div v-for="item in itemProgress">
-                <img :src="item.url" style="width: 20px;" />
-                {{ item.name }} ({{ item.giveNum }} / {{ item.requirementNum }})
-                <img v-if="item.status === 'completed'" src="../../assets/image/right.png" style="width: 15px;" />
+              <div v-for="progress in activityProgress" :key="progress.id">
+                <img :src="progress.src" style="width: 20px;" />
+                {{ progress.name }}
+                <img v-if="progress.status === 'finished'" src="../../assets/image/right.png" style="width: 15px;" />
                 <img v-else src="../../assets/image/wrong.png" style="width: 15px;" />
               </div>
             </div>
-
-            <div class="wish-completion-requirements-chat wish-completion-requirements-item">
-              123
+            <!-- 完成心愿得一些物品要求和玩家目前的进度 -->
+            <div class="wish-completion-requriements-consume-item wish-completion-requirements-item">
+              <div v-for="progress in itemProgress" :key="progress.id">
+                <img :src="progress.src" style="width: 20px;" />
+                {{ progress.name }}<span v-if="progress.type === 'item'"> ({{ progress.userCount }} / {{ progress.count }})</span>
+                <img v-if="progress.status === 'finished'" src="../../assets/image/right.png" style="width: 15px;" />
+                <img v-else src="../../assets/image/wrong.png" style="width: 15px;" />
+              </div>
             </div>
           </div>
         </div>
@@ -99,41 +100,49 @@
 
 <script lang="ts" setup>
 import { ref } from "vue";
-import Avator from "../components/Avator.vue";
 import WishItem from "../components/wish/WishItem.vue";
+import { useShow } from "../hooks/useShow";
+import { usePlayer } from "../hooks/usePlayer";
+import { PetMate } from "../types/petmate";
+import { WishRequirement } from "../types/common";
 
-const petmateName = "Dass";
-const affenctionLevel = ref(1);
-const currentAffenctionExp = ref(60);
-const nextAffectionExp = "/100";
+const { getPetmateCompletedWishesNum, getPetmateOneWish } = useShow();
+
+const petmateCompletedWishesNum = ref<number>(0);
+const { playerData } = usePlayer();
+
+const currentPetmateID = ref<number>(0);
+const petmate:PetMate = playerData.value?.petmates[currentPetmateID.value] as PetMate;
+
+onMounted(async () => {
+  petmateCompletedWishesNum.value = await getPetmateCompletedWishesNum(currentPetmateID.value) ?? -1;
+});
+
+// 好感度相关
+const petmateName = petmate?.name ?? "Dass";
+const affenctionLevel = ref(petmate?.attrs.affection_level ?? -1);
+const currentAffenctionExp = ref(petmate?.attrs.affection_exp ?? -1);
+const nextAffectionExp = ref(petmate?.attrs.affection_next_exp ?? -1);
+const progressWishNum = ref(petmate?.wishes.filter(wish => wish.status === "doing").length ?? -1);
+
+// 心愿列表
+const wishList = ref(petmate?.wishes ?? []);
+
+// 按下心愿后，显示心愿的详细信息
 const check = ref(false);
+const checkWishID = ref<string | null>(null);
+const checkWishInfo = ref()
+const checkWish = async (wishID: string) => {
+  checkWishID.value = wishID;
+  check.value = true;
+  const wish = await getPetmateOneWish(currentPetmateID.value, wishID);
+  checkWishInfo.value = wish;
+}
 
-let itemProgress = ref([
-  {
-    id: 1,
-    name: "汉堡",
-    url: "../../assets/image/wish.png",
-    requirementNum: 2,
-    giveNum: 1,
-    status: "noCompleted",
-  },
-  {
-    id: 1,
-    name: "汉堡",
-    url: "../../assets/image/wish.png",
-    requirementNum: 2,
-    giveNum: 1,
-    status: "completed",
-  },
-  {
-    id: 1,
-    name: "汉堡",
-    url: "../../assets/image/wish.png",
-    requirementNum: 2,
-    giveNum: 1,
-    status: "noCompleted",
-  },
-]);
+// 心愿的物品、活动要求和玩家目前的进度
+const itemProgress = ref<WishRequirement[]>(checkWishInfo.value?.requirements.filter((requirement:WishRequirement) => requirement.type === "item") ?? []);
+const activityProgress = ref<WishRequirement[]>(checkWishInfo.value?.requirements.filter((requirement:WishRequirement) => requirement.type === "act") ?? []);
+
 </script>
 
 <style lang="scss" scoped>
