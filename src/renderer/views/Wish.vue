@@ -8,7 +8,7 @@
         <div class="petmate-info"><label>{{ petmateName }}</label></div>
         <div class="petmate-info"><label>好感 LV. {{ affenctionLevel }}</label></div>
         <div class="petmate-info">
-          <n-progress type="line" height="10px" :percentage="currentAffenctionExp" :unit="nextAffectionExp" color="#596275" rail-color="#303952" indicator-placement="inside" processing />
+          <n-progress type="line" :height="10" :percentage="currentAffenctionExp" :unit="`/${nextAffectionExp}`" color="#596275" rail-color="#303952" indicator-placement="inside" processing />
         </div>
       </div>
     </div>
@@ -72,21 +72,21 @@
 
           <div><label>目前进度</label></div>
 
-          <!-- 完成心愿得要求和玩家目前的进度 -->
+          <!-- 完成心愿得一些活动要求和玩家目前的进度 -->
           <div class="wish-completion-requirements">
             <div class="wish-completion-requirements-activity wish-completion-requirements-item">
-              <div v-for="progress in activityProgress">
+              <div v-for="progress in activityProgress" :key="progress.id">
                 <img :src="progress.src" style="width: 20px;" />
                 {{ progress.name }}
                 <img v-if="progress.status === 'finished'" src="../../assets/image/right.png" style="width: 15px;" />
                 <img v-else src="../../assets/image/wrong.png" style="width: 15px;" />
               </div>
             </div>
-
+            <!-- 完成心愿得一些物品要求和玩家目前的进度 -->
             <div class="wish-completion-requriements-consume-item wish-completion-requirements-item">
-              <div v-for="progress in itemProgress">
+              <div v-for="progress in itemProgress" :key="progress.id">
                 <img :src="progress.src" style="width: 20px;" />
-                {{ progress.name }} ({{ progress.userCount }} / {{ progress.count }})
+                {{ progress.name }}<span v-if="progress.type === 'item'"> ({{ progress.userCount }} / {{ progress.count }})</span>
                 <img v-if="progress.status === 'finished'" src="../../assets/image/right.png" style="width: 15px;" />
                 <img v-else src="../../assets/image/wrong.png" style="width: 15px;" />
               </div>
@@ -100,10 +100,11 @@
 
 <script lang="ts" setup>
 import { ref } from "vue";
-import Avator from "../components/Avator.vue";
 import WishItem from "../components/wish/WishItem.vue";
 import { useShow } from "../hooks/useShow";
 import { usePlayer } from "../hooks/usePlayer";
+import { PetMate } from "../types/petmate";
+import { WishRequirement } from "../types/common";
 
 const { getPetmateCompletedWishesNum, getPetmateOneWish } = useShow();
 
@@ -111,15 +112,17 @@ const petmateCompletedWishesNum = ref<number>(0);
 const { playerData } = usePlayer();
 
 const currentPetmateID = ref<number>(0);
-const petmate = playerData.value?.petmates[currentPetmateID.value];
+const petmate:PetMate = playerData.value?.petmates[currentPetmateID.value] as PetMate;
 
 onMounted(async () => {
   petmateCompletedWishesNum.value = await getPetmateCompletedWishesNum(currentPetmateID.value) ?? -1;
 });
+
+// 好感度相关
 const petmateName = petmate?.name ?? "Dass";
 const affenctionLevel = ref(petmate?.attrs.affection_level ?? -1);
 const currentAffenctionExp = ref(petmate?.attrs.affection_exp ?? -1);
-const nextAffectionExp = ref(`/${petmate?.attrs.affection_next_exp ?? -1}`);
+const nextAffectionExp = ref(petmate?.attrs.affection_next_exp ?? -1);
 const progressWishNum = ref(petmate?.wishes.filter(wish => wish.status === "doing").length ?? -1);
 
 // 心愿列表
@@ -136,8 +139,10 @@ const checkWish = async (wishID: string) => {
   checkWishInfo.value = wish;
 }
 
-const itemProgress = ref(checkWishInfo.value?.requirements.filter(requirement => requirement.type === "item") ?? []);
-const activityProgress = ref(checkWishInfo.value?.requirements.filter(requirement => requirement.type === "act") ?? []);
+// 心愿的物品、活动要求和玩家目前的进度
+const itemProgress = ref<WishRequirement[]>(checkWishInfo.value?.requirements.filter((requirement:WishRequirement) => requirement.type === "item") ?? []);
+const activityProgress = ref<WishRequirement[]>(checkWishInfo.value?.requirements.filter((requirement:WishRequirement) => requirement.type === "act") ?? []);
+
 </script>
 
 <style lang="scss" scoped>

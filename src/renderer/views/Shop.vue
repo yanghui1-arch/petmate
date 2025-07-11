@@ -159,28 +159,28 @@
 import Pagedot from "@/components/Pagedot.vue";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
-import { ItemType } from "../../main/types/item";
+import { ItemType, Item } from "../types/common";
+
 
 const { buyItem, playerData } = usePlayer();
 const { getShopItems } = useShow();
 
-const shopCurrType = ref("");
+const shopCurrType = ref<ItemType>("food");
 const shopPageNum = ref(2);
 const shopCurrPage = ref(1);
 const shopPageSize = ref(6);
 
-const shopPrevItemList = ref<any[]>([]);
+const shopPrevItemList = ref<Item[]>([]);
 
 // 初始化商品类型和显示默认的商品类型的商品列表
 onMounted(async () => {
-  shopCurrType.value = "food";
-  shopPrevItemList.value = await getShopItems(shopCurrType.value as ItemType);
+  shopPrevItemList.value = await getShopItems(shopCurrType.value);
 });
 
 // 点击切换商品类型
-const handleTypeClick = async (typeName: string) => {
+const handleTypeClick = async (typeName: ItemType) => {
   shopCurrType.value = typeName;
-  shopPrevItemList.value = await getShopItems(typeName as ItemType);
+  shopPrevItemList.value = await getShopItems(typeName);
 };
 
 
@@ -194,11 +194,11 @@ const shopNextItemList = ref([
 ]);
 
 const shopTypeList = ref([
-  { name: "hot", label: "🔥特卖" },
-  { name: "food", label: "食物" },
-  { name: "medicine", label: "药品" },
-  { name: "gift", label: "礼物" },
-  { name: "drink", label: "饮料" },
+  { name: "hot" as ItemType, label: "🔥特卖" },
+  { name: "food" as ItemType, label: "食物" },
+  { name: "medicine" as ItemType, label: "药品" },
+  { name: "gift" as ItemType, label: "礼物" },
+  { name: "drink" as ItemType, label: "饮料" },
 ]);
 
 const shopPageRef = ref(null);
