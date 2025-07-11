@@ -31,7 +31,7 @@ export function calcMaxAttribute(level: number): number {
  * @returns 当前buff效果
  */
 export function calcBuffEffect(buffs: ActiveBuff[]): BuffEffect {
-    const finalBuffEffect: BuffEffect = DEFAULT_BUFF_EFFECT;
+    const finalBuffEffect: BuffEffect = { ...DEFAULT_BUFF_EFFECT };
     buffs.forEach(activeBuff => {
         // 确保Buff生效才会计算，以防万一
         if (activeBuff.endTime >= new Date()) {
@@ -57,6 +57,23 @@ export function calcBuffEffect(buffs: ActiveBuff[]): BuffEffect {
             finalBuffEffect.cashGainRate *= buffEffect.cashGainRate;
         }
     });
+
+    // 保留两位小数
+    finalBuffEffect.expGainRate = Number(finalBuffEffect.expGainRate.toFixed(2));
+    finalBuffEffect.gameExpGainRate = Number(finalBuffEffect.gameExpGainRate.toFixed(2));
+    finalBuffEffect.singExpGainRate = Number(finalBuffEffect.singExpGainRate.toFixed(2));
+    finalBuffEffect.drawExpGainRate = Number(finalBuffEffect.drawExpGainRate.toFixed(2));
+    finalBuffEffect.affectionExpGainRate = Number(finalBuffEffect.affectionExpGainRate.toFixed(2));
+    finalBuffEffect.energyCostRate = Number(finalBuffEffect.energyCostRate.toFixed(2));
+    finalBuffEffect.hungryCostRate = Number(finalBuffEffect.hungryCostRate.toFixed(2));
+    finalBuffEffect.healthCostRate = Number(finalBuffEffect.healthCostRate.toFixed(2));
+    finalBuffEffect.emotionCostRate = Number(finalBuffEffect.emotionCostRate.toFixed(2));
+    finalBuffEffect.energyGainRate = Number(finalBuffEffect.energyGainRate.toFixed(2));
+    finalBuffEffect.hungryGainRate = Number(finalBuffEffect.hungryGainRate.toFixed(2));
+    finalBuffEffect.healthGainRate = Number(finalBuffEffect.healthGainRate.toFixed(2));
+    finalBuffEffect.emotionGainRate = Number(finalBuffEffect.emotionGainRate.toFixed(2));
+    finalBuffEffect.spendingTimeRate = Number(finalBuffEffect.spendingTimeRate.toFixed(2));
+    finalBuffEffect.cashGainRate = Number(finalBuffEffect.cashGainRate.toFixed(2));
 
     return finalBuffEffect;
 }
