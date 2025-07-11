@@ -13,12 +13,16 @@ export type Wish = {
 export type WishRequirement = {
     type: "item",
     id: number,
+    name: string,
+    src: string,
     count: number,
     userCount: number,
     status: "doing" | "finished"
 } | {
     type: "act",
     id: number,
+    name: string,
+    src: string,
     status: "doing" | "finished"
 }
 
