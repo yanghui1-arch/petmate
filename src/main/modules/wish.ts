@@ -3,7 +3,7 @@ import { PetMate } from "./petmate/petmate";
 import { v4 as uuidv4 } from 'uuid';
 import { PlayerInfo } from "../types/player";
 import logger from "../log";
-import { buffManager, itemManager } from "./store";
+import { buffManager, itemManager, prefabWishManager } from "./store";
 import { Buff } from "../types/buff";
 import { Item } from "../types/item";
 import { NotFoundError } from "../error";
@@ -31,20 +31,22 @@ class WishHandler {
      * @returns 生成的愿望
      */
     generateWish(): Wish {
+        const id = uuidv4();
+        const now = new Date();
+        const idx = Math.floor(Math.random() * prefabWishManager.getAllPrefabWishes().length);
+        const prefabWish = prefabWishManager.getAllPrefabWishes()[idx];
+        const endTime = new Date(now.getTime() + prefabWish.duration * 1000);
+
         return {
-            id: uuidv4(),
-            name: "愿望",
+            id,
+            name: prefabWish.name,
             status: "doing",
-            startTime: new Date(),
-            duration: 1000,
-            endTime: new Date(Date.now() + 1000),
-            affectionExp: 100,
-            requirements: [],
-            reward: {
-                type: "item",
-                id: 1,
-                count: 1
-            }
+            startTime: now,
+            duration: prefabWish.duration,
+            endTime,
+            affectionExp: prefabWish.affectionExp,
+            requirements: prefabWish.requirements,
+            reward: prefabWish.reward,
         }
     }
 

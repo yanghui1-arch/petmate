@@ -3,6 +3,7 @@ import { PlayerInfo } from "../main/types/player";
 import { Item, ItemType } from "../main/types/item";
 import { ActivityInfo } from "../main/types/activity"; 
 import { SettingConfig } from "../main/settings";
+import { Wish } from "../main/types/wish";
 
 /**
  * 与主进程通信的接口
