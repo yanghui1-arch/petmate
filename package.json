@@ -27,7 +27,7 @@
     "vite-plugin-electron": "^0.29.0",
     "vitest": "^2.1.0"
   },
-  "main": "dist/main/index.js",
+  "main": "dist/src/main/index.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:ts\" \"npm run dev:electron\" \"npm run dev:vite\"",
     "dev:electron": "electron .",
