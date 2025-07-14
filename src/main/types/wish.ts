@@ -34,3 +34,12 @@ export type WishReward = {
     type: "buff",
     id: number
 }
+
+export interface PrefabWish {
+    id: number,
+    name: string,
+    requirements: WishRequirement[],
+    affectionExp: number,
+    reward?: WishReward,
+    duration: number
+}

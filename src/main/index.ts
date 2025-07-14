@@ -1,6 +1,7 @@
 import { app, BrowserWindow } from 'electron'
 import * as path from 'path'
 import './ipc'
+import { destroyScheduler, startWishGeneration } from './scheduler'
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -21,6 +22,7 @@ const createWindow = () => {
 
 app.whenReady().then(() => {
   createWindow()
+  startWishGeneration()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -29,4 +31,9 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('before-quit', () => {
+  // 清理定时任务
+  destroyScheduler()
 })

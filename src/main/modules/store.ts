@@ -12,6 +12,7 @@ import { Dass, DEFAULT_DASS_ATTRIBUTE } from './petmate/dass';
 import { readJsonFile } from './utils/file';
 import { NotEnoughError, NotFoundError, DataMigrationError } from '../error';
 import { Buff } from '../types/buff';
+import { PrefabWish } from '../types/wish';
 
 type PlayerStoreData = {
     playerInfo: PlayerInfo;
@@ -27,6 +28,10 @@ type BuffStoreData = {
 
 type ItemStoreData = {
     itemInfo: Item[];
+}
+
+type PrefabWishStoreData = {
+    prefabWishInfo: PrefabWish[];
 }
 
 /**
@@ -274,8 +279,31 @@ class ItemManager {
     }
 }
 
+class PrefabWishManager {
+    private store: Store<PrefabWishStoreData>;
+    private prefabWishes: PrefabWish[] = [];
+
+    constructor() {
+        this.store = new Store<PrefabWishStoreData>({
+            name: 'prefab-wish-store'
+        });
+        this.loadPrefabWish();
+    }
+
+    loadPrefabWish(): void {
+        const prefabWishes = readJsonFile<PrefabWish>('src/main/assets/prefab_wish.json');
+        (this.store as any).set('prefabWishInfo', prefabWishes);
+        this.prefabWishes = prefabWishes;
+    }
+
+    getAllPrefabWishes(): PrefabWish[] {
+        return this.prefabWishes.map(wish => ({ ...wish }));
+    }
+}
+
 // Create a singleton instance
 export const playerManager = new PlayerManager();
 export const activityManager = new ActivityManager();
 export const buffManager = new BuffManager();
 export const itemManager = new ItemManager();
+export const prefabWishManager = new PrefabWishManager();
