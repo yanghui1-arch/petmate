@@ -3,6 +3,8 @@ import * as path from 'path'
 import './ipc'
 import { destroyScheduler, startWishGeneration } from './scheduler'
 
+let mainWindow: BrowserWindow | null = null;
+
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 400,
@@ -15,14 +17,20 @@ const createWindow = () => {
     },
   })
 
+  mainWindow = win;
+
   // 加载渲染进程页面
   console.log("nihao")
   win.loadURL('http://localhost:5173')
+
+  win.on('closed', () => {
+    mainWindow = null;
+  })
 }
 
 app.whenReady().then(() => {
   createWindow()
-  startWishGeneration()
+  startWishGeneration(0)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -37,3 +45,7 @@ app.on('before-quit', () => {
   // 清理定时任务
   destroyScheduler()
 })
+
+export function getMainWindow(): BrowserWindow | null {
+  return mainWindow;
+}

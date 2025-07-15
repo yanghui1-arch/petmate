@@ -38,3 +38,33 @@ export class DataMigrationError extends Error {
         this.name = "DataMigrationError";
     }
 }
+
+/**
+ * 大模型配置错误
+ */
+export class LLMConfigError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "LLMConfigError";
+    }
+}
+
+/**
+ * TTS过程出现错误
+ */
+export class TTSProcessError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "TTSProcessError";
+    }
+}
+
+/**
+ * 文本大模型的参数设置有问题
+ */
+export class ChatLLMConfigError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "ChatLLMConfigError";
+    }
+}

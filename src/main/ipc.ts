@@ -17,8 +17,9 @@ import { Item, ItemType } from './types/item';
 import { buyItem } from './modules/player/basic';
 import { ActivityInfo } from './types/activity';
 import { getCompletedWishesNum, showActivities, showItems } from './modules/show';
-import { NotFoundError } from './error';
+import { ChatLLMConfigError, LLMConfigError, NotFoundError, TTSProcessError } from './error';
 import { getModelSize, getSettings, SettingConfig, updateSettings } from './settings';
+import { chat, ChatMessage } from './llm';
 
 /**
  * 初始化加载玩家数据
@@ -156,6 +157,49 @@ ipcMain.handle("buy-item", (event: IpcMainInvokeEvent, itemId: number, count: nu
             code: 400,
             message: "购买物品失败"
         } as Response<Item>;
+    }
+})
+
+/**
+ * 玩家与petmate进行聊天
+ * 调用该方法时，会自动的将此次信息纳入为历史信息中，并且进行流式的tts转录，并且直接将转录后的信息发送给渲染进程
+ * 目前只接收文本信息，并且返回的是音频
+ * @param message 聊天信息
+ * @returns 发送聊天信息成功或失败
+ */
+ipcMain.handle("chat", (event: IpcMainInvokeEvent, message: ChatMessage): Response<void> => {
+    try {
+        chat(message);
+        return {
+            code: 200,
+            message: "发送聊天信息成功"
+        } as Response<void>;
+    } catch (error) {
+        if (error instanceof LLMConfigError) {
+            logger.error(`发送聊天信息失败，模型配置错误: ${error}`);
+            return {
+                code: 400,
+                message: "发送聊天信息失败，请检查模型的配置是否正确"
+            } as Response<void>;
+        } else if (error instanceof ChatLLMConfigError) {
+            logger.error(`发送聊天信息失败，聊天信息的role不是user: ${error}`);
+            return {
+                code: 400,
+                message: "发送聊天信息失败"
+            } as Response<void>;
+        } else if (error instanceof TTSProcessError) {
+            logger.error(`发送聊天信息失败，TTS参数未正确初始化: ${error}`);
+            return {
+                code: 400,
+                message: "发送聊天信息失败"
+            } as Response<void>;
+        }
+        
+        logger.error(`发送聊天信息失败，未知错误: ${error}`);
+        return {
+            code: 400,
+            message: "发送聊天信息失败"
+        } as Response<void>;
     }
 })
 
