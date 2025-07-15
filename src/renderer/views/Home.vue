@@ -20,7 +20,9 @@
                 />
               </div>
               <div class="home-panel-grade">
-                <span class="grade-value">LEVEL {{ petmateAttribute?.level }}</span>
+                <span class="grade-value"
+                  >LEVEL {{ petmateAttribute?.level }}</span
+                >
               </div>
             </div>
             <div class="home-panel-stat">
@@ -32,24 +34,41 @@
               <div class="attribute-item">
                 <span>饱食度</span>
                 <!-- <AttributeBar :value="hp" color="#ff9812" /> -->
-                <AttributeBar :value="petmateAttribute?.hungry ?? 0" :max="petmateAttribute?.max_hungry ?? 100" />
+                <AttributeBar
+                  :value="petmateAttribute?.hungry ?? 0"
+                  :max="petmateAttribute?.max_hungry ?? 100"
+                />
               </div>
               <div class="attribute-item">
                 <span>精力</span>
-                <AttributeBar :value="petmateAttribute?.energy ?? 0" :max="petmateAttribute?.max_energy ?? 100" />
+                <AttributeBar
+                  :value="petmateAttribute?.energy ?? 0"
+                  :max="petmateAttribute?.max_energy ?? 100"
+                />
               </div>
               <div class="attribute-item">
                 <span>心情</span>
-                <AttributeBar :value="petmateAttribute?.emotion ?? 0" :max="petmateAttribute?.max_emotion ?? 100" />
+                <AttributeBar
+                  :value="petmateAttribute?.emotion ?? 0"
+                  :max="petmateAttribute?.max_emotion ?? 100"
+                />
               </div>
               <div class="attribute-item">
                 <span>健康</span>
-                <AttributeBar :value="petmateAttribute?.health ?? 0" :max="petmateAttribute?.max_health ?? 100" />
+                <AttributeBar
+                  :value="petmateAttribute?.health ?? 0"
+                  :max="petmateAttribute?.max_health ?? 100"
+                />
               </div>
             </div>
           </div>
           <div class="home-grade-detail">
-            <AttributeBar :value="exp" color="#e28fac" :width="'100%'" :max="petmateAttribute?.next_exp ?? 100"/>
+            <AttributeBar
+              :value="exp"
+              color="#e28fac"
+              :width="'100%'"
+              :max="petmateAttribute?.next_exp ?? 100"
+            />
           </div>
         </div>
       </div>
@@ -67,6 +86,13 @@
           </button>
         </div>
         <div class="home-package-wrapper">
+          <ItemPopover
+            :popoverX="popoverX"
+            :popoverY="popoverY"
+            :show="isItemEnter"
+            :popoverWidth="popoverWidth"
+          />
+          <ItemModal v-model:show="isModalShow" :title="modalTitle" />
           <n-carousel
             :show-arrow="false"
             :show-dots="false"
@@ -84,12 +110,11 @@
                   :key="i"
                   style="display: flex; justify-content: center"
                 >
-                  <div class="package-item" @click="consumeItem(item.id, 1, currentPetmateID)">
-                    <n-image
-                      width="38"
-                      :src="item.url"
-                      preview-disabled
-                    />
+                  <div
+                    class="package-item"
+                    @click="consumeItem(item.id, 1, currentPetmateID)"
+                  >
+                    <n-image width="38" :src="item.url" preview-disabled />
                     <span class="package-item-num">{{ item.count }}</span>
                   </div>
                 </n-gi>
@@ -109,7 +134,12 @@
                   :key="i"
                   style="display: flex; justify-content: center"
                 >
-                  <div class="package-item">
+                  <div
+                    class="package-item"
+                    @mouseenter="showPopover($event)"
+                    @mouseleave="hidePopover"
+                    @click="showModal(item)"
+                  >
                     <n-image
                       width="38"
                       src="../assets/image/item/burger.png"
@@ -153,8 +183,9 @@ import { ref } from "vue";
 import { onMounted, onBeforeUnmount } from "vue";
 import AttributeBar from "@/components/AttributeBar.vue";
 import Pagedot from "@/components/Pagedot.vue";
+import ItemPopover from "@/components/ItemPopover.vue";
+import ItemModal from "@/components/ItemModal.vue";
 import type { CarouselInst } from "naive-ui";
-
 import { usePlayer } from "../hooks/usePlayer";
 import { PackageItemInfo } from "../types/player";
 import { PetMate, PetMateAttribute } from "../types/petmate";
@@ -171,8 +202,14 @@ const { playerData, consumeItem } = usePlayer();
 
 // Petmate相关
 const currentPetmateID = 0;
-const currentActivePetmate = ref<PetMate | undefined>(playerData.value?.petmates.filter(petmate => petmate.id === currentPetmateID)[0] as PetMate);
-const petmateAttribute = ref<PetMateAttribute | undefined>(currentActivePetmate.value?.attrs);
+const currentActivePetmate = ref<PetMate | undefined>(
+  playerData.value?.petmates.filter(
+    (petmate) => petmate.id === currentPetmateID
+  )[0] as PetMate
+);
+const petmateAttribute = ref<PetMateAttribute | undefined>(
+  currentActivePetmate.value?.attrs
+);
 
 const exp: Ref<number> = ref(petmateAttribute.value?.exp ?? 0);
 
@@ -192,9 +229,8 @@ const packageTypeList = ref([
 const playerItems: PackageItemInfo[] = [...(playerData.value?.items || [])];
 const packagePrevItemList = ref<PackageItemInfo[]>(playerItems);
 
-
 // 只是用来占位的，里面是什么东西无所谓，只要长度正确即可
-const packageNextItemList = ref([{ num: 10 }, { num: 10 }, { num: 10 }]);
+const packageNextItemList = ref(new Array(18).fill(0));
 
 const packagePageRef = ref<CarouselInst | null>(null);
 
@@ -212,8 +248,31 @@ const nextPage = () => {
   packagePageRef.value?.next();
 };
 
+// 物品信息悬浮框相关
+const popoverX = ref(0);
+const popoverY = ref(0);
+const isItemEnter = ref(false);
+const popoverWidth = ref(150);
+const showPopover = (event: MouseEvent) => {
+  const target = event.currentTarget as HTMLElement;
+  const rect = target?.getBoundingClientRect();
+  // 经过实践，popoverX和popoverY暂时确定是悬浮框矩形 '底部中心' 的坐标
+  popoverX.value = rect.x + rect.width / 2 + popoverWidth.value / 2;
+  popoverY.value = rect.y + rect.height / 2;
 
+  isItemEnter.value = true;
+};
 
+const hidePopover = () => {
+  isItemEnter.value = false;
+};
+
+// 物品使用弹出框相关
+const modalTitle = ref("请选择使用数量");
+const isModalShow = ref(false);
+const showModal = (event: MouseEvent) => {
+  isModalShow.value = true;
+};
 </script>
 
 <style lang="scss" scoped>

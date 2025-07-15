@@ -82,41 +82,13 @@
             >
               <div>
                 <!-- 商品的悬浮提示框，手动控制显示 -->
-                <n-popover
-                  trigger="manual"
-                  :show-arrow="false"
-                  :x="popoverX"
-                  :y="popoverY"
-                  :show="isShopItemEnter || isPopoverEnter"
-                  raw
-                  ><div
-                    :style="{
-                      width: popoverWidth + 'px',
-                    }"
-                  >
-                    <div
-                      class="popover-wrapper"
-                      @mouseenter="isPopoverEnter = true"
-                      @mouseleave="isPopoverEnter = false"
-                    >
-                      <div class="popover-title">汉堡</div>
-                      <div class="popover-content">
-                        <div class="popover-description">
-                          大口满足，补充能力
-                        </div>
-                        <div class="popover-tip">使用后获得以下效果</div>
-                        <div class="popover-effect">
-                          <span>饱食度+12</span>
-                          <span>精力度+12</span>
-                          <span>精力度+12</span>
-                          <span>精力度+12</span>
-                          <span>精力度+12</span>
-                          <span>精力度+12</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </n-popover>
+                <ItemPopover
+                  :popoverX="popoverX"
+                  :popoverY="popoverY"
+                  :show="isItemEnter"
+                  :popoverWidth="popoverWidth"
+                />
+                <ItemModal v-model:show="isModalShow" :title="modalTitle" />
                 <n-grid x-gap="5" y-gap="5" :cols="3">
                   <n-gi
                     v-for="item in shopPrevItemList"
@@ -129,9 +101,9 @@
                   >
                     <div
                       class="shop-item"
-                      @click="buyItem(0, 1)"
                       @mouseenter="showPopover($event)"
                       @mouseleave="hidePopover"
+                      @click="showModal(item)"
                     >
                       <div class="special-label">
                         <i class="fold-label"></i>
@@ -202,6 +174,8 @@
 
 <script setup lang="ts">
 import Pagedot from "@/components/Pagedot.vue";
+import ItemPopover from "@/components/ItemPopover.vue";
+import ItemModal from "@/components/ItemModal.vue";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
 import { ItemType, Item } from "../types/common";
@@ -261,7 +235,7 @@ const nextPage = () => {
 };
 
 // 鼠标离开商品或悬浮框内容时，悬浮框消失
-const isShopItemEnter = ref(false);
+const isItemEnter = ref(false);
 const isPopoverEnter = ref(false);
 const popoverX = ref(0);
 const popoverY = ref(0);
@@ -274,13 +248,18 @@ const showPopover = (event: MouseEvent) => {
   popoverX.value = rect.x + rect.width / 2 + popoverWidth.value / 2;
   popoverY.value = rect.y + rect.height / 2;
 
-  // console.log("popoverX", "popoverY", popoverX.value, popoverY.value);
-
-  isShopItemEnter.value = true;
+  isItemEnter.value = true;
 };
 
 const hidePopover = () => {
-  isShopItemEnter.value = false;
+  isItemEnter.value = false;
+};
+
+// 物品购买弹出框相关
+const modalTitle = ref("请选择购买数量");
+const isModalShow = ref(false);
+const showModal = (shopItem: Item) => {
+  isModalShow.value = true;
 };
 </script>
 
