@@ -3,6 +3,7 @@ import { PlayerInfo } from "../../main/types/player";
 import { Item, ItemType } from "../../main/types/item";
 import { ActivityInfo } from "../../main/types/activity"; 
 import { SettingConfig } from "../../main/settings";
+import { ChatMessage } from "./llm";
 
 /**
  * 与主进程通信的接口
@@ -19,6 +20,7 @@ interface IElectronAPI {
   getModelSize: () => Promise<Response<number>>;
   getSettings: () => Promise<Response<SettingConfig>>;
   updateSettings: (settings: Partial<SettingConfig>) => Promise<Response<void>>;
+  chat: (message: ChatMessage) => Promise<Response<void>>;
 }
 
 // 声明全局window对象，之后渲染层直接window.api.function() 调用即可
