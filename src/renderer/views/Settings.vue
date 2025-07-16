@@ -27,20 +27,20 @@
 <script lang="ts" setup>
 import { ref, onMounted, watch } from 'vue'
 import { useSettings } from '../hooks/useSettings'
-import { SettingConfig } from '../types/config'
 
-const { getSettings, updateSettings } = useSettings()
+const { settings, updateSettings } = useSettings()
 
 const focusActive = ref(false)
 const topCanvasActive = ref(true)
 const modelMaxSize = ref(50)
 
 onMounted(async () => {
-  const settings: SettingConfig | null = await getSettings()
-  if (settings) {
-    focusActive.value = settings.focusMode
-    topCanvasActive.value = settings.onTop
-    modelMaxSize.value = settings.modelSize
+  if (settings.value) {
+    focusActive.value = settings.value.focusMode
+    topCanvasActive.value = settings.value.onTop
+    modelMaxSize.value = settings.value.modelSize
+  } else {
+    console.error("设置初始化失败")
   }
 })
 

@@ -1,6 +1,6 @@
 import { SettingConfig } from "../types/config"
 
-
+const settings = ref<SettingConfig | null>(null)
 
 export function useSettings() {
 
@@ -13,6 +13,7 @@ export function useSettings() {
         try {
             const res = await window.api.initSettings()
             if (res.code === 200) {
+                settings.value = res.data!
                 return true
             } else {
                 throw new Error(res.message)
@@ -20,25 +21,6 @@ export function useSettings() {
         } catch (error) {
             console.error(error)
             return false
-        }
-    }
-
-    /**
-     * 获取设置
-     * 成功的话会返回设置，如果出现错误的话，会返回null
-     * @returns 设置
-     */
-    const getSettings = async ():Promise<SettingConfig | null> => {
-        try {
-            const res = await window.api.getSettings()
-            if (res.code === 200) {
-                return res.data ?? null
-            } else {
-                throw new Error(res.message)
-            }
-        } catch (error) {
-            console.error(error)
-            return null
         }
     }
 
@@ -52,6 +34,7 @@ export function useSettings() {
         try {
             const res = await window.api.updateSettings(updates)
             if (res.code === 200) {
+                settings.value = res.data!
                 return true
             } else {
                 throw new Error(res.message)
@@ -64,8 +47,9 @@ export function useSettings() {
 
 
     return {
+        settings: readonly(settings),
+
         initSettings,
-        getSettings,
         updateSettings
     }
 }
