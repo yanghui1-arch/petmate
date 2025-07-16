@@ -18,7 +18,7 @@ import { buyItem } from './modules/player/basic';
 import { ActivityInfo } from './types/activity';
 import { getCompletedWishesNum, showActivities, showItems } from './modules/show';
 import { ChatLLMConfigError, LLMConfigError, NotFoundError, TTSProcessError } from './error';
-import { getModelSize, getSettings, SettingConfig, updateSettings } from './settings';
+import { getModelSize, getSettings, SettingConfig, updateSettings, defaultSettings } from './settings';
 import { chat, ChatMessage } from './llm';
 
 /**
@@ -111,6 +111,37 @@ ipcMain.handle("load-player-data", (event: IpcMainInvokeEvent): Response<PlayerI
             code: 400,
             message: "加载数据失败"
         } as Response<PlayerInfo>;
+    }
+})
+
+/**
+ * 初始化设置数据
+ * 将玩家自定义的设置数据加载到内存中，如果玩家没有自定义的设置数据，则初始化默认设置，并写入到自定义的设置数据中
+ * @returns 玩家自定义的设置数据
+ */
+ipcMain.handle("init-settings", (event: IpcMainInvokeEvent): Response<SettingConfig> => {
+    try {
+        const settings: SettingConfig = getSettings();
+        return {
+            code: 200,
+            message: "初始化设置数据成功",
+            data: settings
+        } as Response<SettingConfig>;
+    } catch (error) {
+        if (error instanceof NotFoundError) {
+            // 如果设置不存在，则初始化默认设置，然后保存到文件中
+            const officialSettings: SettingConfig = defaultSettings
+            updateSettings(officialSettings);
+            return {
+                code: 200,
+                message: "初始化设置数据成功，已初始化默认设置。",
+                data: officialSettings
+            } as Response<SettingConfig>;
+        }
+        return {
+            code: 400,
+            message: "初始化设置数据失败"
+        }
     }
 })
 
