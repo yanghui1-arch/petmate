@@ -81,6 +81,14 @@
               ref="shopPageRef"
             >
               <div>
+                <!-- 商品的悬浮提示框，手动控制显示 -->
+                <ItemPopover
+                  :popoverX="popoverX"
+                  :popoverY="popoverY"
+                  :show="isItemEnter"
+                  :popoverWidth="popoverWidth"
+                />
+                <ItemModal v-model:show="isModalShow" :title="modalTitle" />
                 <n-grid x-gap="5" y-gap="5" :cols="3">
                   <n-gi
                     v-for="item in shopPrevItemList"
@@ -91,12 +99,17 @@
                       padding: 2px 0;
                     "
                   >
-                    <div class="shop-item" @click="buyItem(0, 1)">
+                    <div
+                      class="shop-item"
+                      @mouseenter="showPopover($event)"
+                      @mouseleave="hidePopover"
+                      @click="showModal(item)"
+                    >
                       <div class="special-label">
                         <i class="fold-label"></i>
                         <span class="label-text">7折</span>
                       </div>
-                      <div class="item-name">{{ item.name}}</div>
+                      <div class="item-name">{{ item.name }}</div>
                       <n-image
                         width="38"
                         class="item-image"
@@ -122,7 +135,11 @@
                       padding: 2px 0;
                     "
                   >
-                    <div class="shop-item">
+                    <div
+                      class="shop-item"
+                      @mouseenter="showPopover($event)"
+                      @mouseleave="hidePopover"
+                    >
                       <div class="special-label">
                         <i class="fold-label"></i>
                         <span class="label-text">7折</span>
@@ -157,10 +174,11 @@
 
 <script setup lang="ts">
 import Pagedot from "@/components/Pagedot.vue";
+import ItemPopover from "@/components/ItemPopover.vue";
+import ItemModal from "@/components/ItemModal.vue";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
 import { ItemType, Item } from "../types/common";
-
 
 const { buyItem, playerData } = usePlayer();
 const { getShopItems } = useShow();
@@ -182,7 +200,6 @@ const handleTypeClick = async (typeName: ItemType) => {
   shopCurrType.value = typeName;
   shopPrevItemList.value = await getShopItems(typeName);
 };
-
 
 const shopNextItemList = ref([
   { num: 10 },
@@ -215,6 +232,34 @@ const nextPage = () => {
     shopCurrPage.value++;
   }
   shopPageRef.value?.next();
+};
+
+// 鼠标离开商品或悬浮框内容时，悬浮框消失
+const isItemEnter = ref(false);
+const isPopoverEnter = ref(false);
+const popoverX = ref(0);
+const popoverY = ref(0);
+const popoverWidth = ref(150);
+const popoverHeight = ref(130);
+const showPopover = (event: MouseEvent) => {
+  const target = event.currentTarget as HTMLElement;
+  const rect = target?.getBoundingClientRect();
+  // 经过实践，popoverX和popoverY暂时确定是悬浮框矩形 '底部中心' 的坐标
+  popoverX.value = rect.x + rect.width / 2 + popoverWidth.value / 2;
+  popoverY.value = rect.y + rect.height / 2;
+
+  isItemEnter.value = true;
+};
+
+const hidePopover = () => {
+  isItemEnter.value = false;
+};
+
+// 物品购买弹出框相关
+const modalTitle = ref("请选择购买数量");
+const isModalShow = ref(false);
+const showModal = (shopItem: Item) => {
+  isModalShow.value = true;
 };
 </script>
 
@@ -555,13 +600,100 @@ const nextPage = () => {
         justify-content: center;
         align-items: center;
         column-gap: 2px;
-
         border-radius: 10px;
         color: #8b4513;
         font-weight: bold;
         .price-icon {
           font-size: 14px;
           margin-top: -3px; //对齐
+        }
+      }
+    }
+    .shop-item-popover {
+      width: 100px;
+      height: 100px;
+      background: #fff;
+      border-radius: 10px;
+    }
+  }
+}
+
+// 商品悬浮框
+.popover-wrapper {
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  background: #55484b;
+  border: 1px solid #f39c12;
+  box-shadow: 0 12px 35px rgba(243, 156, 18, 0.4),
+    0 0 20px rgba(243, 156, 18, 0.2), inset 0 1px 3px rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  position: relative;
+  overflow: hidden;
+
+  .popover-title {
+    width: 100%;
+    font-weight: bold;
+    color: #f39c12;
+    text-align: center;
+    padding: 4px 0;
+    background: linear-gradient(
+      135deg,
+      rgba(243, 156, 18, 0.1),
+      rgba(230, 126, 34, 0.1)
+    );
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    font-size: 13px;
+  }
+  .popover-content {
+    width: 100%;
+    flex: 1;
+    padding: 8px 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+
+    .popover-description,
+    .popover-tip {
+      color: #ecf0f1;
+      font-size: 11px;
+      text-align: center;
+      margin-bottom: 8px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+      opacity: 0.9;
+    }
+
+    .popover-description {
+      color: #e0a6a6;
+      margin-bottom: 20px;
+    }
+
+    .popover-effect {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+
+      row-gap: 4px;
+
+      span {
+        color: #27ae60;
+        font-weight: 600;
+        font-size: 11px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid rgba(39, 174, 96, 0.3);
+        min-width: 70px;
+        text-align: center;
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: rgba(39, 174, 96, 0.5);
         }
       }
     }
