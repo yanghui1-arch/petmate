@@ -11,13 +11,15 @@
               type="number"
               class="counter-input"
               v-model="count"
-              min="1"
+              @input="checkCount"
             />
             <button class="counter-add-btn" @click="addCount">+</button>
           </div>
           <div class="confirm">
-            <button class="confirm-btn">确定</button>
-            <button class="cancel-btn">取消</button>
+            <button class="confirm-btn" @click="confirm">确定</button>
+            <button class="cancel-btn" @click="isModalShow = false">
+              取消
+            </button>
           </div>
         </div>
       </div>
@@ -26,11 +28,18 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, ref } from "vue";
+import { defineProps, ref, PropType } from "vue";
+import { usePlayer } from "../hooks/usePlayer";
+import { Item } from "../types/common";
+
+const { buyItem, consumeItem } = usePlayer();
 
 const props = defineProps({
   show: { type: Boolean, required: true }, // 是否显示
   title: { type: String, required: true }, // 弹出框标题
+  type: { type: String, required: true }, // 弹出框类型：使用、购买
+  item: { type: Object, required: true }, // 物品
+  petmateId: { type: Number, required: false, default: 0 }, // petmaetId
 });
 
 const emit = defineEmits<{
@@ -44,13 +53,36 @@ const isModalShow = computed({
 
 // 计数器相关
 const count = ref(1);
+let minCount = 1;
+let maxCount = 999;
 const subCount = () => {
-  if (count.value > 1) {
+  if (count.value > minCount) {
     count.value--;
   }
 };
 const addCount = () => {
-  count.value++;
+  maxCount = props.type === "use" ? props.item.count : 999;
+  if (count.value < maxCount) {
+    count.value++;
+  }
+};
+// 监听输入边界值
+const checkCount = () => {
+  if (count.value < minCount) {
+    count.value = minCount;
+  }
+  if (count.value > maxCount) {
+    count.value = maxCount;
+  }
+};
+
+// 确定按钮相关
+const confirm = () => {
+  if (props.type === "buy") {
+    buyItem(props.item.id, count.value);
+  } else if (props.type === "use") {
+    consumeItem(props.item.id, count.value, props.petmateId);
+  }
 };
 </script>
 

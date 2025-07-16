@@ -86,13 +86,6 @@
           </button>
         </div>
         <div class="home-package-wrapper">
-          <ItemPopover
-            :popoverX="popoverX"
-            :popoverY="popoverY"
-            :show="isItemEnter"
-            :popoverWidth="popoverWidth"
-          />
-          <ItemModal v-model:show="isModalShow" :title="modalTitle" />
           <n-carousel
             :show-arrow="false"
             :show-dots="false"
@@ -103,35 +96,15 @@
             }"
             ref="packagePageRef"
           >
-            <div class="home-package-content">
+            <div
+              class="home-package-content"
+              v-for="(page, index) in packagePageList"
+              :key="index"
+            >
               <n-grid x-gap="5" y-gap="5" :cols="6">
                 <n-gi
-                  v-for="(item, i) in packagePrevItemList"
-                  :key="i"
-                  style="display: flex; justify-content: center"
-                >
-                  <div
-                    class="package-item"
-                    @click="consumeItem(item.id, 1, currentPetmateID)"
-                  >
-                    <n-image width="38" :src="item.url" preview-disabled />
-                    <span class="package-item-num">{{ item.count }}</span>
-                  </div>
-                </n-gi>
-                <n-gi
-                  v-for="i in packagePageSize - packagePrevItemList.length"
-                  :key="i"
-                  style="display: flex; justify-content: center"
-                >
-                  <div class="package-item"></div>
-                </n-gi>
-              </n-grid>
-            </div>
-            <div class="home-package-content">
-              <n-grid x-gap="5" y-gap="5" :cols="6">
-                <n-gi
-                  v-for="(item, i) in packageNextItemList"
-                  :key="i"
+                  v-for="item in page"
+                  :key="item.id"
                   style="display: flex; justify-content: center"
                 >
                   <div
@@ -140,16 +113,12 @@
                     @mouseleave="hidePopover"
                     @click="showModal(item)"
                   >
-                    <n-image
-                      width="38"
-                      src="../assets/image/item/burger.png"
-                      preview-disabled
-                    />
-                    <span class="package-item-num">99</span>
+                    <n-image width="38" :src="item.url" preview-disabled />
+                    <span class="package-item-num">{{ item.count }}</span>
                   </div>
                 </n-gi>
                 <n-gi
-                  v-for="i in packagePageSize - packageNextItemList.length"
+                  v-for="i in packagePageSize - page.length"
                   :key="i"
                   style="display: flex; justify-content: center"
                 >
@@ -175,6 +144,19 @@
         </div>
       </div>
     </div>
+    <ItemPopover
+      :popoverX="popoverX"
+      :popoverY="popoverY"
+      :show="isItemEnter"
+      :popoverWidth="popoverWidth"
+      :isSourceShow="true"
+    />
+    <ItemModal
+      v-model:show="isModalShow"
+      :title="modalTitle"
+      :item="modalItem"
+      type="use"
+    />
   </div>
 </template>
 
@@ -186,17 +168,23 @@ import Pagedot from "@/components/Pagedot.vue";
 import ItemPopover from "@/components/ItemPopover.vue";
 import ItemModal from "@/components/ItemModal.vue";
 import type { CarouselInst } from "naive-ui";
+import { executeItemPage } from "../utils/item";
 import { usePlayer } from "../hooks/usePlayer";
 import { PackageItemInfo } from "../types/player";
 import { PetMate, PetMateAttribute } from "../types/petmate";
 
+const packagePageList = ref<PackageItemInfo[][]>([]);
+
 onMounted(() => {
-  document.body.style.backgroundColor = "#f9f9f9";
+  preparePackageData();
 });
 
-onBeforeUnmount(() => {
-  document.body.style.backgroundColor = ""; // 恢复默认
-});
+// 准备背包数据
+const preparePackageData = async () => {
+  const playerItems: PackageItemInfo[] = [...(playerData.value?.items || [])];
+  packagePageList.value = executeItemPage(playerItems, packagePageSize.value);
+  packagePageNum.value = packagePageList.value.length;
+};
 
 const { playerData, consumeItem } = usePlayer();
 
@@ -225,10 +213,6 @@ const packageTypeList = ref([
   { name: "drink", label: "🥤饮料" },
 ]);
 
-// 背包物品
-const playerItems: PackageItemInfo[] = [...(playerData.value?.items || [])];
-const packagePrevItemList = ref<PackageItemInfo[]>(playerItems);
-
 // 只是用来占位的，里面是什么东西无所谓，只要长度正确即可
 const packageNextItemList = ref(new Array(18).fill(0));
 
@@ -252,7 +236,7 @@ const nextPage = () => {
 const popoverX = ref(0);
 const popoverY = ref(0);
 const isItemEnter = ref(false);
-const popoverWidth = ref(150);
+const popoverWidth = ref(180);
 const showPopover = (event: MouseEvent) => {
   const target = event.currentTarget as HTMLElement;
   const rect = target?.getBoundingClientRect();
@@ -270,8 +254,10 @@ const hidePopover = () => {
 // 物品使用弹出框相关
 const modalTitle = ref("请选择使用数量");
 const isModalShow = ref(false);
-const showModal = (event: MouseEvent) => {
+const modalItem = ref<PackageItemInfo | null>(null);
+const showModal = (pItem: PackageItemInfo) => {
   isModalShow.value = true;
+  modalItem.value = pItem;
 };
 </script>
 

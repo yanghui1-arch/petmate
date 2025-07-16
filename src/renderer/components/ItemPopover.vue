@@ -20,14 +20,23 @@
           <div class="popover-title">汉堡</div>
           <div class="popover-content">
             <div class="popover-description">大口满足，补充能力</div>
-            <div class="popover-tip">使用后获得以下效果</div>
-            <div class="popover-effect">
-              <span>饱食度+12</span>
-              <span>精力度+12</span>
-              <span>精力度+12</span>
-              <span>精力度+12</span>
-              <span>精力度+12</span>
-              <span>精力度+12</span>
+            <div>
+              <div class="popover-tip">使用后获得以下效果</div>
+              <div class="popover-effect">
+                <span>饱食度+1200000</span>
+                <span>精力度+12</span>
+                <span>精力度+12</span>
+                <span>精力度+12</span>
+                <span>精力度+12</span>
+                <span>精力度+12</span>
+              </div>
+            </div>
+            <div v-if="isSourceShow">
+              <div class="popover-tip">获得方式</div>
+              <div class="popover-source">
+                <span>黑市</span>
+                <span>活动</span>
+              </div>
             </div>
           </div>
         </div>
@@ -44,7 +53,8 @@ const props = defineProps({
   popoverX: { type: Number, required: true },
   popoverY: { type: Number, required: true },
   show: { type: Boolean, required: true }, // 是否显示
-  popoverWidth: { type: Number, default: 150 }, // 悬浮矩形框的宽度
+  popoverWidth: { type: Number, default: 180 }, // 悬浮矩形框的宽度
+  isSourceShow: { type: Boolean, default: false }, // 是否显示获得方式
 });
 
 const isPopoverEnter = ref(false);
@@ -64,7 +74,6 @@ const isPopoverEnter = ref(false);
   align-items: center;
   font-size: 12px;
   position: relative;
-  overflow: hidden;
 
   .popover-title {
     width: 100%;
@@ -88,29 +97,32 @@ const isPopoverEnter = ref(false);
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
+    row-gap: 8px;
 
     .popover-description,
     .popover-tip {
       color: #ecf0f1;
       font-size: 11px;
-      text-align: center;
-      margin-bottom: 8px;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
       opacity: 0.9;
     }
 
     .popover-description {
       color: #e0a6a6;
-      margin-bottom: 20px;
     }
 
-    .popover-effect {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: center;
+    .popover-tip {
+      margin-bottom: 8px;
+    }
 
-      row-gap: 4px;
+    .popover-effect,
+    .popover-source {
+      display: flex;
+      flex-direction: row;
+      // align-items: flex-start;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      gap: 4px;
 
       span {
         color: #27ae60;
@@ -126,6 +138,15 @@ const isPopoverEnter = ref(false);
 
         &:hover {
           border-color: rgba(39, 174, 96, 0.5);
+        }
+      }
+    }
+    .popover-source {
+      span {
+        color: #04bbbb;
+        border: 1px solid rgba(39, 131, 174, 0.3);
+        &:hover {
+          border-color: rgba(39, 131, 174, 0.5);
         }
       }
     }

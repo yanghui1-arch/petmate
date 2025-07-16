@@ -96,5 +96,75 @@
             "energy": 20,
             "health": 20
         }
+    },
+    {
+        "id": 7,
+        "name": "汉堡123444",
+        "type": "hot",
+        "description": "汉堡144234",
+        "url": "../assets/image/item/burger.png",
+        "price": 4002,
+        "effect": {
+            "hungry": 20,
+            "emotion": 20,
+            "energy": 20,
+            "health": 20
+        }
+    },
+    {
+        "id": 8,
+        "name": "汉堡123444",
+        "type": "hot",
+        "description": "汉堡144234",
+        "url": "../assets/image/item/burger.png",
+        "price": 4002,
+        "effect": {
+            "hungry": 20,
+            "emotion": 20,
+            "energy": 20,
+            "health": 20
+        }
+    },
+    {
+        "id": 9,
+        "name": "汉堡123444",
+        "type": "hot",
+        "description": "汉堡144234",
+        "url": "../assets/image/item/burger.png",
+        "price": 4002,
+        "effect": {
+            "hungry": 20,
+            "emotion": 20,
+            "energy": 20,
+            "health": 20
+        }
+    },
+    {
+        "id": 10,
+        "name": "汉堡123444",
+        "type": "hot",
+        "description": "汉堡144234",
+        "url": "../assets/image/item/burger.png",
+        "price": 4002,
+        "effect": {
+            "hungry": 20,
+            "emotion": 20,
+            "energy": 20,
+            "health": 20
+        }
+    },
+    {
+        "id": 11,
+        "name": "汉堡123444",
+        "type": "hot",
+        "description": "汉堡144234",
+        "url": "../assets/image/item/burger.png",
+        "price": 4002,
+        "effect": {
+            "hungry": 20,
+            "emotion": 20,
+            "energy": 20,
+            "health": 20
+        }
     }
 ]

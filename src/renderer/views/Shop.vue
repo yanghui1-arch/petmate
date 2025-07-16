@@ -80,18 +80,10 @@
               }"
               ref="shopPageRef"
             >
-              <div>
-                <!-- 商品的悬浮提示框，手动控制显示 -->
-                <ItemPopover
-                  :popoverX="popoverX"
-                  :popoverY="popoverY"
-                  :show="isItemEnter"
-                  :popoverWidth="popoverWidth"
-                />
-                <ItemModal v-model:show="isModalShow" :title="modalTitle" />
+              <div v-for="(page, index) in shopPageList" :key="index">
                 <n-grid x-gap="5" y-gap="5" :cols="3">
                   <n-gi
-                    v-for="item in shopPrevItemList"
+                    v-for="item in page"
                     :key="item.id"
                     style="
                       display: flex;
@@ -124,41 +116,6 @@
                   </n-gi>
                 </n-grid>
               </div>
-              <div>
-                <n-grid x-gap="5" y-gap="5" :cols="3">
-                  <n-gi
-                    v-for="i in shopNextItemList"
-                    :key="i"
-                    style="
-                      display: flex;
-                      justify-content: center;
-                      padding: 2px 0;
-                    "
-                  >
-                    <div
-                      class="shop-item"
-                      @mouseenter="showPopover($event)"
-                      @mouseleave="hidePopover"
-                    >
-                      <div class="special-label">
-                        <i class="fold-label"></i>
-                        <span class="label-text">7折</span>
-                      </div>
-                      <div class="item-name">汉堡</div>
-                      <n-image
-                        width="38"
-                        class="item-image"
-                        src="../assets/image/item/burger.png"
-                        preview-disabled
-                      />
-                      <div class="item-price-wrapper">
-                        <span class="price-icon">💵</span>
-                        <span class="item-price">200</span>
-                      </div>
-                    </div>
-                  </n-gi>
-                </n-grid>
-              </div>
             </n-carousel>
           </div>
           <Pagedot
@@ -169,6 +126,20 @@
         </div>
       </div>
     </div>
+    <!-- 商品的悬浮提示框，手动控制显示 -->
+    <ItemPopover
+      :popoverX="popoverX"
+      :popoverY="popoverY"
+      :show="isItemEnter"
+      :popoverWidth="popoverWidth"
+    />
+    <!-- 商品购买弹出框 -->
+    <ItemModal
+      v-model:show="isModalShow"
+      :title="modalTitle"
+      :item="modalItem"
+      type="buy"
+    />
   </div>
 </template>
 
@@ -179,36 +150,34 @@ import ItemModal from "@/components/ItemModal.vue";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
 import { ItemType, Item } from "../types/common";
+import { executeItemPage } from "../utils/item";
 
 const { buyItem, playerData } = usePlayer();
 const { getShopItems } = useShow();
 
-const shopCurrType = ref<ItemType>("food");
-const shopPageNum = ref(2);
+const shopCurrType = ref<ItemType>("hot" as ItemType);
+const shopPageNum = ref(0);
 const shopCurrPage = ref(1);
 const shopPageSize = ref(6);
-
-const shopPrevItemList = ref<Item[]>([]);
+const shopPageList = ref<Item[][]>([]);
 
 // 初始化商品类型和显示默认的商品类型的商品列表
 onMounted(async () => {
-  shopPrevItemList.value = await getShopItems(shopCurrType.value);
+  prepareShopData();
 });
+
+// 准备商品数据
+const prepareShopData = async () => {
+  const shopItemList = await getShopItems(shopCurrType.value);
+  shopPageList.value = executeItemPage(shopItemList, shopPageSize.value);
+  shopPageNum.value = shopPageList.value.length;
+};
 
 // 点击切换商品类型
 const handleTypeClick = async (typeName: ItemType) => {
   shopCurrType.value = typeName;
-  shopPrevItemList.value = await getShopItems(typeName);
+  prepareShopData();
 };
-
-const shopNextItemList = ref([
-  { num: 10 },
-  { num: 10 },
-  { num: 10 },
-  { num: 10 },
-  { num: 10 },
-  { num: 10 },
-]);
 
 const shopTypeList = ref([
   { name: "hot" as ItemType, label: "🔥特卖" },
@@ -218,7 +187,7 @@ const shopTypeList = ref([
   { name: "drink" as ItemType, label: "饮料" },
 ]);
 
-const shopPageRef = ref(null);
+const shopPageRef = ref<InstanceType<typeof NCarousel> | null>(null);
 
 const prevPage = () => {
   if (shopCurrPage.value > 1) {
@@ -239,7 +208,7 @@ const isItemEnter = ref(false);
 const isPopoverEnter = ref(false);
 const popoverX = ref(0);
 const popoverY = ref(0);
-const popoverWidth = ref(150);
+const popoverWidth = ref(180);
 const popoverHeight = ref(130);
 const showPopover = (event: MouseEvent) => {
   const target = event.currentTarget as HTMLElement;
@@ -258,8 +227,10 @@ const hidePopover = () => {
 // 物品购买弹出框相关
 const modalTitle = ref("请选择购买数量");
 const isModalShow = ref(false);
+const modalItem = ref<Item | null>(null);
 const showModal = (shopItem: Item) => {
   isModalShow.value = true;
+  modalItem.value = shopItem;
 };
 </script>
 
@@ -500,6 +471,7 @@ const showModal = (shopItem: Item) => {
   }
   .shop-content {
     width: 100%;
+    height: 205px; // 固定高度，防止商品数量不足时，高度变化
     position: relative;
     .shop-prev-page-arrow,
     .shop-next-page-arrow {
