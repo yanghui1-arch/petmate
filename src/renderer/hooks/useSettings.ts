@@ -1,6 +1,27 @@
 import { SettingConfig } from "../types/config"
 
+
+
 export function useSettings() {
+
+    /**
+     * 初始化设置
+     * 成功的话会返回设置，如果出现错误的话，会返回null
+     * @returns 设置
+     */
+    const initSettings = async ():Promise<boolean> => {
+        try {
+            const res = await window.api.initSettings()
+            if (res.code === 200) {
+                return true
+            } else {
+                throw new Error(res.message)
+            }
+        } catch (error) {
+            console.error(error)
+            return false
+        }
+    }
 
     /**
      * 获取设置
@@ -43,6 +64,7 @@ export function useSettings() {
 
 
     return {
+        initSettings,
         getSettings,
         updateSettings
     }
