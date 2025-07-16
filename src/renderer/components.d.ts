@@ -20,6 +20,7 @@ declare module 'vue' {
     NImage: typeof import('naive-ui')['NImage']
     NInfiniteScroll: typeof import('naive-ui')['NInfiniteScroll']
     NModal: typeof import('naive-ui')['NModal']
+    NInput: typeof import('naive-ui')['NInput']
     NNumberAnimation: typeof import('naive-ui')['NNumberAnimation']
     NPopover: typeof import('naive-ui')['NPopover']
     NProgress: typeof import('naive-ui')['NProgress']
