@@ -1,3 +1,11 @@
+import { ItemEffect } from "../types/common";
+const effectMap = {
+    hungry: "饱食度",
+    energy: "精力",
+    emotion: "心情",
+    health: "健康",
+}
+
 
 /**
  * 物品分页
@@ -14,4 +22,8 @@ export function executeItemPage(itemList: any[], pageSize: number) {
         pageList.push(itemList.slice(start, end));
     }
     return pageList;
+}
+
+export function convertItemEffect(effect: string) {
+    return effectMap[effect as keyof typeof effectMap]
 }

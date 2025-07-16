@@ -17,18 +17,15 @@
           @mouseenter="isPopoverEnter = true"
           @mouseleave="isPopoverEnter = false"
         >
-          <div class="popover-title">汉堡</div>
+          <div class="popover-title">{{ item.name }}</div>
           <div class="popover-content">
-            <div class="popover-description">大口满足，补充能力</div>
+            <div class="popover-description">{{ item.description }}</div>
             <div>
               <div class="popover-tip">使用后获得以下效果</div>
               <div class="popover-effect">
-                <span>饱食度+1200000</span>
-                <span>精力度+12</span>
-                <span>精力度+12</span>
-                <span>精力度+12</span>
-                <span>精力度+12</span>
-                <span>精力度+12</span>
+                <span v-for="(value, key) in item.effect" :key="key"
+                  >{{ convertItemEffect(String(key)) }}+{{ value }}</span
+                >
               </div>
             </div>
             <div v-if="isSourceShow">
@@ -47,6 +44,7 @@
 
 <script setup lang="ts">
 import { defineProps } from "vue";
+import { convertItemEffect } from "../utils/item";
 
 const props = defineProps({
   // 悬浮矩形框的坐标，经过实践，popoverX和popoverY 表示'底部中心' 距离视口边缘的坐标
@@ -55,6 +53,7 @@ const props = defineProps({
   show: { type: Boolean, required: true }, // 是否显示
   popoverWidth: { type: Number, default: 180 }, // 悬浮矩形框的宽度
   isSourceShow: { type: Boolean, default: false }, // 是否显示获得方式
+  item: { type: Object, required: true }, // 物品
 });
 
 const isPopoverEnter = ref(false);

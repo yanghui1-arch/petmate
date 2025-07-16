@@ -34,12 +34,16 @@
           </div>
           <div class="shop-content-head">
             <div class="sort-wrapper">
-              <select class="sort-select">
+              <select
+                class="sort-select"
+                v-model="sortType"
+                @change="handleSortChange"
+              >
                 <option value="">默认排序</option>
-                <option value="">按等级升序</option>
-                <option value="">按等级降序</option>
-                <option value="">按价格升序</option>
-                <option value="">按价格降序</option>
+                <option value="level-asc">按等级升序</option>
+                <option value="level-desc">按等级降序</option>
+                <option value="price-asc">按价格升序</option>
+                <option value="price-desc">按价格降序</option>
               </select>
             </div>
 
@@ -48,8 +52,10 @@
                 type="text"
                 class="search-input"
                 placeholder="请输入商品关键词"
+                v-model="searchKeyword"
+                @keyup.enter="handleSearch"
               />
-              <button class="search-btn">搜索</button>
+              <button class="search-btn" @click="handleSearch">搜索</button>
             </div>
           </div>
           <div class="shop-content">
@@ -93,7 +99,7 @@
                   >
                     <div
                       class="shop-item"
-                      @mouseenter="showPopover($event)"
+                      @mouseenter="showPopover($event, item)"
                       @mouseleave="hidePopover"
                       @click="showModal(item)"
                     >
@@ -132,6 +138,7 @@
       :popoverY="popoverY"
       :show="isItemEnter"
       :popoverWidth="popoverWidth"
+      :item="popoverItem"
     />
     <!-- 商品购买弹出框 -->
     <ItemModal
@@ -161,21 +168,77 @@ const shopCurrPage = ref(1);
 const shopPageSize = ref(6);
 const shopPageList = ref<Item[][]>([]);
 
+// 新增：排序和搜索相关的响应式变量
+const sortType = ref<string>("");
+const searchKeyword = ref<string>("");
+
 // 初始化商品类型和显示默认的商品类型的商品列表
 onMounted(async () => {
   prepareShopData();
 });
 
+// 过滤和排序商品列表
+const filterAndSortItems = (items: Item[]): Item[] => {
+  let filteredItems = [...items];
+
+  // 搜索过滤
+  if (searchKeyword.value.trim()) {
+    const keyword = searchKeyword.value.toLowerCase().trim();
+    filteredItems = filteredItems.filter(
+      (item) =>
+        item.name.toLowerCase().includes(keyword) ||
+        (item.description && item.description.toLowerCase().includes(keyword))
+    );
+  }
+
+  // 排序
+  if (sortType.value) {
+    filteredItems.sort((a, b) => {
+      switch (sortType.value) {
+        case "price-asc":
+          return a.price - b.price;
+        case "price-desc":
+          return b.price - a.price;
+        // case "level-asc":
+        //   return (a.level || 0) - (b.level || 0);
+        // case "level-desc":
+        //   return (b.level || 0) - (a.level || 0);
+        default:
+          return 0;
+      }
+    });
+  }
+
+  return filteredItems;
+};
+
 // 准备商品数据
 const prepareShopData = async () => {
-  const shopItemList = await getShopItems(shopCurrType.value);
-  shopPageList.value = executeItemPage(shopItemList, shopPageSize.value);
+  const originalShopItemList = await getShopItems(shopCurrType.value);
+  const processedItemList = filterAndSortItems(originalShopItemList);
+  shopPageList.value = executeItemPage(processedItemList, shopPageSize.value);
   shopPageNum.value = shopPageList.value.length;
+
+  // 重置到第一页
+  shopCurrPage.value = 1;
+  if (shopPageRef.value) {
+    shopPageRef.value.to(0);
+  }
 };
 
 // 点击切换商品类型
 const handleTypeClick = async (typeName: ItemType) => {
   shopCurrType.value = typeName;
+  prepareShopData();
+};
+
+// 处理排序变化
+const handleSortChange = () => {
+  prepareShopData();
+};
+
+// 处理搜索
+const handleSearch = () => {
   prepareShopData();
 };
 
@@ -210,7 +273,8 @@ const popoverX = ref(0);
 const popoverY = ref(0);
 const popoverWidth = ref(180);
 const popoverHeight = ref(130);
-const showPopover = (event: MouseEvent) => {
+const popoverItem = ref<Item | null>(null);
+const showPopover = (event: MouseEvent, item: Item) => {
   const target = event.currentTarget as HTMLElement;
   const rect = target?.getBoundingClientRect();
   // 经过实践，popoverX和popoverY暂时确定是悬浮框矩形 '底部中心' 的坐标
@@ -218,6 +282,7 @@ const showPopover = (event: MouseEvent) => {
   popoverY.value = rect.y + rect.height / 2;
 
   isItemEnter.value = true;
+  popoverItem.value = item;
 };
 
 const hidePopover = () => {

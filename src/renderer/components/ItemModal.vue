@@ -30,7 +30,6 @@
 <script setup lang="ts">
 import { defineProps, ref, PropType } from "vue";
 import { usePlayer } from "../hooks/usePlayer";
-import { Item } from "../types/common";
 
 const { buyItem, consumeItem } = usePlayer();
 

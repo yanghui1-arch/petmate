@@ -109,7 +109,7 @@
                 >
                   <div
                     class="package-item"
-                    @mouseenter="showPopover($event)"
+                    @mouseenter="showPopover($event, item)"
                     @mouseleave="hidePopover"
                     @click="showModal(item)"
                   >
@@ -150,6 +150,7 @@
       :show="isItemEnter"
       :popoverWidth="popoverWidth"
       :isSourceShow="true"
+      :item="popoverItem"
     />
     <ItemModal
       v-model:show="isModalShow"
@@ -237,7 +238,8 @@ const popoverX = ref(0);
 const popoverY = ref(0);
 const isItemEnter = ref(false);
 const popoverWidth = ref(180);
-const showPopover = (event: MouseEvent) => {
+const popoverItem = ref<PackageItemInfo | null>(null);
+const showPopover = (event: MouseEvent, item: PackageItemInfo) => {
   const target = event.currentTarget as HTMLElement;
   const rect = target?.getBoundingClientRect();
   // 经过实践，popoverX和popoverY暂时确定是悬浮框矩形 '底部中心' 的坐标
@@ -245,6 +247,7 @@ const showPopover = (event: MouseEvent) => {
   popoverY.value = rect.y + rect.height / 2;
 
   isItemEnter.value = true;
+  popoverItem.value = item;
 };
 
 const hidePopover = () => {
