@@ -25,10 +25,34 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useSettings } from '../hooks/useSettings'
+import { SettingConfig } from '../types/config'
+
+const { getSettings, updateSettings } = useSettings()
+
 const focusActive = ref(false)
 const topCanvasActive = ref(true)
 const modelMaxSize = ref(50)
+
+onMounted(async () => {
+  const settings: SettingConfig | null = await getSettings()
+  if (settings) {
+    focusActive.value = settings.focusMode
+    topCanvasActive.value = settings.onTop
+    modelMaxSize.value = settings.modelSize
+  }
+})
+
+watch(focusActive, async (newVal) => {
+  await updateSettings({ focusMode: newVal })
+})
+watch(topCanvasActive, async (newVal) => {
+  await updateSettings({ onTop: newVal })
+})
+watch(modelMaxSize, async (newVal) => {
+  await updateSettings({ modelSize: newVal })
+})
 
 </script>
 
