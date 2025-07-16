@@ -1,6 +1,7 @@
 import { ref, readonly } from 'vue'
 import type { Response } from '../../types/response'
 import { PackageItemInfo, PlayerInfo } from '../types/player'
+import { ChatMessage } from '../types/llm'
 
 
 // 全局状态 - 单个实例共享整个应用
@@ -85,6 +86,22 @@ export function usePlayer() {
       }
     }
 
+    // 聊天
+    const chat = async (message: ChatMessage): Promise<boolean> => {
+      try {
+        const response = await window.api.chat(message)
+        if (response.code === 200) {
+          return true
+        } else {
+          throw new Error(response.message || 'Failed to chat')
+        }
+      } catch (err) {
+        error.value = err instanceof Error ? err.message : 'Unknown error occurred'
+        console.error('Failed to chat:', err)
+        return false
+      }
+    }
+
     // 返回只读引用，但提供更新方法
     return {
       // 只读数据访问
@@ -100,6 +117,9 @@ export function usePlayer() {
       
       // 操作方法，自动同步数据
       consumeItem,
-      buyItem,      
+      buyItem,
+
+      // 聊天
+      chat,
     }
 } 

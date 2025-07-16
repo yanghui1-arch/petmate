@@ -1,4 +1,5 @@
 const { contextBridge, ipcRenderer } = require("electron")
+import { ChatMessage } from "../main/llm"
 import { SettingConfig } from "../main/settings"
 import { ActivityInfo } from "../main/types/activity"
 import { ItemType } from "../main/types/item"
@@ -17,5 +18,6 @@ contextBridge.exposeInMainWorld(
         getModelSize: () => ipcRenderer.invoke("get-model-size"),
         getSettings: () => ipcRenderer.invoke("get-settings"),
         updateSettings: (settings: Partial<SettingConfig>) => ipcRenderer.invoke("update-settings", settings),
+        chat: (message: ChatMessage) => ipcRenderer.invoke("chat", message),
     }
 )
