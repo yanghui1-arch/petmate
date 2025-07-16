@@ -9,6 +9,7 @@ import { ItemType } from "../main/types/item"
 contextBridge.exposeInMainWorld(
     "api", {
         loadPlayerData: () => ipcRenderer.invoke("load-player-data"),
+        initSettings: () => ipcRenderer.invoke("init-settings"),
         consumeItem: (itemId: number, count: number, petmateId: number) => ipcRenderer.invoke("consume-item", itemId, count, petmateId),
         buyItem: (itemId: number, count: number) => ipcRenderer.invoke("buy-item", itemId, count),
         showActivities: (type: ActivityInfo["type"]) => ipcRenderer.invoke("show-activities", type),

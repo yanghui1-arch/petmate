@@ -11,6 +11,7 @@ import { ChatMessage } from "./llm";
  */
 interface IElectronAPI {
   loadPlayerData: () => Promise<Response<PlayerInfo>>;
+  initSettings: () => Promise<Response<SettingConfig>>;
   consumeItem: (itemId: number, count: number, petmateId: number) => Promise<Response<void>>;
   buyItem: (itemId: number, count: number) => Promise<Response<Item>>;
   showActivities: (type: ActivityInfo["type"]) => Promise<Response<ActivityInfo[]>>;
