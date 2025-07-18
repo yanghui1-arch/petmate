@@ -411,10 +411,10 @@ function connectTTSWebsocket(): string {
 
 /**
  * 等待TTS任务准备就绪
- * @param timeout 超时时间（毫秒），默认2秒
+ * @param timeout 超时时间（毫秒），默认5秒
  * @returns Promise<boolean> 是否成功准备就绪
  */
-function waitForTTSReady(timeout: number = 2000): Promise<boolean> {
+function waitForTTSReady(timeout: number = 5000): Promise<boolean> {
     return new Promise((resolve) => {
         // 如果已经准备就绪，直接返回
         if (ttsStarted && ttsWebsocket && ttsTaskId) {

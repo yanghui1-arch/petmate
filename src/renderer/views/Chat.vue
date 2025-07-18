@@ -103,6 +103,10 @@ let streamBuffer = '';
 let streamCheckInterval: NodeJS.Timeout | null = null;
 let lastChunkTime = 0;
 
+// Chunk processing queue for smooth streaming
+let chunkQueue: string[] = [];
+let isProcessingChunks = false;
+
 
 // 格式化时间显示
 const formatTime = (date: Date): string => {
@@ -133,8 +137,8 @@ const addMessage = (role: ChatMessage['role'], content: string) => {
     scrollToBottom();
 };
 
-// 处理流式文本块
-const handleTextChunk = async (chunk: string) => {
+// 处理单个流式文本块
+const processChunk = async (chunk: string) => {
     if (currentAssistantMessageIndex < 0 || currentAssistantMessageIndex >= messages.value.length) {
         return;
     }
@@ -147,15 +151,43 @@ const handleTextChunk = async (chunk: string) => {
         messages.value[currentAssistantMessageIndex].isLoading = false;
         messages.value[currentAssistantMessageIndex].isTyping = true;
         messages.value[currentAssistantMessageIndex].content = '';
+        await nextTick();
         await scrollToBottom();
     }
 
     // Update content in real-time with typing effect
     messages.value[currentAssistantMessageIndex].content = streamBuffer;
+    
+    // Force immediate DOM update and scroll
+    await nextTick();
     await scrollToBottom();
     
     // Update the last chunk time
     lastChunkTime = Date.now();
+};
+
+// 处理文本块队列，带延迟以实现流式效果
+const processChunkQueue = async () => {
+    if (isProcessingChunks) return;
+    
+    isProcessingChunks = true;
+    
+    while (chunkQueue.length > 0) {
+        const chunk = chunkQueue.shift();
+        if (chunk) {
+            await processChunk(chunk);
+            // Add small delay between chunks for visible streaming effect
+            await new Promise(resolve => setTimeout(resolve, 30));
+        }
+    }
+    
+    isProcessingChunks = false;
+};
+
+// 添加文本块到队列
+const handleTextChunk = (chunk: string) => {
+    chunkQueue.push(chunk);
+    processChunkQueue();
 };
 
 // 完成流式响应
@@ -171,6 +203,10 @@ const finishStreamResponse = async () => {
     isTyping.value = false;
     loading.value = false;
     buttonStatus.value = '↑';
+    
+    // Clear chunk queue and processing state
+    chunkQueue = [];
+    isProcessingChunks = false;
     
     // Clear interval if exists
     if (streamCheckInterval) {

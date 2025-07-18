@@ -198,9 +198,9 @@ ipcMain.handle("buy-item", (event: IpcMainInvokeEvent, itemId: number, count: nu
  * @param message 聊天信息
  * @returns 发送聊天信息成功或失败
  */
-ipcMain.handle("chat", (event: IpcMainInvokeEvent, message: ChatMessage): Response<void> => {
+ipcMain.handle("chat", async (event: IpcMainInvokeEvent, message: ChatMessage): Promise<Response<void>> => {
     try {
-        chat(message);
+        await chat(message);
         return {
             code: 200,
             message: "发送聊天信息成功"
