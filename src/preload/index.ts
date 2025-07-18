@@ -20,5 +20,7 @@ contextBridge.exposeInMainWorld(
         getSettings: () => ipcRenderer.invoke("get-settings"),
         updateSettings: (settings: Partial<SettingConfig>) => ipcRenderer.invoke("update-settings", settings),
         chat: (message: ChatMessage) => ipcRenderer.invoke("chat", message),
+        onTextChunk: (callback: (event: Event, text: string) => void) => ipcRenderer.on("chat-chunk", callback),
+        onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => ipcRenderer.on("tts-audio-chunk", callback),
     }
 )

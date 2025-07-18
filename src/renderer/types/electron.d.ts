@@ -22,6 +22,9 @@ interface IElectronAPI {
   getSettings: () => Promise<Response<SettingConfig>>;
   updateSettings: (settings: Partial<SettingConfig>) => Promise<Response<void>>;
   chat: (message: ChatMessage) => Promise<Response<void>>;
+  onTextChunk: (callback: (event: Event, text: string) => void) => void;
+  onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => void;
+  onStreamEnd: (callback: (event: Event) => void) => void;
 }
 
 // 声明全局window对象，之后渲染层直接window.api.function() 调用即可

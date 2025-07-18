@@ -416,6 +416,9 @@ function connectTTSWebsocket(): string {
 
 /**
  * 发送聊天信息
+ * 会向渲染进程发送音频信息和文本信息，其中文本信息会以流的形式发送，音频信息会以二进制流的形式发送
+ * 文本信息流和音频信息流是几乎同步发送的
+ * chat-chunk为文本信息流的参数，tts-audio-chunk为音频信息流的参数
  * @param messages 聊天信息
  * @throws TTSProcessError 如果tts任务的参数未正确初始化
  * @throws ChatLLMConfigError 如果传过来的聊天信息不是用户消息
@@ -434,14 +437,17 @@ async function chat(message: ChatMessage): Promise<void> {
         // 建立好连接并确认好用户信息之后，将当前的聊天信息加入到历史聊天信息中
         chatHistoryMessages.push(message);
         // [future] 得在这里再考虑一下上下文长度问题，但这一个版本先不考虑
-
+        
+        const mainWindow = getMainWindow()
         const runner: ChatCompletionStream = await postChatMessage(chatHistoryMessages);
         let response: string = "";
         for await (const chunk of runner) {
             const content = chunk.choices[0].delta.content ?? "";
+            console.log("文本流", content);
             if (content !== "") {
                 tts(content);
                 response += content;
+                mainWindow?.webContents.send('chat-chunk', content);
             }
         }
         
