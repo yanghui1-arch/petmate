@@ -46,6 +46,7 @@ import {
   messageModalType,
   messageModalTitle,
 } from "./hooks/useInteract";
+import { useSettings } from "./hooks/useSettings";
 
 const active = ref(false);
 const placement = ref<DrawerPlacement>("right");

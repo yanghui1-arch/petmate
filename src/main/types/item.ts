@@ -1,6 +1,6 @@
 import { Buff } from "./buff";
 
-export type ItemType = "food" | "drink" | "medicine" | "gift" | "exp" | "others"
+export type ItemType = "food" | "drink" | "medicine" | "gift" | "exp" | "limit" | "others"
 
 export type Item = {
     id: number,
