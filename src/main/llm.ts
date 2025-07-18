@@ -34,7 +34,7 @@ export interface TTSLLMConfig {
 export interface TTSParameters {
     text_type?: string;
     voice: string;
-    format?: string;
+    format: string;
     sample_rate: number;
     volume: number;
     rate: number; // 语速
@@ -337,7 +337,7 @@ function connectTTSWebsocket(): string {
                 parameters: {
                     text_type: 'PlainText',
                     voice: currentTTSLLMConfig.parameters.voice, // 音色
-                    format: 'mp3', // 音频格式
+                    format: currentTTSLLMConfig.parameters.format, // 音频格式
                     sample_rate: currentTTSLLMConfig.parameters.sample_rate, // 采样率
                     volume: currentTTSLLMConfig.parameters.volume, // 音量
                     rate: currentTTSLLMConfig.parameters.rate, // 语速
