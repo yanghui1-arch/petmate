@@ -30,6 +30,7 @@
 <script setup lang="ts">
 import { defineProps, ref, PropType } from "vue";
 import { usePlayer } from "../hooks/usePlayer";
+import { Item } from "../types/common";
 import { openMessageModal, closeMessageModal } from "../hooks/useInteract";
 const { buyItem, consumeItem } = usePlayer();
 
@@ -37,13 +38,13 @@ const props = defineProps({
   show: { type: Boolean, required: true }, // 是否显示
   title: { type: String, required: true }, // 弹出框标题
   type: { type: String, required: true }, // 弹出框类型：使用、购买
-  item: { type: Object, required: true }, // 物品
-  petmateId: { type: Number, required: false, default: 0 }, // petmaetId
+  item: { type: Object as PropType<Item>, required: true }, // 物品
+  hasCount: { type: Number, required: false, default: 0 }, // 数量，使用时传入
+  petmateId: { type: Number, required: false, default: 0 }, // petmaetId，使用时传入
 });
 
 const emit = defineEmits<{
   (e: "update:show", value: boolean): void;
-  (e: "consumeItemFinished"): void;
 }>();
 
 const isModalShow = computed({
@@ -61,7 +62,7 @@ const subCount = () => {
   }
 };
 const addCount = () => {
-  maxCount = props.type === "use" ? props.item.count : 999;
+  maxCount = props.type === "use" ? props.hasCount : 999;
   if (count.value < maxCount) {
     count.value++;
   }
@@ -86,9 +87,6 @@ const confirm = async () => {
   } else if (props.type === "use") {
     success = await consumeItem(props.item.id, count.value, props.petmateId);
     title = success ? "使用成功" : "使用失败";
-    if (success) {
-      emit("consumeItemFinished");
-    }
   }
   isModalShow.value = false;
   success

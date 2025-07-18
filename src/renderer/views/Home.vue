@@ -78,7 +78,7 @@
             type="button"
             v-for="item in packageTypeList"
             :key="item.name"
-            @click="packageCurrType = item.name"
+            @click="handleTypeClick(item.name)"
             :class="{ 'active-package-type': packageCurrType === item.name }"
             class="package-type-btn"
           >
@@ -157,6 +157,7 @@
       v-model:show="isModalShow"
       :title="modalTitle"
       :item="modalItem"
+      :hasCount="modalHasCount"
       type="use"
     />
   </div>
@@ -171,24 +172,45 @@ import ItemModal from "@/components/ItemModal.vue";
 import type { CarouselInst } from "naive-ui";
 import { executeItemPage } from "../utils/item";
 import { usePlayer } from "../hooks/usePlayer";
+import { useShow } from "../hooks/useShow";
 import { PackageItemInfo } from "../types/player";
-import { ItemType } from "../types/common";
+import { ItemType, Item } from "../types/common";
 const { playerData, consumeItem } = usePlayer();
+const { getShopItems } = useShow();
 
-const packagePageList = computed(() => {
-  return executeItemPage(
-    [...(playerData.value?.items || [])],
-    packagePageSize.value
-  );
-});
+const completeItemsMap = ref<Map<number, Item>>(new Map());
 
-const packagePageNum = computed(() => {
-  return packagePageList.value.length;
+/**
+ * 加载所有物品数据
+ */
+const loadCompleteItemsData = async () => {
+  try {
+    const itemTypes: ItemType[] = [
+      "food",
+      "medicine",
+      "gift",
+      "drink",
+      "limit",
+      "others",
+    ];
+
+    for (const type of itemTypes) {
+      const items = await getShopItems(type);
+      items.forEach((item) => {
+        completeItemsMap.value.set(item.id, item);
+      });
+    }
+  } catch (error) {
+    console.error("Failed to load complete items data:", error);
+  }
+};
+
+onMounted(async () => {
+  await loadCompleteItemsData();
 });
 
 // Petmate相关
 const currentPetmateID = ref(0);
-
 const currentActivePetmate = computed(() => {
   return playerData.value?.petmates.find(
     (petmate) => petmate.id === currentPetmateID.value
@@ -198,10 +220,9 @@ const currentActivePetmate = computed(() => {
 const petmateAttribute = computed(() => {
   return currentActivePetmate.value?.attrs;
 });
-
 const exp: Ref<number> = ref(petmateAttribute.value?.exp ?? 0);
 
-// 背包相關
+// 背包相关
 const packageCurrType = ref("food");
 const packageCurrPage = ref(1);
 const packagePageSize = ref(18);
@@ -215,6 +236,30 @@ const packageTypeList = ref([
 ]);
 
 const packagePageRef = ref<CarouselInst | null>(null);
+/**
+ * 响应式计算背包物品列表
+ */
+const packagePageList = computed(() => {
+  const allItems = playerData.value?.items || [];
+  const filteredPackageItems = allItems.filter(
+    (item) => item.type === packageCurrType.value
+  );
+  return executeItemPage([...filteredPackageItems], packagePageSize.value);
+});
+const packagePageNum = computed(() => packagePageList.value.length);
+
+/**
+ * 点击分类
+ * @param typeName 类别名称
+ */
+const handleTypeClick = (typeName: ItemType) => {
+  packageCurrType.value = typeName;
+  // 重置到第一页
+  packageCurrPage.value = 1;
+  if (packagePageRef.value) {
+    packagePageRef.value.to(0);
+  }
+};
 
 const prevPage = () => {
   if (packageCurrPage.value > 1) {
@@ -235,7 +280,7 @@ const popoverX = ref(0);
 const popoverY = ref(0);
 const isItemEnter = ref(false);
 const popoverWidth = ref(180);
-const popoverItem = ref<PackageItemInfo | null>(null);
+const popoverItem = ref<Item | null>(null);
 const showPopover = (event: MouseEvent, item: PackageItemInfo) => {
   const target = event.currentTarget as HTMLElement;
   const rect = target?.getBoundingClientRect();
@@ -244,7 +289,14 @@ const showPopover = (event: MouseEvent, item: PackageItemInfo) => {
   popoverY.value = rect.y + rect.height / 2;
 
   isItemEnter.value = true;
-  popoverItem.value = item;
+  // 根据id查询物品信息
+  const completeItem = completeItemsMap.value.get(item.id);
+  if (completeItem) {
+    // 根据id查询物品信息
+    popoverItem.value = {
+      ...completeItem,
+    };
+  }
 };
 
 const hidePopover = () => {
@@ -254,10 +306,18 @@ const hidePopover = () => {
 // 物品使用弹出框相关
 const modalTitle = ref("请选择使用数量");
 const isModalShow = ref(false);
-const modalItem = ref<PackageItemInfo | null>(null);
-const showModal = (pItem: PackageItemInfo) => {
+const modalItem = ref<Item | null>(null);
+const modalHasCount = ref(0);
+const showModal = (item: PackageItemInfo) => {
   isModalShow.value = true;
-  modalItem.value = pItem;
+  const completeItem = completeItemsMap.value.get(item.id);
+  if (completeItem) {
+    // 根据id查询物品信息
+    modalItem.value = {
+      ...completeItem,
+    };
+    modalHasCount.value = item.count;
+  }
 };
 </script>
 

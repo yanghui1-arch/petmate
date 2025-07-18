@@ -154,6 +154,7 @@
 import Pagedot from "@/components/Pagedot.vue";
 import ItemPopover from "@/components/ItemPopover.vue";
 import ItemModal from "@/components/ItemModal.vue";
+import type { CarouselInst } from "naive-ui";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
 import { ItemType, Item } from "../types/common";
@@ -250,7 +251,7 @@ const shopTypeList = ref([
   { name: "drink" as ItemType, label: "🥤饮料" },
 ]);
 
-const shopPageRef = ref<InstanceType<typeof NCarousel> | null>(null);
+const shopPageRef = ref<CarouselInst | null>(null);
 
 const prevPage = () => {
   if (shopCurrPage.value > 1) {
