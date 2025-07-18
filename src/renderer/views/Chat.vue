@@ -360,7 +360,7 @@ function appendAudioData(sourceBuffer: SourceBuffer, audio: Buffer) {
     } else {
         console.log('SourceBuffer is updating, waiting...');
         // 如果 SourceBuffer 正在更新，稍后再尝试添加数据
-        setTimeout(() => appendAudioData(sourceBuffer, audio), 200);
+        setTimeout(() => appendAudioData(sourceBuffer, audio), 150);
     }
 }
 
