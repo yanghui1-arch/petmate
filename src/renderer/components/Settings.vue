@@ -33,6 +33,12 @@
           @click="show = false"
           >卡组</router-link
         >
+        <router-link
+          to="/chat"
+          class="page-navigator-item"
+          @click="show = false"
+          >聊天</router-link
+        >
         <!-- <router-link to="/log" class="page-navigator-item" @click="show = false"
           >点滴</router-link
         > -->
