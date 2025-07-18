@@ -367,11 +367,6 @@ function connectTTSWebsocket(): string {
                 case "task-started":
                     ttsStarted = true;
                     console.log('tts任务已经准备开始');
-                    // 通知渲染进程TTS开始
-                    const mainWindow = getMainWindow();
-                    if (mainWindow) {
-                        mainWindow.webContents.send('tts-started');
-                    }
                     break;
                 case 'task-finished':
                     console.log('tts任务已全部完成');
@@ -415,6 +410,38 @@ function connectTTSWebsocket(): string {
 }
 
 /**
+ * 等待TTS任务准备就绪
+ * @param timeout 超时时间（毫秒），默认2秒
+ * @returns Promise<boolean> 是否成功准备就绪
+ */
+function waitForTTSReady(timeout: number = 2000): Promise<boolean> {
+    return new Promise((resolve) => {
+        // 如果已经准备就绪，直接返回
+        if (ttsStarted && ttsWebsocket && ttsTaskId) {
+            resolve(true);
+            return;
+        }
+
+        const startTime = Date.now();
+        const checkInterval = setInterval(() => {
+            // 检查是否已经准备就绪
+            if (ttsStarted && ttsWebsocket && ttsTaskId) {
+                clearInterval(checkInterval);
+                resolve(true);
+                return;
+            }
+
+            // 检查是否超时
+            if (Date.now() - startTime > timeout) {
+                clearInterval(checkInterval);
+                resolve(false);
+                return;
+            }
+        }, 50); // 每50ms检查一次
+    });
+}
+
+/**
  * 发送聊天信息
  * 会向渲染进程发送音频信息和文本信息，其中文本信息会以流的形式发送，音频信息会以二进制流的形式发送
  * 文本信息流和音频信息流是几乎同步发送的
@@ -432,6 +459,12 @@ async function chat(message: ChatMessage): Promise<void> {
         }
         if (message.role !== 'user') {
             throw new ChatLLMConfigError("[llm] 请确保传过来的聊天信息是用户消息");
+        }
+        // 等待TTS任务准备就绪
+        // 必须得保证TTS任务准备就绪，不然会因为websocket的异步性导致ttsStarted=False
+        const ttsReady = await waitForTTSReady();
+        if (!ttsReady) {
+            throw new TTSProcessError('TTS任务初始化超时，请检查网络连接和API配置');
         }
 
         // 建立好连接并确认好用户信息之后，将当前的聊天信息加入到历史聊天信息中
