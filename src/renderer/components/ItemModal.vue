@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, ref, PropType } from "vue";
+import { defineProps, ref, PropType, watch } from "vue";
 import { usePlayer } from "../hooks/usePlayer";
 import { Item } from "../types/common";
 import { openMessageModal, closeMessageModal } from "../hooks/useInteract";
@@ -54,6 +54,15 @@ const isModalShow = computed({
 
 // 计数器相关
 const count = ref(1);
+// vue监听函数，当弹出框重新显示时，重置计数器为1
+watch(
+  () => props.show,
+  (newValue) => {
+    if (newValue) {
+      count.value = 1;
+    }
+  }
+);
 let minCount = 1;
 let maxCount = 999;
 const subCount = () => {
@@ -69,10 +78,11 @@ const addCount = () => {
 };
 // 监听输入边界值
 const checkCount = () => {
-  if (count.value < minCount) {
+  maxCount = props.type === "use" ? props.hasCount : 999;
+  // 在js中，"" < 0为false，所以不用担心用户直接删除输入框内容
+  if (count.value < 0) {
     count.value = minCount;
-  }
-  if (count.value > maxCount) {
+  } else if (count.value > maxCount) {
     count.value = maxCount;
   }
 };
@@ -81,6 +91,14 @@ const checkCount = () => {
 const confirm = async () => {
   let success = false;
   let title = "";
+  // 在js中，"" == 0为true，所以不用担心用户直接删除输入框内容
+  if (count.value == 0) {
+    title =
+      props.type === "use" ? "使用物品数量不能为0" : "购买物品数量不能为0";
+    count.value = 1;
+    openMessageModal("fail", title);
+    return;
+  }
   if (props.type === "buy") {
     success = await buyItem(props.item.id, count.value);
     title = success ? "购买成功" : "购买失败";

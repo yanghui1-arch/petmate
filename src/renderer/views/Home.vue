@@ -113,7 +113,7 @@
                     @mouseleave="hidePopover"
                     @click="showModal(item)"
                   >
-                    <n-image width="44" :src="item.url" preview-disabled />
+                    <n-image width="38" :src="item.url" preview-disabled />
                     <span class="package-item-num">{{ item.count }}</span>
                   </div>
                 </n-gi>

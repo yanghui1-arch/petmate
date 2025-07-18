@@ -6,7 +6,11 @@
           <n-image
             width="32"
             height="32"
-            src="../assets/image/message/success.png"
+            :src="
+              type === 'success'
+                ? '../assets/image/message/success.png'
+                : '../assets/image/message/fail.png'
+            "
             preview-disabled
           />
           <div class="message-modal-title">{{ title }}</div>
