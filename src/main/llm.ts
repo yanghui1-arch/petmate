@@ -365,9 +365,9 @@ function connectTTSWebsocket(): string {
             const mainWindow = getMainWindow();
             if (mainWindow) {
                 // 将Buffer转换为Uint8Array以便在渲染进程中处理
-                const audioChunk = new Uint8Array(data as Buffer);
-                console.log(audioChunk);
-                mainWindow.webContents.send('tts-audio-chunk', audioChunk);
+                // const audioChunk = new Uint8Array(data as Buffer);
+                console.log(data);
+                mainWindow.webContents.send('tts-audio-chunk', data);
             }
         } else {
             const message = JSON.parse(data.toString());
