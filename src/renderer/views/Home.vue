@@ -99,7 +99,7 @@
             <div
               class="home-package-content"
               v-for="(page, index) in packagePageList"
-              :key="index"
+              :key="'page' + index"
             >
               <n-grid x-gap="5" y-gap="5" :cols="6">
                 <n-gi
@@ -117,9 +117,10 @@
                     <span class="package-item-num">{{ item.count }}</span>
                   </div>
                 </n-gi>
+
                 <n-gi
                   v-for="i in packagePageSize - page.length"
-                  :key="i"
+                  :key="'empty' + i"
                   style="display: flex; justify-content: center"
                 >
                   <div class="package-item"></div>
@@ -163,7 +164,6 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { onMounted, onBeforeUnmount } from "vue";
 import AttributeBar from "@/components/AttributeBar.vue";
 import Pagedot from "@/components/Pagedot.vue";
 import ItemPopover from "@/components/ItemPopover.vue";
@@ -172,39 +172,37 @@ import type { CarouselInst } from "naive-ui";
 import { executeItemPage } from "../utils/item";
 import { usePlayer } from "../hooks/usePlayer";
 import { PackageItemInfo } from "../types/player";
-import { PetMate, PetMateAttribute } from "../types/petmate";
-
-const packagePageList = ref<PackageItemInfo[][]>([]);
-
-onMounted(() => {
-  preparePackageData();
-});
-
-// 准备背包数据
-const preparePackageData = async () => {
-  const playerItems: PackageItemInfo[] = [...(playerData.value?.items || [])];
-  packagePageList.value = executeItemPage(playerItems, packagePageSize.value);
-  packagePageNum.value = packagePageList.value.length;
-};
 
 const { playerData, consumeItem } = usePlayer();
 
+const packagePageList = computed(() => {
+  return executeItemPage(
+    [...(playerData.value?.items || [])],
+    packagePageSize.value
+  );
+});
+
+const packagePageNum = computed(() => {
+  return packagePageList.value.length;
+});
+
 // Petmate相关
-const currentPetmateID = 0;
-const currentActivePetmate = ref<PetMate | undefined>(
-  playerData.value?.petmates.filter(
-    (petmate) => petmate.id === currentPetmateID
-  )[0] as PetMate
-);
-const petmateAttribute = ref<PetMateAttribute | undefined>(
-  currentActivePetmate.value?.attrs
-);
+const currentPetmateID = ref(0);
+
+const currentActivePetmate = computed(() => {
+  return playerData.value?.petmates.find(
+    (petmate) => petmate.id === currentPetmateID.value
+  );
+});
+
+const petmateAttribute = computed(() => {
+  return currentActivePetmate.value?.attrs;
+});
 
 const exp: Ref<number> = ref(petmateAttribute.value?.exp ?? 0);
 
 // 背包相關
 const packageCurrType = ref("food");
-const packagePageNum = ref(2);
 const packageCurrPage = ref(1);
 const packagePageSize = ref(18);
 const packageTypeList = ref([
@@ -213,9 +211,6 @@ const packageTypeList = ref([
   { name: "gift", label: "🎁礼物" },
   { name: "drink", label: "🥤饮料" },
 ]);
-
-// 只是用来占位的，里面是什么东西无所谓，只要长度正确即可
-const packageNextItemList = ref(new Array(18).fill(0));
 
 const packagePageRef = ref<CarouselInst | null>(null);
 

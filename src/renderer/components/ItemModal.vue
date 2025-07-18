@@ -30,7 +30,7 @@
 <script setup lang="ts">
 import { defineProps, ref, PropType } from "vue";
 import { usePlayer } from "../hooks/usePlayer";
-
+import { openMessageModal, closeMessageModal } from "../hooks/useInteract";
 const { buyItem, consumeItem } = usePlayer();
 
 const props = defineProps({
@@ -43,6 +43,7 @@ const props = defineProps({
 
 const emit = defineEmits<{
   (e: "update:show", value: boolean): void;
+  (e: "consumeItemFinished"): void;
 }>();
 
 const isModalShow = computed({
@@ -76,12 +77,23 @@ const checkCount = () => {
 };
 
 // 确定按钮相关
-const confirm = () => {
+const confirm = async () => {
+  let success = false;
+  let title = "";
   if (props.type === "buy") {
-    buyItem(props.item.id, count.value);
+    success = await buyItem(props.item.id, count.value);
+    title = success ? "购买成功" : "购买失败";
   } else if (props.type === "use") {
-    consumeItem(props.item.id, count.value, props.petmateId);
+    success = await consumeItem(props.item.id, count.value, props.petmateId);
+    title = success ? "使用成功" : "使用失败";
+    if (success) {
+      emit("consumeItemFinished");
+    }
   }
+  isModalShow.value = false;
+  success
+    ? openMessageModal("success", title)
+    : openMessageModal("fail", title);
 };
 </script>
 

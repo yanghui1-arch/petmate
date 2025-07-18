@@ -21,7 +21,7 @@ export function executeItemPage(itemList: any[], pageSize: number) {
         const end = start + pageSize;
         pageList.push(itemList.slice(start, end));
     }
-    return pageList;
+    return pageList.length ? pageList : [[]];
 }
 
 export function convertItemEffect(effect: string) {

@@ -86,7 +86,7 @@
               }"
               ref="shopPageRef"
             >
-              <div v-for="(page, index) in shopPageList" :key="index">
+              <div v-for="(page, index) in shopPageList" :key="'page' + index">
                 <n-grid x-gap="5" y-gap="5" :cols="3">
                   <n-gi
                     v-for="item in page"
