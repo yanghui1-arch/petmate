@@ -8,6 +8,11 @@ import { APIPromise } from 'openai';
 import { v4 as uuidv4 } from 'uuid';
 import { WebSocket } from 'ws';
 import { getMainWindow } from './index';
+import fs from 'fs';
+
+const outputFilePath = 'output.mp3';
+fs.writeFileSync(outputFilePath, '');
+const fileStream = fs.createWriteStream(outputFilePath, { flags: 'a' });
 
 type StoreData = {
     chatLLMConfig: ChatLLMConfig;
@@ -84,18 +89,18 @@ const DEFAULT_CHAT_LLM_CONFIG: ChatLLMConfig = {
 
 const DEFAULT_TTS_PARAMETERS: TTSParameters = {
     text_type: 'PlainText',
-    voice: 'longyingcui',
-    format: 'wav',
-    sample_rate: 16000,
-    volume: 1.0,
-    rate: 1.0,
-    pitch: 0.0
+    voice: 'longxiaochun_v2',
+    format: 'mp3',
+    sample_rate: 22050,
+    volume: 50,
+    rate: 1,
+    pitch: 1
 }
 
 const DEFAULT_TTS_LLM_CONFIG: TTSLLMConfig = {
-    model: 'tts-1',
+    model: 'cosyvoice-v2',
     apiKey: 'sk-93ce6cc609864f199c39a479f2f50c1d',
-    baseUrl: 'wss://dashscope.aliyuncs.com/api-ws/v1/inference',
+    baseUrl: 'wss://dashscope.aliyuncs.com/api-ws/v1/inference/',
     parameters: DEFAULT_TTS_PARAMETERS
 }
 
@@ -305,6 +310,7 @@ function tts(text: string): void {
             }
         }
     }
+    console.log(`tts task id: ${ttsTaskId}`);
     ttsWebsocket?.send(JSON.stringify(continueTaskMessage));
     console.log('已发送继续任务的事件');
 }
@@ -321,6 +327,7 @@ function connectTTSWebsocket(): string {
         }
     });
     const taskId = uuidv4();
+    console.log(`init tts websocket task id: ${taskId}`);
     ttsWebsocket.on('open', () => {
         console.log('已连接到WebSocket服务器');
         const runTaskMessage: TTSStartTask = {
@@ -345,7 +352,7 @@ function connectTTSWebsocket(): string {
                 },
                 input: {}
             }
-        }
+        };
         ttsWebsocket?.send(JSON.stringify(runTaskMessage));
         console.log('已发送开始任务的事件');
     });
@@ -353,6 +360,7 @@ function connectTTSWebsocket(): string {
     ttsWebsocket.on('message', (data, isBinary) => {
         // 如果是二进制，则为音频数据
         if (isBinary) {
+            fileStream.write(data);
             // 发给渲染层
             const mainWindow = getMainWindow();
             if (mainWindow) {
@@ -508,7 +516,6 @@ async function chat(message: ChatMessage): Promise<void> {
         ttsWebsocket = null;
         throw error;
     }
-
 }
 
 initLLMClient();
