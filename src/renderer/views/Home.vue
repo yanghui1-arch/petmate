@@ -113,7 +113,7 @@
                     @mouseleave="hidePopover"
                     @click="showModal(item)"
                   >
-                    <n-image width="38" :src="item.url" preview-disabled />
+                    <n-image width="44" :src="item.url" preview-disabled />
                     <span class="package-item-num">{{ item.count }}</span>
                   </div>
                 </n-gi>
@@ -172,7 +172,7 @@ import type { CarouselInst } from "naive-ui";
 import { executeItemPage } from "../utils/item";
 import { usePlayer } from "../hooks/usePlayer";
 import { PackageItemInfo } from "../types/player";
-
+import { ItemType } from "../types/common";
 const { playerData, consumeItem } = usePlayer();
 
 const packagePageList = computed(() => {
@@ -206,10 +206,12 @@ const packageCurrType = ref("food");
 const packageCurrPage = ref(1);
 const packagePageSize = ref(18);
 const packageTypeList = ref([
-  { name: "food", label: "🍔食物" },
-  { name: "medicine", label: "💊药品" },
-  { name: "gift", label: "🎁礼物" },
-  { name: "drink", label: "🥤饮料" },
+  { name: "food" as ItemType, label: "🍔食物" },
+  { name: "medicine" as ItemType, label: "💊药品" },
+  { name: "gift" as ItemType, label: "🎁礼物" },
+  { name: "drink" as ItemType, label: "🥤饮料" },
+  { name: "limit" as ItemType, label: "⏰限时" },
+  { name: "others" as ItemType, label: "其他" },
 ]);
 
 const packagePageRef = ref<CarouselInst | null>(null);
@@ -354,10 +356,13 @@ const showModal = (pItem: PackageItemInfo) => {
 
 .home-package-type {
   display: flex;
-  column-gap: 5px;
+  row-gap: 6px;
+  column-gap: 4px;
   margin-bottom: 5px;
+  flex-wrap: wrap;
   .package-type-btn {
-    flex: 1;
+    // flex: 1;
+    width: 24%;
     background: linear-gradient(135deg, $btn-grad-start 0%, $btn-grad-end 100%);
     color: $accent-brown;
     border: none;

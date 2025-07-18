@@ -62,8 +62,8 @@
             <div class="shop-prev-page-arrow" @click="prevPage">
               <n-image
                 preview-disabled
-                width="40"
-                height="40"
+                width="45"
+                height="45"
                 src="../assets/image/greater-than.png"
                 style="transform: rotate(180deg)"
               ></n-image>
@@ -71,8 +71,8 @@
             <div class="shop-next-page-arrow" @click="nextPage">
               <n-image
                 preview-disabled
-                width="40"
-                height="40"
+                width="45"
+                height="45"
                 src="../assets/image/greater-than.png"
               ></n-image>
             </div>
@@ -162,7 +162,7 @@ import { executeItemPage } from "../utils/item";
 const { buyItem, playerData } = usePlayer();
 const { getShopItems } = useShow();
 
-const shopCurrType = ref<ItemType>("hot" as ItemType);
+const shopCurrType = ref<ItemType>("limit" as ItemType);
 const shopPageNum = ref(0);
 const shopCurrPage = ref(1);
 const shopPageSize = ref(6);
@@ -243,11 +243,11 @@ const handleSearch = () => {
 };
 
 const shopTypeList = ref([
-  { name: "hot" as ItemType, label: "🔥特卖" },
-  { name: "food" as ItemType, label: "食物" },
-  { name: "medicine" as ItemType, label: "药品" },
-  { name: "gift" as ItemType, label: "礼物" },
-  { name: "drink" as ItemType, label: "饮料" },
+  { name: "limit" as ItemType, label: "⏰限时" },
+  { name: "food" as ItemType, label: "🍔食物" },
+  { name: "medicine" as ItemType, label: "💊药品" },
+  { name: "gift" as ItemType, label: "🎁礼物" },
+  { name: "drink" as ItemType, label: "🥤饮料" },
 ]);
 
 const shopPageRef = ref<InstanceType<typeof NCarousel> | null>(null);
@@ -401,7 +401,7 @@ const showModal = (shopItem: Item) => {
 }
 
 .shop-content-wrapper {
-  height: 66vh;
+  height: 67vh;
   padding: 0 10px;
   display: flex;
   flex-direction: column;
@@ -551,6 +551,7 @@ const showModal = (shopItem: Item) => {
       color: white;
       transition: all 0.3s ease;
       border: none;
+      overflow: hidden;
 
       &:hover {
         transform: translateY(-50%) scale(1.2);
@@ -558,11 +559,11 @@ const showModal = (shopItem: Item) => {
     }
 
     .shop-prev-page-arrow {
-      left: -32px;
+      left: -30px;
       transform: translateY(-50%);
     }
     .shop-next-page-arrow {
-      right: -32px;
+      right: -30px;
       transform: translateY(-50%);
     }
     .shop-item {

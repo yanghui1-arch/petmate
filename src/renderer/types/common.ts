@@ -1,6 +1,6 @@
 
 // 物品
-export type ItemType = "food" | "drink" | "medicine" | "gift" | "exp" | "others"
+export type ItemType = "food" | "drink" | "medicine" | "gift" | "exp" | "limit" | "others"
 export interface Item {
     id: number,
     name: string,
@@ -130,9 +130,9 @@ export interface Reward {
     singExp: number;
     drawExp: number;
     affectionExp: number;
-    energy: number; 
-    hungry: number; 
-    health: number; 
+    energy: number;
+    hungry: number;
+    health: number;
     emotion: number;
     cash: number;
 }
