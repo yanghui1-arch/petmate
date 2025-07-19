@@ -2,17 +2,10 @@ import Store from 'electron-store';
 import logger  from './log';
 import { ChatLLMConfigError, LLMConfigError, TTSProcessError } from './error';
 import { OpenAI } from 'openai';
-import { ChatCompletion, ChatCompletionChunk, ChatCompletionStream } from 'openai/resources/chat/completions';
-import { Stream } from 'openai/core/streaming';
-import { APIPromise } from 'openai';
+import { ChatCompletionStream } from 'openai/resources/chat/completions';
 import { v4 as uuidv4 } from 'uuid';
 import { WebSocket } from 'ws';
 import { getMainWindow } from './index';
-import fs from 'fs';
-
-const outputFilePath = 'output.mp3';
-fs.writeFileSync(outputFilePath, '');
-const fileStream = fs.createWriteStream(outputFilePath, { flags: 'a' });
 
 type StoreData = {
     chatLLMConfig: ChatLLMConfig;
@@ -50,8 +43,6 @@ export interface ChatMessage {
     role: "assistant" | "user" | "system";
     content: string;
 }
-
-
 
 /**
  * 聊天消息工厂类
@@ -182,9 +173,7 @@ function initLLMClient(): void {
             baseURL: currentChatLLMConfig.baseUrl,
             apiKey: currentChatLLMConfig.apiKey
         })
-
         // tts
-
 
     } catch (error) {
         if (error instanceof LLMConfigError) {
@@ -360,13 +349,10 @@ function connectTTSWebsocket(): string {
     ttsWebsocket.on('message', (data, isBinary) => {
         // 如果是二进制，则为音频数据
         if (isBinary) {
-            fileStream.write(data);
             // 发给渲染层
             const mainWindow = getMainWindow();
             if (mainWindow) {
-                // 将Buffer转换为Uint8Array以便在渲染进程中处理
-                // const audioChunk = new Uint8Array(data as Buffer);
-                console.log(data);
+                // 发送tts转录buffer数据
                 mainWindow.webContents.send('tts-audio-chunk', data);
             }
         } else {
