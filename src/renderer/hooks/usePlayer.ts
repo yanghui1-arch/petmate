@@ -10,116 +10,116 @@ const isLoading = ref(false)
 const error = ref<string | null>(null)
 
 export function usePlayer() {
-    // 加载玩家数据
-    const loadPlayerData = async (): Promise<void> => {
-      if (isLoading.value) return // 防止多次同时加载
-      
-      isLoading.value = true
-      error.value = null
-      
-      try {
-        const response: Response<PlayerInfo> = await window.api.loadPlayerData()
-        
-        if (response.code === 200 && response.data) {
-          playerData.value = response.data
-        } else {
-          throw new Error(response.message || 'Failed to load player data')
-        }
-      } catch (err) {
-        error.value = err instanceof Error ? err.message : 'Unknown error occurred'
-        console.error('Failed to load player data:', err)
-      } finally {
-        isLoading.value = false
+  // 加载玩家数据
+  const loadPlayerData = async (): Promise<void> => {
+    if (isLoading.value) return // 防止多次同时加载
+
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response: Response<PlayerInfo> = await window.api.loadPlayerData()
+
+      if (response.code === 200 && response.data) {
+        playerData.value = response.data
+      } else {
+        throw new Error(response.message || 'Failed to load player data')
       }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error occurred'
+      console.error('Failed to load player data:', err)
+    } finally {
+      isLoading.value = false
     }
+  }
 
-    // 重新获取玩家数据
-    const refreshPlayerData = async (): Promise<void> => {
-        await loadPlayerData()
+  // 重新获取玩家数据
+  const refreshPlayerData = async (): Promise<void> => {
+    await loadPlayerData()
+  }
+
+  // 更新本地玩家数据
+  const updatePlayerData = (newData: Partial<PlayerInfo>): void => {
+    if (playerData.value) {
+      playerData.value = { ...playerData.value, ...newData }
     }
+  }
 
-    // 更新本地玩家数据
-    const updatePlayerData = (newData: Partial<PlayerInfo>): void => {
-      if (playerData.value) {
-        playerData.value = { ...playerData.value, ...newData }
+  // 设置完整玩家数据
+  const setPlayerData = (newData: PlayerInfo): void => {
+    playerData.value = newData
+  }
+
+  // 消耗物品
+  const consumeItem = async (itemId: number, count: number, petmateId: number): Promise<boolean> => {
+    try {
+      const response = await window.api.consumeItem(itemId, count, petmateId)
+      if (response.code === 200) {
+        // 消耗物品后重新获取玩家数据
+        await refreshPlayerData()
+        return true
+      } else {
+        throw new Error(response.message || 'Failed to consume item')
       }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error occurred'
+      console.error('Failed to consume item:', err)
+      return false
     }
+  }
 
-    // 设置完整玩家数据
-    const setPlayerData = (newData: PlayerInfo): void => {
-      playerData.value = newData
-    }
-
-    // 消耗物品
-    const consumeItem = async (itemId: number, count: number, petmateId: number): Promise<boolean> => {
-      try {
-        const response = await window.api.consumeItem(itemId, count, petmateId)
-        if (response.code === 200) {
-          // 消耗物品后重新获取玩家数据
-          await refreshPlayerData()
-          return true
-        } else {
-          throw new Error(response.message || 'Failed to consume item')
-        }
-      } catch (err) {
-        error.value = err instanceof Error ? err.message : 'Unknown error occurred'
-        console.error('Failed to consume item:', err)
-        return false
+  // 购买物品
+  const buyItem = async (itemId: number, count: number): Promise<boolean> => {
+    try {
+      const response = await window.api.buyItem(itemId, count)
+      if (response.code === 200) {
+        // 购买物品后重新获取玩家数据
+        await refreshPlayerData()
+        return true
+      } else {
+        throw new Error(response.message || 'Failed to buy item')
       }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error occurred'
+      console.error('Failed to buy item:', err)
+      return false
     }
+  }
 
-    // 购买物品
-    const buyItem = async (itemId: number, count: number): Promise<boolean> => {
-      try {
-        const response = await window.api.buyItem(itemId, count)
-        if (response.code === 200) {
-          // 购买物品后重新获取玩家数据
-          await refreshPlayerData()
-          return true
-        } else {
-          throw new Error(response.message || 'Failed to buy item')
-        }
-      } catch (err) {
-        error.value = err instanceof Error ? err.message : 'Unknown error occurred'
-        console.error('Failed to buy item:', err)
-        return false
+  // 聊天
+  const chat = async (message: ChatMessage): Promise<boolean> => {
+    try {
+      const response = await window.api.chat(message)
+      if (response.code === 200) {
+        return true
+      } else {
+        throw new Error(response.message || 'Failed to chat')
       }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error occurred'
+      console.error('Failed to chat:', err)
+      return false
     }
+  }
+
+  // 返回只读引用，但提供更新方法
+  return {
+    // 只读数据访问
+    playerData: readonly(playerData),
+    isLoading: readonly(isLoading),
+    error: readonly(error),
+
+    // 数据管理方法
+    loadPlayerData,
+    refreshPlayerData,
+    updatePlayerData,
+    setPlayerData,
+
+    // 操作方法，自动同步数据
+    consumeItem,
+    buyItem,
 
     // 聊天
-    const chat = async (message: ChatMessage): Promise<boolean> => {
-      try {
-        const response = await window.api.chat(message)
-        if (response.code === 200) {
-          return true
-        } else {
-          throw new Error(response.message || 'Failed to chat')
-        }
-      } catch (err) {
-        error.value = err instanceof Error ? err.message : 'Unknown error occurred'
-        console.error('Failed to chat:', err)
-        return false
-      }
-    }
-
-    // 返回只读引用，但提供更新方法
-    return {
-      // 只读数据访问
-      playerData: readonly(playerData),
-      isLoading: readonly(isLoading),
-      error: readonly(error),
-      
-      // 数据管理方法
-      loadPlayerData,
-      refreshPlayerData,
-      updatePlayerData,
-      setPlayerData,
-      
-      // 操作方法，自动同步数据
-      consumeItem,
-      buyItem,
-
-      // 聊天
-      chat,
-    }
+    chat,
+  }
 } 

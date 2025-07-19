@@ -78,7 +78,7 @@
             type="button"
             v-for="item in packageTypeList"
             :key="item.name"
-            @click="packageCurrType = item.name"
+            @click="handleTypeClick(item.name)"
             :class="{ 'active-package-type': packageCurrType === item.name }"
             class="package-type-btn"
           >
@@ -86,13 +86,6 @@
           </button>
         </div>
         <div class="home-package-wrapper">
-          <ItemPopover
-            :popoverX="popoverX"
-            :popoverY="popoverY"
-            :show="isItemEnter"
-            :popoverWidth="popoverWidth"
-          />
-          <ItemModal v-model:show="isModalShow" :title="modalTitle" />
           <n-carousel
             :show-arrow="false"
             :show-dots="false"
@@ -103,54 +96,31 @@
             }"
             ref="packagePageRef"
           >
-            <div class="home-package-content">
+            <div
+              class="home-package-content"
+              v-for="(page, index) in packagePageList"
+              :key="'page' + index"
+            >
               <n-grid x-gap="5" y-gap="5" :cols="6">
                 <n-gi
-                  v-for="(item, i) in packagePrevItemList"
-                  :key="i"
+                  v-for="item in page"
+                  :key="item.id"
                   style="display: flex; justify-content: center"
                 >
                   <div
                     class="package-item"
-                    @click="consumeItem(item.id, 1, currentPetmateID)"
+                    @mouseenter="showPopover($event, item)"
+                    @mouseleave="hidePopover"
+                    @click="showModal(item)"
                   >
                     <n-image width="38" :src="item.url" preview-disabled />
                     <span class="package-item-num">{{ item.count }}</span>
                   </div>
                 </n-gi>
+
                 <n-gi
-                  v-for="i in packagePageSize - packagePrevItemList.length"
-                  :key="i"
-                  style="display: flex; justify-content: center"
-                >
-                  <div class="package-item"></div>
-                </n-gi>
-              </n-grid>
-            </div>
-            <div class="home-package-content">
-              <n-grid x-gap="5" y-gap="5" :cols="6">
-                <n-gi
-                  v-for="(item, i) in packageNextItemList"
-                  :key="i"
-                  style="display: flex; justify-content: center"
-                >
-                  <div
-                    class="package-item"
-                    @mouseenter="showPopover($event)"
-                    @mouseleave="hidePopover"
-                    @click="showModal(item)"
-                  >
-                    <n-image
-                      width="38"
-                      src="../assets/image/item/burger.png"
-                      preview-disabled
-                    />
-                    <span class="package-item-num">99</span>
-                  </div>
-                </n-gi>
-                <n-gi
-                  v-for="i in packagePageSize - packageNextItemList.length"
-                  :key="i"
+                  v-for="i in packagePageSize - page.length"
+                  :key="'empty' + i"
                   style="display: flex; justify-content: center"
                 >
                   <div class="package-item"></div>
@@ -175,64 +145,121 @@
         </div>
       </div>
     </div>
+    <ItemPopover
+      :popoverX="popoverX"
+      :popoverY="popoverY"
+      :show="isItemEnter"
+      :popoverWidth="popoverWidth"
+      :isSourceShow="true"
+      :item="popoverItem"
+    />
+    <ItemModal
+      v-model:show="isModalShow"
+      :title="modalTitle"
+      :item="modalItem"
+      :hasCount="modalHasCount"
+      type="use"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { onMounted, onBeforeUnmount } from "vue";
 import AttributeBar from "@/components/AttributeBar.vue";
 import Pagedot from "@/components/Pagedot.vue";
 import ItemPopover from "@/components/ItemPopover.vue";
 import ItemModal from "@/components/ItemModal.vue";
 import type { CarouselInst } from "naive-ui";
+import { executeItemPage } from "../utils/item";
 import { usePlayer } from "../hooks/usePlayer";
+import { useShow } from "../hooks/useShow";
 import { PackageItemInfo } from "../types/player";
-import { PetMate, PetMateAttribute } from "../types/petmate";
-
-onMounted(() => {
-  document.body.style.backgroundColor = "#f9f9f9";
-});
-
-onBeforeUnmount(() => {
-  document.body.style.backgroundColor = ""; // 恢复默认
-});
-
+import { ItemType, Item } from "../types/common";
 const { playerData, consumeItem } = usePlayer();
+const { getShopItems } = useShow();
+
+const completeItemsMap = ref<Map<number, Item>>(new Map());
+
+/**
+ * 加载所有物品数据
+ */
+const loadCompleteItemsData = async () => {
+  try {
+    const itemTypes: ItemType[] = [
+      "food",
+      "medicine",
+      "gift",
+      "drink",
+      "limit",
+      "others",
+    ];
+
+    for (const type of itemTypes) {
+      const items = await getShopItems(type);
+      items.forEach((item) => {
+        completeItemsMap.value.set(item.id, item);
+      });
+    }
+  } catch (error) {
+    console.error("Failed to load complete items data:", error);
+  }
+};
+
+onMounted(async () => {
+  await loadCompleteItemsData();
+});
 
 // Petmate相关
-const currentPetmateID = 0;
-const currentActivePetmate = ref<PetMate | undefined>(
-  playerData.value?.petmates.filter(
-    (petmate) => petmate.id === currentPetmateID
-  )[0] as PetMate
-);
-const petmateAttribute = ref<PetMateAttribute | undefined>(
-  currentActivePetmate.value?.attrs
-);
+const currentPetmateID = ref(0);
+const currentActivePetmate = computed(() => {
+  return playerData.value?.petmates.find(
+    (petmate) => petmate.id === currentPetmateID.value
+  );
+});
 
+const petmateAttribute = computed(() => {
+  return currentActivePetmate.value?.attrs;
+});
 const exp: Ref<number> = ref(petmateAttribute.value?.exp ?? 0);
 
-// 背包相關
+// 背包相关
 const packageCurrType = ref("food");
-const packagePageNum = ref(2);
 const packageCurrPage = ref(1);
 const packagePageSize = ref(18);
 const packageTypeList = ref([
-  { name: "food", label: "🍔食物" },
-  { name: "medicine", label: "💊药品" },
-  { name: "gift", label: "🎁礼物" },
-  { name: "drink", label: "🥤饮料" },
+  { name: "food" as ItemType, label: "🍔食物" },
+  { name: "medicine" as ItemType, label: "💊药品" },
+  { name: "gift" as ItemType, label: "🎁礼物" },
+  { name: "drink" as ItemType, label: "🥤饮料" },
+  { name: "limit" as ItemType, label: "⏰限时" },
+  { name: "others" as ItemType, label: "其他" },
 ]);
 
-// 背包物品
-const playerItems: PackageItemInfo[] = [...(playerData.value?.items || [])];
-const packagePrevItemList = ref<PackageItemInfo[]>(playerItems);
-
-// 只是用来占位的，里面是什么东西无所谓，只要长度正确即可
-const packageNextItemList = ref(new Array(18).fill(0));
-
 const packagePageRef = ref<CarouselInst | null>(null);
+/**
+ * 响应式计算背包物品列表
+ */
+const packagePageList = computed(() => {
+  const allItems = playerData.value?.items || [];
+  const filteredPackageItems = allItems.filter(
+    (item) => item.type === packageCurrType.value
+  );
+  return executeItemPage([...filteredPackageItems], packagePageSize.value);
+});
+const packagePageNum = computed(() => packagePageList.value.length);
+
+/**
+ * 点击分类
+ * @param typeName 类别名称
+ */
+const handleTypeClick = (typeName: ItemType) => {
+  packageCurrType.value = typeName;
+  // 重置到第一页
+  packageCurrPage.value = 1;
+  if (packagePageRef.value) {
+    packagePageRef.value.to(0);
+  }
+};
 
 const prevPage = () => {
   if (packageCurrPage.value > 1) {
@@ -252,8 +279,9 @@ const nextPage = () => {
 const popoverX = ref(0);
 const popoverY = ref(0);
 const isItemEnter = ref(false);
-const popoverWidth = ref(150);
-const showPopover = (event: MouseEvent) => {
+const popoverWidth = ref(180);
+const popoverItem = ref<Item | null>(null);
+const showPopover = (event: MouseEvent, item: PackageItemInfo) => {
   const target = event.currentTarget as HTMLElement;
   const rect = target?.getBoundingClientRect();
   // 经过实践，popoverX和popoverY暂时确定是悬浮框矩形 '底部中心' 的坐标
@@ -261,6 +289,14 @@ const showPopover = (event: MouseEvent) => {
   popoverY.value = rect.y + rect.height / 2;
 
   isItemEnter.value = true;
+  // 根据id查询物品信息
+  const completeItem = completeItemsMap.value.get(item.id);
+  if (completeItem) {
+    // 根据id查询物品信息
+    popoverItem.value = {
+      ...completeItem,
+    };
+  }
 };
 
 const hidePopover = () => {
@@ -270,8 +306,18 @@ const hidePopover = () => {
 // 物品使用弹出框相关
 const modalTitle = ref("请选择使用数量");
 const isModalShow = ref(false);
-const showModal = (event: MouseEvent) => {
+const modalItem = ref<Item | null>(null);
+const modalHasCount = ref(0);
+const showModal = (item: PackageItemInfo) => {
   isModalShow.value = true;
+  const completeItem = completeItemsMap.value.get(item.id);
+  if (completeItem) {
+    // 根据id查询物品信息
+    modalItem.value = {
+      ...completeItem,
+    };
+    modalHasCount.value = item.count;
+  }
 };
 </script>
 
@@ -370,10 +416,13 @@ const showModal = (event: MouseEvent) => {
 
 .home-package-type {
   display: flex;
-  column-gap: 5px;
+  row-gap: 6px;
+  column-gap: 4px;
   margin-bottom: 5px;
+  flex-wrap: wrap;
   .package-type-btn {
-    flex: 1;
+    // flex: 1;
+    width: 24%;
     background: linear-gradient(135deg, $btn-grad-start 0%, $btn-grad-end 100%);
     color: $accent-brown;
     border: none;
