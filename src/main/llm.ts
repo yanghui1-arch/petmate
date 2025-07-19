@@ -163,6 +163,7 @@ interface TTSFinishTask {
 
 /**
  * 初始化所有大模型的客户端
+ * @throws LLMConfigError 如果初始化大模型配置出错的话会抛出这个异常
  */
 function initLLMClient(): void {
     try {
@@ -181,6 +182,7 @@ function initLLMClient(): void {
         } else {
             logger.error('[llm] 大模型客户端初始化失败', error);
         }
+        throw error;
     }
 }
 
@@ -509,6 +511,9 @@ export {
     chat,
     
     // config
+    initLLMClient,
+    getChatLLMConfig,
+    getTTSLLMConfig,
     setChatLLMConfig,
     setTTSLLMConfig,
 }

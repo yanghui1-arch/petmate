@@ -19,7 +19,7 @@ import { ActivityInfo } from './types/activity';
 import { getCompletedWishesNum, showActivities, showItems } from './modules/show';
 import { ChatLLMConfigError, LLMConfigError, NotFoundError, TTSProcessError } from './error';
 import { getModelSize, getSettings, SettingConfig, updateSettings, defaultSettings } from './settings';
-import { chat, ChatMessage } from './llm';
+import { chat, ChatLLMConfig, ChatMessage, getChatLLMConfig, getTTSLLMConfig, initLLMClient, setChatLLMConfig, setTTSLLMConfig, TTSLLMConfig } from './llm';
 
 /**
  * 初始化加载玩家数据
@@ -142,6 +142,32 @@ ipcMain.handle("init-settings", (event: IpcMainInvokeEvent): Response<SettingCon
             code: 400,
             message: "初始化设置数据失败"
         }
+    }
+})
+
+/**
+ * 初始化llm配置
+ * 玩家会有自己的llm的api_key和base_url，如果没有定义自己的api_key或者base_url, 需要给一个提醒，否则应该加载默认的配置
+ */
+ipcMain.handle("init-llm", (event: IpcMainInvokeEvent): Response<void> => {
+    try {
+        initLLMClient()
+        return {
+            code: 200,
+            message: "初始化llm客户端成功"
+        }
+    } catch (error) {
+        if (error instanceof LLMConfigError) {
+            logger.error(`初始化llm配置失败，模型配置错误: ${error}`);
+            return {
+                code: 400,
+                message: "初始化llm配置的时候出错了，请确定自己模型的配置是正确的，如果已确保是正确的，请反馈给我们！"
+            } as Response<void>;
+        }
+        return {
+            code: 400,
+            message: "初始化llm客户端失败"
+        } as Response<void>;
     }
 })
 
@@ -366,7 +392,92 @@ ipcMain.handle("get-settings", (event: IpcMainInvokeEvent): Response<SettingConf
 })
 
 /**
+ * 获取Chat LLM配置
+ * @returns Chat LLM配置, 如果失败的话则返回一个错误信息
+ */
+ipcMain.handle("get-chat-llm-config", (event: IpcMainInvokeEvent): Response<ChatLLMConfig> => {
+    try {
+        const chatLLMConfig: ChatLLMConfig = getChatLLMConfig();
+        return {
+            code: 200,
+            data: chatLLMConfig
+        } as Response<ChatLLMConfig>;
+    } catch (error) {
+        logger.error(`获取Chat LLM配置失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取Chat LLM配置失败"
+        } as Response<ChatLLMConfig>;
+    }
+});
+
+/**
+ * 获取TTS LLM配置
+ * @returns TTS LLM配置, 如果失败的话则返回一个错误信息
+ */
+ipcMain.handle("get-tts-config", (event: IpcMainInvokeEvent): Response<TTSLLMConfig> => {
+    try {
+        const ttsLLMConfig: TTSLLMConfig = getTTSLLMConfig();
+        return {
+            code: 200,
+            data: ttsLLMConfig
+        } as Response<TTSLLMConfig>;
+    } catch (error) {
+        logger.error(`获取TTS LLM配置失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取TTS LLM配置失败"
+        } as Response<TTSLLMConfig>;
+    }
+});
+
+/**
+ * 设置Chat LLM配置
+ * 每次调用这个方法，必须传入一个完整的ChatLLMConfig类型数据过来，确保配置的完整性，不可以是Partial<ChatLLMConfig>类型
+ * @param config 新的Chat LLM配置
+ * @returns 设置后的Chat LLM配置, 如果失败的话则返回一个错误信息
+ */
+ipcMain.handle("set-chat-llm-config", (event: IpcMainInvokeEvent, config: ChatLLMConfig): Response<ChatLLMConfig> => {
+    try {
+        const newConfig: ChatLLMConfig = setChatLLMConfig(config);
+        return {
+            code: 200,
+            data: newConfig
+        } as Response<ChatLLMConfig>;
+    } catch (error) {
+        logger.error(`设置Chat LLM配置失败: ${error}`);
+        return {
+            code: 400,
+            message: "设置Chat LLM配置失败"
+        } as Response<ChatLLMConfig>;
+    }
+});
+
+/**
+ * 设置TTS LLM配置
+ * 每次调用这个方法，必须传入一个完整的TTSLLMConfig类型数据过来，确保配置的完整性，不可以是Partial<TTSLLMConfig>类型
+ * @param config 新的TTS LLM配置
+ * @returns 设置后的TTS LLM配置, 如果失败的话则返回一个错误信息
+ */
+ipcMain.handle("set-tts-config", (event: IpcMainInvokeEvent, config: TTSLLMConfig): Response<TTSLLMConfig> => {
+    try {
+        const newConfig: TTSLLMConfig = setTTSLLMConfig(config);
+        return {
+            code: 200,
+            data: newConfig
+        } as Response<TTSLLMConfig>;
+    } catch (error) {
+        logger.error(`设置TTS LLM配置失败: ${error}`);
+        return {
+            code: 400,
+            message: "设置TTS LLM配置失败"
+        } as Response<TTSLLMConfig>;
+    }
+});
+
+/**
  * 更改设置
+ * @param settings 新的设置内容，可以是SettingConfig的一部分内容
  */
 ipcMain.handle("update-settings", (event: IpcMainInvokeEvent, settings: Partial<SettingConfig>): Response<void> => {
     try {
