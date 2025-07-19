@@ -67,7 +67,7 @@ export function useShow() {
      * @param wishId 需要获取的愿望的id
      * @returns 获取的愿望
      */
-    const getPetmateOneWish = async (petmateId: number, wishId: string):Promise<Wish | null> => {
+    const getPetmateOneWish = async (petmateId: number, wishId: string):Promise<Wish | undefined> => {
         const res = await window.api.getPetmateOneWish(petmateId, wishId)
         try {
             if (res.code === 200) {
@@ -77,7 +77,7 @@ export function useShow() {
             }
         } catch (error) {
             console.error(error)
-            return null
+            return undefined
         }
     }
 
