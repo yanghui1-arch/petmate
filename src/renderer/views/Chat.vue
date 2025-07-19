@@ -2,6 +2,7 @@
     <div class="chat-container">
         <div class="chat-header">
             <span style="font-family: Petmate; font-size: 30px">Dass Chat</span>
+            <n-switch :value="isMuted" @update:value="changeMuted"/>
         </div>
         
         <!-- 聊天消息显示区域 -->
@@ -79,6 +80,8 @@
 import { ref, nextTick, onMounted, onUnmounted } from 'vue';
 import { usePlayer } from '../hooks/usePlayer';
 import type { ChatMessage } from '../types/llm';
+import { useAudio } from '../hooks/useAudio';
+
 
 // 扩展的消息接口，包含时间戳
 interface ChatMessageWithTimestamp extends ChatMessage {
@@ -96,6 +99,17 @@ const buttonStatus = ref('↑');
 const loading = ref(false);
 const isTyping = ref(false); // 是否正在打字输出
 const chatContentRef = ref<HTMLElement | null>(null);
+
+// Stream processing
+let currentAssistantMessageIndex = -1;
+let streamBuffer = '';
+let streamCheckInterval: NodeJS.Timeout | null = null;
+let lastChunkTime = 0;
+
+// Chunk processing queue for smooth streaming
+let chunkQueue: string[] = [];
+let isProcessingChunks = false;
+
 
 // 格式化时间显示
 const formatTime = (date: Date): string => {
@@ -126,50 +140,84 @@ const addMessage = (role: ChatMessage['role'], content: string) => {
     scrollToBottom();
 };
 
-// 添加带有流式打字效果的消息
-const addTypingMessage = async (content: string, messageIndex: number) => {
-    // Get the existing loading message and update it to content state
-    if (messageIndex >= 0 && messageIndex < messages.value.length) {
-        // Remove loading state and start typing
-        messages.value[messageIndex].isLoading = false;
-        messages.value[messageIndex].isTyping = true;
-        messages.value[messageIndex].content = '';
-        
-        // Scroll to show the transition
+// 处理单个流式文本块
+const processChunk = async (chunk: string) => {
+    if (currentAssistantMessageIndex < 0 || currentAssistantMessageIndex >= messages.value.length) {
+        return;
+    }
+
+    // Add chunk to buffer
+    streamBuffer += chunk;
+    
+    // If message is still loading, start typing mode
+    if (messages.value[currentAssistantMessageIndex].isLoading) {
+        messages.value[currentAssistantMessageIndex].isLoading = false;
+        messages.value[currentAssistantMessageIndex].isTyping = true;
+        messages.value[currentAssistantMessageIndex].content = '';
+        await nextTick();
         await scrollToBottom();
-        
-        // Stream content character by character
-        for (let i = 0; i < content.length; i++) {
-            // Update content one character at a time
-            messages.value[messageIndex].content = content.substring(0, i + 1);
-            
-            // Scroll to bottom as content grows
-            await scrollToBottom();
-            
-            // Realistic typing speed - adjust based on character type
-            let delay = 30; // Base delay for normal characters
-            
-            // Slower for punctuation to simulate natural pauses
-            if (/[.!?]/.test(content[i])) {
-                delay = 200;
-            } else if (/[,;:]/.test(content[i])) {
-                delay = 100;
-            } else if (content[i] === ' ') {
-                delay = 50;
-            }
-            
-            // Don't wait after the last character
-            if (i < content.length - 1) {
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
+    }
+
+    // Update content in real-time with typing effect
+    messages.value[currentAssistantMessageIndex].content = streamBuffer;
+    
+    // Force immediate DOM update and scroll
+    await nextTick();
+    await scrollToBottom();
+    
+    // Update the last chunk time
+    lastChunkTime = Date.now();
+};
+
+// 处理文本块队列，带延迟以实现流式效果
+const processChunkQueue = async () => {
+    if (isProcessingChunks) return;
+    
+    isProcessingChunks = true;
+    
+    while (chunkQueue.length > 0) {
+        const chunk = chunkQueue.shift();
+        if (chunk) {
+            await processChunk(chunk);
+            // Add small delay between chunks for visible streaming effect
+            await new Promise(resolve => setTimeout(resolve, 30));
         }
-        
-        // Typing complete
-        messages.value[messageIndex].isTyping = false;
     }
     
+    isProcessingChunks = false;
+};
+
+// 添加文本块到队列
+const handleTextChunk = (chunk: string) => {
+    chunkQueue.push(chunk);
+    processChunkQueue();
+};
+
+// 完成流式响应
+const finishStreamResponse = async () => {
+    if (currentAssistantMessageIndex >= 0 && currentAssistantMessageIndex < messages.value.length) {
+        messages.value[currentAssistantMessageIndex].isTyping = false;
+    }
+    
+    // Reset all state
+    currentAssistantMessageIndex = -1;
+    streamBuffer = '';
+    lastChunkTime = 0;
     isTyping.value = false;
+    loading.value = false;
     buttonStatus.value = '↑';
+    
+    // Clear chunk queue and processing state
+    chunkQueue = [];
+    isProcessingChunks = false;
+    
+    // Clear interval if exists
+    if (streamCheckInterval) {
+        clearInterval(streamCheckInterval);
+        streamCheckInterval = null;
+    }
+    
+    await scrollToBottom();
 };
 
 // 创建等待回复的消息
@@ -186,28 +234,25 @@ const createPendingAssistantMessage = (): number => {
     return messages.value.length - 1;
 };
 
-// 模拟接收 Dass 的回复
-const simulateDassResponse = async (messageIndex: number) => {
-    // Simulate a brief "thinking" period before response starts
-    await new Promise(resolve => setTimeout(resolve, 500));
+// 设置流检测器，在没有新文本块时结束流
+const setupStreamChecker = () => {
+    // 清除之前的定时器
+    if (streamCheckInterval) {
+        clearInterval(streamCheckInterval);
+        streamCheckInterval = null;
+    }
     
-    const responses = [
-        "你好！我是 Dass，很高兴和你聊天！😊",
-        "今天心情怎么样呢？希望你过得愉快～",
-        "有什么想要聊的话题吗？我很乐意听你分享。",
-        "我在这里陪着你呢，随时可以和我说话哦！",
-        "让我们一起度过愉快的时光吧！✨",
-        "我们可以聊聊你的兴趣爱好，或者我可以为你唱首歌～🎵",
-        "作为你的 Petmate，我会一直陪伴在你身边的！💕",
-        "今天学习累了吗？来和我聊聊轻松一下吧！",
-        "你知道吗？和你聊天是我最开心的时候呢！😄"
-    ];
+    // 初始化时间
+    lastChunkTime = Date.now();
     
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-    console.log('Streaming response:', randomResponse);
-    
-    // Start the real-time typing effect
-    await addTypingMessage(randomResponse, messageIndex);
+    // 设置新的定时器检查流是否结束
+    streamCheckInterval = setInterval(() => {
+        if (Date.now() - lastChunkTime > 1000) { // 1秒没有新块就认为结束
+            clearInterval(streamCheckInterval!);
+            streamCheckInterval = null;
+            finishStreamResponse();
+        }
+    }, 500);
 };
 
 // 发送消息处理
@@ -226,7 +271,8 @@ const handleSend = async () => {
         inputMessage.value = '';
 
         // 创建等待中的助手消息
-        const assistantMessageIndex = createPendingAssistantMessage();
+        currentAssistantMessageIndex = createPendingAssistantMessage();
+        streamBuffer = '';
 
         // 创建聊天消息对象
         const chatMessage: ChatMessage = {
@@ -235,33 +281,38 @@ const handleSend = async () => {
         };
 
         // 发送消息到主进程
-        const success = true;
+        const success = await chat(chatMessage);
         
         if (success) {
             // 如果发送成功，开始接收流式回复
             isTyping.value = true;
-            loading.value = false; // Hide loading, start typing
-            await simulateDassResponse(assistantMessageIndex);
+            loading.value = false; // Hide loading, ready for streaming
+            // 为这次聊天设置流检测器
+            setupStreamChecker();
         } else {
             // 发送失败的处理 - 更新等待中的消息为错误状态
-            if (assistantMessageIndex >= 0) {
-                messages.value[assistantMessageIndex].isLoading = false;
-                messages.value[assistantMessageIndex].content = '抱歉，我现在无法回复，请稍后再试。';
+            if (currentAssistantMessageIndex >= 0) {
+                messages.value[currentAssistantMessageIndex].isLoading = false;
+                messages.value[currentAssistantMessageIndex].content = '抱歉，我现在无法回复，请稍后再试。';
             }
+            // 重置状态
+            finishStreamResponse();
         }
     } catch (error) {
         console.error('发送消息失败:', error);
         // 错误处理 - 如果有等待中的消息，更新为错误状态
-        const lastMessage = messages.value[messages.value.length - 1];
-        if (lastMessage && lastMessage.role === 'assistant' && lastMessage.isLoading) {
-            lastMessage.isLoading = false;
-            lastMessage.content = '出现了一些问题，请稍后再试。';
+        if (currentAssistantMessageIndex >= 0) {
+            messages.value[currentAssistantMessageIndex].isLoading = false;
+            messages.value[currentAssistantMessageIndex].content = '出现了一些问题，请稍后再试。';
         }
+        // 重置状态
+        finishStreamResponse();
     } finally {
-        // 确保在任何情况下都重置状态
-        isTyping.value = false;
-        loading.value = false;
-        buttonStatus.value = '↑';
+        // 确保在任何情况下都重置状态（如果还没有重置的话）
+        if (loading.value && !isTyping.value) {
+            loading.value = false;
+            buttonStatus.value = '↑';
+        }
     }
 };
 
@@ -272,6 +323,42 @@ const handleEnter = (e: KeyboardEvent) => {
         handleSend();
     }
 };
+
+const { isMuted, initAudioResources, clearAudioResources, changeMuted } = useAudio();
+
+// 设置事件监听器
+onMounted(() => {
+    // 监听文本流块
+    window.api.onTextChunk((event: Event, text: string) => {
+        console.log('Received text chunk:', text);
+        handleTextChunk(text);
+    });
+
+    // 监听音频流块
+    if (isMuted.value === false) {
+        initAudioResources();
+    }
+});
+
+watch(isMuted, (newVal) => {
+    // 如果为静音就清理掉音频资源，如果非静音就初始化资源
+    if (newVal === true) {
+        clearAudioResources();
+    } else {
+        initAudioResources();
+    }
+});
+
+
+onUnmounted(() => {
+    // 清理定时器
+    if (streamCheckInterval) {
+        clearInterval(streamCheckInterval);
+        streamCheckInterval = null;
+    }
+    clearAudioResources();
+});
+
 
 </script>
 

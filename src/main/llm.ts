@@ -2,9 +2,7 @@ import Store from 'electron-store';
 import logger  from './log';
 import { ChatLLMConfigError, LLMConfigError, TTSProcessError } from './error';
 import { OpenAI } from 'openai';
-import { ChatCompletion, ChatCompletionChunk, ChatCompletionStream } from 'openai/resources/chat/completions';
-import { Stream } from 'openai/core/streaming';
-import { APIPromise } from 'openai';
+import { ChatCompletionStream } from 'openai/resources/chat/completions';
 import { v4 as uuidv4 } from 'uuid';
 import { WebSocket } from 'ws';
 import { getMainWindow } from './index';
@@ -34,7 +32,7 @@ export interface TTSLLMConfig {
 export interface TTSParameters {
     text_type?: string;
     voice: string;
-    format?: string;
+    format: string;
     sample_rate: number;
     volume: number;
     rate: number; // 语速
@@ -45,8 +43,6 @@ export interface ChatMessage {
     role: "assistant" | "user" | "system";
     content: string;
 }
-
-
 
 /**
  * 聊天消息工厂类
@@ -84,18 +80,18 @@ const DEFAULT_CHAT_LLM_CONFIG: ChatLLMConfig = {
 
 const DEFAULT_TTS_PARAMETERS: TTSParameters = {
     text_type: 'PlainText',
-    voice: 'longyingcui',
-    format: 'wav',
-    sample_rate: 16000,
-    volume: 1.0,
-    rate: 1.0,
-    pitch: 0.0
+    voice: 'longxiaochun_v2',
+    format: 'mp3',
+    sample_rate: 22050,
+    volume: 50,
+    rate: 1,
+    pitch: 1
 }
 
 const DEFAULT_TTS_LLM_CONFIG: TTSLLMConfig = {
-    model: 'tts-1',
+    model: 'cosyvoice-v2',
     apiKey: 'sk-93ce6cc609864f199c39a479f2f50c1d',
-    baseUrl: 'wss://dashscope.aliyuncs.com/api-ws/v1/inference',
+    baseUrl: 'wss://dashscope.aliyuncs.com/api-ws/v1/inference/',
     parameters: DEFAULT_TTS_PARAMETERS
 }
 
@@ -177,9 +173,7 @@ function initLLMClient(): void {
             baseURL: currentChatLLMConfig.baseUrl,
             apiKey: currentChatLLMConfig.apiKey
         })
-
         // tts
-
 
     } catch (error) {
         if (error instanceof LLMConfigError) {
@@ -305,6 +299,7 @@ function tts(text: string): void {
             }
         }
     }
+    console.log(`tts task id: ${ttsTaskId}`);
     ttsWebsocket?.send(JSON.stringify(continueTaskMessage));
     console.log('已发送继续任务的事件');
 }
@@ -321,6 +316,7 @@ function connectTTSWebsocket(): string {
         }
     });
     const taskId = uuidv4();
+    console.log(`init tts websocket task id: ${taskId}`);
     ttsWebsocket.on('open', () => {
         console.log('已连接到WebSocket服务器');
         const runTaskMessage: TTSStartTask = {
@@ -337,7 +333,7 @@ function connectTTSWebsocket(): string {
                 parameters: {
                     text_type: 'PlainText',
                     voice: currentTTSLLMConfig.parameters.voice, // 音色
-                    format: 'mp3', // 音频格式
+                    format: currentTTSLLMConfig.parameters.format, // 音频格式
                     sample_rate: currentTTSLLMConfig.parameters.sample_rate, // 采样率
                     volume: currentTTSLLMConfig.parameters.volume, // 音量
                     rate: currentTTSLLMConfig.parameters.rate, // 语速
@@ -345,7 +341,7 @@ function connectTTSWebsocket(): string {
                 },
                 input: {}
             }
-        }
+        };
         ttsWebsocket?.send(JSON.stringify(runTaskMessage));
         console.log('已发送开始任务的事件');
     });
@@ -356,10 +352,8 @@ function connectTTSWebsocket(): string {
             // 发给渲染层
             const mainWindow = getMainWindow();
             if (mainWindow) {
-                // 将Buffer转换为Uint8Array以便在渲染进程中处理
-                const audioChunk = new Uint8Array(data as Buffer);
-                console.log(audioChunk);
-                mainWindow.webContents.send('tts-audio-chunk', audioChunk);
+                // 发送tts转录buffer数据
+                mainWindow.webContents.send('tts-audio-chunk', data);
             }
         } else {
             const message = JSON.parse(data.toString());
@@ -367,11 +361,6 @@ function connectTTSWebsocket(): string {
                 case "task-started":
                     ttsStarted = true;
                     console.log('tts任务已经准备开始');
-                    // 通知渲染进程TTS开始
-                    const mainWindow = getMainWindow();
-                    if (mainWindow) {
-                        mainWindow.webContents.send('tts-started');
-                    }
                     break;
                 case 'task-finished':
                     console.log('tts任务已全部完成');
@@ -415,7 +404,42 @@ function connectTTSWebsocket(): string {
 }
 
 /**
+ * 等待TTS任务准备就绪
+ * @param timeout 超时时间（毫秒），默认5秒
+ * @returns Promise<boolean> 是否成功准备就绪
+ */
+function waitForTTSReady(timeout: number = 5000): Promise<boolean> {
+    return new Promise((resolve) => {
+        // 如果已经准备就绪，直接返回
+        if (ttsStarted && ttsWebsocket && ttsTaskId) {
+            resolve(true);
+            return;
+        }
+
+        const startTime = Date.now();
+        const checkInterval = setInterval(() => {
+            // 检查是否已经准备就绪
+            if (ttsStarted && ttsWebsocket && ttsTaskId) {
+                clearInterval(checkInterval);
+                resolve(true);
+                return;
+            }
+
+            // 检查是否超时
+            if (Date.now() - startTime > timeout) {
+                clearInterval(checkInterval);
+                resolve(false);
+                return;
+            }
+        }, 50); // 每50ms检查一次
+    });
+}
+
+/**
  * 发送聊天信息
+ * 会向渲染进程发送音频信息和文本信息，其中文本信息会以流的形式发送，音频信息会以二进制流的形式发送
+ * 文本信息流和音频信息流是几乎同步发送的
+ * chat-chunk为文本信息流的参数，tts-audio-chunk为音频信息流的参数
  * @param messages 聊天信息
  * @throws TTSProcessError 如果tts任务的参数未正确初始化
  * @throws ChatLLMConfigError 如果传过来的聊天信息不是用户消息
@@ -430,18 +454,27 @@ async function chat(message: ChatMessage): Promise<void> {
         if (message.role !== 'user') {
             throw new ChatLLMConfigError("[llm] 请确保传过来的聊天信息是用户消息");
         }
+        // 等待TTS任务准备就绪
+        // 必须得保证TTS任务准备就绪，不然会因为websocket的异步性导致ttsStarted=False
+        const ttsReady = await waitForTTSReady();
+        if (!ttsReady) {
+            throw new TTSProcessError('TTS任务初始化超时，请检查网络连接和API配置');
+        }
 
         // 建立好连接并确认好用户信息之后，将当前的聊天信息加入到历史聊天信息中
         chatHistoryMessages.push(message);
         // [future] 得在这里再考虑一下上下文长度问题，但这一个版本先不考虑
-
+        
+        const mainWindow = getMainWindow()
         const runner: ChatCompletionStream = await postChatMessage(chatHistoryMessages);
         let response: string = "";
         for await (const chunk of runner) {
             const content = chunk.choices[0].delta.content ?? "";
+            console.log("文本流", content);
             if (content !== "") {
                 tts(content);
                 response += content;
+                mainWindow?.webContents.send('chat-chunk', content);
             }
         }
         
@@ -469,7 +502,6 @@ async function chat(message: ChatMessage): Promise<void> {
         ttsWebsocket = null;
         throw error;
     }
-
 }
 
 initLLMClient();
