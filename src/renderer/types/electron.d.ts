@@ -24,6 +24,7 @@ interface IElectronAPI {
   chat: (message: ChatMessage) => Promise<Response<void>>;
   onTextChunk: (callback: (event: Event, text: string) => void) => void;
   onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => void;
+  removeAllAudioChunkListeners: () => void;
 }
 
 // 声明全局window对象，之后渲染层直接window.api.function() 调用即可

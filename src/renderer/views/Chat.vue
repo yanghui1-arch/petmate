@@ -2,6 +2,7 @@
     <div class="chat-container">
         <div class="chat-header">
             <span style="font-family: Petmate; font-size: 30px">Dass Chat</span>
+            <n-switch :value="isMuted" @update:value="changeMuted"/>
         </div>
         
         <!-- 聊天消息显示区域 -->
@@ -79,6 +80,8 @@
 import { ref, nextTick, onMounted, onUnmounted } from 'vue';
 import { usePlayer } from '../hooks/usePlayer';
 import type { ChatMessage } from '../types/llm';
+import { useAudio } from '../hooks/useAudio';
+
 
 // 扩展的消息接口，包含时间戳
 interface ChatMessageWithTimestamp extends ChatMessage {
@@ -321,8 +324,7 @@ const handleEnter = (e: KeyboardEvent) => {
     }
 };
 
-let audioElement: HTMLAudioElement | null = null;
-let mediaSource: MediaSource | null = null;
+const { isMuted, initAudioResources, clearAudioResources, changeMuted } = useAudio();
 
 // 设置事件监听器
 onMounted(() => {
@@ -332,37 +334,21 @@ onMounted(() => {
         handleTextChunk(text);
     });
 
-    // 监听音频流块（可选
-    audioElement = new Audio();
-    mediaSource = new MediaSource();
-    audioElement!.src = URL.createObjectURL(mediaSource!);
-    audioElement!.play();
-    mediaSource.addEventListener('sourceopen', () => {
-        console.log('SourceBuffer opened');
-        const sourceBuffer = mediaSource!.addSourceBuffer('audio/mpeg');
-
-        window.api.onAudioChunk((event: Event, audio: Buffer) => {
-            console.log('Received audio chunk:', audio);
-            appendAudioData(sourceBuffer, audio);
-        });
-    });
+    // 监听音频流块
+    if (isMuted.value === false) {
+        initAudioResources();
+    }
 });
 
-function appendAudioData(sourceBuffer: SourceBuffer, audio: Buffer) {
-    // 检查 SourceBuffer 是否可以接受新数据
-    if (!sourceBuffer.updating) {
-        try {
-            // 将音频数据追加到 sourceBuffer
-            sourceBuffer.appendBuffer(audio);
-        } catch (err) {
-            console.error('Error appending audio buffer:', err);
-        }
+watch(isMuted, (newVal) => {
+    // 如果为静音就清理掉音频资源，如果非静音就初始化资源
+    if (newVal === true) {
+        clearAudioResources();
     } else {
-        console.log('SourceBuffer is updating, waiting...');
-        // 如果 SourceBuffer 正在更新，稍后再尝试添加数据
-        setTimeout(() => appendAudioData(sourceBuffer, audio), 150);
+        initAudioResources();
     }
-}
+});
+
 
 onUnmounted(() => {
     // 清理定时器
@@ -373,29 +359,6 @@ onUnmounted(() => {
     clearAudioResources();
 });
 
-function clearAudioResources() {
-    // 停止音频播放
-    if (!audioElement?.paused) {
-        audioElement?.pause();
-    }
-
-    // 清空 SourceBuffer 数据
-    if (mediaSource?.readyState === 'open') {
-        // 移除 SourceBuffer
-        const sourceBuffers = mediaSource!.sourceBuffers;
-        for (let i = 0; i < sourceBuffers.length; i++) {
-            mediaSource!.removeSourceBuffer(sourceBuffers[i]);
-        }
-    }
-
-    // 释放 MediaSource 和 Audio 元素
-    mediaSource!.endOfStream(); // 结束流
-    URL.revokeObjectURL(audioElement!.src); // 释放 URL 对象
-
-    // 重置 Audio 元素的源
-    audioElement!.src = '';
-    console.log('Audio resources cleared.');
-}
 
 </script>
 

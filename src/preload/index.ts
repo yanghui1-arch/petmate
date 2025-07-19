@@ -22,5 +22,6 @@ contextBridge.exposeInMainWorld(
         chat: (message: ChatMessage) => ipcRenderer.invoke("chat", message),
         onTextChunk: (callback: (event: Event, text: string) => void) => ipcRenderer.on("chat-chunk", callback),
         onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => ipcRenderer.on("tts-audio-chunk", callback),
+        removeAllAudioChunkListeners: () => ipcRenderer.removeAllListeners("tts-audio-chunk"),
     }
 )
