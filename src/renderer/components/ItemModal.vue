@@ -11,13 +11,15 @@
               type="number"
               class="counter-input"
               v-model="count"
-              min="1"
+              @input="checkCount"
             />
             <button class="counter-add-btn" @click="addCount">+</button>
           </div>
           <div class="confirm">
-            <button class="confirm-btn">确定</button>
-            <button class="cancel-btn">取消</button>
+            <button class="confirm-btn" @click="confirm">确定</button>
+            <button class="cancel-btn" @click="isModalShow = false">
+              取消
+            </button>
           </div>
         </div>
       </div>
@@ -26,11 +28,19 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, ref } from "vue";
+import { defineProps, ref, PropType, watch } from "vue";
+import { usePlayer } from "../hooks/usePlayer";
+import { Item } from "../types/common";
+import { openMessageModal, closeMessageModal } from "../hooks/useInteract";
+const { buyItem, consumeItem } = usePlayer();
 
 const props = defineProps({
   show: { type: Boolean, required: true }, // 是否显示
   title: { type: String, required: true }, // 弹出框标题
+  type: { type: String, required: true }, // 弹出框类型：使用、购买
+  item: { type: Object as PropType<Item>, required: true }, // 物品
+  hasCount: { type: Number, required: false, default: 0 }, // 数量，使用时传入
+  petmateId: { type: Number, required: false, default: 0 }, // petmaetId，使用时传入
 });
 
 const emit = defineEmits<{
@@ -44,13 +54,62 @@ const isModalShow = computed({
 
 // 计数器相关
 const count = ref(1);
+// vue监听函数，当弹出框重新显示时，重置计数器为1
+watch(
+  () => props.show,
+  (newValue) => {
+    if (newValue) {
+      count.value = 1;
+    }
+  }
+);
+let minCount = 1;
+let maxCount = 999;
 const subCount = () => {
-  if (count.value > 1) {
+  if (count.value > minCount) {
     count.value--;
   }
 };
 const addCount = () => {
-  count.value++;
+  maxCount = props.type === "use" ? props.hasCount : 999;
+  if (count.value < maxCount) {
+    count.value++;
+  }
+};
+// 监听输入边界值
+const checkCount = () => {
+  maxCount = props.type === "use" ? props.hasCount : 999;
+  // 在js中，"" < 0为false，所以不用担心用户直接删除输入框内容
+  if (count.value < 0) {
+    count.value = minCount;
+  } else if (count.value > maxCount) {
+    count.value = maxCount;
+  }
+};
+
+// 确定按钮相关
+const confirm = async () => {
+  let success = false;
+  let title = "";
+  // 在js中，"" == 0为true，所以不用担心用户直接删除输入框内容
+  if (count.value == 0) {
+    title =
+      props.type === "use" ? "使用物品数量不能为0" : "购买物品数量不能为0";
+    count.value = 1;
+    openMessageModal("fail", title);
+    return;
+  }
+  if (props.type === "buy") {
+    success = await buyItem(props.item.id, count.value);
+    title = success ? "购买成功" : "购买失败";
+  } else if (props.type === "use") {
+    success = await consumeItem(props.item.id, count.value, props.petmateId);
+    title = success ? "使用成功" : "使用失败";
+  }
+  isModalShow.value = false;
+  success
+    ? openMessageModal("success", title)
+    : openMessageModal("fail", title);
 };
 </script>
 

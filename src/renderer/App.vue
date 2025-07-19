@@ -1,19 +1,19 @@
 <template>
   <div class="container">
     <!-- 玩家数据加载中 -->
-    <div v-if="isLoading" class="loading-overlay">
+    <!-- <div v-if="isLoading" class="loading-overlay">
       <n-spin size="large" />
       <p>Loading player data...</p>
-    </div>
-    
+    </div> -->
+
     <!-- 玩家数据加载失败 -->
-    <div v-else-if="error" class="error-overlay">
+    <!-- <div v-if="error" class="error-overlay">
       <p>Failed to load player data: {{ error }}</p>
       <n-button @click="loadPlayerData">Retry</n-button>
-    </div>
-    
+    </div> -->
+
     <!-- 主应用内容 -->
-    <template v-else-if="playerData">
+    <template v-if="playerData">
       <div class="settings-drawer" @click="activate('left')">
         <n-image
           width="40"
@@ -25,6 +25,11 @@
       <router-view />
       <!-- <Home /> -->
       <Settings v-model:active="active" :placement="placement" />
+      <MessageModal
+        :show="isMessageModalShow"
+        :title="messageModalTitle"
+        :type="messageModalType"
+      />
     </template>
   </div>
 </template>
@@ -32,9 +37,15 @@
 <script setup lang="ts">
 // 你可以在这里写 Composition API 的逻辑
 import Settings from "./components/Settings.vue";
+import MessageModal from "./components/MessageModal.vue";
 import type { DrawerPlacement } from "naive-ui";
 import { ref, onMounted } from "vue";
 import { usePlayer } from "./hooks/usePlayer";
+import {
+  isMessageModalShow,
+  messageModalType,
+  messageModalTitle,
+} from "./hooks/useInteract";
 import { useSettings } from "./hooks/useSettings";
 
 const active = ref(false);
@@ -58,7 +69,7 @@ onMounted(async () => {
 
   console.log("正在初始化设置");
   await initSettings();
-  console.log("设置初始化完成", );
+  console.log("设置初始化完成");
 });
 </script>
 
