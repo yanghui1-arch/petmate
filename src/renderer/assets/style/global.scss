@@ -52,7 +52,8 @@ input[type="button"],
 input[type="submit"],
 select,
 label,
-.clickable {
+.clickable,
+.n-button{
   cursor: url(#{$cursor-pointer}) 10 0,
   pointer;
 }
