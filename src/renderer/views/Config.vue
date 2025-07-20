@@ -26,8 +26,8 @@
     <div class="config-container">
       <!-- Header -->
       <div class="config-header">
-        <h1>AI Configuration Center</h1>
-        <p>Configure your Chat LLM and TTS settings</p>
+        <h1>AI配置</h1>
+        <p>配置你的聊天LLM和语音合成设置</p>
       </div>
 
       <!-- Main Selection View -->
@@ -35,15 +35,15 @@
         <div class="selection-grid">
           <div class="selection-card" @click="showChatLLMConfig">
             <div class="card-icon">🤖</div>
-            <h3>Chat LLM</h3>
-            <p>Configure your AI chat model settings, API keys, and custom prompts</p>
+            <h3>聊天LLM</h3>
+            <p>配置你的AI聊天模型设置、API密钥和自定义提示词</p>
             <div class="card-arrow">→</div>
           </div>
           
           <div class="selection-card" @click="showTTSConfig">
             <div class="card-icon">🔊</div>
-            <h3>TTS Settings</h3>
-            <p>Set up text-to-speech parameters and voice cloning options</p>
+            <h3>语音合成</h3>
+            <p>设置文本转语音参数和音色克隆选项</p>
             <div class="card-arrow">→</div>
           </div>
         </div>
@@ -53,20 +53,20 @@
       <div v-else-if="currentView === 'chatllm'" class="config-view">
         <div class="view-header">
           <n-button @click="backToSelection" class="back-btn" size="small">
-            ← Back
+            ← 返回
           </n-button>
-          <h2>🤖 Chat LLM Configuration</h2>
+          <h2>🤖 聊天LLM配置</h2>
         </div>
 
         <div class="config-content">
           <!-- LLM Basic Information -->
           <div class="config-card">
             <div class="card-header">
-              <h3>Basic Information</h3>
+              <h3>基础信息</h3>
             </div>
             <div class="config-form">
               <div class="form-group">
-                <label>Base URL</label>
+                <label>接口地址</label>
                 <n-input 
                   v-model:value="chatConfig.baseUrl" 
                   placeholder="https://api.openai.com/v1"
@@ -74,21 +74,20 @@
                 />
               </div>
               <div class="form-group">
-                <label>API Key</label>
+                <label>API密钥</label>
                 <n-input 
                   v-model:value="chatConfig.apiKey" 
                   type="password"
-                  placeholder="Enter your API key"
+                  placeholder="输入你的API密钥"
                   class="config-input"
                   show-password-on="click"
                 />
               </div>
               <div class="form-group">
-                <label>Model</label>
+                <label>模型</label>
                 <n-select
-                  v-model:value="chatConfig.model"
                   :options="modelOptions"
-                  placeholder="Select a model"
+                  placeholder="选择一个模型"
                   class="config-input"
                 />
               </div>
@@ -99,7 +98,7 @@
                   @click="saveLLMConfig"
                   :loading="savingLLM"
                 >
-                  💾 Save
+                  💾 保存
                 </n-button>
               </div>
             </div>
@@ -108,16 +107,16 @@
           <!-- Prompt Customization -->
           <div class="config-card">
             <div class="card-header">
-              <h3>Prompt Customization</h3>
+              <h3>提示词定制</h3>
             </div>
             <div class="config-form">
               <div class="form-group">
-                <label>Custom System Prompt</label>
+                <label>自定义系统提示词</label>
                 <n-input
                   v-model:value="customPrompt"
                   type="textarea"
                   :rows="6"
-                  placeholder="Enter your custom prompt here to define the AI's personality and behavior..."
+                  placeholder="在这里输入你的自定义提示词来定义AI的个性和行为..."
                   class="config-input"
                 />
               </div>
@@ -128,7 +127,7 @@
                   @click="setChatStyle"
                   :loading="settingStyle"
                 >
-                  🎨 Set Chat Style
+                  🎨 设置聊天风格
                 </n-button>
               </div>
             </div>
@@ -152,16 +151,16 @@
       <div v-else-if="currentView === 'tts'" class="config-view">
         <div class="view-header">
           <n-button @click="backToSelection" class="back-btn" size="small">
-            ← Back
+            ← 返回
           </n-button>
-          <h2>🔊 TTS Configuration</h2>
+          <h2>🔊 语音合成配置</h2>
         </div>
 
         <div class="config-content">
           <!-- TTS Basic Information -->
           <div class="config-card">
             <div class="card-header">
-              <h3>Basic Settings</h3>
+              <h3>基础设置</h3>
             </div>
             <div class="config-form">
               <div class="form-row">
@@ -190,7 +189,7 @@
               </div>
               <div class="form-row">
                 <div class="form-group half-width">
-                  <label>Sample Rate</label>
+                  <label>采样率</label>
                   <n-select
                     v-model:value="ttsConfig.parameters.sample_rate"
                     :options="sampleRateOptions"
@@ -198,7 +197,7 @@
                   />
                 </div>
                 <div class="form-group half-width">
-                  <label>Volume</label>
+                  <label>音量</label>
                   <n-slider 
                     v-model:value="ttsConfig.parameters.volume"
                     :min="0"
@@ -210,11 +209,11 @@
                 </div>
               </div>
               <div class="form-group">
-                <label>Voice ID</label>
+                <label>语音ID</label>
                 <n-select
                   v-model:value="ttsConfig.parameters.voice"
                   :options="voiceOptions"
-                  placeholder="Select a voice ID"
+                  placeholder="选择一个语音ID"
                   class="config-input"
                 />
               </div>
@@ -225,7 +224,7 @@
                   @click="saveTTSConfig"
                   :loading="savingTTS"
                 >
-                  💾 Save Settings
+                  💾 保存设置
                 </n-button>
               </div>
             </div>
@@ -234,11 +233,12 @@
           <!-- Voice Cloning -->
           <div class="config-card">
             <div class="card-header">
-              <h3>Voice Cloning</h3>
+              <h3>音色克隆</h3>
             </div>
             <div class="config-form">
-              <div class="form-group">
-                <label>Upload Voice Sample</label>
+              <!-- Upload Section - Hide after file is uploaded -->
+              <div v-if="!uploadedFile" class="form-group">
+                <label>上传语音样本</label>
                 <n-upload
                   :default-file-list="fileList"
                   :max="1"
@@ -255,13 +255,59 @@
                       </n-icon>
                     </div>
                     <n-text style="font-size: 16px">
-                      Click or drag a voice file to this area to upload
+                      点击或拖拽语音文件到此区域上传
                     </n-text>
                     <n-p depth="3" style="margin: 8px 0 0 0">
-                      Supports .wav and .mp3 formats. The AI will learn from this voice sample.
+                      支持 .wav 和 .mp3 格式。AI将从这个语音样本中学习。
                     </n-p>
                   </n-upload-dragger>
                 </n-upload>
+              </div>
+
+              <!-- Uploaded File Info - Show after file is uploaded -->
+              <div v-if="uploadedFile" class="uploaded-file-info">
+                <div class="file-info-card">
+                  <h4>📁 已上传的语音文件</h4>
+                  <div class="file-details">
+                    <div class="file-name">
+                      <span class="file-icon">🎵</span>
+                      <span class="file-text">{{ uploadedFile.name }}</span>
+                    </div>
+                    <div class="file-size">
+                      文件大小: {{ formatFileSize(uploadedFile.size) }}
+                    </div>
+                  </div>
+                  <n-button @click="removeUploadedFile" size="small" class="remove-file-btn">
+                    🗑️ 重新选择文件
+                  </n-button>
+                </div>
+              </div>
+
+              <!-- Custom Voice Name Input -->
+              <div v-if="uploadedFile" class="form-group voice-naming">
+                <label>为你的语音起个名字</label>
+                <div class="voice-name-container">
+                  <div class="voice-name-input-group">
+                    <n-input
+                      v-model:value="customVoiceName"
+                      placeholder="例如: 我的声音"
+                      class="voice-name-input"
+                      :status="voiceNameError ? 'error' : undefined"
+                      @input="validateVoiceName"
+                      maxlength="20"
+                    />
+                    <div class="voice-id-preview">
+                      <span class="preview-label">预览ID:</span>
+                      <code class="preview-id">{{ generateVoiceIdPreview() }}</code>
+                    </div>
+                  </div>
+                  <div v-if="voiceNameError" class="voice-name-error">
+                    {{ voiceNameError }}
+                  </div>
+                  <div class="voice-name-hint">
+                    <span>💡 提示：只能使用字母、数字和中文，不能有空格或特殊符号</span>
+                  </div>
+                </div>
               </div>
               
               <div v-if="cloneStatus" class="clone-status">
@@ -284,15 +330,21 @@
               <!-- Cloned Voice ID Display -->
               <div v-if="clonedVoiceId" class="cloned-voice-info">
                 <div class="voice-id-card">
-                  <h4>🎭 Your Cloned Voice</h4>
-                  <div class="voice-id-display">
-                    <label>Voice ID:</label>
-                    <code class="voice-id">{{ clonedVoiceId }}</code>
-                    <n-button size="small" @click="copyVoiceId" class="copy-btn">
-                      📋 Copy
-                    </n-button>
+                  <h4>🎭 你的专属语音</h4>
+                  <div class="voice-name-display">
+                    <div class="voice-info-row">
+                      <span class="voice-label">名称:</span>
+                      <span class="voice-name">{{ getVoiceDisplayName() }}</span>
+                    </div>
+                    <div class="voice-info-row">
+                      <span class="voice-label">语音ID:</span>
+                      <code class="voice-id">{{ clonedVoiceId }}</code>
+                      <n-button size="small" @click="copyVoiceId" class="copy-btn">
+                        📋 复制
+                      </n-button>
+                    </div>
                   </div>
-                  <p class="voice-usage-hint">Use this Voice ID in the TTS settings above</p>
+                  <p class="voice-usage-hint">在上方的语音设置中使用这个语音ID</p>
                 </div>
               </div>
 
@@ -302,9 +354,9 @@
                   class="save-btn"
                   @click="processVoiceClone"
                   :loading="processingVoice"
-                  :disabled="!uploadedFile"
+                  :disabled="!uploadedFile || !customVoiceName.trim() || !!voiceNameError"
                 >
-                  🎭 Clone Voice
+                  🎭 {{ customVoiceName.trim() ? `克隆"${customVoiceName.trim()}"` : '克隆语音' }}
                 </n-button>
               </div>
             </div>
@@ -363,6 +415,10 @@ const uploadedFile = ref<File | null>(null)
 const fileList = ref([])
 const clonedVoiceId = ref<string | null>(null)
 
+// 自定义语音名称
+const customVoiceName = ref('')
+const voiceNameError = ref('')
+
 // 当前页面，默认是选择页面
 const currentView = ref<'selection' | 'chatllm' | 'tts'>('selection')
 
@@ -377,7 +433,7 @@ const notification = ref<{
   show: boolean
 } | null>(null)
 
-// 语音克隆状态
+// 音色克隆状态
 const cloneStatus = ref<{
   type: 'processing' | 'success' | 'error'
   message: string
@@ -469,15 +525,77 @@ const handleFileChange = (data: any) => {
   if (data.fileList.length > 0) {
     uploadedFile.value = data.fileList[0].file
     cloneStatus.value = null
+    // 重置语音名称
+    customVoiceName.value = ''
+    voiceNameError.value = ''
   } else {
     uploadedFile.value = null
+    customVoiceName.value = ''
+    voiceNameError.value = ''
   }
 }
 
-// 处理语音克隆
+// 验证语音名称
+const validateVoiceName = () => {
+  const name = customVoiceName.value.trim()
+  
+  if (!name) {
+    voiceNameError.value = '请输入语音名称'
+    return false
+  }
+  
+  if (name.length < 2) {
+    voiceNameError.value = '名称至少需要2个字符'
+    return false
+  }
+  
+  if (name.length > 20) {
+    voiceNameError.value = '名称不能超过20个字符'
+    return false
+  }
+  
+  // 只允许字母、数字、中文，不允许空格和特殊字符
+  const validPattern = /^[a-zA-Z0-9\u4e00-\u9fa5]+$/
+  if (!validPattern.test(name)) {
+    voiceNameError.value = '只能使用字母、数字和中文'
+    return false
+  }
+  
+  voiceNameError.value = ''
+  return true
+}
+
+// 生成语音ID预览
+const generateVoiceIdPreview = () => {
+  const name = customVoiceName.value.trim()
+  if (!name) {
+    return 'voice_custom_预览'
+  }
+  
+  // 将中文和特殊字符转换为拼音或移除
+  let cleanName = name
+    .replace(/[\u4e00-\u9fa5]/g, 'cn') // 中文替换为cn
+    .replace(/[^a-zA-Z0-9]/g, '') // 移除其他特殊字符
+    .toLowerCase()
+    .substring(0, 10) // 限制长度
+  
+  if (!cleanName) {
+    cleanName = 'custom'
+  }
+  
+  return `voice_${cleanName}_${Date.now().toString().slice(-4)}`
+}
+
+// 处理音色克隆
 const processVoiceClone = async () => {
   if (!uploadedFile.value) {
     showNotification('warning', '请先上传一个.mp3或者是.wav的语音文件')
+    return
+  }
+
+  // 验证语音名称
+  if (!validateVoiceName()) {
+    showNotification('warning', '请检查语音名称格式')
     return
   }
 
@@ -491,21 +609,32 @@ const processVoiceClone = async () => {
     // Simulate voice cloning process
     await new Promise(resolve => setTimeout(resolve, 3000))
     
-    // Generate a new voice ID
-    const newVoiceId = `voice_custom_${Date.now().toString().slice(-6)}`
+    // 使用自定义名称生成语音ID
+    const customName = customVoiceName.value.trim()
+    let cleanName = customName
+      .replace(/[\u4e00-\u9fa5]/g, 'cn') // 中文替换为cn
+      .replace(/[^a-zA-Z0-9]/g, '') // 移除其他特殊字符
+      .toLowerCase()
+      .substring(0, 10) // 限制长度
+    
+    if (!cleanName) {
+      cleanName = 'custom'
+    }
+    
+    const newVoiceId = `voice_${cleanName}_${Date.now().toString().slice(-6)}`
     clonedVoiceId.value = newVoiceId
     
     cloneStatus.value = {
       type: 'success',
-      message: '语音克隆完成! 你的自定义语音已经准备好使用了'
+      message: `音色克隆完成! 你的"${customName}"音色已经准备好使用了，请在上方语音设置中使用这个音色ID并保存配置！`
     }
-    showNotification('success', `语音克隆完成! ID: ${newVoiceId}`)
+    showNotification('success', `语音"${customName}"克隆完成! ID: ${newVoiceId}`)
   } catch (error) {
     cloneStatus.value = {
       type: 'error',
-      message: '语音克隆失败. 请确保音频文件是.mp3/.wav格式，并尝试使用不同的音频文件'
+      message: '音色克隆失败. 请确保音频文件是.mp3/.wav格式，并尝试使用不同的音频文件'
     }
-    showNotification('error', '语音克隆失败')
+    showNotification('error', '音色克隆失败')
   } finally {
     processingVoice.value = false
   }
@@ -521,6 +650,32 @@ const copyVoiceId = async () => {
       showNotification('error', '语音ID复制到剪切板失败')
     }
   }
+}
+
+// 获取语音显示名称
+const getVoiceDisplayName = () => {
+  return customVoiceName.value || '自定义语音'
+}
+
+// 格式化文件大小
+const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return '0 B'
+  
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+// 移除已上传的文件
+const removeUploadedFile = () => {
+  uploadedFile.value = null
+  customVoiceName.value = ''
+  voiceNameError.value = ''
+  cloneStatus.value = null
+  clonedVoiceId.value = null
+  fileList.value = []
 }
 
 // 显示聊天LLM配置
@@ -623,10 +778,7 @@ onUnmounted(() => {
 #config {
   width: 100%;
   height: 100%;
-  background-image: url('../assets/image/systemBg.jpg');
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: cover;
+  background-color: $system-bgc;
   overflow-y: auto;
 }
 
@@ -686,7 +838,6 @@ onUnmounted(() => {
   border-radius: 16px;
   padding: 30px 25px;
   text-align: center;
-  cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
@@ -1063,6 +1214,175 @@ onUnmounted(() => {
   font-style: italic;
 }
 
+// Voice Naming Styles
+.voice-naming {
+  background: linear-gradient(135deg, $item-bg-start 0%, $item-bg-end 100%);
+  border: 2px solid $border-orange-300;
+  border-radius: 10px;
+  padding: 20px;
+  margin: 20px 0;
+  
+  label {
+    font-size: 15px;
+    font-weight: 600;
+    color: $font-gray;
+    margin-bottom: 10px;
+    display: block;
+  }
+}
+
+// Uploaded File Info Styles
+.uploaded-file-info {
+  margin: 20px 0;
+}
+
+.file-info-card {
+  background: linear-gradient(135deg, $bg-white-100 0%, $bg-white-200 100%);
+  border: 2px solid $border-orange-300;
+  border-radius: 10px;
+  padding: 18px;
+  
+  h4 {
+    margin: 0 0 12px 0;
+    color: $font-gray;
+    font-size: 1.1em;
+  }
+}
+
+.file-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.file-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  .file-icon {
+    font-size: 1.2em;
+  }
+  
+  .file-text {
+    color: $font-gray;
+    font-weight: 500;
+    background: $bg-white-200;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid $border-orange-300;
+  }
+}
+
+.file-size {
+  font-size: 12px;
+  color: $font-gray;
+  opacity: 0.8;
+}
+
+.remove-file-btn {
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.voice-name-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.voice-name-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.voice-name-input {
+  border-radius: 8px;
+  
+  &.n-input--focus {
+    border-color: $accent-pink-dark;
+  }
+}
+
+.voice-id-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, $bg-white-100 0%, $bg-white-200 100%);
+  border: 1px solid $border-orange-300;
+  border-radius: 6px;
+  
+  .preview-label {
+    font-size: 12px;
+    color: $font-gray;
+    font-weight: 500;
+  }
+  
+  .preview-id {
+    background: $bg-white-200;
+    color: $font-gray;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    font-weight: bold;
+    border: 1px solid $border-orange-300;
+  }
+}
+
+.voice-name-error {
+  color: #d32f2f;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  background: rgba(211, 47, 47, 0.1);
+  border: 1px solid rgba(211, 47, 47, 0.3);
+  border-radius: 4px;
+}
+
+.voice-name-hint {
+  font-size: 11px;
+  color: $font-gray;
+  opacity: 0.8;
+  
+  span {
+    font-style: italic;
+  }
+}
+
+// Updated voice display styles
+.voice-name-display {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.voice-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  .voice-label {
+    font-weight: 600;
+    color: $font-gray;
+    min-width: 70px;
+    font-size: 12px;
+  }
+  
+  .voice-name {
+    color: $accent-pink-dark;
+    font-weight: 600;
+    font-size: 14px;
+    background: $bg-white-200;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid $border-orange-300;
+  }
+}
+
 .status-indicator {
   display: flex;
   align-items: center;
@@ -1234,6 +1554,28 @@ onUnmounted(() => {
     }
   }
   
+  .voice-naming {
+    padding: 15px;
+    margin: 15px 0;
+    
+    label {
+      font-size: 14px;
+    }
+  }
+  
+  .voice-id-preview {
+    padding: 6px 10px;
+    
+    .preview-label {
+      font-size: 11px;
+    }
+    
+    .preview-id {
+      font-size: 10px;
+      padding: 2px 4px;
+    }
+  }
+  
   .notification-toast {
     right: 10px;
     left: 10px;
@@ -1288,6 +1630,59 @@ onUnmounted(() => {
         height: 1px;
       }
     }
+  }
+  
+  .voice-naming {
+    padding: 12px;
+    margin: 12px 0;
+    
+    label {
+      font-size: 13px;
+    }
+  }
+  
+  .voice-id-preview {
+    padding: 5px 8px;
+    
+    .preview-label {
+      font-size: 10px;
+    }
+    
+    .preview-id {
+      font-size: 9px;
+      padding: 1px 3px;
+    }
+  }
+  
+  .voice-info-row {
+    .voice-label {
+      min-width: 60px;
+      font-size: 11px;
+    }
+    
+    .voice-name {
+      font-size: 12px;
+      padding: 3px 6px;
+    }
+  }
+  
+  .file-info-card {
+    padding: 15px;
+    
+    h4 {
+      font-size: 1em;
+    }
+  }
+  
+  .file-name {
+    .file-text {
+      font-size: 12px;
+      padding: 3px 6px;
+    }
+  }
+  
+  .file-size {
+    font-size: 11px;
   }
 }
 </style>
