@@ -86,6 +86,7 @@
               <div class="form-group">
                 <label>模型</label>
                 <n-select
+                  v-model:value="chatConfig.model"
                   :options="modelOptions"
                   placeholder="选择一个模型"
                   class="config-input"
@@ -381,7 +382,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, nextTick, onUnmounted } from 'vue'
+import { useShow } from '../hooks/useShow'
 import type { ChatLLMConfig, TTSLLMConfig } from '../types/llm'
+
+const { getLLMConfig } = useShow()
+
 
 // 聊天LLM配置
 const chatConfig = reactive<ChatLLMConfig>({
@@ -396,10 +401,11 @@ const settingStyle = ref(false)
 
 // tts配置
 const ttsConfig = reactive<TTSLLMConfig>({
-  model: '',
+  model: 'cosyvoice-v2',
   apiKey: '',
   baseUrl: '',
   parameters: {
+    text_type: "PlainText",
     voice: '',
     format: 'mp3',
     sample_rate: 22050,
@@ -482,8 +488,7 @@ const sampleRateOptions = [
 const saveLLMConfig = async () => {
   savingLLM.value = true
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await window.api.setChatLLMConfig(toRaw(chatConfig))
     showNotification('success', '模型配置保存成功')
   } catch (error) {
     showNotification('error', '模型配置保存失败')
@@ -496,8 +501,8 @@ const saveLLMConfig = async () => {
 const setChatStyle = async () => {
   settingStyle.value = true
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800))
+    // 模拟
+    await new Promise(resolve => setTimeout(resolve, 1000))
     showNotification('success', '成功设置好了聊天风格')
   } catch (error) {
     showNotification('error', '聊天风格设置失败')
@@ -510,8 +515,7 @@ const setChatStyle = async () => {
 const saveTTSConfig = async () => {
   savingTTS.value = true
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await window.api.setTTSLLMConfig(toRaw(ttsConfig))
     showNotification('success', 'tts配置保存成功')
   } catch (error) {
     showNotification('error', 'tts配置保存失败')
@@ -586,7 +590,7 @@ const generateVoiceIdPreview = () => {
   return `voice_${cleanName}_${Date.now().toString().slice(-4)}`
 }
 
-// 处理音色克隆
+// 处理音色克隆 （实际上还没实现，只是个占位）
 const processVoiceClone = async () => {
   if (!uploadedFile.value) {
     showNotification('warning', '请先上传一个.mp3或者是.wav的语音文件')
@@ -735,23 +739,26 @@ watch(currentView, () => {
   })
 })
 
-onMounted(() => {
-  // 初始化
-  chatConfig.baseUrl = 'https://api.openai.com/v1'
-  chatConfig.apiKey = 'sk-demo-key-***************************'
-  chatConfig.model = 'gpt-4'
-  
-  customPrompt.value = 'You are a helpful AI assistant for a pet care application. Be friendly, creative, and engaging in your responses. Help users take better care of their virtual pets.'
-  
-  // tts初始化
-  ttsConfig.model = 'tts-1'
-  ttsConfig.apiKey = 'sk-demo-tts-key-***********************'
-  ttsConfig.baseUrl = 'https://api.openai.com/v1'
-  ttsConfig.parameters.voice = 'voice_001'
-  ttsConfig.parameters.rate = 1.2
-  ttsConfig.parameters.pitch = 1.1
-  ttsConfig.parameters.volume = 85
-  ttsConfig.parameters.sample_rate = 22050
+onMounted(async () => {
+  // 获取llm配置
+  const { chatLLMConfig, ttsLLMConfig } = await getLLMConfig()
+  console.log(chatLLMConfig, ttsLLMConfig)
+  if (chatLLMConfig) {
+    chatConfig.baseUrl = chatLLMConfig.baseUrl
+    chatConfig.apiKey = chatLLMConfig.apiKey
+    chatConfig.model = chatLLMConfig.model
+  }
+  if (ttsLLMConfig) {
+    ttsConfig.model = ttsLLMConfig.model
+    ttsConfig.apiKey = ttsLLMConfig.apiKey
+    ttsConfig.baseUrl = ttsLLMConfig.baseUrl
+    ttsConfig.parameters.voice = ttsLLMConfig.parameters.voice
+    ttsConfig.parameters.rate = ttsLLMConfig.parameters.rate
+    ttsConfig.parameters.pitch = ttsLLMConfig.parameters.pitch
+    ttsConfig.parameters.volume = ttsLLMConfig.parameters.volume
+    ttsConfig.parameters.sample_rate = ttsLLMConfig.parameters.sample_rate
+  }
+
   
   // 显示一个示例克隆语音ID
   // clonedVoiceId.value = 'voice_custom_123456'
@@ -762,7 +769,7 @@ onMounted(() => {
     container.addEventListener('scroll', checkScrollHints)
     window.addEventListener('resize', checkScrollHints)
   }
-})
+});
 
 onUnmounted(() => {
   // 清理事件监听器
