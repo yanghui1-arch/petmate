@@ -9,6 +9,7 @@ import Card from '@/views/Card.vue'
 import Log from '@/views/Log.vue'
 import Settings from '@/views/Settings.vue'
 import Chat from '@/views/Chat.vue'
+import Config from '@/views/Config.vue'
 
 const routes = [
   { path: '/', name: 'App', component: Home }, // name不能重复，否则路由匹配会出错
@@ -20,6 +21,7 @@ const routes = [
   { path: '/log', name: 'Log', component: Log },
   { path: '/settings', name: 'Settings', component: Settings },
   { path: '/chat', name: 'Chat', component: Chat },
+  { path: '/config', name: 'Config', component: Config },
 ]
 
 const router = createRouter({

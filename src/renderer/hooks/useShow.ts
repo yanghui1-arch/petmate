@@ -1,3 +1,8 @@
+/**
+ * 所有跟页面展示的方法都放在这个hook下面
+ */
+
+import { ChatLLMConfig, TTSLLMConfig } from "../types/llm"
 import { ActivityInfo, Item, ItemType, Wish } from "../types/common"
 
 export function useShow() {
@@ -67,7 +72,7 @@ export function useShow() {
      * @param wishId 需要获取的愿望的id
      * @returns 获取的愿望
      */
-    const getPetmateOneWish = async (petmateId: number, wishId: string):Promise<Wish | null> => {
+    const getPetmateOneWish = async (petmateId: number, wishId: string):Promise<Wish | undefined> => {
         const res = await window.api.getPetmateOneWish(petmateId, wishId)
         try {
             if (res.code === 200) {
@@ -77,7 +82,35 @@ export function useShow() {
             }
         } catch (error) {
             console.error(error)
-            return null
+            return undefined
+        }
+    }
+
+    /**
+     * 获取Chat LLM和TTS LLM的配置
+     * @returns Chat LLM和TTS LLM的配置
+     */
+    const getLLMConfig = async (): Promise<{
+        chatLLMConfig: ChatLLMConfig | undefined,
+        ttsLLMConfig: TTSLLMConfig | undefined
+    }> => {
+        try {
+            const chatLLMConfigRes = await window.api.getChatLLMConfig()
+            const ttsLLMConfigRes = await window.api.getTTSLLMConfig()
+            if (chatLLMConfigRes.code === 200 && ttsLLMConfigRes.code === 200) {
+                return {
+                    chatLLMConfig: chatLLMConfigRes.data,
+                    ttsLLMConfig: ttsLLMConfigRes.data
+                }
+            } else {
+                throw new Error(chatLLMConfigRes.message || ttsLLMConfigRes.message)
+            }
+        } catch (error) {
+            console.error(error)
+            return {
+                chatLLMConfig: undefined,
+                ttsLLMConfig: undefined
+            }
         }
     }
 
@@ -86,6 +119,7 @@ export function useShow() {
         getPetmateCompletedWishesNum,
         getShopItems,
         getActivities,
-        getPetmateOneWish
+        getPetmateOneWish,
+        getLLMConfig
     }
 }

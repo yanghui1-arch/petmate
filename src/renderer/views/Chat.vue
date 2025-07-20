@@ -328,6 +328,8 @@ const { isMuted, initAudioResources, clearAudioResources, changeMuted } = useAud
 
 // 设置事件监听器
 onMounted(() => {
+    // 需要在此处初始化llm客户端
+
     // 监听文本流块
     window.api.onTextChunk((event: Event, text: string) => {
         console.log('Received text chunk:', text);

@@ -3,3 +3,8 @@ export interface SettingConfig {
     focusMode: boolean;
     onTop: boolean;
 }
+
+export interface LLMConfig {
+    baseURL: string;
+    apiKey: string;
+}
