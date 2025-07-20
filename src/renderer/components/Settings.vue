@@ -43,6 +43,12 @@
           >点滴</router-link
         > -->
         <router-link
+          to="/config"
+          class="page-navigator-item"
+          @click="show = false"
+          >配置</router-link
+        >
+        <router-link
           to="/settings"
           class="page-navigator-item"
           @click="show = false"
