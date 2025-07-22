@@ -237,55 +237,22 @@
               <h3>音色克隆</h3>
             </div>
             <div class="config-form">
-              <!-- Upload Section - Hide after file is uploaded -->
-              <div v-if="!uploadedFile" class="form-group">
-                <label>上传语音样本</label>
-                <n-upload
-                  :default-file-list="fileList"
-                  :max="1"
-                  accept=".wav,.mp3"
-                  @change="handleFileChange"
-                  class="voice-upload"
-                >
-                  <n-upload-dragger>
-                    <div style="margin-bottom: 12px">
-                      <n-icon size="48" :depth="3">
-                        <svg viewBox="0 0 24 24">
-                          <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
-                        </svg>
-                      </n-icon>
-                    </div>
-                    <n-text style="font-size: 16px">
-                      点击或拖拽语音文件到此区域上传
-                    </n-text>
-                    <n-p depth="3" style="margin: 8px 0 0 0">
-                      支持 .wav 和 .mp3 格式。AI将从这个语音样本中学习。
-                    </n-p>
-                  </n-upload-dragger>
-                </n-upload>
-              </div>
-
-              <!-- Uploaded File Info - Show after file is uploaded -->
-              <div v-if="uploadedFile" class="uploaded-file-info">
-                <div class="file-info-card">
-                  <h4>📁 已上传的语音文件</h4>
-                  <div class="file-details">
-                    <div class="file-name">
-                      <span class="file-icon">🎵</span>
-                      <span class="file-text">{{ uploadedFile.name }}</span>
-                    </div>
-                    <div class="file-size">
-                      文件大小: {{ formatFileSize(uploadedFile.size) }}
-                    </div>
-                  </div>
-                  <n-button @click="removeUploadedFile" size="small" class="remove-file-btn">
-                    🗑️ 重新选择文件
-                  </n-button>
+              <!-- Voice URL Input Section -->
+              <div class="form-group">
+                <label>语音文件URL</label>
+                <n-input
+                  v-model:value="voiceUrl"
+                  placeholder="请输入语音文件的URL链接（支持 .wav 和 .mp3 格式）"
+                  class="config-input"
+                  clearable
+                />
+                <div class="url-hint">
+                  <span>💡 提示：请确保URL链接可以直接访问音频文件</span>
                 </div>
               </div>
 
               <!-- Custom Voice Name Input -->
-              <div v-if="uploadedFile" class="form-group voice-naming">
+              <div v-if="voiceUrl.trim()" class="form-group voice-naming">
                 <label>为你的语音起个名字</label>
                 <div class="voice-name-container">
                   <div class="voice-name-input-group">
@@ -355,7 +322,7 @@
                   class="save-btn"
                   @click="processVoiceClone"
                   :loading="processingVoice"
-                  :disabled="!uploadedFile || !customVoiceName.trim() || !!voiceNameError"
+                  :disabled="!voiceUrl.trim() || !customVoiceName.trim() || !!voiceNameError"
                 >
                   🎭 {{ customVoiceName.trim() ? `克隆"${customVoiceName.trim()}"` : '克隆语音' }}
                 </n-button>
@@ -381,7 +348,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch, nextTick, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, watch, nextTick, onUnmounted, toRaw } from 'vue'
 import { useShow } from '../hooks/useShow'
 import type { ChatLLMConfig, TTSLLMConfig } from '../types/llm'
 
@@ -417,8 +384,7 @@ const ttsConfig = reactive<TTSLLMConfig>({
 
 const savingTTS = ref(false)
 const processingVoice = ref(false)
-const uploadedFile = ref<File | null>(null)
-const fileList = ref([])
+const voiceUrl = ref('')
 const clonedVoiceId = ref<string | null>(null)
 
 // 自定义语音名称
@@ -524,20 +490,6 @@ const saveTTSConfig = async () => {
   }
 }
 
-// 处理文件上传
-const handleFileChange = (data: any) => {
-  if (data.fileList.length > 0) {
-    uploadedFile.value = data.fileList[0].file
-    cloneStatus.value = null
-    // 重置语音名称
-    customVoiceName.value = ''
-    voiceNameError.value = ''
-  } else {
-    uploadedFile.value = null
-    customVoiceName.value = ''
-    voiceNameError.value = ''
-  }
-}
 
 // 验证语音名称
 const validateVoiceName = () => {
@@ -592,8 +544,8 @@ const generateVoiceIdPreview = () => {
 
 // 处理音色克隆 （实际上还没实现，只是个占位）
 const processVoiceClone = async () => {
-  if (!uploadedFile.value) {
-    showNotification('warning', '请先上传一个.mp3或者是.wav的语音文件')
+  if (!voiceUrl.value.trim()) {
+    showNotification('warning', '请先输入语音文件的URL链接')
     return
   }
 
@@ -606,12 +558,17 @@ const processVoiceClone = async () => {
   processingVoice.value = true
   cloneStatus.value = {
     type: 'processing',
-    message: '正在克隆语音... 这可能需要几分钟，这个过程请全程保持联网'
+    message: '正在从URL下载并克隆语音... 这可能需要几分钟，请保持联网'
   }
 
   try {
     // Simulate voice cloning process
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    const res = await window.api.cloneVoice(voiceUrl.value);
+    // 克隆失败
+    if(res.code === 400) {
+      throw new Error(res.message);
+    }
+    clonedVoiceId.value = res.data!;
     
     // 使用自定义名称生成语音ID
     const customName = customVoiceName.value.trim()
@@ -625,18 +582,15 @@ const processVoiceClone = async () => {
       cleanName = 'custom'
     }
     
-    const newVoiceId = `voice_${cleanName}_${Date.now().toString().slice(-6)}`
-    clonedVoiceId.value = newVoiceId
-    
     cloneStatus.value = {
       type: 'success',
       message: `音色克隆完成! 你的"${customName}"音色已经准备好使用了，请在上方语音设置中使用这个音色ID并保存配置！`
     }
-    showNotification('success', `语音"${customName}"克隆完成! ID: ${newVoiceId}`)
+    showNotification('success', `语音"${customName}"克隆完成! ID: ${clonedVoiceId.value}`)
   } catch (error) {
     cloneStatus.value = {
       type: 'error',
-      message: '音色克隆失败. 请确保音频文件是.mp3/.wav格式，并尝试使用不同的音频文件'
+      message: '音色克隆失败. 请确保URL链接有效且指向正确的音频文件格式(支持mp3和wav格式)并且文件大小≤10MB，声音时长为10-20s以内，最后保证音频文件是有声音的'
     }
     showNotification('error', '音色克隆失败')
   } finally {
@@ -661,25 +615,13 @@ const getVoiceDisplayName = () => {
   return customVoiceName.value || '自定义语音'
 }
 
-// 格式化文件大小
-const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return '0 B'
-  
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-}
-
-// 移除已上传的文件
-const removeUploadedFile = () => {
-  uploadedFile.value = null
+// 清除URL和相关数据
+const clearVoiceData = () => {
+  voiceUrl.value = ''
   customVoiceName.value = ''
   voiceNameError.value = ''
   cloneStatus.value = null
   clonedVoiceId.value = null
-  fileList.value = []
 }
 
 // 显示聊天LLM配置
@@ -1145,21 +1087,7 @@ onUnmounted(() => {
   }
 }
 
-.voice-upload {
-  .n-upload-dragger {
-    border: 2px dashed $border-orange-300;
-    border-radius: 8px;
-    background: linear-gradient(135deg, $item-bg-start 0%, $item-bg-end 100%);
-    transition: all 0.2s ease;
-    padding: 20px 15px;
-    
-    &:hover {
-      border-color: $accent-pink-dark;
-      background: linear-gradient(135deg, $btn-grad-start 0%, $btn-grad-end 100%);
-      transform: translateY(-1px);
-    }
-  }
-}
+
 
 .clone-status {
   margin: 12px 0;
@@ -1238,60 +1166,7 @@ onUnmounted(() => {
   }
 }
 
-// Uploaded File Info Styles
-.uploaded-file-info {
-  margin: 20px 0;
-}
 
-.file-info-card {
-  background: linear-gradient(135deg, $bg-white-100 0%, $bg-white-200 100%);
-  border: 2px solid $border-orange-300;
-  border-radius: 10px;
-  padding: 18px;
-  
-  h4 {
-    margin: 0 0 12px 0;
-    color: $font-gray;
-    font-size: 1.1em;
-  }
-}
-
-.file-details {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.file-name {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  
-  .file-icon {
-    font-size: 1.2em;
-  }
-  
-  .file-text {
-    color: $font-gray;
-    font-weight: 500;
-    background: $bg-white-200;
-    padding: 4px 8px;
-    border-radius: 4px;
-    border: 1px solid $border-orange-300;
-  }
-}
-
-.file-size {
-  font-size: 12px;
-  color: $font-gray;
-  opacity: 0.8;
-}
-
-.remove-file-btn {
-  border-radius: 6px;
-  font-size: 12px;
-}
 
 .voice-name-container {
   display: flex;
@@ -1351,6 +1226,17 @@ onUnmounted(() => {
 }
 
 .voice-name-hint {
+  font-size: 11px;
+  color: $font-gray;
+  opacity: 0.8;
+  
+  span {
+    font-style: italic;
+  }
+}
+
+.url-hint {
+  margin-top: 6px;
   font-size: 11px;
   color: $font-gray;
   opacity: 0.8;
@@ -1673,23 +1559,6 @@ onUnmounted(() => {
     }
   }
   
-  .file-info-card {
-    padding: 15px;
-    
-    h4 {
-      font-size: 1em;
-    }
-  }
-  
-  .file-name {
-    .file-text {
-      font-size: 12px;
-      padding: 3px 6px;
-    }
-  }
-  
-  .file-size {
-    font-size: 11px;
-  }
+
 }
 </style>

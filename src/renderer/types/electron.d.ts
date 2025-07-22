@@ -35,6 +35,9 @@ interface IElectronAPI {
   buyItem: (itemId: number, count: number) => Promise<Response<Item>>;
   chat: (message: ChatMessage) => Promise<Response<void>>;
 
+  // 克隆音色
+  cloneVoice: (url: string) => Promise<Response<string>>;
+
   // 监听
   onTextChunk: (callback: (event: Event, text: string) => void) => void;
   onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => void;

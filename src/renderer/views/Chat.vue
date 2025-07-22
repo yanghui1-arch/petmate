@@ -327,8 +327,9 @@ const handleEnter = (e: KeyboardEvent) => {
 const { isMuted, initAudioResources, clearAudioResources, changeMuted } = useAudio();
 
 // 设置事件监听器
-onMounted(() => {
+onMounted(async () => {
     // 需要在此处初始化llm客户端
+    await window.api.initLLM()
 
     // 监听文本流块
     window.api.onTextChunk((event: Event, text: string) => {

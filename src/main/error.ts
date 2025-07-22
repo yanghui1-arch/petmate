@@ -20,6 +20,16 @@ export class NotFoundError extends Error {
 }
 
 /**
+ * 不支持导致的错误
+ */
+export class UnsupportedError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "UnsupportedError";
+    }
+}
+
+/**
  * 超过限制导致的错误
  */
 export class ExceedError extends Error {
