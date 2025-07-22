@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron'
 import * as path from 'path'
 import './ipc'
 import { destroyScheduler, startWishGeneration } from './scheduler'
+import { saveChatHistoryMessages } from './llm'
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -44,6 +45,8 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   // 清理定时任务
   destroyScheduler()
+  // 保存聊天记录
+  saveChatHistoryMessages()
 })
 
 export function getMainWindow(): BrowserWindow | null {

@@ -1,20 +1,11 @@
 import Store from 'electron-store';
 import logger  from './log';
-import { ChatLLMConfigError, LLMConfigError, TTSProcessError } from './error';
+import { ChatLLMConfigError, LLMConfigError, TTSProcessError, NotFoundError } from './error';
 import { OpenAI } from 'openai';
 import { ChatCompletionStream } from 'openai/resources/chat/completions';
 import { v4 as uuidv4 } from 'uuid';
 import { WebSocket } from 'ws';
 import { getMainWindow } from './index';
-
-type StoreData = {
-    chatLLMConfig: ChatLLMConfig;
-    ttsLLMConfig: TTSLLMConfig;
-}
-
-const store: Store<StoreData> = new Store<StoreData>({
-    name: 'llm'
-})
 
 export interface ChatLLMConfig {
     model: string;
@@ -28,6 +19,29 @@ export interface TTSLLMConfig {
     baseUrl: string;
     parameters: TTSParameters;
 }
+
+export interface TTSVoice{
+    name: string;
+    voice: string;
+    createdAt: Date;
+}
+
+export interface HistoryChatMessage {
+    chatMessage: ChatMessage;
+    createdAt: Date;
+}
+
+type StoreData = {
+    chatLLMConfig: ChatLLMConfig;
+    ttsLLMConfig: TTSLLMConfig;
+    chatPrompt: string;
+    ttsVoice: TTSVoice[];
+    historyChatMessages: HistoryChatMessage[];
+}
+
+const store: Store<StoreData> = new Store<StoreData>({
+    name: 'llm'
+})
 
 export interface TTSParameters {
     text_type?: string;
@@ -95,6 +109,12 @@ const DEFAULT_TTS_LLM_CONFIG: TTSLLMConfig = {
     parameters: DEFAULT_TTS_PARAMETERS
 }
 
+const DEFAULT_TTS_VOICE: TTSVoice = {
+    name: '大姐姐',
+    voice: 'longxiaochun_v2',
+    createdAt: new Date()
+}
+
 // config
 let currentChatLLMConfig: ChatLLMConfig = DEFAULT_CHAT_LLM_CONFIG;
 let currentTTSLLMConfig: TTSLLMConfig = DEFAULT_TTS_LLM_CONFIG;
@@ -103,13 +123,12 @@ let currentTTSLLMConfig: TTSLLMConfig = DEFAULT_TTS_LLM_CONFIG;
 let chatClient: OpenAI | null = null;
 
 // chat history message
-let chatHistoryMessages: ChatMessage[] = [];
+let chatHistoryMessages: HistoryChatMessage[] = [];
 
 // tts websocket
 let ttsWebsocket: WebSocket | null = null;
 let ttsStarted: boolean = false;
 let ttsTaskId: string | null = null;
-
 
 
 interface TTSStartTask {
@@ -160,6 +179,17 @@ interface TTSFinishTask {
     }
 }
 
+/**
+ * 初始化LLM所有相关的东西
+ * 包括客户端、配置、聊天历史记录
+ * @throws LLMConfigError 如果大模型配置错误
+ */
+function initLLM(): void {
+    initLLMClient();
+    logger.info('[llm] 大模型客户端初始化成功');
+    initChatHistoryMessages();
+    logger.info('[llm] 聊天历史记录初始化成功');
+}
 
 /**
  * 初始化所有大模型的客户端
@@ -208,6 +238,14 @@ function initLLMConfig(): void {
 }
 
 /**
+ * 初始化聊天历史记录
+ */
+function initChatHistoryMessages(): void {
+    const customHistoryChatMessages = (store as any).get('historyChatMessages') as HistoryChatMessage[] || [];
+    chatHistoryMessages = customHistoryChatMessages;
+}
+
+/**
  * 获取ChatLLM的配置
  * 如果未设置，则使用默认配置
  * @returns ChatLLM的配置
@@ -223,7 +261,7 @@ function getChatLLMConfig(): ChatLLMConfig {
 }
 
 /**
- * 获取TTSLLM的配置
+ * 获取TTS LLM的配置
  * 如果未设置，则使用默认配置
  * @returns TTSLLM的配置
  */
@@ -238,6 +276,45 @@ function getTTSLLMConfig(): TTSLLMConfig {
 }
 
 /**
+ * 获取聊天提示词
+ * 如果未设置，返回空字符串
+ * @returns 聊天提示词
+ */
+function getChatPrompt(): string {
+    const customPrompt = (store as any).get('chatPrompt') as string;
+    return customPrompt || '';
+}
+
+/**
+ * 获取tts音色列表
+ * 这个音色列表中会存储玩家自定义的音色，以及cosyvoice-v2的一个默认音色
+ * 这个方法会按照时间顺序返回音色列表，最新的音色会排在最前面
+ * @param limit 限制返回的音色数量，默认5个
+ * @returns tts音色列表
+ */
+function getTTSVoiceList(limit: number = 5): TTSVoice[] {
+    const customVoiceList = (store as any).get('ttsVoice') as TTSVoice[];
+    if (!customVoiceList) {
+        (store as any).set('ttsVoice', [DEFAULT_TTS_VOICE]);
+        return [DEFAULT_TTS_VOICE];
+    }
+    return customVoiceList.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, limit);
+}
+
+/**
+ * 获取历史聊天记录信息
+ * 可以自定义想要获取几天内的聊天记录信息，默认设置的是2天
+ * @param expireTime 过期时间，默认2天
+ * @returns 历史聊天记录信息
+ */
+function getHistoryChatMessages(expireTime: number = 2 * 24 * 60 * 60 * 1000): HistoryChatMessage[] {
+    if (chatHistoryMessages.length === 0) {
+        logger.warning("[llm] 历史聊天记录为空，如果是第一次使用，请先进行聊天，无视该条警告，否则请检查是否正确初始化了聊天记录。");
+    }
+    return chatHistoryMessages.filter(message => new Date().getTime() - message.createdAt.getTime() <= expireTime);
+}
+
+/**
  * 设置ChatLLM的配置
  * @param config 新的ChatLLM配置
  * @returns 设置后的ChatLLM配置
@@ -245,11 +322,6 @@ function getTTSLLMConfig(): TTSLLMConfig {
 function setChatLLMConfig(config: ChatLLMConfig): ChatLLMConfig {
     (store as any).set('chatLLMConfig', config);
     currentChatLLMConfig = config;
-    chatClient = new OpenAI({
-        baseURL: currentChatLLMConfig.baseUrl,
-        apiKey: currentChatLLMConfig.apiKey
-    })
-    logger.info("[llm] 文本大模型的客户端已重新初始化")
     return config;
 }
 
@@ -263,6 +335,43 @@ function setTTSLLMConfig(config: TTSLLMConfig): TTSLLMConfig {
     currentTTSLLMConfig = config;
     return config;
 }
+
+/**
+ * 添加一个tts音色，并同步到文件中
+ * 如果音色库中存在一个同名的音色，则删除原来的音色，并追加现在的音色到音色库中
+ * @param voice 要添加的音色
+ */
+function addTTSVoice(voice: TTSVoice): void {
+    const customVoiceList = (store as any).get('ttsVoice') as TTSVoice[] || [];
+    // 如果不存在，则返回-1
+    const idx = customVoiceList.findIndex(v => v.name === voice.name);
+    if (idx !== -1) {
+        customVoiceList.splice(idx, 1);
+        logger.info(`[llm] 音色库中存在一个同名的音色，已经删除原来的音色，并追加现在的音色${voice.name}到音色库中`);
+    }
+    customVoiceList.push(voice);
+    (store as any).set('ttsVoice', customVoiceList);
+}
+
+/**
+ * 更新聊天提示词
+ * 会同步到文件中
+ * @param prompt 新的聊天提示词
+ */
+function updateChatPrompt(prompt: string): void {
+    (store as any).set('chatPrompt', prompt);
+    logger.info(`[llm] 聊天提示词更新成功: ${prompt}`);
+}
+
+/**
+ * 保存聊天记录到文件中
+ * 如果超过了模型的上下文限制的话，会有一个类似总结/保存记忆的方法来对chatHistoryMessages（现在还没有做实现）做处理，因此这个方法的chatHistoryMessages默认就是合法的
+ */
+function saveChatHistoryMessages(): void {
+    (store as any).set('historyChatMessages', chatHistoryMessages);
+    logger.info(`[llm] 聊天记录保存成功，一共有${chatHistoryMessages.length}条`);
+}
+
 
 /**
  * 向模型提供方发送信息，并获取回复
@@ -310,10 +419,10 @@ function tts(text: string): void {
  * 连接TTS的websocket
  * @returns 任务id
  */
-function connectTTSWebsocket(): string {
-    ttsWebsocket = new WebSocket(currentTTSLLMConfig.baseUrl, {
+function connectTTSWebsocket(ttsLLMConfig: TTSLLMConfig): string {
+    ttsWebsocket = new WebSocket(ttsLLMConfig.baseUrl, {
         headers: {
-            Authorization: `bearer ${currentTTSLLMConfig.apiKey}`,
+            Authorization: `bearer ${ttsLLMConfig.apiKey}`,
             'X-DashScope-DataInspection': 'enable'
         }
     });
@@ -334,12 +443,12 @@ function connectTTSWebsocket(): string {
                 model: 'cosyvoice-v2',
                 parameters: {
                     text_type: 'PlainText',
-                    voice: currentTTSLLMConfig.parameters.voice, // 音色
-                    format: currentTTSLLMConfig.parameters.format, // 音频格式
-                    sample_rate: currentTTSLLMConfig.parameters.sample_rate, // 采样率
-                    volume: currentTTSLLMConfig.parameters.volume, // 音量
-                    rate: currentTTSLLMConfig.parameters.rate, // 语速
-                    pitch: currentTTSLLMConfig.parameters.pitch // 音调
+                    voice: ttsLLMConfig.parameters.voice, // 音色
+                    format: ttsLLMConfig.parameters.format, // 音频格式
+                    sample_rate: ttsLLMConfig.parameters.sample_rate, // 采样率
+                    volume: ttsLLMConfig.parameters.volume, // 音量
+                    rate: ttsLLMConfig.parameters.rate, // 语速
+                    pitch: ttsLLMConfig.parameters.pitch // 音调
                 },
                 input: {}
             }
@@ -451,7 +560,7 @@ async function chat(message: ChatMessage): Promise<void> {
     try {
         // 如果websocket没建立连接，先建立一下连接
         if (!ttsWebsocket && !ttsStarted) {
-            ttsTaskId = connectTTSWebsocket();
+            ttsTaskId = connectTTSWebsocket(currentTTSLLMConfig);
         }
         if (message.role !== 'user') {
             throw new ChatLLMConfigError("[llm] 请确保传过来的聊天信息是用户消息");
@@ -464,11 +573,14 @@ async function chat(message: ChatMessage): Promise<void> {
         }
 
         // 建立好连接并确认好用户信息之后，将当前的聊天信息加入到历史聊天信息中
-        chatHistoryMessages.push(message);
+        chatHistoryMessages.push({
+            chatMessage: message,
+            createdAt: new Date()
+        });
         // [future] 得在这里再考虑一下上下文长度问题，但这一个版本先不考虑
         
         const mainWindow = getMainWindow()
-        const runner: ChatCompletionStream = await postChatMessage(chatHistoryMessages);
+        const runner: ChatCompletionStream = await postChatMessage(chatHistoryMessages.map(message => message.chatMessage));
         let response: string = "";
         for await (const chunk of runner) {
             const content = chunk.choices[0].delta.content ?? "";
@@ -481,7 +593,10 @@ async function chat(message: ChatMessage): Promise<void> {
         }
         
         // 将回复信息加入到历史聊天信息中
-        chatHistoryMessages.push(ChatMessageFactory.asAssistant(response));
+        chatHistoryMessages.push({
+            chatMessage: ChatMessageFactory.asAssistant(response),
+            createdAt: new Date()
+        });
 
         // 发送一个finished task事件
         if (!ttsTaskId) throw new TTSProcessError('无法正确获取tts任务id，导致无法发送finished task事件');
@@ -506,14 +621,121 @@ async function chat(message: ChatMessage): Promise<void> {
     }
 }
 
-initLLMClient();
+
+/**
+ * 听音色样本
+ * 会发送一个tts-audio-chunk事件给渲染层，渲染层通过接收tts-audio-chunk就可以获取到音频内容
+ * 当结束的时候会发送一个tts-finished事件给渲染层
+ * @param voice 要听的音色
+ */
+async function listenTTSVoiceSample(voice: TTSVoice, text: string = "你好，主人，欢迎试听我的音色呢") {
+    try {
+
+        // 初始化一下试听的tts配置
+        const sampleTTSLLMConfig: TTSLLMConfig = {
+            model: currentTTSLLMConfig.model,
+            apiKey: currentTTSLLMConfig.apiKey,
+            baseUrl: currentTTSLLMConfig.baseUrl,
+            // 试听的时候，参数得是固定的
+            parameters: {
+                ...currentTTSLLMConfig.parameters,
+                voice: voice.voice
+            }
+        }
+
+        // 如果websocket没建立连接，先建立一下连接
+        if (!ttsWebsocket && !ttsStarted) {
+            ttsTaskId = connectTTSWebsocket(sampleTTSLLMConfig);
+        }
+        // 等待TTS任务准备就绪
+        // 必须得保证TTS任务准备就绪，不然会因为websocket的异步性导致ttsStarted=False
+        const ttsReady = await waitForTTSReady();
+        if (!ttsReady) {
+            throw new TTSProcessError('TTS任务初始化超时，请检查网络连接和API配置');
+        }
+
+        tts(text);
+
+        // 发送一个finished task事件
+        if (!ttsTaskId) throw new TTSProcessError('无法正确获取tts任务id，导致无法发送finished task事件');
+        const finishTaskMessage: TTSFinishTask = {
+            header: {
+                action: 'finish-task',
+                task_id: ttsTaskId,
+                streaming: 'duplex'
+            },
+            payload: {
+                input: {}
+            }
+        }
+        ttsWebsocket?.send(JSON.stringify(finishTaskMessage));
+
+    } catch (error) {
+        ttsTaskId = null;
+        ttsStarted = false;
+        ttsWebsocket?.close();
+        ttsWebsocket = null;
+        throw error;
+    }
+}
+
+
+const cloneUrl = "https://dashscope.aliyuncs.com/api/v1/services/audio/tts/customization"
+import axios from 'axios'
+
+/**
+ * 克隆音色
+ * 传过来的url必须得是公网可访问的，如果是百度云等网盘的url，其实是不可以的，推荐用gitee或者github
+ * @param url 根据这个url克隆音色
+ * @returns 音色id
+ */
+async function cloneVoice(url: string): Promise<string> {
+    const headers = {
+        'Authorization': `Bearer ${currentTTSLLMConfig.apiKey}`,
+        'Content-Type': 'application/json'
+    }
+    const data = {
+        "model": "voice-enrollment",
+        "input": {
+            "action": "create_voice",
+            "target_model": "cosyvoice-v2",
+            "prefix": "voice",
+            "url": url
+        }
+    }
+    try {
+        const response = await axios.post(cloneUrl, data, { headers });
+        const voiceID:string = response.data.output.voice_id;
+        return voiceID;
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+}
+
 export {
     chat,
+    listenTTSVoiceSample,
+
+    // 克隆音色
+    cloneVoice,
     
     // config
-    initLLMClient,
+    initLLM,
     getChatLLMConfig,
     getTTSLLMConfig,
     setChatLLMConfig,
     setTTSLLMConfig,
+
+    // chat history
+    getHistoryChatMessages,
+    saveChatHistoryMessages,
+
+    // chat prompt
+    getChatPrompt,
+    updateChatPrompt,
+
+    // tts voice
+    getTTSVoiceList,
+    addTTSVoice,
 }

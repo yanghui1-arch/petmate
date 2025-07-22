@@ -17,9 +17,21 @@ import { Item, ItemType } from './types/item';
 import { buyItem } from './modules/player/basic';
 import { ActivityInfo } from './types/activity';
 import { getCompletedWishesNum, showActivities, showItems } from './modules/show';
-import { ChatLLMConfigError, LLMConfigError, NotFoundError, TTSProcessError } from './error';
+import { ChatLLMConfigError, LLMConfigError, NotFoundError, TTSProcessError, UnsupportedError } from './error';
 import { getModelSize, getSettings, SettingConfig, updateSettings, defaultSettings } from './settings';
-import { chat, ChatLLMConfig, ChatMessage, getChatLLMConfig, getTTSLLMConfig, initLLMClient, setChatLLMConfig, setTTSLLMConfig, TTSLLMConfig } from './llm';
+import { 
+    chat, 
+    ChatLLMConfig, ChatMessage, 
+    cloneVoice, 
+    getChatLLMConfig, getTTSLLMConfig, 
+    initLLM, 
+    setChatLLMConfig, 
+    setTTSLLMConfig, 
+    TTSLLMConfig, 
+    TTSVoice,
+    addTTSVoice,
+    listenTTSVoiceSample
+} from './llm';
 
 /**
  * 初始化加载玩家数据
@@ -151,10 +163,11 @@ ipcMain.handle("init-settings", (event: IpcMainInvokeEvent): Response<SettingCon
  */
 ipcMain.handle("init-llm", (event: IpcMainInvokeEvent): Response<void> => {
     try {
-        initLLMClient()
+        initLLM()
+        logger.info("llm所需要的东西已准备就绪")
         return {
             code: 200,
-            message: "初始化llm客户端成功"
+            message: "llm所需要的东西已准备就绪"
         }
     } catch (error) {
         if (error instanceof LLMConfigError) {
@@ -166,7 +179,7 @@ ipcMain.handle("init-llm", (event: IpcMainInvokeEvent): Response<void> => {
         }
         return {
             code: 400,
-            message: "初始化llm客户端失败"
+            message: "初始化llm失败"
         } as Response<void>;
     }
 })
@@ -214,6 +227,53 @@ ipcMain.handle("buy-item", (event: IpcMainInvokeEvent, itemId: number, count: nu
             code: 400,
             message: "购买物品失败"
         } as Response<Item>;
+    }
+})
+
+/**
+ * 克隆音色
+ * 文件格式需要是.mp3/.wav，这样的文件格式对tts来说支持比较好
+ * 传过来的url必须得是公网可访问的，如果是百度云等网盘的url是不可以的，推荐用gitee/github/oss
+ * @param url 根据这个url克隆音色
+ * @returns 克隆音色成功或失败，如果成功的话会返回一个音色id，如果失败的话会返回一个详细的错误信息
+ */
+ipcMain.handle("clone-voice", async (event: IpcMainInvokeEvent, url: string): Promise<Response<string>> => {
+    try {
+        const voiceID: string = await cloneVoice(url);
+        return {
+            code: 200,
+            data: voiceID
+        } as Response<string>;
+    } catch (error) {
+        logger.error(`克隆音色失败: ${error}`);
+        return {
+            code: 400,
+            message: `克隆音色失败: ${error}`
+        } as Response<string>;
+    }
+})
+
+
+/**
+ * 试听音色
+ * 会向渲染层发送tts-audio-chunk事件，渲染层通过接收tts-audio-chunk就可以获取到音频内容
+ * 结束的时候会发送tts-finished事件
+ * @param voice 要试听的音色
+ * @returns 试听音色成功或失败，如果成功的话会返回一个音色id，如果失败的话会返回一个详细的错误信息
+ */
+ipcMain.handle("listen-tts-voice-sample", async (event: IpcMainInvokeEvent, voice: TTSVoice, text: string): Promise<Response<void>> => {
+    try {
+        await listenTTSVoiceSample(voice, text);
+        return {
+            code: 200,
+            message: "试听音色成功"
+        } as Response<void>;
+    } catch (error) {
+        logger.error(`试听音色失败: ${error}`);
+        return {
+            code: 400,
+            message: `试听音色失败: ${error}`
+        } as Response<void>;
     }
 })
 
@@ -474,6 +534,28 @@ ipcMain.handle("set-tts-config", (event: IpcMainInvokeEvent, config: TTSLLMConfi
         } as Response<TTSLLMConfig>;
     }
 });
+
+/**
+ * 添加一个tts音色
+ * @param voice 要添加的音色
+ * @returns 添加音色成功或失败，如果成功的话会返回一个音色id，如果失败的话会返回一个详细的错误信息
+ */
+ipcMain.handle("add-tts-voice", (event: IpcMainInvokeEvent, voice: TTSVoice): Response<void> => {
+    try {
+        addTTSVoice(voice);
+        logger.info(`音色${voice.name}添加成功，已经将音色写入到文件中`);
+        return {
+            code: 200,
+            message: "添加音色成功，已经将音色写入到文件中",
+        } as Response<void>;
+    } catch (error) {
+        logger.error(`添加音色失败: ${error}`);
+        return {
+            code: 400,
+            message: "添加音色失败"
+        } as Response<void>;
+    }
+})
 
 /**
  * 更改设置

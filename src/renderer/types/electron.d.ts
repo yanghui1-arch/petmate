@@ -3,7 +3,7 @@ import { PlayerInfo } from "./player";
 import { Item, ItemType, Wish } from "./common";
 import { ActivityInfo } from "./common"; 
 import { SettingConfig } from "./settings";
-import { ChatLLMConfig, ChatMessage, TTSLLMConfig } from "./llm";
+import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "./llm";
 
 /**
  * 与主进程通信的接口
@@ -25,20 +25,27 @@ interface IElectronAPI {
   getTTSLLMConfig: () => Promise<Response<TTSLLMConfig>>;
   getSettings: () => Promise<Response<SettingConfig>>;
 
-  // set && update
+  // set && update && add
   setChatLLMConfig: (config: ChatLLMConfig) => Promise<Response<ChatLLMConfig>>;
   setTTSLLMConfig: (config: TTSLLMConfig) => Promise<Response<TTSLLMConfig>>;
   updateSettings: (settings: Partial<SettingConfig>) => Promise<Response<void>>;
+  addTTSVoice: (voice: TTSVoice) => Promise<Response<void>>;
 
   // 玩家操作
   consumeItem: (itemId: number, count: number, petmateId: number) => Promise<Response<void>>;
   buyItem: (itemId: number, count: number) => Promise<Response<Item>>;
   chat: (message: ChatMessage) => Promise<Response<void>>;
 
+  // 克隆音色
+  cloneVoice: (url: string) => Promise<Response<string>>;
+
   // 监听
   onTextChunk: (callback: (event: Event, text: string) => void) => void;
   onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => void;
   removeAllAudioChunkListeners: () => void;
+
+  // 其他
+  listenTTSVoiceSample: (voice: TTSVoice, text: string) => Promise<Response<void>>;
 }
 
 // 声明全局window对象，之后渲染层直接window.api.function() 调用即可
