@@ -1,5 +1,5 @@
 const { contextBridge, ipcRenderer } = require("electron")
-import { ChatLLMConfig, ChatMessage, TTSLLMConfig } from "../main/llm"
+import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "../main/llm"
 import { SettingConfig } from "../main/settings"
 import { ActivityInfo } from "../main/types/activity"
 import { ItemType } from "../main/types/item"
@@ -23,10 +23,11 @@ contextBridge.exposeInMainWorld(
         getModelSize: () => ipcRenderer.invoke("get-model-size"),
         getSettings: () => ipcRenderer.invoke("get-settings"),
 
-        // set && update
+        // set && update && add
         setChatLLMConfig: (config: ChatLLMConfig) => ipcRenderer.invoke("set-chat-llm-config", config),
         setTTSLLMConfig: (config: TTSLLMConfig) => ipcRenderer.invoke("set-tts-config", config),
         updateSettings: (settings: Partial<SettingConfig>) => ipcRenderer.invoke("update-settings", settings),
+        addTTSVoice: (voice: TTSVoice) => ipcRenderer.invoke("add-tts-voice", voice),
 
         // 玩家的操作
         consumeItem: (itemId: number, count: number, petmateId: number) => ipcRenderer.invoke("consume-item", itemId, count, petmateId),
@@ -40,5 +41,8 @@ contextBridge.exposeInMainWorld(
         onTextChunk: (callback: (event: Event, text: string) => void) => ipcRenderer.on("chat-chunk", callback),
         onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => ipcRenderer.on("tts-audio-chunk", callback),
         removeAllAudioChunkListeners: () => ipcRenderer.removeAllListeners("tts-audio-chunk"),
+
+        // 其他方法
+        listenTTSVoiceSample: (voice: TTSVoice, text: string = "你好，主人，欢迎试听我的音色呢") => ipcRenderer.invoke("listen-tts-voice-sample", voice, text),
     }
 )

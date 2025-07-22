@@ -628,13 +628,8 @@ async function chat(message: ChatMessage): Promise<void> {
  * 当结束的时候会发送一个tts-finished事件给渲染层
  * @param voice 要听的音色
  */
-async function listenTTSVoiceSample(voice: TTSVoice) {
+async function listenTTSVoiceSample(voice: TTSVoice, text: string = "你好，主人，欢迎试听我的音色呢") {
     try {
-
-        // 先确保其在音色库中
-        if (getTTSVoiceList().findIndex(v => v.name === voice.name) === -1) {
-            throw new NotFoundError(`音色库中不存在音色${voice.name}，请先添加音色到音色库中`);
-        }
 
         // 初始化一下试听的tts配置
         const sampleTTSLLMConfig: TTSLLMConfig = {
@@ -659,7 +654,7 @@ async function listenTTSVoiceSample(voice: TTSVoice) {
             throw new TTSProcessError('TTS任务初始化超时，请检查网络连接和API配置');
         }
 
-        tts("你好，主人，欢迎试听我的音色呢");
+        tts(text);
 
         // 发送一个finished task事件
         if (!ttsTaskId) throw new TTSProcessError('无法正确获取tts任务id，导致无法发送finished task事件');

@@ -19,7 +19,19 @@ import { ActivityInfo } from './types/activity';
 import { getCompletedWishesNum, showActivities, showItems } from './modules/show';
 import { ChatLLMConfigError, LLMConfigError, NotFoundError, TTSProcessError, UnsupportedError } from './error';
 import { getModelSize, getSettings, SettingConfig, updateSettings, defaultSettings } from './settings';
-import { chat, ChatLLMConfig, ChatMessage, cloneVoice, getChatLLMConfig, getTTSLLMConfig, initLLM, setChatLLMConfig, setTTSLLMConfig, TTSLLMConfig } from './llm';
+import { 
+    chat, 
+    ChatLLMConfig, ChatMessage, 
+    cloneVoice, 
+    getChatLLMConfig, getTTSLLMConfig, 
+    initLLM, 
+    setChatLLMConfig, 
+    setTTSLLMConfig, 
+    TTSLLMConfig, 
+    TTSVoice,
+    addTTSVoice,
+    listenTTSVoiceSample
+} from './llm';
 
 /**
  * 初始化加载玩家数据
@@ -238,6 +250,30 @@ ipcMain.handle("clone-voice", async (event: IpcMainInvokeEvent, url: string): Pr
             code: 400,
             message: `克隆音色失败: ${error}`
         } as Response<string>;
+    }
+})
+
+
+/**
+ * 试听音色
+ * 会向渲染层发送tts-audio-chunk事件，渲染层通过接收tts-audio-chunk就可以获取到音频内容
+ * 结束的时候会发送tts-finished事件
+ * @param voice 要试听的音色
+ * @returns 试听音色成功或失败，如果成功的话会返回一个音色id，如果失败的话会返回一个详细的错误信息
+ */
+ipcMain.handle("listen-tts-voice-sample", async (event: IpcMainInvokeEvent, voice: TTSVoice, text: string): Promise<Response<void>> => {
+    try {
+        await listenTTSVoiceSample(voice, text);
+        return {
+            code: 200,
+            message: "试听音色成功"
+        } as Response<void>;
+    } catch (error) {
+        logger.error(`试听音色失败: ${error}`);
+        return {
+            code: 400,
+            message: `试听音色失败: ${error}`
+        } as Response<void>;
     }
 })
 
@@ -498,6 +534,28 @@ ipcMain.handle("set-tts-config", (event: IpcMainInvokeEvent, config: TTSLLMConfi
         } as Response<TTSLLMConfig>;
     }
 });
+
+/**
+ * 添加一个tts音色
+ * @param voice 要添加的音色
+ * @returns 添加音色成功或失败，如果成功的话会返回一个音色id，如果失败的话会返回一个详细的错误信息
+ */
+ipcMain.handle("add-tts-voice", (event: IpcMainInvokeEvent, voice: TTSVoice): Response<void> => {
+    try {
+        addTTSVoice(voice);
+        logger.info(`音色${voice.name}添加成功，已经将音色写入到文件中`);
+        return {
+            code: 200,
+            message: "添加音色成功，已经将音色写入到文件中",
+        } as Response<void>;
+    } catch (error) {
+        logger.error(`添加音色失败: ${error}`);
+        return {
+            code: 400,
+            message: "添加音色失败"
+        } as Response<void>;
+    }
+})
 
 /**
  * 更改设置

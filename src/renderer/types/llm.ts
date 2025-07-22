@@ -16,6 +16,12 @@ export interface TTSLLMConfig {
     parameters: TTSParameters;
 }
 
+export interface TTSVoice {
+    name: string;
+    voice: string;
+    createdAt: Date;
+}
+
 export interface TTSParameters {
     text_type?: string;
     voice: string;
