@@ -235,102 +235,114 @@
               <h3>音色克隆</h3>
             </div>
             <div class="config-form">
-              <!-- Voice URL Input Section -->
-              <div class="form-group">
-                <label>语音文件URL</label>
-                <n-input
-                  v-model:value="voiceUrl"
-                  placeholder="请输入语音文件的URL链接（支持 .wav 和 .mp3 格式）"
-                  class="config-input"
-                  clearable
-                />
-                <div class="url-hint">
-                  <span>💡提示：请确保URL链接可以直接访问音频文件</span>
+              <!-- Input Section - Show only when not processing and not successfully cloned -->
+              <div v-if="!processingVoice && !clonedVoiceId">
+                <!-- Voice URL Input Section -->
+                <div class="form-group">
+                  <label>语音文件URL</label>
+                  <n-input
+                    v-model:value="voiceUrl"
+                    placeholder="请输入语音文件的URL链接（支持 .wav 和 .mp3 格式）"
+                    class="config-input"
+                    clearable
+                  />
+                  <div class="url-hint">
+                    <span>💡提示：请确保URL链接可以直接访问音频文件</span>
+                  </div>
                 </div>
-              </div>
 
-              <!-- Custom Voice Name Input -->
-              <div v-if="voiceUrl.trim()" class="form-group voice-naming">
-                <label>为这个音色起个名字吧，请尽量别和已有的音色重名，否则会覆盖原来的音色</label>
-                <div class="voice-name-container">
-                  <div class="voice-name-input-group">
-                    <n-input
-                      v-model:value="customVoiceName"
-                      placeholder="例如: 大小姐"
-                      class="voice-name-input"
-                      :status="voiceNameError ? 'error' : undefined"
-                      @input="validateVoiceName"
-                      maxlength="20"
-                    />
-                    <!-- 可以删除 -->
-                    <div class="voice-id-preview">
-                      <span class="preview-label">预览ID:</span>
-                      <code class="preview-id">{{ generateVoiceIdPreview() }}</code>
+                <!-- Custom Voice Name Input -->
+                <div v-if="voiceUrl.trim()" class="form-group voice-naming">
+                  <label>为这个音色起个名字吧，请尽量别和已有的音色重名，否则会覆盖原来的音色</label>
+                  <div class="voice-name-container">
+                    <div class="voice-name-input-group">
+                      <n-input
+                        v-model:value="customVoiceName"
+                        placeholder="例如: 大小姐"
+                        class="voice-name-input"
+                        :status="voiceNameError ? 'error' : undefined"
+                        @input="validateVoiceName"
+                        maxlength="20"
+                      />
+                    </div>
+                    <div v-if="voiceNameError" class="voice-name-error">
+                      {{ voiceNameError }}
+                    </div>
+                    <div class="voice-name-hint">
+                      <span>提示：只能使用字母、数字和中文，不能有空格或特殊符号</span>
                     </div>
                   </div>
-                  <div v-if="voiceNameError" class="voice-name-error">
-                    {{ voiceNameError }}
+                </div>
+
+                <!-- Test Text Input Section -->
+                <div v-if="voiceUrl.trim() && customVoiceName.trim() && !voiceNameError" class="form-group">
+                  <label>测试语音内容</label>
+                  <n-input
+                    v-model:value="testText"
+                    type="textarea"
+                    placeholder="输入想要用这个音色说的话...（例如：你好，主人，欢迎试听我的音色呢）"
+                    :autosize="{ minRows: 2, maxRows: 4 }"
+                    class="config-input"
+                    maxlength="200"
+                    show-count
+                  />
+                  <div class="url-hint">
+                    <span>💡提示：输入测试文本，克隆完成后会自动生成音频供试听</span>
                   </div>
-                  <div class="voice-name-hint">
-                    <span>提示：只能使用字母、数字和中文，不能有空格或特殊符号</span>
-                  </div>
+                </div>
+                
+                <!-- Clone and Test Voice Action -->
+                <div class="form-actions">
+                  <n-button 
+                    type="success" 
+                    class="clone-btn"
+                    @click="cloneAndTestVoice"
+                    :disabled="!voiceUrl.trim() || !customVoiceName.trim() || !!voiceNameError || !testText.trim()"
+                  >
+                    🎤 克隆并试听"{{ customVoiceName.trim() }}"
+                  </n-button>
                 </div>
               </div>
 
-              <!-- Test Text Input Section -->
-              <div v-if="voiceUrl.trim() && customVoiceName.trim() && !voiceNameError" class="form-group">
-                <label>测试语音内容</label>
-                <n-input
-                  v-model:value="testText"
-                  type="textarea"
-                  placeholder="输入想要用这个音色说的话...（例如：你好，主人，欢迎试听我的音色呢）"
-                  :autosize="{ minRows: 2, maxRows: 4 }"
-                  class="config-input"
-                  maxlength="200"
-                  show-count
-                />
-                <div class="url-hint">
-                  <span>💡提示：输入测试文本，克隆完成后会自动生成音频供试听</span>
-                </div>
-              </div>
-              
-              <!-- Clone and Test Voice Action -->
-              <div class="form-actions">
-                <n-button 
-                  type="success" 
-                  class="clone-btn"
-                  @click="cloneAndTestVoice"
-                  :loading="processingVoice"
-                  :disabled="!voiceUrl.trim() || !customVoiceName.trim() || !!voiceNameError || !testText.trim()"
-                >
-                  🎤 {{ processingVoice ? '正在处理...' : `克隆并试听"${customVoiceName.trim()}"` }}
-                </n-button>
-              </div>
-
-              <div v-if="cloneStatus" class="clone-status">
-                <div class="status-indicator" :class="cloneStatus.type">
+              <!-- Loading Status - Show only during processing -->
+              <div v-if="processingVoice" class="clone-status">
+                <div class="status-indicator processing">
                   <n-icon size="20">
-                    <svg v-if="cloneStatus.type === 'processing'" viewBox="0 0 24 24">
+                    <svg viewBox="0 0 24 24">
                       <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z" />
                     </svg>
-                    <svg v-else-if="cloneStatus.type === 'success'" viewBox="0 0 24 24">
-                      <path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" />
-                    </svg>
-                    <svg v-else viewBox="0 0 24 24">
+                  </n-icon>
+                  <span>正在克隆语音，请稍候...</span>
+                </div>
+              </div>
+
+              <!-- Error Status - Show only on error -->
+              <div v-if="!processingVoice && cloneStatus && cloneStatus.type === 'error'" class="clone-status">
+                <div class="status-indicator error">
+                  <n-icon size="20">
+                    <svg viewBox="0 0 24 24">
                       <path d="M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
                     </svg>
                   </n-icon>
                   <span>{{ cloneStatus.message }}</span>
                 </div>
+                <div class="form-actions" style="margin-top: 15px;">
+                  <n-button type="default" @click="resetToInput">重新开始</n-button>
+                </div>
               </div>
 
-              <!-- Audio Player Section - Show when voice is cloned -->
-              <div v-if="clonedVoiceId" class="audio-player-section">
-                <h5>试听音色</h5>
+              <!-- Audio Player Section - Show only when successfully cloned -->
+              <div v-if="clonedVoiceId && !processingVoice && (!cloneStatus || cloneStatus.type !== 'error')" class="audio-player-section">
+                <div class="success-info">
+                  <h5>🎉 克隆成功！</h5>
+                  <div class="voice-info">
+                    <span>音色名称: <strong>{{ getVoiceDisplayName() }}</strong></span>
+                  </div>
+                </div>
                 
                 <!-- Edit test text -->
                 <div class="form-group" style="margin-bottom: 15px;">
-                  <label>修改测试文本</label>
+                  <label>测试文本</label>
                   <n-input
                     v-model:value="testText"
                     type="textarea"
@@ -355,7 +367,7 @@
                   <p v-else class="audio-hint">音频已准备就绪，点击播放按钮试听</p>
                 </div>
                 
-                <!-- Replay and Save Actions -->
+                <!-- Actions -->
                 <div class="voice-actions-section">
                   <div class="voice-actions-grid">
                     <n-button 
@@ -389,32 +401,21 @@
                     >
                       💾 保存到语音库
                     </n-button>
+
+                    <n-button 
+                      type="default" 
+                      size="medium"
+                      @click="resetToInput"
+                      class="action-btn"
+                    >
+                      ➕ 克隆新语音
+                    </n-button>
                   </div>
                   <p class="voice-usage-hint">保存后可在上方语音设置中选择使用</p>
                 </div>
               </div>
 
-                        <!-- Cloned Voice ID Display -->
-          <div v-if="clonedVoiceId" class="cloned-voice-info">
-            <div class="voice-id-card">
-              <h4>你的专属音色</h4>
-              <div class="voice-name-display">
-                <div class="voice-info-row">
-                  <span class="voice-label">名称:</span>
-                  <span class="voice-name">{{ getVoiceDisplayName() }}</span>
-                </div>
-                <div class="voice-info-row">
-                  <span class="voice-label">语音ID:</span>
-                  <div class="voice-id-container">
-                    <code class="voice-id">{{ clonedVoiceId }}</code>
-                    <n-button size="small" @click="copyVoiceId" class="copy-btn">
-                      复制
-                    </n-button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+
         </div>
       </div>
 
@@ -621,82 +622,6 @@ const validateVoiceName = () => {
   return true
 }
 
-// 生成语音ID预览
-const generateVoiceIdPreview = () => {
-  const name = customVoiceName.value.trim()
-  if (!name) {
-    return 'voice_custom_预览'
-  }
-  
-  // 将中文和特殊字符转换为拼音或移除
-  let cleanName = name
-    .replace(/[\u4e00-\u9fa5]/g, 'cn') // 中文替换为cn
-    .replace(/[^a-zA-Z0-9]/g, '') // 移除其他特殊字符
-    .toLowerCase()
-    .substring(0, 10) // 限制长度
-  
-  if (!cleanName) {
-    cleanName = 'custom'
-  }
-  
-  return `voice_${cleanName}_${Date.now().toString().slice(-4)}`
-}
-
-// 处理音色克隆 （实际上还没实现，只是个占位）
-const processVoiceClone = async () => {
-  if (!voiceUrl.value.trim()) {
-    showNotification('warning', '请先输入语音文件的URL链接')
-    return
-  }
-
-  // 验证语音名称
-  if (!validateVoiceName()) {
-    showNotification('warning', '请检查语音名称格式')
-    return
-  }
-
-  processingVoice.value = true
-  cloneStatus.value = {
-    type: 'processing',
-    message: '正在从URL下载并克隆语音... 这可能需要几分钟，请保持联网'
-  }
-
-  try {
-    const res = await window.api.cloneVoice(voiceUrl.value);
-    // 克隆失败
-    if(res.code === 400) {
-      throw new Error(res.message);
-    }
-    clonedVoiceId.value = res.data!;
-    
-    // 使用自定义名称生成语音ID
-    const customName = customVoiceName.value.trim()
-    let cleanName = customName
-      .replace(/[\u4e00-\u9fa5]/g, 'cn') // 中文替换为cn
-      .replace(/[^a-zA-Z0-9]/g, '') // 移除其他特殊字符
-      .toLowerCase()
-      .substring(0, 10) // 限制长度
-    
-    if (!cleanName) {
-      cleanName = 'custom'
-    }
-    
-    cloneStatus.value = {
-      type: 'success',
-      message: `音色克隆完成! 你的"${customName}"音色已经准备好使用了，请在上方语音设置中使用这个音色ID并保存配置！`
-    }
-    showNotification('success', `语音"${customName}"克隆完成! ID: ${clonedVoiceId.value}`)
-  } catch (error) {
-    cloneStatus.value = {
-      type: 'error',
-      message: '音色克隆失败. 请确保URL链接有效且指向正确的音频文件格式(支持mp3和wav格式)并且文件大小≤10MB，声音时长为10-20s以内，最后保证音频文件是有声音的'
-    }
-    showNotification('error', '音色克隆失败')
-  } finally {
-    processingVoice.value = false
-  }
-}
-
 // 统一的克隆并测试语音功能
 const cloneAndTestVoice = async () => {
   if (!voiceUrl.value.trim()) {
@@ -714,30 +639,26 @@ const cloneAndTestVoice = async () => {
     return
   }
 
-  processingVoice.value = true
+  // 清除之前的结果 (但保留输入数据)
+  clonedVoiceId.value = null
   audioReady.value = false
   currentAudioBlob.value = null
-
-  cloneStatus.value = {
-    type: 'processing',
-    message: '正在从URL下载并克隆语音... 这可能需要几分钟，请保持联网'
-  }
+  cloneStatus.value = null
+  processingVoice.value = true
 
   try {
-    // 第一步：克隆语音
+    // 克隆语音
     const cloneRes = await window.api.cloneVoice(voiceUrl.value);
     if(cloneRes.code === 400) {
       throw new Error(cloneRes.message);
     }
     clonedVoiceId.value = cloneRes.data!;
     
-    cloneStatus.value = {
-      type: 'success',
-      message: `音色克隆完成! 你的"${customVoiceName.value.trim()}"音色已经准备好了，现在正在生成测试音频...`
-    }
+    // 清除状态，让成功界面显示
+    cloneStatus.value = null
     showNotification('success', `语音"${customVoiceName.value.trim()}"克隆完成! ID: ${clonedVoiceId.value}`)
 
-    // 第二步：生成测试音频（异步进行，不阻塞UI）
+    // 生成测试音频（异步进行）
     generateTestAudio()
 
   } catch (error) {
@@ -805,12 +726,6 @@ const generateTestAudio = async () => {
         audioPlayer.load()
         audioReady.value = true
         showNotification('success', '测试音频已生成，点击播放按钮试听！')
-        
-        // 更新状态消息
-        cloneStatus.value = {
-          type: 'success',
-          message: `音色克隆和测试完成! 你的"${customVoiceName.value.trim()}"音色已经准备好，点击播放按钮试听吧！`
-        }
       }
     } else {
       showNotification('warning', '音频生成可能还在进行中，请稍后点击重新播放按钮')
@@ -821,18 +736,6 @@ const generateTestAudio = async () => {
     window.api.removeAllAudioChunkListeners()
   } finally {
     testingVoice.value = false
-  }
-}
-
-// 将语音ID复制到剪切板
-const copyVoiceId = async () => {
-  if (clonedVoiceId.value) {
-    try {
-      await navigator.clipboard.writeText(clonedVoiceId.value)
-      showNotification('success', '语音ID已复制到剪贴板!')
-    } catch (error) {
-      showNotification('error', '语音ID复制到剪切板失败')
-    }
   }
 }
 
@@ -874,6 +777,14 @@ const onAudioEnded = () => {
   replayingAudio.value = false
 }
 
+// 重置到输入状态
+const resetToInput = () => {
+  clonedVoiceId.value = null
+  audioReady.value = false
+  currentAudioBlob.value = null
+  cloneStatus.value = null
+}
+
 // 保存语音到语音库，如果语音库中存在一个同名的音色，则删除原来的音色，并追加现在的音色到音色库中
 const saveVoiceWithName = async () => {
   if (!clonedVoiceId.value || !customVoiceName.value.trim()) {
@@ -898,95 +809,6 @@ const saveVoiceWithName = async () => {
   } finally {
     savingVoice.value = false
   }
-}
-
-// 测试自定义语音内容
-const testCustomVoiceText = async () => {
-  if (!clonedVoiceId.value || !customVoiceText.value.trim()) {
-    showNotification('warning', '请确保语音ID和文本内容都已填写')
-    return
-  }
-
-  testingVoice.value = true
-  try {
-    // 创建音色对象
-    const voice: TTSVoice = {
-      name: getVoiceDisplayName(),
-      voice: clonedVoiceId.value,
-      createdAt: new Date()
-    }
-
-    // 调用TTS试听API
-    const res = await window.api.listenTTSVoiceSample(voice, customVoiceText.value)
-    if (res.code === 400) {
-      throw new Error(res.message)
-    }
-
-    showNotification('success', '正在生成语音，请稍等片刻...')
-    
-    // 设置音频事件监听器
-    let audioChunks: ArrayBuffer[] = []
-    let mediaSource: MediaSource | null = null
-    
-    // 创建MediaSource用于流式播放
-    const audioPlayer = document.querySelector('.voice-audio-player') as HTMLAudioElement
-    if (audioPlayer) {
-      mediaSource = new MediaSource()
-      audioPlayer.src = URL.createObjectURL(mediaSource)
-      // 关键：设置 preload 但不自动播放
-      audioPlayer.preload = 'auto'
-      audioPlayer.autoplay = false
-      
-      mediaSource.addEventListener('sourceopen', () => {
-        const sourceBuffer = mediaSource!.addSourceBuffer('audio/mpeg')
-        
-        // 监听音频块事件
-        const handleAudioChunk = (event: Event, audio: Buffer) => {
-          audioChunks.push(audio.buffer.slice(audio.byteOffset, audio.byteOffset + audio.byteLength))
-          
-          if (!sourceBuffer.updating) {
-            try {
-              sourceBuffer.appendBuffer(audio)
-            } catch (err) {
-              console.error('Error appending audio buffer:', err)
-            }
-          }
-        }
-        
-        // 监听TTS完成事件
-        const handleTTSFinished = () => {
-          window.api.removeAllAudioChunkListeners()
-          // 音频加载完成，但不自动播放
-          showNotification('success', '语音已加载到播放器，点击播放按钮即可试听')
-          testingVoice.value = false
-        }
-        
-        // 注册事件监听器
-        window.api.onAudioChunk(handleAudioChunk)
-        
-        // 自动清理（30秒后，防止事件监听器泄漏）
-        setTimeout(() => {
-          if (testingVoice.value) {
-            handleTTSFinished()
-            showNotification('warning', '语音生成超时，请重试')
-          }
-        }, 30000)
-      })
-    }
-
-  } catch (error) {
-    testingVoice.value = false
-    showNotification('error', `语音生成失败: ${error}`)
-  }
-}
-
-// 清除URL和相关数据
-const clearVoiceData = () => {
-  voiceUrl.value = ''
-  customVoiceName.value = ''
-  voiceNameError.value = ''
-  cloneStatus.value = null
-  clonedVoiceId.value = null
 }
 
 // 显示聊天LLM配置
@@ -1068,9 +890,6 @@ onMounted(async () => {
 
   // 设置默认测试文本
   testText.value = '你好，主人，欢迎试听我的音色呢'
-  
-  // 显示一个示例克隆语音ID
-  // clonedVoiceId.value = 'voice_custom_123456'
 
   // 添加滚动事件监听器
   const container = document.getElementById('config')
@@ -1517,32 +1336,6 @@ onUnmounted(() => {
   }
 }
 
-.voice-id-preview {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: linear-gradient(135deg, $bg-white-100 0%, $bg-white-200 100%);
-  border: 1px solid $border-orange-300;
-  border-radius: 6px;
-  
-  .preview-label {
-    font-size: 12px;
-    color: $font-gray;
-    font-weight: 500;
-  }
-  
-  .preview-id {
-    background: $bg-white-200;
-    color: $font-gray;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    font-size: 11px;
-    font-weight: bold;
-    border: 1px solid $border-orange-300;
-  }
-}
 
 .voice-name-error {
   color: #d32f2f;
@@ -1750,6 +1543,51 @@ onUnmounted(() => {
   margin: 0;
   font-style: italic;
   text-align: center;
+}
+
+// Success Info Styles
+.success-info {
+  background: linear-gradient(135deg, #e8f5e8 0%, #f0f9f0 100%);
+  border: 2px solid #4caf50;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  
+  h5 {
+    margin: 0 0 10px 0;
+    color: #2e7d32;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  
+  .voice-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    
+    span {
+      font-size: 13px;
+      color: #1b5e20;
+      
+      strong {
+        color: #2e7d32;
+      }
+      
+      code {
+        background: rgba(76, 175, 80, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+        color: #1b5e20;
+        border: 1px solid rgba(76, 175, 80, 0.2);
+      }
+    }
+  }
+  
+  .copy-btn {
+    margin-left: 8px;
+    font-size: 11px;
+  }
 }
 
 // Voice Actions Section Styles
@@ -1988,19 +1826,6 @@ onUnmounted(() => {
     }
   }
   
-  .voice-id-preview {
-    padding: 6px 10px;
-    
-    .preview-label {
-      font-size: 11px;
-    }
-    
-    .preview-id {
-      font-size: 10px;
-      padding: 2px 4px;
-    }
-  }
-  
   .notification-toast {
     right: 10px;
     left: 10px;
@@ -2058,19 +1883,6 @@ onUnmounted(() => {
     
     label {
       font-size: 13px;
-    }
-  }
-  
-  .voice-id-preview {
-    padding: 5px 8px;
-    
-    .preview-label {
-      font-size: 10px;
-    }
-    
-    .preview-id {
-      font-size: 9px;
-      padding: 1px 3px;
     }
   }
   
