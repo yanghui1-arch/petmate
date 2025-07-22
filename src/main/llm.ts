@@ -1,6 +1,6 @@
 import Store from 'electron-store';
 import logger  from './log';
-import { ChatLLMConfigError, LLMConfigError, TTSProcessError } from './error';
+import { ChatLLMConfigError, LLMConfigError, TTSProcessError, NotFoundError } from './error';
 import { OpenAI } from 'openai';
 import { ChatCompletionStream } from 'openai/resources/chat/completions';
 import { v4 as uuidv4 } from 'uuid';
@@ -338,10 +338,17 @@ function setTTSLLMConfig(config: TTSLLMConfig): TTSLLMConfig {
 
 /**
  * 添加一个tts音色，并同步到文件中
+ * 如果音色库中存在一个同名的音色，则删除原来的音色，并追加现在的音色到音色库中
  * @param voice 要添加的音色
  */
 function addTTSVoice(voice: TTSVoice): void {
     const customVoiceList = (store as any).get('ttsVoice') as TTSVoice[] || [];
+    // 如果不存在，则返回-1
+    const idx = customVoiceList.findIndex(v => v.name === voice.name);
+    if (idx !== -1) {
+        customVoiceList.splice(idx, 1);
+        logger.info(`[llm] 音色库中存在一个同名的音色，已经删除原来的音色，并追加现在的音色${voice.name}到音色库中`);
+    }
     customVoiceList.push(voice);
     (store as any).set('ttsVoice', customVoiceList);
 }
@@ -412,10 +419,10 @@ function tts(text: string): void {
  * 连接TTS的websocket
  * @returns 任务id
  */
-function connectTTSWebsocket(): string {
-    ttsWebsocket = new WebSocket(currentTTSLLMConfig.baseUrl, {
+function connectTTSWebsocket(ttsLLMConfig: TTSLLMConfig): string {
+    ttsWebsocket = new WebSocket(ttsLLMConfig.baseUrl, {
         headers: {
-            Authorization: `bearer ${currentTTSLLMConfig.apiKey}`,
+            Authorization: `bearer ${ttsLLMConfig.apiKey}`,
             'X-DashScope-DataInspection': 'enable'
         }
     });
@@ -436,12 +443,12 @@ function connectTTSWebsocket(): string {
                 model: 'cosyvoice-v2',
                 parameters: {
                     text_type: 'PlainText',
-                    voice: currentTTSLLMConfig.parameters.voice, // 音色
-                    format: currentTTSLLMConfig.parameters.format, // 音频格式
-                    sample_rate: currentTTSLLMConfig.parameters.sample_rate, // 采样率
-                    volume: currentTTSLLMConfig.parameters.volume, // 音量
-                    rate: currentTTSLLMConfig.parameters.rate, // 语速
-                    pitch: currentTTSLLMConfig.parameters.pitch // 音调
+                    voice: ttsLLMConfig.parameters.voice, // 音色
+                    format: ttsLLMConfig.parameters.format, // 音频格式
+                    sample_rate: ttsLLMConfig.parameters.sample_rate, // 采样率
+                    volume: ttsLLMConfig.parameters.volume, // 音量
+                    rate: ttsLLMConfig.parameters.rate, // 语速
+                    pitch: ttsLLMConfig.parameters.pitch // 音调
                 },
                 input: {}
             }
@@ -553,7 +560,7 @@ async function chat(message: ChatMessage): Promise<void> {
     try {
         // 如果websocket没建立连接，先建立一下连接
         if (!ttsWebsocket && !ttsStarted) {
-            ttsTaskId = connectTTSWebsocket();
+            ttsTaskId = connectTTSWebsocket(currentTTSLLMConfig);
         }
         if (message.role !== 'user') {
             throw new ChatLLMConfigError("[llm] 请确保传过来的聊天信息是用户消息");
@@ -615,6 +622,69 @@ async function chat(message: ChatMessage): Promise<void> {
 }
 
 
+/**
+ * 听音色样本
+ * 会发送一个tts-audio-chunk事件给渲染层，渲染层通过接收tts-audio-chunk就可以获取到音频内容
+ * 当结束的时候会发送一个tts-finished事件给渲染层
+ * @param voice 要听的音色
+ */
+async function listenTTSVoiceSample(voice: TTSVoice) {
+    try {
+
+        // 先确保其在音色库中
+        if (getTTSVoiceList().findIndex(v => v.name === voice.name) === -1) {
+            throw new NotFoundError(`音色库中不存在音色${voice.name}，请先添加音色到音色库中`);
+        }
+
+        // 初始化一下试听的tts配置
+        const sampleTTSLLMConfig: TTSLLMConfig = {
+            model: currentTTSLLMConfig.model,
+            apiKey: currentTTSLLMConfig.apiKey,
+            baseUrl: currentTTSLLMConfig.baseUrl,
+            // 试听的时候，参数得是固定的
+            parameters: {
+                ...currentTTSLLMConfig.parameters,
+                voice: voice.voice
+            }
+        }
+
+        // 如果websocket没建立连接，先建立一下连接
+        if (!ttsWebsocket && !ttsStarted) {
+            ttsTaskId = connectTTSWebsocket(sampleTTSLLMConfig);
+        }
+        // 等待TTS任务准备就绪
+        // 必须得保证TTS任务准备就绪，不然会因为websocket的异步性导致ttsStarted=False
+        const ttsReady = await waitForTTSReady();
+        if (!ttsReady) {
+            throw new TTSProcessError('TTS任务初始化超时，请检查网络连接和API配置');
+        }
+
+        tts("你好，主人，欢迎试听我的音色呢");
+
+        // 发送一个finished task事件
+        if (!ttsTaskId) throw new TTSProcessError('无法正确获取tts任务id，导致无法发送finished task事件');
+        const finishTaskMessage: TTSFinishTask = {
+            header: {
+                action: 'finish-task',
+                task_id: ttsTaskId,
+                streaming: 'duplex'
+            },
+            payload: {
+                input: {}
+            }
+        }
+        ttsWebsocket?.send(JSON.stringify(finishTaskMessage));
+
+    } catch (error) {
+        ttsTaskId = null;
+        ttsStarted = false;
+        ttsWebsocket?.close();
+        ttsWebsocket = null;
+        throw error;
+    }
+}
+
+
 const cloneUrl = "https://dashscope.aliyuncs.com/api/v1/services/audio/tts/customization"
 import axios from 'axios'
 
@@ -650,6 +720,7 @@ async function cloneVoice(url: string): Promise<string> {
 
 export {
     chat,
+    listenTTSVoiceSample,
 
     // 克隆音色
     cloneVoice,
