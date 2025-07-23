@@ -67,7 +67,7 @@
                 <label>接口地址</label>
                 <n-input 
                   v-model:value="chatConfig.baseUrl" 
-                  placeholder="https://api.openai.com/v1"
+                  placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1"
                   class="config-input"
                 />
               </div>
@@ -82,7 +82,7 @@
                 />
               </div>
               <div class="form-group">
-                <label>模型</label>
+                <label>模型（能力从上到下递减）</label>
                 <n-select
                   v-model:value="chatConfig.model"
                   :options="modelOptions"
@@ -524,10 +524,13 @@ const showNotification = (type: 'success' | 'error' | 'warning' | 'info', messag
   }, 3000)
 }
 
-// 可选择的模型，目前只有两个
+// 可选择的模型
 const modelOptions = [
+  { label: 'deepseek-r1-0528', value: 'deepseek-r1' },
+  { label: 'qwen-max', value: 'qwen-max' },
+  { label: 'qwen3-235b', value: 'qwen3-235b-a22b-instruct-2507' },
   { label: 'deepseek-v3', value: 'deepseek-v3' },
-  { label: 'qwen2.5-72b', value: 'qwen2.5-72b' }
+  { label: 'qwen2.5-72b', value: 'qwen2.5-72b' },
 ]
 
 // 可选择的语音
