@@ -590,7 +590,6 @@ async function chat(message: ChatMessage): Promise<void> {
         let response: string = "";
         for await (const chunk of runner) {
             const content = chunk.choices[0].delta.content ?? "";
-            console.log("文本流", content);
             if (content !== "") {
                 tts(content);
                 response += content;
