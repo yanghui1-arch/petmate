@@ -33,7 +33,9 @@ import {
     listenTTSVoiceSample,
     getChatPrompt,
     updateChatPrompt,
-    saveChatHistoryMessages
+    saveChatHistoryMessages,
+    memorySummary,
+    clearChatHistoryMessages
 } from './llm';
 
 /**
@@ -284,6 +286,7 @@ ipcMain.handle("listen-tts-voice-sample", async (event: IpcMainInvokeEvent, voic
  * 玩家与petmate进行聊天
  * 调用该方法时，会自动的将此次信息纳入为历史信息中，并且进行流式的tts转录，并且直接将转录后的信息发送给渲染进程
  * 目前只接收文本信息，并且返回的是音频
+ * 当返回的code为401的时候意味着发送的文本超过了上下文，需要调用方法继续调用一次chat，并且将上一次的chat信息作为message传入
  * @param message 聊天信息
  * @returns 发送聊天信息成功或失败
  */
@@ -312,6 +315,23 @@ ipcMain.handle("chat", async (event: IpcMainInvokeEvent, message: ChatMessage): 
             return {
                 code: 400,
                 message: "发送聊天信息失败"
+            } as Response<void>;
+        } else if ((error as Error).message === 'Invalid string length') {
+            // 超过上下文了，做一次记忆总结，并将原来的历史聊天记录清空，然后再初始化一次LLM
+            logger.error(`发送聊天信息失败，超过上下文了，需要重新发送一次chat: ${error}`);
+            const summary: string = await memorySummary();
+            clearChatHistoryMessages();
+            initLLM();
+            logger.info(`[llm] 记忆刷新：${summary}`);
+            return {
+                code: 401, // 特殊 code
+                message: "发送聊天信息失败，超过上下文了，需要重新发送一次chat"
+            } as Response<void>;
+        } else if ((error as Error).message === 'Output data may contain inappropriate content.') {
+            logger.error(`发送聊天信息失败，内容可能包含黄色内容，你可能需要更改说话风格以实现越狱效果。: ${error}`);
+            return {
+                code: 400,
+                message: "发送聊天信息失败，内容可能包含黄色内容，你可能需要更改说话风格以实现越狱效果。"
             } as Response<void>;
         }
         
