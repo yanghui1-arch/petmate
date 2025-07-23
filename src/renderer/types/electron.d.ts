@@ -33,6 +33,7 @@ interface IElectronAPI {
   updateSettings: (settings: Partial<SettingConfig>) => Promise<Response<void>>;
   addTTSVoice: (voice: TTSVoice) => Promise<Response<void>>;
   setChatPrompt: (prompt: string) => Promise<Response<void>>;
+  saveChatMessages: () => Promise<Response<void>>;
 
   // 玩家操作
   consumeItem: (itemId: number, count: number, petmateId: number) => Promise<Response<void>>;

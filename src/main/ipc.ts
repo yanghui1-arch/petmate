@@ -32,7 +32,8 @@ import {
     addTTSVoice, getTTSVoiceList,
     listenTTSVoiceSample,
     getChatPrompt,
-    updateChatPrompt
+    updateChatPrompt,
+    saveChatHistoryMessages
 } from './llm';
 
 /**
@@ -557,6 +558,7 @@ ipcMain.handle("set-chat-llm-config", (event: IpcMainInvokeEvent, config: ChatLL
 
 /**
  * 设置Chat LLM的提示词
+ * 作用：将新的提示词同步到文件中，以方便init-llm重新构建新的聊天记录，使得玩家在chat的时候可以承接上一次继续聊天，并且petmate会以最新的说话风格回复
  * @param prompt 新的Chat LLM提示词
  * @returns 设置后的Chat LLM提示词, 如果失败的话则返回一个错误信息
  */
@@ -576,6 +578,25 @@ ipcMain.handle("set-chat-prompt", (event: IpcMainInvokeEvent, prompt: string): R
         } as Response<void>;
     }
 })
+
+/**
+ * 保存聊天记录
+ */
+ipcMain.handle("save-chat-messages", (event: IpcMainInvokeEvent): Response<void> => {
+    try {
+        saveChatHistoryMessages();
+        return {
+            code: 200,
+            message: "保存历史聊天记录成功"
+        } as Response<void>;
+    } catch (error) {
+        logger.error(`保存历史聊天记录失败: ${error}`);
+        return {
+            code: 400,
+            message: "保存历史聊天记录失败"
+        } as Response<void>;
+    }
+});
 
 /**
  * 设置TTS LLM配置

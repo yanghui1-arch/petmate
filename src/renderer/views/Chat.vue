@@ -353,13 +353,14 @@ watch(isMuted, (newVal) => {
 });
 
 
-onUnmounted(() => {
+onUnmounted(async () => {
     // 清理定时器
     if (streamCheckInterval) {
         clearInterval(streamCheckInterval);
         streamCheckInterval = null;
     }
     clearAudioResources();
+    await window.api.saveChatMessages();
 });
 
 
