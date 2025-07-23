@@ -112,6 +112,11 @@
                 :key="actItem.id"
                 ref="contentItemRefs"
                 :style="{ animationDelay: index * 100 + 'ms' }"
+                :class="{
+                  'activity-item-locked': checkActivityLocked(
+                    actItem.requirement
+                  ),
+                }"
                 @animationend="contentAnimationEnd"
                 @mouseenter="showPopover($event, actItem)"
                 @mouseleave="hidePopover"
@@ -154,6 +159,26 @@
                   <span class="activity-item-emoji">🏆</span>
                   <span>{{ actItem.rewardSummary }}</span>
                 </div>
+
+                <!-- Locked State Overlay -->
+                <div
+                  v-if="checkActivityLocked(actItem.requirement)"
+                  class="activity-item-locked-overlay"
+                >
+                  <div class="lock-icon">🔒</div>
+                  <div class="locked-requirements">
+                    <div class="locked-title">需要条件:</div>
+                    <div
+                      v-for="requirement in getMissingRequirements(
+                        actItem.requirement
+                      )"
+                      :key="requirement"
+                      class="locked-requirement-item"
+                    >
+                      {{ requirement }}
+                    </div>
+                  </div>
+                </div>
               </div>
             </TransitionGroup>
           </div>
@@ -171,14 +196,95 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import AttributeBar from "../components/AttributeBar.vue";
 import ActivityPopover from "@/components/ActivityPopover.vue";
 import { ActivityInfo } from "../types/common";
+import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
+
 import { convertActivityEffect, computeActivityTime } from "../utils/activity";
 
+const { playerData } = usePlayer();
 const { getActivities } = useShow();
+
+// Petmate相关
+const currentPetmateID = ref(0);
+const currentActivePetmate = computed(() => {
+  return playerData.value?.petmates.find(
+    (petmate) => petmate.id === currentPetmateID.value
+  );
+});
+
+const petmateAttribute = computed(() => {
+  return currentActivePetmate.value?.attrs;
+});
+
+// Current user levels (these should ideally come from a store/state management)
+const currentLevels = ref({
+  level: 1,
+  sing_level: 1, // Based on the 65/100 progress, roughly level 1
+  draw_level: 1, // Based on the 80/100 progress, roughly level 1
+  game_level: 1, // Based on the 45/100 progress, roughly level 1
+  affection_level: 1,
+});
+
+// TODO: In a real implementation, these levels should be computed from the actual progress values
+// For example: Math.floor(progress / 100) + 1 where progress comes from your game state
+
+/**
+ * Helper function to update user levels (for testing or real implementation)
+ * @param newLevels Partial levels to update
+ */
+const updateUserLevels = (newLevels: Partial<typeof currentLevels.value>) => {
+  currentLevels.value = { ...currentLevels.value, ...newLevels };
+};
+
+// Expose for debugging in browser console
+// window.updateUserLevels = updateUserLevels;
+
+const checkActivityLocked = (requirement: ActivityInfo["requirement"]) => {
+  const { level, sing_level, draw_level, game_level, affection_level } =
+    petmateAttribute.value ?? {
+      level: 1,
+      sing_level: 1,
+      draw_level: 1,
+      game_level: 1,
+      affection_level: 1,
+    };
+  return (
+    level < requirement.level ||
+    sing_level < requirement.sing_level ||
+    draw_level < requirement.draw_level ||
+    game_level < requirement.game_level ||
+    affection_level < requirement.affection_level
+  );
+};
+
+/**
+ * Get the missing requirements for an activity
+ * @param requirements The activity requirements
+ * @returns Array of missing requirement descriptions
+ */
+const getMissingRequirements = (requirements: ActivityInfo["requirement"]) => {
+  const missing = [];
+  if (currentLevels.value.level < requirements.level) {
+    missing.push(`等级 ${requirements.level}`);
+  }
+  if (currentLevels.value.sing_level < requirements.sing_level) {
+    missing.push(`唱歌 Lv.${requirements.sing_level}`);
+  }
+  if (currentLevels.value.draw_level < requirements.draw_level) {
+    missing.push(`绘画 Lv.${requirements.draw_level}`);
+  }
+  if (currentLevels.value.game_level < requirements.game_level) {
+    missing.push(`游戏 Lv.${requirements.game_level}`);
+  }
+  if (currentLevels.value.affection_level < requirements.affection_level) {
+    missing.push(`亲密度 Lv.${requirements.affection_level}`);
+  }
+  return missing;
+};
 
 const activityList = [
   {
@@ -822,6 +928,95 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
     transform-origin: top;
     transform: scaleY(0);
     opacity: 0;
+  }
+}
+
+// Locked Activity Styles
+.activity-item-locked {
+  opacity: 0.5;
+  filter: grayscale(70%) brightness(0.7);
+  position: relative;
+}
+
+.activity-item-locked-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  z-index: 10;
+
+  .lock-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+    opacity: 0.9;
+    animation: lockPulse 2s ease-in-out infinite;
+  }
+
+  .locked-requirements {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 10px;
+
+    .locked-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+      color: #ff6b6b;
+      font-size: 11px;
+    }
+
+    .locked-requirement-item {
+      margin: 1px 0;
+      padding: 1px 4px;
+      background: rgba(255, 107, 107, 0.2);
+      border-radius: 4px;
+      border: 1px solid rgba(255, 107, 107, 0.3);
+      font-size: 9px;
+    }
+  }
+}
+
+@keyframes lockPulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+// Additional locked state styling for activity content
+.activity-item-locked {
+  .activity-item-header,
+  .activity-item-content,
+  .activity-item-reward {
+    pointer-events: none;
+  }
+
+  .activity-item-name {
+    color: rgba(255, 255, 255, 0.4) !important;
+  }
+
+  .activity-item-icon {
+    filter: grayscale(100%);
+    opacity: 0.5;
+  }
+
+  .activity-item-time-wrapper,
+  .activity-item-requirement-wrapper,
+  .activity-item-reward {
+    color: rgba(255, 255, 255, 0.3) !important;
   }
 }
 </style>

@@ -34,7 +34,7 @@
               <div class="popover-tip">消耗</div>
               <div class="popover-consume">
                 <span
-                  v-for="(value, key) in actItem.consume"
+                  v-for="(value, key) in filteredConsume"
                   :key="'consume-' + key"
                   >{{ convertActivityEffect(String(key)) }}-{{ value }}</span
                 >
@@ -70,6 +70,17 @@ const props = defineProps({
   popoverWidth: { type: Number, default: 180 }, // 悬浮矩形框的宽度
   isSourceShow: { type: Boolean, default: false }, // 是否显示获得方式
   actItem: { type: Object as PropType<ActivityInfo>, required: true }, // 物品
+});
+
+// 过滤掉spendingTime
+const filteredConsume = computed(() => {
+  let result = {};
+  for (const [key, value] of Object.entries(props.actItem.consume)) {
+    if (key !== "spendingTime") {
+      (result as any)[key] = value;
+    }
+  }
+  return result;
 });
 
 const isPopoverEnter = ref(false);
