@@ -17,22 +17,37 @@
           @mouseenter="isPopoverEnter = true"
           @mouseleave="isPopoverEnter = false"
         >
-          <div class="popover-title">{{ item.name }}</div>
+          <div class="popover-title">{{ actItem.name }}</div>
           <div class="popover-content">
-            <div class="popover-description">{{ item.description }}</div>
+            <div class="popover-description">{{ actItem.description }}</div>
             <div>
-              <div class="popover-tip">使用后获得以下效果</div>
-              <div class="popover-effect">
-                <span v-for="(value, key) in item.effect" :key="key"
-                  >{{ convertItemEffect(String(key)) }}+{{ value }}</span
+              <div class="popover-tip">要求</div>
+              <div class="popover-requirement">
+                <span
+                  v-for="(value, key) in actItem.requirement"
+                  :key="'requirement-' + key"
+                  >{{ convertActivityEffect(String(key)) }} {{ value }}</span
                 >
               </div>
             </div>
-            <div v-if="isSourceShow">
-              <div class="popover-tip">获得方式</div>
-              <div class="popover-source">
-                <span>黑市</span>
-                <span>活动</span>
+            <div>
+              <div class="popover-tip">消耗</div>
+              <div class="popover-consume">
+                <span
+                  v-for="(value, key) in actItem.consume"
+                  :key="'consume-' + key"
+                  >{{ convertActivityEffect(String(key)) }}-{{ value }}</span
+                >
+              </div>
+            </div>
+            <div>
+              <div class="popover-tip">奖励</div>
+              <div class="popover-reward">
+                <span
+                  v-for="(value, key) in actItem.reward"
+                  :key="'reward-' + key"
+                  >{{ convertActivityEffect(String(key)) }}+{{ value }}</span
+                >
               </div>
             </div>
           </div>
@@ -41,11 +56,11 @@
     </n-popover>
   </div>
 </template>
-
-<script setup lang="ts">
-import { defineProps, PropType } from "vue";
-import { convertItemEffect } from "../utils/item";
-import { Item } from "../types/common";
+  
+  <script setup lang="ts">
+import { defineProps } from "vue";
+import { convertActivityEffect } from "../utils/activity";
+import { ActivityInfo } from "../types/common";
 
 const props = defineProps({
   // 悬浮矩形框的坐标，经过实践，popoverX和popoverY 表示'底部中心' 距离视口边缘的坐标
@@ -54,13 +69,13 @@ const props = defineProps({
   show: { type: Boolean, required: true }, // 是否显示
   popoverWidth: { type: Number, default: 180 }, // 悬浮矩形框的宽度
   isSourceShow: { type: Boolean, default: false }, // 是否显示获得方式
-  item: { type: Object as PropType<Item>, required: true }, // 物品
+  actItem: { type: Object as PropType<ActivityInfo>, required: true }, // 物品
 });
 
 const isPopoverEnter = ref(false);
 </script>
-
-<style scoped lang="scss">
+  
+  <style scoped lang="scss">
 .popover-wrapper {
   width: 100%;
   height: 100%;
@@ -117,8 +132,9 @@ const isPopoverEnter = ref(false);
       padding-left: 5px;
     }
 
-    .popover-effect,
-    .popover-source {
+    .popover-consume,
+    .popover-reward,
+    .popover-requirement {
       display: flex;
       flex-direction: row;
       // align-items: flex-start;
@@ -127,28 +143,40 @@ const isPopoverEnter = ref(false);
       gap: 4px;
 
       span {
-        color: #27ae60;
         font-weight: 600;
         font-size: 11px;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
         padding: 2px 6px;
         border-radius: 4px;
-        border: 1px solid rgba(39, 174, 96, 0.3);
         min-width: 70px;
         text-align: center;
         transition: all 0.2s ease;
-
-        &:hover {
-          border-color: rgba(39, 174, 96, 0.5);
-        }
       }
     }
-    .popover-source {
+    .popover-requirement {
       span {
         color: #04bbbb;
         border: 1px solid rgba(39, 131, 174, 0.3);
         &:hover {
           border-color: rgba(39, 131, 174, 0.5);
+        }
+      }
+    }
+    .popover-consume {
+      span {
+        color: #e67676;
+        border: 1px solid rgba(236, 77, 56, 0.3);
+        &:hover {
+          border-color: rgba(236, 77, 56, 0.5);
+        }
+      }
+    }
+    .popover-reward {
+      span {
+        color: #27ae60;
+        border: 1px solid rgba(39, 174, 96, 0.3);
+        &:hover {
+          border-color: rgba(39, 174, 96, 0.5);
         }
       }
     }

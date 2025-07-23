@@ -132,7 +132,7 @@
         </div>
       </div>
     </div>
-    <!-- 商品的悬浮提示框，手动控制显示 -->
+    <!-- 商品的悬浮提示框 -->
     <ItemPopover
       :popoverX="popoverX"
       :popoverY="popoverY"

@@ -1,5 +1,6 @@
 import { ref, readonly } from 'vue'
 
+// 系统消息模态框，用于app显示系统交互信息
 type MessageModalType = 'success' | 'fail'
 // 全局状态 - 单个实例共享整个应用
 const _isMessageModalShow = ref(false)
@@ -19,9 +20,3 @@ export function closeMessageModal() {
 export const isMessageModalShow = readonly(_isMessageModalShow)
 export const messageModalType = readonly(_messageModalType)
 export const messageModalTitle = readonly(_messageModalTitle)
-
-
-
-
-
-

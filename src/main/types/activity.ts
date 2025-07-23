@@ -4,9 +4,9 @@ export type Reward = {
     singExp: number;
     drawExp: number;
     affectionExp: number;
-    energy: number; 
-    hungry: number; 
-    health: number; 
+    energy: number;
+    hungry: number;
+    health: number;
     emotion: number;
     cash: number;
 }
@@ -28,4 +28,14 @@ export type ActivityInfo = {
     description: string;
     reward: Reward;
     consume: Consume;
+    requirement: Requirement;
+    rewardSummary: string; // 奖励概述
+}
+
+export type Requirement = {
+    level: number,
+    sing_level: number,
+    draw_level: number,
+    game_level: number,
+    affection_level: number,
 }

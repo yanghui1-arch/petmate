@@ -108,13 +108,18 @@
             >
               <div
                 class="activity-item"
-                v-for="i in 20"
-                :key="i"
+                v-for="(actItem, index) in activityInfoList"
+                :key="actItem.id"
                 ref="contentItemRefs"
-                :style="{ animationDelay: i * 100 + 'ms' }"
+                :style="{ animationDelay: index * 100 + 'ms' }"
                 @animationend="contentAnimationEnd"
+                @mouseenter="showPopover($event, actItem)"
+                @mouseleave="hidePopover"
               >
-                <div class="activity-item-content-wrapper">
+                <div class="activity-item-header">
+                  <div class="activity-item-name">{{ actItem.name }}</div>
+                </div>
+                <div class="activity-item-content">
                   <div class="activity-item-icon">
                     <n-image
                       src="../assets/image/activity/activity-item-tmp.png"
@@ -125,23 +130,29 @@
                     />
                   </div>
                   <div class="activity-item-info">
-                    <div>布展装裱</div>
-                    <div>
+                    <div class="activity-item-time-wrapper">
                       <span class="activity-item-emoji">⌛</span>
-                      <span>15分30秒</span>
+                      <span>{{
+                        computeActivityTime(actItem.consume.spendingTime)
+                      }}</span>
                     </div>
-                    <div>
-                      <div>
-                        <span class="activity-item-emoji">🎯</span>
-                        <span>绘画17级、唱歌2级、角色19级</span>
+                    <div class="activity-item-requirement-wrapper">
+                      <span class="activity-item-emoji">🎯</span>
+                      <div class="activity-item-requirement">
+                        <span
+                          v-for="(value, key) in actItem.requirement"
+                          :key="key"
+                          >{{ convertActivityEffect(String(key)) }}
+                          {{ value }}</span
+                        >
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div class="activity-item-effect">
+                <div class="activity-item-reward">
                   <span class="activity-item-emoji">🏆</span>
-                  <span>获得大量经验</span>
+                  <span>{{ actItem.rewardSummary }}</span>
                 </div>
               </div>
             </TransitionGroup>
@@ -149,12 +160,25 @@
         </Transition>
       </div>
     </div>
+    <ActivityPopover
+      :popoverX="popoverX"
+      :popoverY="popoverY"
+      :show="isActItemEnter"
+      :popoverWidth="popoverWidth"
+      :actItem="popoverActItem"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
 import AttributeBar from "../components/AttributeBar.vue";
+import ActivityPopover from "@/components/ActivityPopover.vue";
+import { ActivityInfo } from "../types/common";
+import { useShow } from "../hooks/useShow";
+import { convertActivityEffect, computeActivityTime } from "../utils/activity";
+
+const { getActivities } = useShow();
 
 const activityList = [
   {
@@ -183,10 +207,41 @@ const activityList = [
   },
 ];
 
+const activityInfoList = ref<ActivityInfo[]>([]);
+const activityCurrType = ref<string>("study");
+
+onMounted(async () => {
+  activityInfoList.value = await getActivities(
+    activityCurrType.value as ActivityInfo["type"]
+  );
+  console.log(activityInfoList.value);
+});
+
+const isActItemEnter = ref(false);
+const popoverX = ref(0);
+const popoverY = ref(0);
+const popoverWidth = ref(180);
+const popoverActItem = ref<ActivityInfo | null>(null);
+
+const showPopover = (event: MouseEvent, actItem: ActivityInfo) => {
+  const target = event.currentTarget as HTMLElement;
+  const rect = target?.getBoundingClientRect();
+  // 经过实践，popoverX和popoverY暂时确定是悬浮框矩形 '底部中心' 的坐标
+  popoverX.value = rect.x + rect.width / 2 + popoverWidth.value / 2;
+  popoverY.value = rect.y + rect.height / 2;
+
+  isActItemEnter.value = true;
+  popoverActItem.value = actItem;
+};
+
+const hidePopover = () => {
+  isActItemEnter.value = false;
+};
+
 const activityItemRefs = ref<HTMLElement[]>([]);
 const activityContentRef = ref<HTMLElement>();
 const selectedId = ref(-1);
-const showActivity = ref(false);
+const showActivity = ref(true);
 
 /**
  * 选择活动
@@ -526,7 +581,6 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
     flex-direction: column;
     .activity-content-header {
       display: flex;
-      padding-bottom: 10px;
       justify-content: space-around;
       align-items: center;
       .activity-content-header-back {
@@ -555,9 +609,10 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
       flex-wrap: wrap;
       row-gap: 10px;
       overflow-y: auto;
+      padding-top: 10px;
       .activity-item {
-        width: calc(50% - 5px);
-        height: 140px;
+        width: calc(50% - 4px);
+        height: 160px;
         border: 1px solid pink;
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
@@ -569,7 +624,6 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
         transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         position: relative;
         overflow: hidden;
-        padding: 0 5px;
 
         &::before {
           content: "";
@@ -596,9 +650,21 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
           }
         }
 
-        .activity-item-content-wrapper {
+        .activity-item-header {
           display: flex;
-          justify-content: space-around;
+          justify-content: center;
+          align-items: center;
+          padding: 3px 0;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          .activity-item-name {
+            font-size: 13px;
+            color: #fff;
+          }
+        }
+
+        .activity-item-content {
+          display: flex;
+          justify-content: center;
           align-items: center;
           column-gap: 10px;
           flex: 1;
@@ -628,49 +694,40 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
             justify-content: center;
             gap: 2px;
             padding: 3px 0;
+            font-size: 12px;
 
-            > div:first-child {
-              font-size: 14px;
-              font-weight: bold;
-              color: #fff;
-            }
-
-            > div:nth-child(2) {
-              font-size: 12px;
+            .activity-item-time-wrapper {
               color: rgba(255, 255, 255, 0.8);
               display: flex;
               align-items: center;
               gap: 5px;
             }
 
-            > div:last-child {
-              font-size: 12px;
+            .activity-item-requirement-wrapper {
+              display: flex;
+              align-items: center;
+              column-gap: 5px;
               color: rgba(255, 255, 255, 0.7);
-
-              div {
-                display: flex;
-                align-items: center;
-                gap: 5px;
-              }
             }
           }
         }
 
-        .activity-item-effect {
-          line-height: 2em;
-          padding: 3px 0;
-          // flex: 1;
-          text-align: center;
+        .activity-item-reward {
           border-top: 1px solid rgba(255, 255, 255, 0.1);
-          font-size: 12px;
           color: rgba(255, 255, 255, 0.7);
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 5px;
+          font-size: 12px;
         }
         .activity-item-emoji {
           font-size: 16px;
+        }
+        .activity-item-requirement {
+          display: flex;
+          flex-direction: column;
+          row-gap: 1px;
         }
       }
     }

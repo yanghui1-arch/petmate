@@ -6,6 +6,15 @@ const effectMap = {
     health: "健康",
 }
 
+/**
+ * 转换物品效果为中文
+ * @param effect 效果
+ * @returns 效果名称
+ */
+export function convertItemEffect(effect: string) {
+    return effectMap[effect as keyof typeof effectMap]
+}
+
 
 /**
  * 物品分页
@@ -22,8 +31,4 @@ export function executeItemPage(itemList: any[], pageSize: number) {
         pageList.push(itemList.slice(start, end));
     }
     return pageList.length ? pageList : [[]];
-}
-
-export function convertItemEffect(effect: string) {
-    return effectMap[effect as keyof typeof effectMap]
 }
