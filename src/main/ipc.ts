@@ -29,7 +29,7 @@ import {
     setTTSLLMConfig, 
     TTSLLMConfig, 
     TTSVoice,
-    addTTSVoice,
+    addTTSVoice, getTTSVoiceList,
     listenTTSVoiceSample
 } from './llm';
 
@@ -490,6 +490,27 @@ ipcMain.handle("get-tts-config", (event: IpcMainInvokeEvent): Response<TTSLLMCon
         } as Response<TTSLLMConfig>;
     }
 });
+
+/**
+ * 获取音色库
+ * @returns 音色库
+ */
+ipcMain.handle("get-tts-voice-list", (event: IpcMainInvokeEvent): Response<TTSVoice[]> => {
+    try {
+        const ttsVoiceList: TTSVoice[] = getTTSVoiceList();
+        return {
+            code: 200,
+            data: ttsVoiceList
+        } as Response<TTSVoice[]>;
+    }
+    catch (error) {
+        logger.error(`获取音色库失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取音色库失败"
+        } as Response<TTSVoice[]>;
+    }
+})
 
 /**
  * 设置Chat LLM配置

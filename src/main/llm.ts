@@ -288,17 +288,23 @@ function getChatPrompt(): string {
 /**
  * 获取tts音色列表
  * 这个音色列表中会存储玩家自定义的音色，以及cosyvoice-v2的一个默认音色
- * 这个方法会按照时间顺序返回音色列表，最新的音色会排在最前面
+ * 这个方法会按照时间顺序返回音色列表，将最晚改动的音色放在后面，将最早改动的音色放在前面
  * @param limit 限制返回的音色数量，默认5个
  * @returns tts音色列表
  */
 function getTTSVoiceList(limit: number = 5): TTSVoice[] {
-    const customVoiceList = (store as any).get('ttsVoice') as TTSVoice[];
+    const customVoiceList = (store as any).get('ttsVoice');
     if (!customVoiceList) {
         (store as any).set('ttsVoice', [DEFAULT_TTS_VOICE]);
         return [DEFAULT_TTS_VOICE];
     }
-    return customVoiceList.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, limit);
+    // 从文件里读取的时间需要这样转换为对象，不然会报错
+    customVoiceList.forEach((voice: TTSVoice) => {
+        if(voice.createdAt) {
+            voice.createdAt = new Date(voice.createdAt);
+        }
+    })
+    return customVoiceList.sort((a: TTSVoice, b: TTSVoice) => a.createdAt.getTime() - b.createdAt.getTime()).slice(0, limit);
 }
 
 /**

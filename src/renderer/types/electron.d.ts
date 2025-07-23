@@ -24,7 +24,8 @@ interface IElectronAPI {
   getChatLLMConfig: () => Promise<Response<ChatLLMConfig>>;
   getTTSLLMConfig: () => Promise<Response<TTSLLMConfig>>;
   getSettings: () => Promise<Response<SettingConfig>>;
-
+  getTTSVoiceList: () => Promise<Response<TTSVoice[]>>;
+  
   // set && update && add
   setChatLLMConfig: (config: ChatLLMConfig) => Promise<Response<ChatLLMConfig>>;
   setTTSLLMConfig: (config: TTSLLMConfig) => Promise<Response<TTSLLMConfig>>;

@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld(
         getPetmateOneWish: (petmateId: number, wishId: string) => ipcRenderer.invoke("get-petmate-one-wish", petmateId, wishId),
         getModelSize: () => ipcRenderer.invoke("get-model-size"),
         getSettings: () => ipcRenderer.invoke("get-settings"),
+        getTTSVoiceList: () => ipcRenderer.invoke("get-tts-voice-list"),
 
         // set && update && add
         setChatLLMConfig: (config: ChatLLMConfig) => ipcRenderer.invoke("set-chat-llm-config", config),

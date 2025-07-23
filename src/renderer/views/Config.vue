@@ -482,8 +482,6 @@ const customVoiceName = ref('')
 const voiceNameError = ref('')
 
 // 自定义语音内容相关
-const voiceInputEnabled = ref(false)
-const customVoiceText = ref('')
 const testingVoice = ref(false)
 
 // 新的统一测试文本和音频播放状态
@@ -533,14 +531,19 @@ const modelOptions = [
 ]
 
 // 可选择的语音
-const voiceOptions = [
-  { label: 'voice_001 (Alloy-like)', value: 'voice_001' },
-  { label: 'voice_002 (Echo-like)', value: 'voice_002' },
-  { label: 'voice_003 (Fable-like)', value: 'voice_003' },
-  { label: 'voice_004 (Onyx-like)', value: 'voice_004' },
-  { label: 'voice_005 (Nova-like)', value: 'voice_005' },
-  { label: 'voice_006 (Shimmer-like)', value: 'voice_006' }
-]
+const MAX_SHOW_VOICE_COUNT = 5
+const voiceOptions = ref<{ label: string, value: string }[]>([])
+
+// 获取音色列表
+const getTTSVoiceList = async () => {
+  const res = await window.api.getTTSVoiceList()
+  if(res.code === 400) {
+    throw new Error(res.message)
+  }
+  if (res.data) {
+    voiceOptions.value = res.data.map(voice => ({ label: voice.name, value: voice.voice }))
+  }
+}
 
 // tts采样率选项
 const sampleRateOptions = [
@@ -802,6 +805,11 @@ const saveVoiceWithName = async () => {
     if(res.code === 400) {
       throw new Error(res.message);
     }
+    // voiceOptions里最下面的一定是最新的，所以把上面的删了，只保留MAX_SHOW_VOICE_COUNT - 1个，然后再把这个新的克隆音色给+进去
+    if(voiceOptions.value.length > MAX_SHOW_VOICE_COUNT) {
+      voiceOptions.value.splice(0, voiceOptions.value.length - MAX_SHOW_VOICE_COUNT + 1)
+    }
+    voiceOptions.value.push({ label: customVoiceName.value, value: clonedVoiceId.value })
     showNotification('success', `语音"${customVoiceName.value}"已保存到语音库，主人可以在上方选择这个音色了哟~`)
   } catch (error) {
     showNotification('error', '保存语音失败')
@@ -887,6 +895,9 @@ onMounted(async () => {
     ttsConfig.parameters.volume = ttsLLMConfig.parameters.volume
     ttsConfig.parameters.sample_rate = ttsLLMConfig.parameters.sample_rate
   }
+
+  // 获取音色列表
+  getTTSVoiceList()
 
   // 设置默认测试文本
   testText.value = '你好，主人，欢迎试听我的音色呢'
