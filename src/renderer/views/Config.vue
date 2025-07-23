@@ -115,7 +115,7 @@
                   v-model:value="customPrompt"
                   type="textarea"
                   :rows="6"
-                  placeholder="在这里输入你的自定义提示词来定义AI的个性和行为..."
+                  placeholder="在这里输入你的自定义提示词来定义Petmate的个性和行为..."
                   class="config-input"
                 />
               </div>
@@ -123,7 +123,7 @@
                 <n-button 
                   type="info" 
                   class="save-btn"
-                  @click="setChatStyle"
+                  @click="setChatStyle(customPrompt)"
                   :loading="settingStyle"
                 >
                   🎨 设置聊天风格
@@ -570,12 +570,30 @@ const saveLLMConfig = async () => {
   }
 }
 
+// 获取聊天风格
+const getChatStyle = async () => {
+  try {
+    const res = await window.api.getChatPrompt()
+    if(res.code === 400) {
+      throw new Error(res.message)
+    }
+    if(res.data) {
+      customPrompt.value = res.data
+    }
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+
 // 设置聊天风格
-const setChatStyle = async () => {
+const setChatStyle = async (prompt: string) => {
   settingStyle.value = true
   try {
-    // 模拟
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const res = await window.api.setChatPrompt(prompt)
+    if(res.code === 400) {
+      throw new Error(res.message)
+    }
     showNotification('success', '成功设置好了聊天风格')
   } catch (error) {
     showNotification('error', '聊天风格设置失败')
@@ -899,6 +917,9 @@ onMounted(async () => {
     ttsConfig.parameters.sample_rate = ttsLLMConfig.parameters.sample_rate
   }
 
+  // 获取聊天风格
+  getChatStyle()
+  
   // 获取音色列表
   getTTSVoiceList()
 

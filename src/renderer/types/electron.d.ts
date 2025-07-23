@@ -25,12 +25,14 @@ interface IElectronAPI {
   getTTSLLMConfig: () => Promise<Response<TTSLLMConfig>>;
   getSettings: () => Promise<Response<SettingConfig>>;
   getTTSVoiceList: () => Promise<Response<TTSVoice[]>>;
+  getChatPrompt: () => Promise<Response<string>>;
   
   // set && update && add
   setChatLLMConfig: (config: ChatLLMConfig) => Promise<Response<ChatLLMConfig>>;
   setTTSLLMConfig: (config: TTSLLMConfig) => Promise<Response<TTSLLMConfig>>;
   updateSettings: (settings: Partial<SettingConfig>) => Promise<Response<void>>;
   addTTSVoice: (voice: TTSVoice) => Promise<Response<void>>;
+  setChatPrompt: (prompt: string) => Promise<Response<void>>;
 
   // 玩家操作
   consumeItem: (itemId: number, count: number, petmateId: number) => Promise<Response<void>>;

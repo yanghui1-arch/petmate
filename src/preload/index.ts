@@ -23,13 +23,15 @@ contextBridge.exposeInMainWorld(
         getModelSize: () => ipcRenderer.invoke("get-model-size"),
         getSettings: () => ipcRenderer.invoke("get-settings"),
         getTTSVoiceList: () => ipcRenderer.invoke("get-tts-voice-list"),
+        getChatPrompt: () => ipcRenderer.invoke("get-chat-prompt"),
 
         // set && update && add
         setChatLLMConfig: (config: ChatLLMConfig) => ipcRenderer.invoke("set-chat-llm-config", config),
         setTTSLLMConfig: (config: TTSLLMConfig) => ipcRenderer.invoke("set-tts-config", config),
         updateSettings: (settings: Partial<SettingConfig>) => ipcRenderer.invoke("update-settings", settings),
         addTTSVoice: (voice: TTSVoice) => ipcRenderer.invoke("add-tts-voice", voice),
-
+        setChatPrompt: (prompt: string) => ipcRenderer.invoke("set-chat-prompt", prompt),
+        
         // 玩家的操作
         consumeItem: (itemId: number, count: number, petmateId: number) => ipcRenderer.invoke("consume-item", itemId, count, petmateId),
         buyItem: (itemId: number, count: number) => ipcRenderer.invoke("buy-item", itemId, count),

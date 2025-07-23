@@ -30,7 +30,9 @@ import {
     TTSLLMConfig, 
     TTSVoice,
     addTTSVoice, getTTSVoiceList,
-    listenTTSVoiceSample
+    listenTTSVoiceSample,
+    getChatPrompt,
+    updateChatPrompt
 } from './llm';
 
 /**
@@ -472,6 +474,25 @@ ipcMain.handle("get-chat-llm-config", (event: IpcMainInvokeEvent): Response<Chat
 });
 
 /**
+ * 获取Chat LLM的提示词
+ */
+ipcMain.handle("get-chat-prompt", (event: IpcMainInvokeEvent): Response<string> => {
+    try {
+        const prompt: string = getChatPrompt();
+        return {
+            code: 200,
+            data: prompt
+        } as Response<string>;
+    } catch (error) {
+        logger.error(`获取Chat LLM的提示词失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取Chat LLM的提示词失败"
+        } as Response<string>;
+    }
+})
+
+/**
  * 获取TTS LLM配置
  * @returns TTS LLM配置, 如果失败的话则返回一个错误信息
  */
@@ -533,6 +554,28 @@ ipcMain.handle("set-chat-llm-config", (event: IpcMainInvokeEvent, config: ChatLL
         } as Response<ChatLLMConfig>;
     }
 });
+
+/**
+ * 设置Chat LLM的提示词
+ * @param prompt 新的Chat LLM提示词
+ * @returns 设置后的Chat LLM提示词, 如果失败的话则返回一个错误信息
+ */
+ipcMain.handle("set-chat-prompt", (event: IpcMainInvokeEvent, prompt: string): Response<void> => {
+    try {
+        updateChatPrompt(prompt);
+        return {
+            code: 200,
+            message: "设置Chat LLM的提示词成功"
+        } as Response<void>;
+    }
+    catch (error) {
+        logger.error(`设置Chat LLM的提示词失败: ${error}`);
+        return {
+            code: 400,
+            message: "设置Chat LLM的提示词失败"
+        } as Response<void>;
+    }
+})
 
 /**
  * 设置TTS LLM配置
