@@ -93,7 +93,17 @@ export function usePlayer() {
       if (response.code === 200) {
         return true
       } else {
-        throw new Error(response.message || 'Failed to chat')
+        // 超过上下文了，需要重新发送一次chat
+        if (response.code === 401) {
+          const response = await window.api.chat(message)
+          if (response.code === 200) {
+            return true
+          } else {
+            throw new Error(response.message || 'Failed to chat')
+          }
+        } else {
+          throw new Error(response.message || 'Failed to chat')
+        }
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Unknown error occurred'

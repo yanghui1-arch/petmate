@@ -293,7 +293,7 @@ const handleSend = async () => {
             // 发送失败的处理 - 更新等待中的消息为错误状态
             if (currentAssistantMessageIndex >= 0) {
                 messages.value[currentAssistantMessageIndex].isLoading = false;
-                messages.value[currentAssistantMessageIndex].content = '抱歉，我现在无法回复，请稍后再试。';
+                messages.value[currentAssistantMessageIndex].content = '请保证你聊天LLM的base_url和api_key都是正确的。你可以点击左上角 -> 配置 -> 聊天LLM 中进行查看。内容可能包含黄色内容，你可能需要更改说话风格以实现越狱效果。';
             }
             // 重置状态
             finishStreamResponse();
@@ -353,13 +353,14 @@ watch(isMuted, (newVal) => {
 });
 
 
-onUnmounted(() => {
+onUnmounted(async () => {
     // 清理定时器
     if (streamCheckInterval) {
         clearInterval(streamCheckInterval);
         streamCheckInterval = null;
     }
     clearAudioResources();
+    await window.api.saveChatMessages();
 });
 
 

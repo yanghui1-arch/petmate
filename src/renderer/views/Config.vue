@@ -67,7 +67,7 @@
                 <label>接口地址</label>
                 <n-input 
                   v-model:value="chatConfig.baseUrl" 
-                  placeholder="https://api.openai.com/v1"
+                  placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1"
                   class="config-input"
                 />
               </div>
@@ -82,7 +82,7 @@
                 />
               </div>
               <div class="form-group">
-                <label>模型</label>
+                <label>模型（能力从上到下递减）</label>
                 <n-select
                   v-model:value="chatConfig.model"
                   :options="modelOptions"
@@ -115,7 +115,7 @@
                   v-model:value="customPrompt"
                   type="textarea"
                   :rows="6"
-                  placeholder="在这里输入你的自定义提示词来定义AI的个性和行为..."
+                  placeholder="在这里输入你的自定义提示词来定义Petmate的个性和行为..."
                   class="config-input"
                 />
               </div>
@@ -123,7 +123,7 @@
                 <n-button 
                   type="info" 
                   class="save-btn"
-                  @click="setChatStyle"
+                  @click="setChatStyle(customPrompt)"
                   :loading="settingStyle"
                 >
                   🎨 设置聊天风格
@@ -482,8 +482,6 @@ const customVoiceName = ref('')
 const voiceNameError = ref('')
 
 // 自定义语音内容相关
-const voiceInputEnabled = ref(false)
-const customVoiceText = ref('')
 const testingVoice = ref(false)
 
 // 新的统一测试文本和音频播放状态
@@ -526,21 +524,29 @@ const showNotification = (type: 'success' | 'error' | 'warning' | 'info', messag
   }, 3000)
 }
 
-// 可选择的模型，目前只有两个
+// 可选择的模型
 const modelOptions = [
+  { label: 'deepseek-r1-0528', value: 'deepseek-r1' },
+  { label: 'qwen-max', value: 'qwen-max' },
+  { label: 'qwen3-235b', value: 'qwen3-235b-a22b-instruct-2507' },
   { label: 'deepseek-v3', value: 'deepseek-v3' },
-  { label: 'qwen2.5-72b', value: 'qwen2.5-72b' }
+  { label: 'qwen2.5-72b', value: 'qwen2.5-72b' },
 ]
 
 // 可选择的语音
-const voiceOptions = [
-  { label: 'voice_001 (Alloy-like)', value: 'voice_001' },
-  { label: 'voice_002 (Echo-like)', value: 'voice_002' },
-  { label: 'voice_003 (Fable-like)', value: 'voice_003' },
-  { label: 'voice_004 (Onyx-like)', value: 'voice_004' },
-  { label: 'voice_005 (Nova-like)', value: 'voice_005' },
-  { label: 'voice_006 (Shimmer-like)', value: 'voice_006' }
-]
+const MAX_SHOW_VOICE_COUNT = 5
+const voiceOptions = ref<{ label: string, value: string }[]>([])
+
+// 获取音色列表
+const getTTSVoiceList = async () => {
+  const res = await window.api.getTTSVoiceList()
+  if(res.code === 400) {
+    throw new Error(res.message)
+  }
+  if (res.data) {
+    voiceOptions.value = res.data.map(voice => ({ label: voice.name, value: voice.voice }))
+  }
+}
 
 // tts采样率选项
 const sampleRateOptions = [
@@ -564,12 +570,30 @@ const saveLLMConfig = async () => {
   }
 }
 
+// 获取聊天风格
+const getChatStyle = async () => {
+  try {
+    const res = await window.api.getChatPrompt()
+    if(res.code === 400) {
+      throw new Error(res.message)
+    }
+    if(res.data) {
+      customPrompt.value = res.data
+    }
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+
 // 设置聊天风格
-const setChatStyle = async () => {
+const setChatStyle = async (prompt: string) => {
   settingStyle.value = true
   try {
-    // 模拟
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const res = await window.api.setChatPrompt(prompt)
+    if(res.code === 400) {
+      throw new Error(res.message)
+    }
     showNotification('success', '成功设置好了聊天风格')
   } catch (error) {
     showNotification('error', '聊天风格设置失败')
@@ -802,6 +826,11 @@ const saveVoiceWithName = async () => {
     if(res.code === 400) {
       throw new Error(res.message);
     }
+    // voiceOptions里最下面的一定是最新的，所以把上面的删了，只保留MAX_SHOW_VOICE_COUNT - 1个，然后再把这个新的克隆音色给+进去
+    if(voiceOptions.value.length > MAX_SHOW_VOICE_COUNT) {
+      voiceOptions.value.splice(0, voiceOptions.value.length - MAX_SHOW_VOICE_COUNT + 1)
+    }
+    voiceOptions.value.push({ label: customVoiceName.value, value: clonedVoiceId.value })
     showNotification('success', `语音"${customVoiceName.value}"已保存到语音库，主人可以在上方选择这个音色了哟~`)
   } catch (error) {
     showNotification('error', '保存语音失败')
@@ -887,6 +916,12 @@ onMounted(async () => {
     ttsConfig.parameters.volume = ttsLLMConfig.parameters.volume
     ttsConfig.parameters.sample_rate = ttsLLMConfig.parameters.sample_rate
   }
+
+  // 获取聊天风格
+  getChatStyle()
+  
+  // 获取音色列表
+  getTTSVoiceList()
 
   // 设置默认测试文本
   testText.value = '你好，主人，欢迎试听我的音色呢'
