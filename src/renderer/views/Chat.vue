@@ -79,7 +79,7 @@
 <script lang="ts" setup>
 import { ref, nextTick, onMounted, onUnmounted } from 'vue';
 import { usePlayer } from '../hooks/usePlayer';
-import type { ChatMessage } from '../types/llm';
+import type { ChatMessage, HistoryChatMessage } from '../types/llm';
 import { useAudio } from '../hooks/useAudio';
 
 
@@ -330,6 +330,20 @@ const { isMuted, initAudioResources, clearAudioResources, changeMuted } = useAud
 onMounted(async () => {
     // 需要在此处初始化llm客户端
     await window.api.initLLM()
+
+    // 初始化聊天记录
+    const historyChatMessagesResponse = await window.api.getHistoryChatMessages();
+    const historyChatMessages:HistoryChatMessage[] | undefined = historyChatMessagesResponse.data;
+    if (historyChatMessages) {
+        historyChatMessages.forEach(message => {
+            messages.value.push({
+                role: message.chatMessage.role,
+                content: message.chatMessage.content,
+                timestamp: message.createdAt,
+            })
+        });
+    }
+    console.log(`[chat] 初始化聊天记录: ${JSON.stringify(messages.value)}`);
 
     // 监听文本流块
     window.api.onTextChunk((event: Event, text: string) => {

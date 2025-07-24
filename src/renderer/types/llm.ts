@@ -31,3 +31,8 @@ export interface TTSParameters {
     rate: number; // 语速
     pitch: number; // 音调
 }
+
+export interface HistoryChatMessage {
+    chatMessage: ChatMessage;
+    createdAt: Date;
+}

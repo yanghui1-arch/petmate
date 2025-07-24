@@ -242,7 +242,7 @@ function initLLMConfig(): void {
  * 会先获取历史聊天记录，但是没有确定风格，然后获取说话风格以后，将说话风格作为system message添加到历史聊天记录的最前面
  */
 function initChatHistoryMessages(): void {
-    const customHistoryChatMessages = (store as any).get('historyChatMessages') as HistoryChatMessage[] || [];
+    const customHistoryChatMessages = getHistoryChatMessages();
     const chatStyle = getChatPrompt();
 
     const memory = (store as any).get('memory') as string || '';
@@ -347,14 +347,21 @@ function getTTSVoiceList(limit: number = 5): TTSVoice[] {
 /**
  * 获取历史聊天记录信息
  * 可以自定义想要获取几天内的聊天记录信息，默认设置的是2天
- * @param expireTime 过期时间，默认2天
+ * @param expireTime 过期时间，默认2天，如果为-1，则为所有记录
  * @returns 历史聊天记录信息
  */
 function getHistoryChatMessages(expireTime: number = 2 * 24 * 60 * 60 * 1000): HistoryChatMessage[] {
-    if (chatHistoryMessages.length === 0) {
-        logger.warning("[llm] 历史聊天记录为空，如果是第一次使用，请先进行聊天，无视该条警告，否则请检查是否正确初始化了聊天记录。");
+    const historyChatMessages = (store as any).get('historyChatMessages') as HistoryChatMessage[] || [];
+    // 得把字符串 -> Date对象
+    historyChatMessages.forEach(message => {
+        if (message.createdAt) {
+            message.createdAt = new Date(message.createdAt);
+        }
+    });
+    if (expireTime === -1) {
+        return historyChatMessages;
     }
-    return chatHistoryMessages.filter(message => new Date().getTime() - message.createdAt.getTime() <= expireTime);
+    return historyChatMessages.filter(message => new Date().getTime() - message.createdAt.getTime() <= expireTime);
 }
 
 /**
