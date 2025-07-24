@@ -120,6 +120,7 @@
                 @animationend="contentAnimationEnd"
                 @mouseenter="showPopover($event, actItem)"
                 @mouseleave="hidePopover"
+                @click="startActivity(actItem)"
               >
                 <div class="activity-item-header">
                   <div class="activity-item-name">{{ actItem.name }}</div>
@@ -167,15 +168,17 @@
                 >
                   <div class="lock-icon">🔒</div>
                   <div class="locked-requirements">
-                    <div class="locked-title">需要条件:</div>
-                    <div
-                      v-for="requirement in getMissingRequirements(
-                        actItem.requirement
-                      )"
-                      :key="requirement"
-                      class="locked-requirement-item"
-                    >
-                      {{ requirement }}
+                    <div class="locked-title">解锁条件:</div>
+                    <div class="locked-requirements-list">
+                      <div
+                        v-for="requirement in getMissingRequirements(
+                          actItem.requirement
+                        )"
+                        :key="requirement"
+                        class="locked-requirement-item"
+                      >
+                        {{ requirement }}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -198,7 +201,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import AttributeBar from "../components/AttributeBar.vue";
-import ActivityPopover from "@/components/ActivityPopover.vue";
+import ActivityPopover from "@/components/activity/ActivityPopover.vue";
 import { ActivityInfo } from "../types/common";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
@@ -220,29 +223,11 @@ const petmateAttribute = computed(() => {
   return currentActivePetmate.value?.attrs;
 });
 
-// Current user levels (these should ideally come from a store/state management)
-const currentLevels = ref({
-  level: 1,
-  sing_level: 1, // Based on the 65/100 progress, roughly level 1
-  draw_level: 1, // Based on the 80/100 progress, roughly level 1
-  game_level: 1, // Based on the 45/100 progress, roughly level 1
-  affection_level: 1,
-});
-
-// TODO: In a real implementation, these levels should be computed from the actual progress values
-// For example: Math.floor(progress / 100) + 1 where progress comes from your game state
-
 /**
- * Helper function to update user levels (for testing or real implementation)
- * @param newLevels Partial levels to update
+ * 检查活动是否解锁
+ * @param requirement 活动条件
+ * @returns 是否解锁
  */
-const updateUserLevels = (newLevels: Partial<typeof currentLevels.value>) => {
-  currentLevels.value = { ...currentLevels.value, ...newLevels };
-};
-
-// Expose for debugging in browser console
-// window.updateUserLevels = updateUserLevels;
-
 const checkActivityLocked = (requirement: ActivityInfo["requirement"]) => {
   const { level, sing_level, draw_level, game_level, affection_level } =
     petmateAttribute.value ?? {
@@ -262,28 +247,44 @@ const checkActivityLocked = (requirement: ActivityInfo["requirement"]) => {
 };
 
 /**
- * Get the missing requirements for an activity
- * @param requirements The activity requirements
- * @returns Array of missing requirement descriptions
+ * 获得不满足的解锁条件
+ * @param requirements 活动条件
+ * @returns 不满足的条件
  */
 const getMissingRequirements = (requirements: ActivityInfo["requirement"]) => {
+  const { level, sing_level, draw_level, game_level, affection_level } =
+    petmateAttribute.value ?? {
+      level: 1,
+      sing_level: 1,
+      draw_level: 1,
+      game_level: 1,
+      affection_level: 1,
+    };
   const missing = [];
-  if (currentLevels.value.level < requirements.level) {
-    missing.push(`等级 ${requirements.level}`);
+  if (level < requirements.level) {
+    missing.push(`等级 Lv.${requirements.level}`);
   }
-  if (currentLevels.value.sing_level < requirements.sing_level) {
+  if (sing_level < requirements.sing_level) {
     missing.push(`唱歌 Lv.${requirements.sing_level}`);
   }
-  if (currentLevels.value.draw_level < requirements.draw_level) {
+  if (draw_level < requirements.draw_level) {
     missing.push(`绘画 Lv.${requirements.draw_level}`);
   }
-  if (currentLevels.value.game_level < requirements.game_level) {
+  if (game_level < requirements.game_level) {
     missing.push(`游戏 Lv.${requirements.game_level}`);
   }
-  if (currentLevels.value.affection_level < requirements.affection_level) {
+  if (affection_level < requirements.affection_level) {
     missing.push(`亲密度 Lv.${requirements.affection_level}`);
   }
   return missing;
+};
+
+/**
+ * 开启一个活动
+ * @param actItem 活动信息
+ */
+const startActivity = (actItem: ActivityInfo) => {
+  console.log("startActivity", actItem);
 };
 
 const activityList = [
@@ -931,7 +932,7 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
   }
 }
 
-// Locked Activity Styles
+// 不满足活动开启条件的锁样式
 .activity-item-locked {
   opacity: 0.5;
   filter: grayscale(70%) brightness(0.7);
@@ -972,18 +973,25 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
       color: #ff6b6b;
       font-size: 11px;
     }
-
-    .locked-requirement-item {
-      margin: 1px 0;
-      padding: 1px 4px;
-      background: rgba(255, 107, 107, 0.2);
-      border-radius: 4px;
-      border: 1px solid rgba(255, 107, 107, 0.3);
-      font-size: 9px;
+    .locked-requirements-list {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      .locked-requirement-item {
+        margin: 1px 0;
+        padding: 1px 4px;
+        background: rgba(255, 107, 107, 0.2);
+        border-radius: 4px;
+        border: 1px solid rgba(255, 107, 107, 0.3);
+        font-size: 9px;
+      }
     }
   }
 }
 
+// 锁图标的动画，无限闪烁
 @keyframes lockPulse {
   0%,
   100% {
@@ -996,7 +1004,7 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
   }
 }
 
-// Additional locked state styling for activity content
+// 底下的文本隐藏
 .activity-item-locked {
   .activity-item-header,
   .activity-item-content,

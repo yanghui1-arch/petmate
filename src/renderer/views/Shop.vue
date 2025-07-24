@@ -152,8 +152,8 @@
 
 <script setup lang="ts">
 import Pagedot from "@/components/Pagedot.vue";
-import ItemPopover from "@/components/ItemPopover.vue";
-import ItemModal from "@/components/ItemModal.vue";
+import ItemPopover from "@/components/item/ItemPopover.vue";
+import ItemModal from "@/components/item/ItemModal.vue";
 import type { CarouselInst } from "naive-ui";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";

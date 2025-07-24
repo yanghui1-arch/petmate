@@ -29,9 +29,9 @@
 
 <script setup lang="ts">
 import { defineProps, ref, PropType, watch } from "vue";
-import { usePlayer } from "../hooks/usePlayer";
-import { Item } from "../types/common";
-import { openMessageModal, closeMessageModal } from "../hooks/useInteract";
+import { usePlayer } from "../../hooks/usePlayer";
+import { Item } from "../../types/common";
+import { openMessageModal, closeMessageModal } from "../../hooks/useInteract";
 const { buyItem, consumeItem } = usePlayer();
 
 const props = defineProps({
