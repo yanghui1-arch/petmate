@@ -308,15 +308,15 @@ ipcMain.handle("chat", async (event: IpcMainInvokeEvent, message: ChatMessage): 
             logger.error(`发送聊天信息失败，聊天信息的role不是user: ${error}`);
             return {
                 code: 400,
-                message: "发送聊天信息失败"
+                message: "发送聊天信息失败，确保发送的信息配置是正常的"
             } as Response<void>;
         } else if (error instanceof TTSProcessError) {
             logger.error(`发送聊天信息失败，TTS参数未正确初始化: ${error}`);
             return {
                 code: 400,
-                message: "发送聊天信息失败"
+                message: "发送聊天信息失败，语音合成参数未正确初始化"
             } as Response<void>;
-        } else if ((error as Error).message === 'Invalid string length') {
+        } else if ((error as Error).message === 'Invalid string length' || (error as Error).message.includes("Range of input length should be")) {
             // 超过上下文了，做一次记忆总结，并将原来的历史聊天记录清空，然后再初始化一次LLM
             logger.error(`发送聊天信息失败，超过上下文了，需要重新发送一次chat: ${error}`);
             const summary: string = await memorySummary();
