@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld(
         getSettings: () => ipcRenderer.invoke("get-settings"),
         getTTSVoiceList: () => ipcRenderer.invoke("get-tts-voice-list"),
         getChatPrompt: () => ipcRenderer.invoke("get-chat-prompt"),
+        getHistoryChatMessages: () => ipcRenderer.invoke("get-history-chat-messages"),
 
         // set && update && add
         setChatLLMConfig: (config: ChatLLMConfig) => ipcRenderer.invoke("set-chat-llm-config", config),

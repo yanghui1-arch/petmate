@@ -35,7 +35,9 @@ import {
     updateChatPrompt,
     saveChatHistoryMessages,
     memorySummary,
-    clearChatHistoryMessages
+    clearChatHistoryMessages,
+    HistoryChatMessage,
+    getHistoryChatMessages
 } from './llm';
 
 /**
@@ -510,6 +512,26 @@ ipcMain.handle("get-chat-prompt", (event: IpcMainInvokeEvent): Response<string> 
             code: 400,
             message: "获取Chat LLM的提示词失败"
         } as Response<string>;
+    }
+})
+
+/**
+ * 获取历史聊天记录信息
+ * @returns 历史聊天记录信息
+ */
+ipcMain.handle("get-history-chat-messages", (event: IpcMainInvokeEvent): Response<HistoryChatMessage[]> => {
+    try {
+        const historyChatMessages: HistoryChatMessage[] = getHistoryChatMessages();
+        return {
+            code: 200,
+            data: historyChatMessages
+        } as Response<HistoryChatMessage[]>;
+    } catch (error) {
+        logger.error(`获取历史聊天记录信息失败: ${error}`);
+        return {
+            code: 400,
+            data: [] as HistoryChatMessage[]
+        } as Response<HistoryChatMessage[]>;
     }
 })
 
