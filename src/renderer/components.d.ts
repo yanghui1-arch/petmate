@@ -13,6 +13,7 @@ declare module 'vue' {
     NC: typeof import('naive-ui')['NC']
     NCard: typeof import('naive-ui')['NCard']
     NCarousel: typeof import('naive-ui')['NCarousel']
+    NCountdown: typeof import('naive-ui')['NCountdown']
     NDrawer: typeof import('naive-ui')['NDrawer']
     NGi: typeof import('naive-ui')['NGi']
     NGrid: typeof import('naive-ui')['NGrid']

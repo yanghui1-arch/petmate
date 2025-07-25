@@ -158,6 +158,7 @@
       :title="modalTitle"
       :item="modalItem"
       :hasCount="modalHasCount"
+      :petmateId="currentPetmateID"
       type="use"
     />
   </div>

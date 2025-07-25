@@ -9,7 +9,7 @@ import { Response } from '../types/response';
 import { consumeItem } from './modules/player/basic';
 import logger from './log';
 import { PetMate } from './modules/petmate/petmate';
-import { endActivity } from './modules/player/act';
+import { startActivity, endActivity } from './modules/player/act';
 import { ActiveBuff } from './types/buff';
 import { MAX_WISHES_STORE_NUM } from './constant';
 import { Wish } from './types/wish';
@@ -19,15 +19,15 @@ import { ActivityInfo } from './types/activity';
 import { getCompletedWishesNum, showActivities, showItems } from './modules/show';
 import { ChatLLMConfigError, LLMConfigError, NotFoundError, TTSProcessError, UnsupportedError } from './error';
 import { getModelSize, getSettings, SettingConfig, updateSettings, defaultSettings } from './settings';
-import { 
-    chat, 
-    ChatLLMConfig, ChatMessage, 
-    cloneVoice, 
-    getChatLLMConfig, getTTSLLMConfig, 
-    initLLM, 
-    setChatLLMConfig, 
-    setTTSLLMConfig, 
-    TTSLLMConfig, 
+import {
+    chat,
+    ChatLLMConfig, ChatMessage,
+    cloneVoice,
+    getChatLLMConfig, getTTSLLMConfig,
+    initLLM,
+    setChatLLMConfig,
+    setTTSLLMConfig,
+    TTSLLMConfig,
     TTSVoice,
     addTTSVoice,
     listenTTSVoiceSample
@@ -43,7 +43,7 @@ import {
  */
 ipcMain.handle("load-player-data", (event: IpcMainInvokeEvent): Response<PlayerInfo> => {
     try {
-        const playerInfo:PlayerInfo = playerManager.getPlayer();
+        const playerInfo: PlayerInfo = playerManager.getPlayer();
         const petmates: PetMate[] = playerInfo.petmates;
         // 检查每一个petmate的Buff是否过期
         petmates.forEach(petmate => {
@@ -60,7 +60,7 @@ ipcMain.handle("load-player-data", (event: IpcMainInvokeEvent): Response<PlayerI
                 }
             })
         })
-        
+
         // 检查活动是否完成
         petmates.forEach(petmate => {
             // 如果在活动中，先查看一下是否完成了活动（玩家会开始活动然后又退出游戏）
@@ -112,11 +112,11 @@ ipcMain.handle("load-player-data", (event: IpcMainInvokeEvent): Response<PlayerI
         petmates.forEach(petmate => {
             playerManager.updatePetmate(petmate);
         })
-        
+
         return {
             code: 200,
             data: playerInfo
-        } as Response<PlayerInfo>;   
+        } as Response<PlayerInfo>;
     } catch (error) {
         logger.error(`加载玩家数据失败: ${error}`);
         return {
@@ -311,7 +311,7 @@ ipcMain.handle("chat", async (event: IpcMainInvokeEvent, message: ChatMessage): 
                 message: "发送聊天信息失败"
             } as Response<void>;
         }
-        
+
         logger.error(`发送聊天信息失败，未知错误: ${error}`);
         return {
             code: 400,
@@ -338,6 +338,28 @@ ipcMain.handle("show-activities", (event: IpcMainInvokeEvent, type: ActivityInfo
             code: 400,
             message: "获取活动失败"
         } as Response<ActivityInfo[]>;
+    }
+})
+
+/**
+ * 开启一个活动
+ * @param petmateId petmate的id
+ * @param activityId 活动的id
+ * @returns 开启活动成功或失败
+ */
+ipcMain.handle("start-activity", (event: IpcMainInvokeEvent, petmateId: number, activityId: number): Response<void> => {
+    try {
+        startActivity(petmateId, activityId);
+        return {
+            code: 200,
+            message: "开启活动成功"
+        } as Response<void>;
+    } catch (error) {
+        logger.error(`开启活动失败: ${error}`);
+        return {
+            code: 400,
+            message: "开启活动失败"
+        } as Response<void>;
     }
 })
 

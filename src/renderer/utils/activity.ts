@@ -8,11 +8,11 @@ const effectMap = {
     exp: "经验",
     gameExp: "游戏经验",
     singExp: "唱歌经验",
-    drawExp: "画画经验",
+    drawExp: "绘画经验",
     affectionExp: "亲密度经验",
     level: "Lv.",
     sing_level: "唱歌Lv.",
-    draw_level: "画画Lv.",
+    draw_level: "绘画Lv.",
     game_level: "游戏Lv.",
     affection_level: "亲密度Lv.",
 }
