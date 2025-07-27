@@ -39,6 +39,8 @@ import {
     HistoryChatMessage,
     getHistoryChatMessages
 } from './llm';
+import { windowMonitor, WindowInfo, WindowEvent } from './window-monitor';
+import { getMainWindow } from './index';
 
 /**
  * 初始化加载玩家数据
@@ -703,3 +705,128 @@ ipcMain.handle("update-settings", (event: IpcMainInvokeEvent, settings: Partial<
         } as Response<void>;
     }
 })
+
+// ============ 窗口监控相关IPC处理器 ============
+
+/**
+ * 启动窗口监控
+ * @param interval 监控间隔，默认1000ms
+ */
+ipcMain.handle("window-monitor-start", async (event: IpcMainInvokeEvent, interval: number = 1000): Promise<Response<void>> => {
+    try {
+        await windowMonitor.start(interval);
+        return {
+            code: 200,
+            message: "窗口监控启动成功"
+        } as Response<void>;
+    } catch (error) {
+        logger.error(`启动窗口监控失败: ${error}`);
+        return {
+            code: 400,
+            message: "启动窗口监控失败"
+        } as Response<void>;
+    }
+})
+
+/**
+ * 停止窗口监控
+ */
+ipcMain.handle("window-monitor-stop", (event: IpcMainInvokeEvent): Response<void> => {
+    try {
+        windowMonitor.stop();
+        return {
+            code: 200,
+            message: "窗口监控停止成功"
+        } as Response<void>;
+    } catch (error) {
+        logger.error(`停止窗口监控失败: ${error}`);
+        return {
+            code: 400,
+            message: "停止窗口监控失败"
+        } as Response<void>;
+    }
+})
+
+/**
+ * 获取窗口监控状态
+ */
+ipcMain.handle("window-monitor-status", (event: IpcMainInvokeEvent): Response<{isRunning: boolean, interval: number}> => {
+    try {
+        const isRunning = windowMonitor.isMonitoring();
+        const interval = windowMonitor.getInterval();
+        
+        return {
+            code: 200,
+            message: "获取窗口监控状态成功",
+            data: { isRunning, interval }
+        } as Response<{isRunning: boolean, interval: number}>;
+    } catch (error) {
+        logger.error(`获取窗口监控状态失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取窗口监控状态失败"
+        } as Response<{isRunning: boolean, interval: number}>;
+    }
+})
+
+/**
+ * 获取当前所有打开的窗口
+ */
+ipcMain.handle("window-monitor-get-windows", (event: IpcMainInvokeEvent): Response<WindowInfo[]> => {
+    try {
+        const windows = windowMonitor.getCurrentWindows();
+        return {
+            code: 200,
+            message: "获取窗口列表成功",
+            data: windows
+        } as Response<WindowInfo[]>;
+    } catch (error) {
+        logger.error(`获取窗口列表失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取窗口列表失败"
+        } as Response<WindowInfo[]>;
+    }
+})
+
+/**
+ * 设置监控间隔
+ * @param interval 新的监控间隔
+ */
+ipcMain.handle("window-monitor-set-interval", (event: IpcMainInvokeEvent, interval: number): Response<void> => {
+    try {
+        windowMonitor.setInterval(interval);
+        return {
+            code: 200,
+            message: "设置监控间隔成功"
+        } as Response<void>;
+    } catch (error) {
+        logger.error(`设置监控间隔失败: ${error}`);
+        return {
+            code: 400,
+            message: "设置监控间隔失败"
+        } as Response<void>;
+    }
+})
+
+// 设置窗口监控事件监听器，将事件转发给渲染进程
+windowMonitor.on('window-opened', (event: WindowEvent) => {
+    const mainWindow = getMainWindow();
+    if (mainWindow) {
+        mainWindow.webContents.send('window-opened', event);
+    }
+});
+
+windowMonitor.on('window-closed', (event: WindowEvent) => {
+    const mainWindow = getMainWindow();
+    if (mainWindow) {
+        mainWindow.webContents.send('window-closed', event);
+    }
+});
+
+windowMonitor.on('window-changed', (event: WindowEvent) => {
+    const mainWindow = getMainWindow();
+    if (mainWindow) {
+        mainWindow.webContents.send('window-changed', event);
+    }
+});

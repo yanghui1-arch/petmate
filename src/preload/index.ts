@@ -4,8 +4,10 @@ import { SettingConfig } from "../main/settings"
 import { ActivityInfo } from "../main/types/activity"
 import { ItemType } from "../main/types/item"
 
-// Expose protected methods that allow the renderer process to use
-// the ipcRenderer without exposing the entire object
+
+/**
+ * API 调用接口
+ */
 contextBridge.exposeInMainWorld(
     "api", {
         // init
@@ -49,5 +51,23 @@ contextBridge.exposeInMainWorld(
 
         // 其他方法
         listenTTSVoiceSample: (voice: TTSVoice, text: string = "你好，主人，欢迎试听我的音色呢") => ipcRenderer.invoke("listen-tts-voice-sample", voice, text),
-    }
+    },
+)
+
+contextBridge.exposeInMainWorld(
+    "windowMonitor", {
+        start: (interval?: number) => ipcRenderer.invoke("window-monitor-start", interval),
+        stop: () => ipcRenderer.invoke("window-monitor-stop"),
+        getStatus: () => ipcRenderer.invoke("window-monitor-status"),
+        getWindows: () => ipcRenderer.invoke("window-monitor-get-windows"),
+        setInterval: (interval: number) => ipcRenderer.invoke("window-monitor-set-interval", interval),
+        onWindowOpened: (callback: (event: Event, windowEvent: any) => void) => ipcRenderer.on("window-opened", callback),
+        onWindowClosed: (callback: (event: Event, windowEvent: any) => void) => ipcRenderer.on("window-closed", callback),
+        onWindowChanged: (callback: (event: Event, windowEvent: any) => void) => ipcRenderer.on("window-changed", callback),
+        removeWindowListeners: () => {
+            ipcRenderer.removeAllListeners("window-opened");
+            ipcRenderer.removeAllListeners("window-closed");
+            ipcRenderer.removeAllListeners("window-changed");
+        }
+    },
 )

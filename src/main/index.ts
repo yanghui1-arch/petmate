@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, screen } from 'electron'
 import * as path from 'path'
 import './ipc'
 import { destroyScheduler, startWishGeneration } from './scheduler'
@@ -7,14 +7,16 @@ import { saveChatHistoryMessages } from './llm'
 let mainWindow: BrowserWindow | null = null;
 
 const createWindow = () => {
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   const win = new BrowserWindow({
-    width: 400,
-    height: 580,
+    width: width,
+    height: height,
     // frame: false,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
-      nodeIntegration: false,
+      nodeIntegration: true,
+      webgl: true
     },
   })
 
@@ -48,6 +50,11 @@ app.on('before-quit', () => {
   // 保存聊天记录
   saveChatHistoryMessages()
 })
+
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('disable-software-rasterizer');
+app.commandLine.appendSwitch('ignore-gpu-blacklist');
 
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow;

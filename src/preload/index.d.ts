@@ -5,6 +5,7 @@ import { ActivityInfo } from "../main/types/activity";
 import { SettingConfig } from "../main/settings";
 import { Wish } from "../main/types/wish";
 import { ChatMessage } from "../main/llm";
+import { WindowInfo, WindowEvent } from "../renderer/types/window";
 
 /**
  * 与主进程通信的接口
@@ -22,6 +23,20 @@ interface IElectronAPI {
   getSettings: () => Promise<Response<SettingConfig>>;
   updateSettings: (settings: Partial<SettingConfig>) => Promise<Response<void>>;
   chat: (message: ChatMessage) => Promise<Response<void>>;
+  
+  // 窗口监控相关接口
+  windowMonitor: {
+    start: (interval?: number) => Promise<Response<void>>;
+    stop: () => Promise<Response<void>>;
+    getStatus: () => Promise<Response<{isRunning: boolean, interval: number}>>;
+    getWindows: () => Promise<Response<WindowInfo[]>>;
+    setInterval: (interval: number) => Promise<Response<void>>;
+    onWindowOpened: (callback: (event: Event, windowEvent: WindowEvent) => void) => void;
+    onWindowClosed: (callback: (event: Event, windowEvent: WindowEvent) => void) => void;
+    onWindowChanged: (callback: (event: Event, windowEvent: WindowEvent) => void) => void;
+    onWindowExisting: (callback: (event: Event, windowEvent: WindowEvent) => void) => void;
+    removeWindowListeners: () => void;
+  };
 }
 
 // 声明全局window对象，之后渲染层直接window.api.function() 调用即可
