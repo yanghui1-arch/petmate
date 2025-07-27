@@ -17,13 +17,31 @@ export abstract class PetMate {
     wishes: Wish[];
     completedWishesNum: number;
 
-    constructor(id:number, name:string, attrs: PetMateAttribute, status: PetMateStatus, wishes: Wish[], completedWishesNum: number) {
+    constructor(id: number, name: string, attrs: PetMateAttribute, status: PetMateStatus, wishes: Wish[], completedWishesNum: number) {
         this.id = id;
         this.name = name;
         this.attrs = attrs;
         this.status = status;
         this.wishes = wishes;
         this.completedWishesNum = completedWishesNum;
+
+        // status中的时间需要转为Dtae对象
+        if (this.status.startTime) {
+            this.status.startTime = new Date(this.status.startTime);
+        }
+        if (this.status.endTime) {
+            this.status.endTime = new Date(this.status.endTime);
+        }
+
+        // wishes中的时间转为Date对象
+        this.wishes.forEach(wish => {
+            if (wish.startTime) {
+                wish.startTime = new Date(wish.startTime);
+            }
+            if (wish.endTime) {
+                wish.endTime = new Date(wish.endTime);
+            }
+        });
     }
 
     /**
@@ -37,7 +55,7 @@ export abstract class PetMate {
         this.attrs.exp += exp;
         // 升级，但可能不只是生一级
         while (this.attrs.exp >= this.attrs.next_exp) {
-            this.attrs.level ++;
+            this.attrs.level++;
             this.attrs.exp = this.attrs.exp - this.attrs.next_exp;
             this.attrs.next_exp = calcNextExp(this.attrs.level);
         }
@@ -47,7 +65,7 @@ export abstract class PetMate {
         this.attrs.max_emotion = maxAttributeFromLevel;
         this.attrs.max_energy = maxAttributeFromLevel;
         this.attrs.max_health = maxAttributeFromLevel;
-        return this.attrs.level 
+        return this.attrs.level
     }
 
     /**
@@ -60,7 +78,7 @@ export abstract class PetMate {
         exp = calcBuffEffect(this.attrs.buffs).gameExpGainRate * exp;
         this.attrs.game_exp += exp;
         while (this.attrs.game_exp >= this.attrs.game_next_exp) {
-            this.attrs.game_level ++;
+            this.attrs.game_level++;
             this.attrs.game_exp = this.attrs.game_exp - this.attrs.game_next_exp;
             this.attrs.game_next_exp = calcNextExp(this.attrs.game_level);
         }
@@ -77,7 +95,7 @@ export abstract class PetMate {
         exp = calcBuffEffect(this.attrs.buffs).singExpGainRate * exp;
         this.attrs.sing_exp += exp;
         while (this.attrs.sing_exp >= this.attrs.sing_next_exp) {
-            this.attrs.sing_level ++;
+            this.attrs.sing_level++;
             this.attrs.sing_exp = this.attrs.sing_exp - this.attrs.sing_next_exp;
             this.attrs.sing_next_exp = calcNextExp(this.attrs.sing_level);
         }
@@ -94,7 +112,7 @@ export abstract class PetMate {
         exp = calcBuffEffect(this.attrs.buffs).drawExpGainRate * exp;
         this.attrs.draw_exp += exp;
         while (this.attrs.draw_exp >= this.attrs.draw_next_exp) {
-            this.attrs.draw_level ++;
+            this.attrs.draw_level++;
             this.attrs.draw_exp = this.attrs.draw_exp - this.attrs.draw_next_exp;
             this.attrs.draw_next_exp = calcNextExp(this.attrs.draw_level);
         }
@@ -111,7 +129,7 @@ export abstract class PetMate {
         exp = calcBuffEffect(this.attrs.buffs).affectionExpGainRate * exp;
         this.attrs.affection_exp += exp;
         while (this.attrs.affection_exp >= this.attrs.affection_next_exp) {
-            this.attrs.affection_level ++;
+            this.attrs.affection_level++;
             this.attrs.affection_exp = this.attrs.affection_exp - this.attrs.affection_next_exp;
             this.attrs.affection_next_exp = calcNextExp(this.attrs.affection_level);
         }
@@ -212,7 +230,7 @@ export abstract class PetMate {
                 this.removeBuff(activeBuff.id);
             }, buff.duration * 1000);
             this.attrs.buffs.push(activeBuff);
-            return activeBuff;   
+            return activeBuff;
         }
         return undefined;
     }
@@ -239,7 +257,7 @@ export abstract class PetMate {
                     endTime: endTime
                 }
             });
-            
+
             this.attrs.buffs.push(...activeBuffs);
             return this.attrs.buffs;
         }
