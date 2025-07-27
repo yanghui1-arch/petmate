@@ -1,10 +1,8 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": [
-    "./src/main/modules",
-    "./src/main/types",
-    "./src/renderer/types",
-    "./src/types"
+    "./src",
+    "./src/preload/index.ts"
   ],
   "entryPointStrategy": "expand",
   "out": "./docs-generated",
@@ -42,7 +40,14 @@
     "**/dist/**",
     "**/tests/**",
     "**/*.test.ts",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "**/coverage/**",
+    "**/*.vue",
+    "**/auto-imports.d.ts",
+    "**/components.d.ts",
+    "**/shims-vue.d.ts",
+    "**/vite-env.d.ts",
+    "**/preload/index.d.ts"
   ],
   "externalPattern": [
     "**/node_modules/**"

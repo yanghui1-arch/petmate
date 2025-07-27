@@ -29,8 +29,15 @@ import {
     setTTSLLMConfig,
     TTSLLMConfig,
     TTSVoice,
-    addTTSVoice,
-    listenTTSVoiceSample
+    addTTSVoice, getTTSVoiceList,
+    listenTTSVoiceSample,
+    getChatPrompt,
+    updateChatPrompt,
+    saveChatHistoryMessages,
+    memorySummary,
+    clearChatHistoryMessages,
+    HistoryChatMessage,
+    getHistoryChatMessages
 } from './llm';
 
 /**
@@ -281,6 +288,7 @@ ipcMain.handle("listen-tts-voice-sample", async (event: IpcMainInvokeEvent, voic
  * 玩家与petmate进行聊天
  * 调用该方法时，会自动的将此次信息纳入为历史信息中，并且进行流式的tts转录，并且直接将转录后的信息发送给渲染进程
  * 目前只接收文本信息，并且返回的是音频
+ * 当返回的code为401的时候意味着发送的文本超过了上下文，需要调用方法继续调用一次chat，并且将上一次的chat信息作为message传入
  * @param message 聊天信息
  * @returns 发送聊天信息成功或失败
  */
@@ -302,13 +310,30 @@ ipcMain.handle("chat", async (event: IpcMainInvokeEvent, message: ChatMessage): 
             logger.error(`发送聊天信息失败，聊天信息的role不是user: ${error}`);
             return {
                 code: 400,
-                message: "发送聊天信息失败"
+                message: "发送聊天信息失败，确保发送的信息配置是正常的"
             } as Response<void>;
         } else if (error instanceof TTSProcessError) {
             logger.error(`发送聊天信息失败，TTS参数未正确初始化: ${error}`);
             return {
                 code: 400,
-                message: "发送聊天信息失败"
+                message: "发送聊天信息失败，语音合成参数未正确初始化"
+            } as Response<void>;
+        } else if ((error as Error).message === 'Invalid string length' || (error as Error).message.includes("Range of input length should be")) {
+            // 超过上下文了，做一次记忆总结，并将原来的历史聊天记录清空，然后再初始化一次LLM
+            logger.error(`发送聊天信息失败，超过上下文了，需要重新发送一次chat: ${error}`);
+            const summary: string = await memorySummary();
+            clearChatHistoryMessages();
+            initLLM();
+            logger.info(`[llm] 记忆刷新：${summary}`);
+            return {
+                code: 401, // 特殊 code
+                message: "发送聊天信息失败，超过上下文了，需要重新发送一次chat"
+            } as Response<void>;
+        } else if ((error as Error).message === 'Output data may contain inappropriate content.') {
+            logger.error(`发送聊天信息失败，内容可能包含黄色内容，你可能需要更改说话风格以实现越狱效果。: ${error}`);
+            return {
+                code: 400,
+                message: "发送聊天信息失败，内容可能包含黄色内容，你可能需要更改说话风格以实现越狱效果。"
             } as Response<void>;
         }
 
@@ -514,6 +539,45 @@ ipcMain.handle("get-chat-llm-config", (event: IpcMainInvokeEvent): Response<Chat
 });
 
 /**
+ * 获取Chat LLM的提示词
+ */
+ipcMain.handle("get-chat-prompt", (event: IpcMainInvokeEvent): Response<string> => {
+    try {
+        const prompt: string = getChatPrompt();
+        return {
+            code: 200,
+            data: prompt
+        } as Response<string>;
+    } catch (error) {
+        logger.error(`获取Chat LLM的提示词失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取Chat LLM的提示词失败"
+        } as Response<string>;
+    }
+})
+
+/**
+ * 获取历史聊天记录信息
+ * @returns 历史聊天记录信息
+ */
+ipcMain.handle("get-history-chat-messages", (event: IpcMainInvokeEvent): Response<HistoryChatMessage[]> => {
+    try {
+        const historyChatMessages: HistoryChatMessage[] = getHistoryChatMessages();
+        return {
+            code: 200,
+            data: historyChatMessages
+        } as Response<HistoryChatMessage[]>;
+    } catch (error) {
+        logger.error(`获取历史聊天记录信息失败: ${error}`);
+        return {
+            code: 400,
+            data: [] as HistoryChatMessage[]
+        } as Response<HistoryChatMessage[]>;
+    }
+})
+
+/**
  * 获取TTS LLM配置
  * @returns TTS LLM配置, 如果失败的话则返回一个错误信息
  */
@@ -534,6 +598,27 @@ ipcMain.handle("get-tts-config", (event: IpcMainInvokeEvent): Response<TTSLLMCon
 });
 
 /**
+ * 获取音色库
+ * @returns 音色库
+ */
+ipcMain.handle("get-tts-voice-list", (event: IpcMainInvokeEvent): Response<TTSVoice[]> => {
+    try {
+        const ttsVoiceList: TTSVoice[] = getTTSVoiceList();
+        return {
+            code: 200,
+            data: ttsVoiceList
+        } as Response<TTSVoice[]>;
+    }
+    catch (error) {
+        logger.error(`获取音色库失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取音色库失败"
+        } as Response<TTSVoice[]>;
+    }
+})
+
+/**
  * 设置Chat LLM配置
  * 每次调用这个方法，必须传入一个完整的ChatLLMConfig类型数据过来，确保配置的完整性，不可以是Partial<ChatLLMConfig>类型
  * @param config 新的Chat LLM配置
@@ -552,6 +637,48 @@ ipcMain.handle("set-chat-llm-config", (event: IpcMainInvokeEvent, config: ChatLL
             code: 400,
             message: "设置Chat LLM配置失败"
         } as Response<ChatLLMConfig>;
+    }
+});
+
+/**
+ * 设置Chat LLM的提示词
+ * 作用：将新的提示词同步到文件中，以方便init-llm重新构建新的聊天记录，使得玩家在chat的时候可以承接上一次继续聊天，并且petmate会以最新的说话风格回复
+ * @param prompt 新的Chat LLM提示词
+ * @returns 设置后的Chat LLM提示词, 如果失败的话则返回一个错误信息
+ */
+ipcMain.handle("set-chat-prompt", (event: IpcMainInvokeEvent, prompt: string): Response<void> => {
+    try {
+        updateChatPrompt(prompt);
+        return {
+            code: 200,
+            message: "设置Chat LLM的提示词成功"
+        } as Response<void>;
+    }
+    catch (error) {
+        logger.error(`设置Chat LLM的提示词失败: ${error}`);
+        return {
+            code: 400,
+            message: "设置Chat LLM的提示词失败"
+        } as Response<void>;
+    }
+})
+
+/**
+ * 保存聊天记录
+ */
+ipcMain.handle("save-chat-messages", (event: IpcMainInvokeEvent): Response<void> => {
+    try {
+        saveChatHistoryMessages();
+        return {
+            code: 200,
+            message: "保存历史聊天记录成功"
+        } as Response<void>;
+    } catch (error) {
+        logger.error(`保存历史聊天记录失败: ${error}`);
+        return {
+            code: 400,
+            message: "保存历史聊天记录失败"
+        } as Response<void>;
     }
 });
 
