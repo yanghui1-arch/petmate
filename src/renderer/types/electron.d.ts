@@ -36,6 +36,7 @@ interface IElectronAPI {
   buyItem: (itemId: number, count: number) => Promise<Response<Item>>;
   chat: (message: ChatMessage) => Promise<Response<void>>;
   startActivity: (petmateId: number, activityId: number) => Promise<Response<void>>;
+  cancelActivity: (petmateId: number) => Promise<Response<void>>;
 
   // 克隆音色
   cloneVoice: (url: string) => Promise<Response<string>>;

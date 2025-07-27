@@ -9,7 +9,7 @@ import { Response } from '../types/response';
 import { consumeItem } from './modules/player/basic';
 import logger from './log';
 import { PetMate } from './modules/petmate/petmate';
-import { startActivity, endActivity } from './modules/player/act';
+import { startActivity, endActivity, cancelActivity } from './modules/player/act';
 import { ActiveBuff } from './types/buff';
 import { MAX_WISHES_STORE_NUM } from './constant';
 import { Wish } from './types/wish';
@@ -359,6 +359,26 @@ ipcMain.handle("start-activity", (event: IpcMainInvokeEvent, petmateId: number, 
         return {
             code: 400,
             message: "开启活动失败"
+        } as Response<void>;
+    }
+})
+
+/**
+ * 取消一个活动
+ * @param petmateId petmate的id
+ * @returns 取消活动成功或失败
+ */
+ipcMain.handle("cancel-activity", (event: IpcMainInvokeEvent, petmateId: number): Response<void> => {
+    try {
+        cancelActivity(petmateId);
+        return {
+            code: 200,
+            message: "取消活动成功"
+        } as Response<void>;
+    } catch (error) {
+        return {
+            code: 400,
+            message: "取消活动失败"
         } as Response<void>;
     }
 })

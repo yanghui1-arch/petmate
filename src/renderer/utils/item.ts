@@ -1,5 +1,4 @@
-import { ItemEffect } from "../types/common";
-const effectMap = {
+const EFFECT_MAP = {
     hungry: "饱食度",
     energy: "精力",
     emotion: "心情",
@@ -12,7 +11,7 @@ const effectMap = {
  * @returns 效果名称
  */
 export function convertItemEffect(effect: string) {
-    return effectMap[effect as keyof typeof effectMap]
+    return EFFECT_MAP[effect as keyof typeof EFFECT_MAP]
 }
 
 

@@ -17,37 +17,53 @@
           @mouseenter="isPopoverEnter = true"
           @mouseleave="isPopoverEnter = false"
         >
-          <div class="popover-title">{{ actItem.name }}</div>
+          <div class="popover-title">
+            <span v-if="isLocked">??</span>
+            <span v-else>{{ actItem.name }}</span>
+          </div>
           <div class="popover-content">
-            <div class="popover-description">{{ actItem.description }}</div>
+            <div class="popover-description">
+              <span v-if="isLocked">???</span>
+              <span v-else>{{ actItem.description }}</span>
+            </div>
             <div>
               <div class="popover-tip">要求</div>
               <div class="popover-requirement">
                 <span
                   v-for="(value, key) in actItem.requirement"
                   :key="'requirement-' + key"
-                  >{{ convertActivityEffect(String(key)) }} {{ value }}</span
+                  >{{ convertActivityText(String(key)) }} {{ value }}</span
                 >
               </div>
             </div>
             <div>
               <div class="popover-tip">消耗</div>
               <div class="popover-consume">
-                <span
-                  v-for="(value, key) in filteredConsume"
-                  :key="'consume-' + key"
-                  >{{ convertActivityEffect(String(key)) }}-{{ value }}</span
-                >
+                <template v-if="isLocked">
+                  <span>???</span>
+                </template>
+                <template v-else>
+                  <span
+                    v-for="(value, key) in filteredConsume"
+                    :key="'consume-' + key"
+                    >{{ convertActivityText(String(key)) }}-{{ value }}</span
+                  >
+                </template>
               </div>
             </div>
             <div>
               <div class="popover-tip">奖励</div>
               <div class="popover-reward">
-                <span
-                  v-for="(value, key) in actItem.reward"
-                  :key="'reward-' + key"
-                  >{{ convertActivityEffect(String(key)) }}+{{ value }}</span
-                >
+                <template v-if="isLocked">
+                  <span>???</span>
+                </template>
+                <template v-else>
+                  <span
+                    v-for="(value, key) in actItem.reward"
+                    :key="'reward-' + key"
+                    >{{ convertActivityText(String(key)) }}+{{ value }}</span
+                  >
+                </template>
               </div>
             </div>
           </div>
@@ -59,7 +75,7 @@
   
   <script setup lang="ts">
 import { defineProps } from "vue";
-import { convertActivityEffect } from "../../utils/activity";
+import { convertActivityText } from "../../utils/activity";
 import { ActivityInfo } from "../../types/common";
 
 const props = defineProps({
@@ -68,8 +84,8 @@ const props = defineProps({
   popoverY: { type: Number, required: true },
   show: { type: Boolean, required: true }, // 是否显示
   popoverWidth: { type: Number, default: 180 }, // 悬浮矩形框的宽度
-  isSourceShow: { type: Boolean, default: false }, // 是否显示获得方式
   actItem: { type: Object as PropType<ActivityInfo>, required: true }, // 物品
+  isLocked: { type: Boolean, default: false }, // 是否锁定
 });
 
 // 过滤掉spendingTime

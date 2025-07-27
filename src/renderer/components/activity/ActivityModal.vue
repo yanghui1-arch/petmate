@@ -4,10 +4,20 @@
       <div class="message-modal-wrapper">
         <div class="message-modal-header">
           <div class="message-modal-title">
-            是否开始活动‘{{ actItem.name }}’？
+            <span v-if="type === 'start'"
+              >是否开始活动‘{{ actItem.name }}’？</span
+            >
+            <span v-if="type === 'cancel'"
+              >是否取消活动‘{{ actItem.name }}’？</span
+            >
           </div>
           <div class="message-modal-tip">
-            本次活动耗时{{ computeActivityTime(actItem.consume.spendingTime) }}
+            <span v-if="type === 'start'"
+              >本次活动耗时{{
+                computeActivityTime(actItem.consume.spendingTime)
+              }}</span
+            >
+            <span v-if="type === 'cancel'">取消活动后，活动奖励将不会发放</span>
           </div>
         </div>
 
@@ -28,7 +38,7 @@ import { usePlayer } from "../../hooks/usePlayer";
 import { ActivityInfo } from "../../types/common";
 import { computeActivityTime } from "../../utils/activity";
 import { openMessageModal } from "../../hooks/useInteract";
-const { startActivity } = usePlayer();
+const { startActivity, cancelActivity } = usePlayer();
 
 const props = defineProps({
   show: { type: Boolean, required: true }, // 是否显示
@@ -55,6 +65,13 @@ const confirm = async () => {
       openMessageModal("success", "活动开始成功");
     } else {
       openMessageModal("fail", "活动开始失败");
+    }
+  }
+  if (props.type === "cancel") {
+    const success = await cancelActivity(props.petmateId);
+    if (success) {
+      isModalShow.value = false;
+      openMessageModal("success", "活动取消成功");
     }
   }
 };

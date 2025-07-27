@@ -104,6 +104,23 @@ export function usePlayer() {
     }
   }
 
+  // 取消活动
+  const cancelActivity = async (petmateId: number): Promise<boolean> => {
+    try {
+      const response = await window.api.cancelActivity(petmateId)
+      if (response.code === 200) {
+        await refreshPlayerData()
+        return true
+      } else {
+        throw new Error(response.message || 'Failed to cancel activity')
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error occurred'
+      console.error('Failed to cancel activity:', err)
+      return false
+    }
+  }
+
   // 聊天
   const chat = async (message: ChatMessage): Promise<boolean> => {
     try {
@@ -137,6 +154,7 @@ export function usePlayer() {
     consumeItem,
     buyItem,
     startActivity,
+    cancelActivity,
 
     // 聊天
     chat,

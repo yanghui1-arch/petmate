@@ -1,5 +1,6 @@
 <template>
   <div class="activity-container">
+    <!-- 活动相关的等级 -->
     <div class="activity-grade-layout">
       <div class="activity-grade-wrapper">
         <div class="activity-grade-item">
@@ -38,35 +39,72 @@
       </div>
     </div>
     <div class="activity-layout">
+      <!-- 当前正在进行的活动 -->
+      <div class="active-activity-wrapper">
+        <div class="active-activity" v-if="petmateStatus?.activity">
+          <div class="active-activity-countdown">
+            <n-image
+              src="../assets/image/activity/switch.png"
+              width="25"
+              height="25"
+              preview-disabled
+              object-fit="contain"
+              @click="cancelActivity"
+            />
+            <n-countdown :duration="countDownSeconds" :active="true" />
+          </div>
+          <div class="active-activity-info">
+            <div class="active-activity-title">
+              <span
+                >{{ currentActivePetmate?.name }}正在{{
+                  petmateStatus?.activity?.name
+                }}</span
+              >
+            </div>
+            <div class="active-activity-info-reward">
+              <span
+                v-for="(value, key) in petmateStatus?.activity?.reward"
+                :key="key"
+                >{{ convertActivityText(String(key)) }} + {{ value }}</span
+              >
+            </div>
+          </div>
+        </div>
+        <div class="active-activity-none" v-else>
+          {{ currentActivePetmate?.name }}当前未进行任何活动
+        </div>
+      </div>
       <div class="activity-wrapper">
         <!-- 四个活动版块-->
-        <n-grid x-gap="12" y-gap="30" :cols="2" v-show="!showActivity">
+        <n-grid x-gap="12" y-gap="10" :cols="2" v-show="!showActivity">
           <n-gi
-            v-for="activity in activityList"
-            :key="activity.id"
-            @click="selectActivity(activity.id)"
+            v-for="activitySection in activitySectionList"
+            :key="activitySection.id"
+            @click="selectActivitySection(activitySection)"
           >
             <div
               class="activity-section-wrapper"
               ref="activityItemRefs"
               @animationend="activityAnimationEnd"
-              :class="[`activity-theme-${activity.type}`]"
+              :class="[`activity-theme-${activitySection.type}`]"
             >
               <div class="activity-section-content">
                 <div class="activity-section-header">
                   <span class="activity-section-title">{{
-                    activity.name
+                    activitySection.name
                   }}</span>
                   <div
                     class="activity-section-icon"
-                    :class="activity.type"
+                    :class="activitySection.type"
                   ></div>
                 </div>
                 <div class="activity-section-description">
-                  {{ activity.description }}
+                  {{ activitySection.description }}
                 </div>
                 <div class="activity-section-footer">
-                  <span class="activity-section-type">{{ activity.type }}</span>
+                  <span class="activity-section-type">{{
+                    activitySection.type
+                  }}</span>
                   <div class="activity-section-dots">
                     <span></span>
                     <span></span>
@@ -78,7 +116,7 @@
           </n-gi>
         </n-grid>
 
-        <!-- 活动详情 -->
+        <!-- 活动版块下的活动列表 -->
         <Transition
           enter-active-class="animate__animated animate__fadeIn"
           class="activity-content-wrapper"
@@ -96,7 +134,9 @@
                   @click="closeActivity"
                 />
               </div>
-              <div class="activity-content-header-title">学习</div>
+              <div class="activity-content-header-title">
+                {{ currentActivitySection?.name }}
+              </div>
               <!-- 占位，用于布局 -->
               <div class="spacer"></div>
             </div>
@@ -120,7 +160,7 @@
                 @animationend="contentAnimationEnd"
                 @mouseenter="showPopover($event, actItem)"
                 @mouseleave="hidePopover"
-                @click="startActivity(actItem)"
+                @click="showModal(actItem)"
               >
                 <div class="activity-item-header">
                   <div class="activity-item-name">{{ actItem.name }}</div>
@@ -148,7 +188,7 @@
                         <span
                           v-for="(value, key) in actItem.requirement"
                           :key="key"
-                          >{{ convertActivityEffect(String(key)) }}
+                          >{{ convertActivityText(String(key)) }}
                           {{ value }}</span
                         >
                       </div>
@@ -161,7 +201,7 @@
                   <span>{{ actItem.rewardSummary }}</span>
                 </div>
 
-                <!-- Locked State Overlay -->
+                <!-- 活动未解锁时的状态 -->
                 <div
                   v-if="checkActivityLocked(actItem.requirement)"
                   class="activity-item-locked-overlay"
@@ -194,6 +234,13 @@
       :show="isActItemEnter"
       :popoverWidth="popoverWidth"
       :actItem="popoverActItem"
+      :isLocked="isActItemLocked"
+    />
+    <ActivityModal
+      v-model:show="isModalShow"
+      :actItem="modalActItem"
+      :type="modalType"
+      :petmateId="currentPetmateID"
     />
   </div>
 </template>
@@ -202,11 +249,13 @@
 import { ref, computed } from "vue";
 import AttributeBar from "../components/AttributeBar.vue";
 import ActivityPopover from "@/components/activity/ActivityPopover.vue";
+import ActivityModal from "@/components/activity/ActivityModal.vue";
+import { openMessageModal } from "../hooks/useInteract";
 import { ActivityInfo } from "../types/common";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
 
-import { convertActivityEffect, computeActivityTime } from "../utils/activity";
+import { convertActivityText, computeActivityTime } from "../utils/activity";
 
 const { playerData } = usePlayer();
 const { getActivities } = useShow();
@@ -221,6 +270,19 @@ const currentActivePetmate = computed(() => {
 
 const petmateAttribute = computed(() => {
   return currentActivePetmate.value?.attrs;
+});
+
+const petmateStatus = computed(() => {
+  return currentActivePetmate.value?.status;
+});
+
+// 计算活动倒计时
+const countDownSeconds = computed(() => {
+  if (!petmateStatus.value?.endTime || !petmateStatus.value?.startTime) {
+    return 0;
+  }
+  console.log(petmateStatus.value.endTime, petmateStatus.value.startTime);
+  return petmateStatus.value.endTime.getTime() - new Date().getTime();
 });
 
 /**
@@ -279,15 +341,41 @@ const getMissingRequirements = (requirements: ActivityInfo["requirement"]) => {
   return missing;
 };
 
+const isModalShow = ref(false);
+const modalTitle = ref("");
+const modalActItem = ref<ActivityInfo | null>(null);
+const modalType = ref("");
+
 /**
- * 开启一个活动
+ * 显示活动弹出框
+ * 如果当前角色已有活动，弹出框提示不能开始
+ * 如果当前活动尚未解锁，弹出框提升尚未解锁
  * @param actItem 活动信息
  */
-const startActivity = (actItem: ActivityInfo) => {
-  console.log("startActivity", actItem);
+const showModal = (actItem: ActivityInfo) => {
+  if (checkActivityLocked(actItem.requirement)) {
+    openMessageModal("fail", "活动未解锁");
+    return;
+  }
+  if (petmateStatus.value?.activity) {
+    openMessageModal("fail", "当前角色已有活动");
+    return;
+  }
+  isModalShow.value = true;
+  modalActItem.value = actItem;
+  modalType.value = "start";
 };
 
-const activityList = [
+/**
+ * 取消活动
+ */
+const cancelActivity = () => {
+  isModalShow.value = true;
+  modalActItem.value = petmateStatus.value?.activity as ActivityInfo;
+  modalType.value = "cancel";
+};
+
+const activitySectionList = [
   {
     id: 1,
     type: "study",
@@ -314,21 +402,12 @@ const activityList = [
   },
 ];
 
-const activityInfoList = ref<ActivityInfo[]>([]);
-const activityCurrType = ref<string>("study");
-
-onMounted(async () => {
-  activityInfoList.value = await getActivities(
-    activityCurrType.value as ActivityInfo["type"]
-  );
-  console.log(activityInfoList.value);
-});
-
 const isActItemEnter = ref(false);
 const popoverX = ref(0);
 const popoverY = ref(0);
 const popoverWidth = ref(180);
 const popoverActItem = ref<ActivityInfo | null>(null);
+const isActItemLocked = ref(false);
 
 const showPopover = (event: MouseEvent, actItem: ActivityInfo) => {
   const target = event.currentTarget as HTMLElement;
@@ -339,6 +418,7 @@ const showPopover = (event: MouseEvent, actItem: ActivityInfo) => {
 
   isActItemEnter.value = true;
   popoverActItem.value = actItem;
+  isActItemLocked.value = checkActivityLocked(actItem.requirement);
 };
 
 const hidePopover = () => {
@@ -347,19 +427,25 @@ const hidePopover = () => {
 
 const activityItemRefs = ref<HTMLElement[]>([]);
 const activityContentRef = ref<HTMLElement>();
-const selectedId = ref(-1);
-const showActivity = ref(true);
+const showActivity = ref(false);
+const activityInfoList = ref<ActivityInfo[]>([]);
+// currentActivitySection是activitySectionList的元素，用于记录当前活动板块
+const currentActivitySection = ref<(typeof activitySectionList)[number] | null>(
+  null
+);
 
 /**
  * 选择活动
  * 移出活动版块，淡入活动详情
  * @param id 活动id
  */
-const selectActivity = (id: number) => {
-  selectedId.value = id;
-  console.log("selectActivity", activityItemRefs.value);
-  activityList.forEach((activity) => {
-    const sectionEl = activityItemRefs.value[activity.id - 1];
+const selectActivitySection = (
+  activitySection: (typeof activitySectionList)[number]
+) => {
+  currentActivitySection.value = activitySection;
+  console.log("selectActivitySection", activityItemRefs.value);
+  activitySectionList.forEach((activitySection) => {
+    const sectionEl = activityItemRefs.value[activitySection.id - 1];
     if (!sectionEl) return;
 
     // 先移除动画
@@ -371,7 +457,7 @@ const selectActivity = (id: number) => {
     );
 
     // 添加动画
-    if (activity.id % 2 !== 0) {
+    if (activitySection.id % 2 !== 0) {
       // 奇数向左滑动
       sectionEl.classList.add("activity-move-left");
     } else {
@@ -386,8 +472,11 @@ const selectActivity = (id: number) => {
  * 活动板块动画分为移入和移出，此处关注移入
  * @param event 动画事件
  */
-const activityAnimationEnd = (event: AnimationEvent) => {
+const activityAnimationEnd = async (event: AnimationEvent) => {
   if (!event.animationName.includes("Reverse") && !showActivity.value) {
+    activityInfoList.value = await getActivities(
+      currentActivitySection.value?.type as ActivityInfo["type"]
+    );
     showActivity.value = true;
   }
 };
@@ -404,6 +493,11 @@ const closeActivity = () => {
     item.style.animationDelay = (len - index - 1) * 50 + "ms";
     item.classList.add("activity-item-collapse");
   });
+
+  // 如果活动列表未空，直接触发主体弹出动画
+  if (activityInfoList.value.length === 0) {
+    activityContentRef.value?.classList.add("activity-content-fade-out");
+  }
 };
 
 const contentExitCount = ref(0);
@@ -412,7 +506,7 @@ const contentExitCount = ref(0);
  * @param event 动画事件
  */
 const contentAnimationEnd = (event: AnimationEvent) => {
-  if (contentExitCount.value < 20 - 1) {
+  if (contentExitCount.value < activityInfoList.value.length - 1) {
     contentExitCount.value++;
     return;
   }
@@ -429,14 +523,13 @@ const contentAnimationEnd = (event: AnimationEvent) => {
  */
 const activityContentAnimationEnd = (event: AnimationEvent) => {
   if (event.animationName.includes("activityContentFadeOut")) {
-    selectedId.value = -1;
     showActivity.value = false;
 
     // 一定要移除动画样式，否则影响页面布局(宽度变成一半)
     activityContentRef.value?.classList.remove("activity-content-fade-out");
 
     // 原路返回
-    activityList.forEach((activity) => {
+    activitySectionList.forEach((activity) => {
       const sectionEl = activityItemRefs.value[activity.id - 1];
       if (!sectionEl) return;
 
@@ -461,7 +554,7 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
   flex-direction: column;
   gap: 0;
   .activity-grade-layout {
-    height: 20vh;
+    height: 18vh;
     margin-top: 20px;
   }
   .activity-layout {
@@ -475,10 +568,11 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
   background: $content-bgc;
   backdrop-filter: blur(10px);
   border-radius: 8px;
-  padding: 5px 20px;
+  padding: 3px 20px;
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
+  justify-content: center;
+  row-gap: 3px;
 
   .activity-grade-item {
     display: flex;
@@ -497,14 +591,13 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
 
 .activity-wrapper {
   width: 100%;
-  height: 100%;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .activity-section-wrapper {
-  height: 30vh;
+  height: 28vh;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 16px;
@@ -675,11 +768,133 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
   }
 }
 
+// 当前开启的活动
+.active-activity-wrapper {
+  width: 100%;
+  height: 15vh;
+  border-radius: 8px;
+  margin: 10px 0;
+  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(255, 234, 167, 0.3);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .active-activity {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    position: relative;
+    z-index: 1;
+
+    .active-activity-countdown {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 8px 10px;
+      border-radius: 12px;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: scale(1.02);
+      }
+    }
+
+    .active-activity-info {
+      height: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+
+      .active-activity-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #fff;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        line-height: 1.4;
+        text-align: center;
+      }
+
+      .active-activity-info-reward {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 4px;
+
+        span {
+          background: linear-gradient(
+            135deg,
+            rgba(64, 169, 255, 0.2) 0%,
+            rgba(64, 169, 255, 0.1) 100%
+          );
+          color: #409eff;
+          padding: 2px 10px;
+          border-radius: 5px;
+          font-size: 10px;
+          font-weight: 500;
+          border: 1px solid rgba(64, 169, 255, 0.3);
+          backdrop-filter: blur(5px);
+          transition: all 0.3s ease;
+
+          &:hover {
+            background: linear-gradient(
+              135deg,
+              rgba(64, 169, 255, 0.3) 0%,
+              rgba(64, 169, 255, 0.2) 100%
+            );
+            transform: translateY(-1px);
+          }
+        }
+      }
+    }
+  }
+
+  // 未开始活动的样式
+  .active-activity-none {
+    color: $font-light;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
 // 活动主体
 .activity-wrapper {
   .activity-content-wrapper {
     width: 100%;
-    height: 68vh;
+    height: 58vh;
     border-radius: 8px;
     background: $content-bgc;
     box-shadow: 0 4px 24px 0 rgba(253, 203, 110, 0.2);

@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld(
     buyItem: (itemId: number, count: number) => ipcRenderer.invoke("buy-item", itemId, count),
     chat: (message: ChatMessage) => ipcRenderer.invoke("chat", message),
     startActivity: (petmateId: number, activityId: number) => ipcRenderer.invoke("start-activity", petmateId, activityId),
+    cancelActivity: (petmateId: number) => ipcRenderer.invoke("cancel-activity", petmateId),
 
     // 克隆音色
     cloneVoice: (url: string) => ipcRenderer.invoke("clone-voice", url),
