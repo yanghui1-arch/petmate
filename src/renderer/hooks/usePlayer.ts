@@ -86,6 +86,41 @@ export function usePlayer() {
     }
   }
 
+  // 开启活动
+  const startActivity = async (petmateId: number, activityId: number): Promise<boolean> => {
+    try {
+      const response = await window.api.startActivity(petmateId, activityId)
+      if (response.code === 200) {
+        // 开启活动后重新获取玩家数据
+        await refreshPlayerData()
+        return true
+      } else {
+        throw new Error(response.message || 'Failed to start activity')
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error occurred'
+      console.error('Failed to start activity:', err)
+      return false
+    }
+  }
+
+  // 取消活动
+  const cancelActivity = async (petmateId: number): Promise<boolean> => {
+    try {
+      const response = await window.api.cancelActivity(petmateId)
+      if (response.code === 200) {
+        await refreshPlayerData()
+        return true
+      } else {
+        throw new Error(response.message || 'Failed to cancel activity')
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error occurred'
+      console.error('Failed to cancel activity:', err)
+      return false
+    }
+  }
+
   // 聊天
   const chat = async (message: ChatMessage): Promise<boolean> => {
     try {
@@ -128,6 +163,8 @@ export function usePlayer() {
     // 操作方法，自动同步数据
     consumeItem,
     buyItem,
+    startActivity,
+    cancelActivity,
 
     // 聊天
     chat,

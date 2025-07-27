@@ -34,7 +34,7 @@ export function startActivity(petmateId: number, activityId: number) {
     if (petmate === undefined) {
         throw new NotFoundError(`Petmate不存在: ${petmateId}`);
     }
-    const buffEffect:BuffEffect = calcBuffEffect(petmate.attrs.buffs);
+    const buffEffect: BuffEffect = calcBuffEffect(petmate.attrs.buffs);
     try {
         petmate.updateEnergy(consume.energy);
         petmate.updateHungry(consume.hungry);
@@ -90,7 +90,7 @@ export function endActivity(petmateId: number): boolean {
         throw new NotFoundError("结束的活动不存在");
     }
     const reward: Reward = activity.reward;
-    const buffEffect:BuffEffect = calcBuffEffect(petmate.attrs.buffs);
+    const buffEffect: BuffEffect = calcBuffEffect(petmate.attrs.buffs);
     // 更新奖励
     petmate.updateEnergy(reward.energy);
     petmate.updateHungry(reward.hungry);
@@ -131,6 +131,36 @@ export function endActivity(petmateId: number): boolean {
 }
 
 /**
+ * 取消活动
+ * @param petmateId petmate的id
+ * @returns 是否取消成功
+ */
+export function cancelActivity(petmateId: number): boolean {
+    const player = playerManager.getPlayer();
+    const petmate: PetMate | undefined = player.petmates.find(petmate => petmate.id === petmateId);
+    if (petmate === undefined) {
+        throw new NotFoundError(`Petmate不存在: ${petmateId}`);
+    }
+    const status = petmate.getStatus();
+    if (status.status === "idle") {
+        logger.warning(`Petmate [${petmateId}] 当前状态为idle，无法取消活动，现在有的活动是: ${status.activity?.name}`);
+        return false;
+    }
+    const activity: ActivityInfo | undefined = status.activity;
+    if (activity === undefined) {
+        throw new NotFoundError("结束的活动不存在");
+    }
+
+    // 取消活动
+    petmate.setStatus(notActivityPetmateStatus);
+
+    // 同步文件中的数据
+    playerManager.updatePetmate(petmate);
+    playerManager.updatePlayer(player);
+    return true;
+}
+
+/**
  * 获取Buff
  * @param petmate petmate实例对象
  * @returns 获取到的buff
@@ -149,7 +179,7 @@ export function getBuffThroughAct(petmate: PetMate): Buff[] {
             let retryTimes = RETRY_TIMES_GET_BUFF_THROUGH_ACT;
             // 给retryTimes机会，如果retryTimes次都是已经到了叠加上限的buff，则就没Buff了
             while (retryTimes > 0) {
-                const toPickBuff:Buff = allAvailableBuffs[Math.floor(Math.random() * allAvailableBuffs.length)];
+                const toPickBuff: Buff = allAvailableBuffs[Math.floor(Math.random() * allAvailableBuffs.length)];
                 // 确保buff叠加层数不会超过上限
                 const sameBuffs: ActiveBuff[] = petmateActiveBuffs.filter(buff => buff.buff.id === toPickBuff.id);
                 const currentStacks: number = sameBuffs.length;

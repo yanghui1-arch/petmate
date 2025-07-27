@@ -1,7 +1,7 @@
 import { Response } from "../../types/response";
 import { PlayerInfo } from "./player";
 import { Item, ItemType, Wish } from "./common";
-import { ActivityInfo } from "./common"; 
+import { ActivityInfo } from "./common";
 import { SettingConfig } from "./settings";
 import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "./llm";
 
@@ -14,7 +14,7 @@ interface IElectronAPI {
   loadPlayerData: () => Promise<Response<PlayerInfo>>;
   initSettings: () => Promise<Response<SettingConfig>>;
   initLLM: () => Promise<Response<void>>;
-  
+
   // get && show
   showActivities: (type: ActivityInfo["type"]) => Promise<Response<ActivityInfo[]>>;
   showItems: (type: ItemType) => Promise<Response<Item[]>>;
@@ -40,6 +40,8 @@ interface IElectronAPI {
   consumeItem: (itemId: number, count: number, petmateId: number) => Promise<Response<void>>;
   buyItem: (itemId: number, count: number) => Promise<Response<Item>>;
   chat: (message: ChatMessage) => Promise<Response<void>>;
+  startActivity: (petmateId: number, activityId: number) => Promise<Response<void>>;
+  cancelActivity: (petmateId: number) => Promise<Response<void>>;
 
   // 克隆音色
   cloneVoice: (url: string) => Promise<Response<string>>;

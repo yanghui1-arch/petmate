@@ -1,7 +1,7 @@
 import { Response } from "../types/response";
 import { PlayerInfo } from "../main/types/player";
 import { Item, ItemType } from "../main/types/item";
-import { ActivityInfo } from "../main/types/activity"; 
+import { ActivityInfo } from "../main/types/activity";
 import { SettingConfig } from "../main/settings";
 import { Wish } from "../main/types/wish";
 import { ChatMessage } from "../main/llm";
@@ -15,6 +15,8 @@ interface IElectronAPI {
   consumeItem: (itemId: number, count: number, petmateId: number) => Promise<Response<void>>;
   buyItem: (itemId: number, count: number) => Promise<Response<Item>>;
   showActivities: (type: ActivityInfo["type"]) => Promise<Response<ActivityInfo[]>>;
+  startActivity: (petmateId: number, activityId: number) => Promise<Response<void>>;
+  cancelActivity: (petmateId: number) => Promise<Response<void>>;
   showItems: (type: ItemType) => Promise<Response<Item[]>>;
   getPetmateCompletedWishesNum: (petmateId: number) => Promise<Response<number>>;
   getPetmateOneWish: (petmateId: number, wishId: string) => Promise<Response<Wish>>;

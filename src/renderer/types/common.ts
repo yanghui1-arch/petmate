@@ -122,6 +122,8 @@ export interface ActivityInfo {
     description: string;
     reward: Reward;
     consume: Consume;
+    requirement: Requirement;
+    rewardSummary: string; // 奖励概述
 }
 
 export interface Reward {
@@ -144,4 +146,12 @@ export interface Consume {
     emotion: number;
     cash: number;
     spendingTime: number; // seconds
+}
+
+export interface Requirement {
+    level: number,
+    sing_level: number,
+    draw_level: number,
+    game_level: number,
+    affection_level: number,
 }

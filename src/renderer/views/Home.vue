@@ -158,6 +158,7 @@
       :title="modalTitle"
       :item="modalItem"
       :hasCount="modalHasCount"
+      :petmateId="currentPetmateID"
       type="use"
     />
   </div>
@@ -167,8 +168,8 @@
 import { ref } from "vue";
 import AttributeBar from "@/components/AttributeBar.vue";
 import Pagedot from "@/components/Pagedot.vue";
-import ItemPopover from "@/components/ItemPopover.vue";
-import ItemModal from "@/components/ItemModal.vue";
+import ItemPopover from "@/components/item/ItemPopover.vue";
+import ItemModal from "@/components/item/ItemModal.vue";
 import type { CarouselInst } from "naive-ui";
 import { executeItemPage } from "../utils/item";
 import { usePlayer } from "../hooks/usePlayer";

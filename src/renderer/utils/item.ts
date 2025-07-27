@@ -1,9 +1,17 @@
-import { ItemEffect } from "../types/common";
-const effectMap = {
+const EFFECT_MAP = {
     hungry: "饱食度",
     energy: "精力",
     emotion: "心情",
     health: "健康",
+}
+
+/**
+ * 转换物品效果为中文
+ * @param effect 效果
+ * @returns 效果名称
+ */
+export function convertItemEffect(effect: string) {
+    return EFFECT_MAP[effect as keyof typeof EFFECT_MAP]
 }
 
 
@@ -22,8 +30,4 @@ export function executeItemPage(itemList: any[], pageSize: number) {
         pageList.push(itemList.slice(start, end));
     }
     return pageList.length ? pageList : [[]];
-}
-
-export function convertItemEffect(effect: string) {
-    return effectMap[effect as keyof typeof effectMap]
 }
