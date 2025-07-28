@@ -51,7 +51,11 @@
               object-fit="contain"
               @click="cancelActivity"
             />
-            <n-countdown :duration="countDownSeconds" :active="true" />
+            <n-countdown
+              :duration="countDownSeconds"
+              :active="true"
+              :on-finish="finishActivity"
+            />
           </div>
           <div class="active-activity-info">
             <div class="active-activity-title">
@@ -257,7 +261,7 @@ import { useShow } from "../hooks/useShow";
 
 import { convertActivityText, computeActivityTime } from "../utils/activity";
 
-const { playerData } = usePlayer();
+const { playerData, refreshPlayerData } = usePlayer();
 const { getActivities } = useShow();
 
 // Petmate相关
@@ -373,6 +377,14 @@ const cancelActivity = () => {
   isModalShow.value = true;
   modalActItem.value = petmateStatus.value?.activity as ActivityInfo;
   modalType.value = "cancel";
+};
+
+/**
+ * 倒计时结束
+ */
+const finishActivity = async () => {
+  // 主进程以通过定时器更新活动状态数据，此处仅更新UI
+  await refreshPlayerData();
 };
 
 const activitySectionList = [
