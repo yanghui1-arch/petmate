@@ -36,11 +36,11 @@ export function startActivity(petmateId: number, activityId: number) {
     }
     const buffEffect: BuffEffect = calcBuffEffect(petmate.attrs.buffs);
     try {
-        petmate.updateEnergy(consume.energy ?? 0);
-        petmate.updateHungry(consume.hungry ?? 0);
-        petmate.updateEmotion(consume.emotion ?? 0);
-        petmate.updateHealth(consume.health ?? 0);
-        playerManager.updateCash(consume.cash ?? 0 * buffEffect.cashCostRate);
+        petmate.updateEnergy(-(consume.energy ?? 0));
+        petmate.updateHungry(-(consume.hungry ?? 0));
+        petmate.updateEmotion(-(consume.emotion ?? 0));
+        petmate.updateHealth(-(consume.health ?? 0));
+        playerManager.updateCash(-(consume.cash ?? 0) * buffEffect.cashCostRate);
         petmate.setStatus({
             status: activity.type,
             startTime: new Date(),
