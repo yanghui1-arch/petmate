@@ -25,6 +25,13 @@ export abstract class PetMate {
         this.wishes = wishes;
         this.completedWishesNum = completedWishesNum;
 
+        // buff中的时间需要转为Date对象
+        this.attrs.buffs.forEach(buff => {
+            if (buff.endTime) {
+                buff.endTime = new Date(buff.endTime);
+            }
+        });
+
         // status中的时间需要转为Dtae对象
         if (this.status.startTime) {
             this.status.startTime = new Date(this.status.startTime);
