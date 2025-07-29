@@ -20,7 +20,7 @@
                 />
               </div>
               <div class="home-panel-grade">
-                <span>Dass</span>
+                <span>{{ currentActivePetmate?.name }}</span>
                 <span class="grade-value"
                   >LEVEL {{ petmateAttribute?.level }}</span
                 >
