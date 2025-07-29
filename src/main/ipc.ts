@@ -42,13 +42,14 @@ import {
 
 /**
  * 初始化加载玩家数据
+ * 该方法只能在游戏开始的时候调用一次，不能在别的地方再次被调用，如果只要获取玩家最新的数据，请调用get-current-player-data
  * 会检查每一个petmate的Buff是否过期，如果过期了则删除，如果没过期则设置一个定时器
  * 会检查每一个petmate的活动是否完成，如果完成了则结束活动并结算奖励，如果没完成则设置一个定时器
  * 会检查每一个petmate的心愿信息的数量是否超过了支持的最大心愿数量，如果超过了则按照心愿的开始时间，将之前的心愿删除
  * 会同步文件中的数据
  * @returns 加载玩家数据成功或失败，如果失败会返回一个code=400的响应，如果成功会返回一个code=200的响应，并且返回玩家信息
  */
-ipcMain.handle("load-player-data", (event: IpcMainInvokeEvent): Response<PlayerInfo> => {
+ipcMain.handle("init-player-data", (event: IpcMainInvokeEvent): Response<PlayerInfo> => {
     try {
         const playerInfo: PlayerInfo = playerManager.getPlayer();
         const petmates: PetMate[] = playerInfo.petmates;
@@ -405,6 +406,26 @@ ipcMain.handle("cancel-activity", (event: IpcMainInvokeEvent, petmateId: number)
             code: 400,
             message: "取消活动失败"
         } as Response<void>;
+    }
+})
+
+/**
+ * 获取玩家数据
+ * 该方法可以被多次调用，每次调用都会返回玩家最新的数据，如果需要刷新玩家数据，请你调用这个方法
+ */
+ipcMain.handle("get-current-player-data", (event: IpcMainInvokeEvent): Response<PlayerInfo> => {
+    try {
+        const playerInfo: PlayerInfo = playerManager.getPlayer();
+        return {
+            code: 200,
+            data: playerInfo
+        } as Response<PlayerInfo>;
+    } catch (error) {
+        logger.error(`获取玩家数据失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取玩家数据失败"
+        } as Response<PlayerInfo>;
     }
 })
 
