@@ -27,7 +27,7 @@ interface IElectronAPI {
   getTTSVoiceList: () => Promise<Response<TTSVoice[]>>;
   getChatPrompt: () => Promise<Response<string>>;
   getHistoryChatMessages: () => Promise<Response<HistoryChatMessage[]>>;
-  
+
   // set && update && add
   setChatLLMConfig: (config: ChatLLMConfig) => Promise<Response<ChatLLMConfig>>;
   setTTSLLMConfig: (config: TTSLLMConfig) => Promise<Response<TTSLLMConfig>>;
@@ -49,6 +49,7 @@ interface IElectronAPI {
   // 监听
   onTextChunk: (callback: (event: Event, text: string) => void) => void;
   onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => void;
+  onWishGenerated: (callback: (event: Event, petmateId: number) => void) => void,
   removeAllAudioChunkListeners: () => void;
 
   // 其他
