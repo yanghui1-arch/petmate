@@ -169,7 +169,6 @@ class WindowMonitor extends EventEmitter {
           };
           
           this.emit('window-opened', event);
-          logger.info(`检测到新窗口打开: ${windowInfo.title} (${windowInfo.owner.name})`);
         } else {
           // 检查已存在窗口的属性变化
           const currentWindowInfo: WindowInfo = this.currentWindows.get(id)!;
@@ -187,7 +186,6 @@ class WindowMonitor extends EventEmitter {
             };
             
             this.emit('window-changed', event);
-            logger.info(`检测到窗口属性变化: ${newWindowInfo.title} (${newWindowInfo.owner.name})`);
           }
         }
       }
@@ -204,7 +202,6 @@ class WindowMonitor extends EventEmitter {
           };
           
           this.emit('window-closed', event);
-          logger.info(`检测到窗口关闭: ${windowInfo.title} (${windowInfo.owner.name})`);
         }
       }
     } catch (error) {

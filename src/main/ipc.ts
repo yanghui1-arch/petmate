@@ -2,7 +2,7 @@
  * 暴露ipc事件
  */
 
-import { ipcMain, IpcMainEvent, IpcMainInvokeEvent } from 'electron';
+import { ipcMain, IpcMainInvokeEvent, screen } from 'electron';
 import { playerManager } from './modules/store';
 import { PlayerInfo } from './types/player';
 import { Response } from '../types/response';
@@ -707,6 +707,20 @@ ipcMain.handle("update-settings", (event: IpcMainInvokeEvent, settings: Partial<
 })
 
 // ============ 窗口监控相关IPC处理器 ============
+
+/**
+ *  获取分辨率
+ */
+ipcMain.handle("get-screen-resolution", (event: IpcMainInvokeEvent): Response<{width: number, height: number}> => {
+    const { width, height } = screen.getPrimaryDisplay().bounds;
+    const scaleFactor = screen.getPrimaryDisplay().scaleFactor;
+    const scaledWidth = width * scaleFactor;
+    const scaledHeight = height * scaleFactor;
+    return {
+        code: 200,
+        data: { width: scaledWidth, height: scaledHeight }
+    } as Response<{width: number, height: number}>;
+})
 
 /**
  * 启动窗口监控

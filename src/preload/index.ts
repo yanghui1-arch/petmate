@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld(
     "windowMonitor", {
         start: (interval?: number) => ipcRenderer.invoke("window-monitor-start", interval),
         stop: () => ipcRenderer.invoke("window-monitor-stop"),
+        getScreenResolution: () => ipcRenderer.invoke("get-screen-resolution"),
         getStatus: () => ipcRenderer.invoke("window-monitor-status"),
         getWindows: () => ipcRenderer.invoke("window-monitor-get-windows"),
         setInterval: (interval: number) => ipcRenderer.invoke("window-monitor-set-interval", interval),

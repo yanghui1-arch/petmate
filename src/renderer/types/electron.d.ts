@@ -59,6 +59,7 @@ interface IElectronAPI {
 interface IWindowMonitor {
   start: (interval?: number) => Promise<Response<void>>;
   stop: () => Promise<Response<void>>;
+  getScreenResolution: () => Promise<Response<{width: number, height: number}>>;
   getStatus: () => Promise<Response<{isRunning: boolean, interval: number}>>;
   getWindows: () => Promise<Response<WindowInfo[]>>;
   setInterval: (interval: number) => Promise<Response<void>>;

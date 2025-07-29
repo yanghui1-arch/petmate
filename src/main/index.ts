@@ -7,11 +7,12 @@ import { saveChatHistoryMessages } from './llm'
 let mainWindow: BrowserWindow | null = null;
 
 const createWindow = () => {
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  const { width, height } = screen.getPrimaryDisplay().bounds;
+
   const win = new BrowserWindow({
     width: width,
     height: height,
-    // frame: false,
+    frame: false,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -23,7 +24,6 @@ const createWindow = () => {
   mainWindow = win;
 
   // 加载渲染进程页面
-  console.log("nihao")
   win.loadURL('http://localhost:5173')
 
   win.on('closed', () => {

@@ -1,227 +1,151 @@
 <template>
-  <div class="petmate-container">
-    <div ref="threeContainer" class="three-container"></div>
-  </div>
+    <div class="petmate-container">
+        <div ref="threeContainer" class="three-container"></div>
+    </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import * as THREE from 'three'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+<script lang="ts" setup>
+import { ref, onMounted, onUnmounted } from 'vue';
+import { WindowEvent, WindowInfo } from '../types/window';
+import { usePetmateModel } from '../hooks/usePetmateModel';
+import * as THREE from 'three';
+import { screenToWorld, isSitting, worldToScreen, sittingWindowTitle } from '../hooks/usePetmateModel';
 
+const currentOpenedWindows = ref<WindowInfo[]>([]);
 
-// Reactive references
-const threeContainer = ref<HTMLDivElement>()
+const threeContainer = ref<HTMLDivElement>();
+const { initPetmateModel } = usePetmateModel(threeContainer);
+const screenResolution = ref<{width: number, height: number}>({width: 0, height: 0});
 
-// Three.js variables
-let scene: THREE.Scene
-let camera: THREE.PerspectiveCamera
-let renderer: THREE.WebGLRenderer
+onMounted(async () => {
+    
+    // ********************** 获取分辨率 **********************
+    screenResolution.value = (await window.windowMonitor.getScreenResolution()).data ?? {width: 1920, height: 1080};
 
-let mixer: THREE.AnimationMixer
-let model: THREE.Group
-let animationAction: THREE.AnimationAction
-let clock = new THREE.Clock()
-let isAnimating = false
-let animationStartTime = 0
-let animationDuration = 0
+    // ********************** 窗口监控 **********************
+    const response = await window.windowMonitor.start();
+    currentOpenedWindows.value = (await window.windowMonitor.getWindows()).data ?? [];
+    console.log("currentOpenedWindows", currentOpenedWindows.value);
 
-onMounted(() => {
-  initThreeJS()
-  loadModel()
+    window.windowMonitor.onWindowOpened(async (event, windowEvent) => {
+        currentOpenedWindows.value = (await window.windowMonitor.getWindows()).data ?? [];
+    })
+
+    window.windowMonitor.onWindowClosed(async (event, windowEvent) => {
+        const modelScreenPosition = worldToScreen(getModelPosition(), screenResolution.value.height, screenResolution.value.width)
+        
+        if (isSitting) {
+            // 如果关闭窗口是模型所在的窗口，直接掉下来就行了
+            if (sittingWindowTitle === windowEvent.window.title) {
+                modelScreenPosition.y = screenResolution.value.height;
+                downBottom(modelScreenPosition);
+            }
+        }
+        currentOpenedWindows.value = (await window.windowMonitor.getWindows()).data ?? [];
+    })
+
+    window.windowMonitor.onWindowChanged(async (event, windowEvent: WindowEvent) => {
+        const modelScreenPosition = worldToScreen(getModelPosition(), screenResolution.value.height, screenResolution.value.width)
+        
+        if (isSitting) {
+            // 如果变动的模型是模型所在的窗口
+            if (sittingWindowTitle === windowEvent.window.title) {
+                // 首先需要判断的是模型是否还在窗口的宽度上
+                if (modelScreenPosition.x >= windowEvent.window.bounds.x 
+                && modelScreenPosition.x <= windowEvent.window.bounds.x + windowEvent.window.bounds.width) {
+                    // 如果还在，则需要判断模型是否在窗口的上方
+                    if (modelScreenPosition.y < windowEvent.window.bounds.y) {
+                        downTo({x: modelScreenPosition.x, y: windowEvent.window.bounds.y});
+                    }
+                    else {
+                        walkTo(screenToWorld(windowEvent.window.bounds.x, windowEvent.window.bounds.y, screenResolution.value.height, screenResolution.value.width));
+                        downBottom(modelScreenPosition);
+                    }
+                } 
+                // 如果不在，直接掉下来
+                else {
+                    downBottom(modelScreenPosition);
+                }
+            }
+        }
+
+        currentOpenedWindows.value = (await window.windowMonitor.getWindows()).data ?? [];
+    })
+
+    // ********************** 模型加载 **********************
+    initPetmateModel();
 })
 
 onUnmounted(() => {
-  cleanup()
+    window.windowMonitor.removeWindowListeners();
+    window.windowMonitor.stop();
 })
 
-function initThreeJS() {
-  if (!threeContainer.value) return
+const { walkTo, getModelPosition, sitOn } = usePetmateModel(threeContainer);
+const y_offset = 20
 
-  // Create scene
-  scene = new THREE.Scene()
-  // Transparent background for desktop pet
-  scene.background = null
+// 选择走到某个窗口上，并站在上面
+function selectWindow(selectedWindow: WindowInfo) {
+    let x_rate = Math.random();
+    x_rate = x_rate === 0 ? 0.1 : x_rate
+    const x_offset = x_rate * selectedWindow.bounds.width;
+    const cordinate = {x: selectedWindow.bounds.x + x_offset, y: selectedWindow.bounds.y + y_offset};
 
-  // Create camera for desktop pet view
-  camera = new THREE.PerspectiveCamera(
-    45,
-    threeContainer.value.clientWidth / threeContainer.value.clientHeight,
-    0.1,
-    100
-  )
-  camera.position.set(0, 0, 8)
-  camera.lookAt(0, 0, 0)
-
-  // Create renderer with transparency
-  renderer = new THREE.WebGLRenderer({ 
-    antialias: true, 
-    alpha: true,
-    premultipliedAlpha: false
-  })
-  renderer.setSize(threeContainer.value.clientWidth, threeContainer.value.clientHeight)
-  renderer.setClearColor(0x000000, 0) // Transparent background
-  threeContainer.value.appendChild(renderer.domElement)
-
-  // Simple lighting for desktop pet
-  const ambientLight = new THREE.AmbientLight(0x404040, 2)
-  scene.add(ambientLight)
-
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
-  directionalLight.position.set(2, 3, 4)
-  scene.add(directionalLight)
-}
-
-function loadModel() {
-  const loader = new GLTFLoader()
-  
-  loader.load(
-    '../assets/models/petmate.glb',
-    (fbx) => {
-      model = fbx.scene;
-      
-      model.position.set(-1.5, -2, 0) // Start from left side of screen
-      model.rotation.y = Math.PI / 2
-      
-      // Debug: Check initial model rotation
-      console.log('Model initial rotation:', model.rotation)
-      console.log('Model initial position:', model.position)
-      
-      scene.add(model)
-      
-      // Set up animation
-      if (fbx.animations && fbx.animations.length > 0) {
-        mixer = new THREE.AnimationMixer(model)
-
-        const walkAnimation = fbx.animations[0]
-        console.log(`Loading animation: "${walkAnimation.name}" (${walkAnimation.duration}s, ${walkAnimation.tracks.length} tracks)`)
-         
-        animationAction = mixer.clipAction(walkAnimation)
-
-        
-        // Configure animation to play once
-        animationAction.setLoop(THREE.LoopOnce, 1)
-        animationAction.clampWhenFinished = true
-        
-        // Add event listener for animation completion
-        mixer.addEventListener('finished', onAnimationFinished)
-        
-        // Start the animation
-        animationAction.play()
-        isAnimating = true
-        animationStartTime = performance.now()
-        animationDuration = walkAnimation.duration * 1000 // Convert to milliseconds
-      } else {
-      }
-      
-      // Start render loop
-      animate()
-    },
-    undefined,
-    (error) => {
-      console.error('Error loading model:', error)
+    console.log(`模型应该走向的坐标:(${cordinate.x}, ${cordinate.y})`);
+    // 边界问题，之后拓展成多屏幕
+    // 需要考虑的是模型坐下来以后，会不会超过屏幕的范围
+    if (cordinate.x <= 0 || cordinate.x >= screenResolution.value.width || cordinate.y <= 0 || cordinate.y >= screenResolution.value.height) {
+        return ;
     }
-  )
+
+    const windowPosition = screenToWorld(cordinate.x, cordinate.y, screenResolution.value.height, screenResolution.value.width);
+    if (windowPosition) walkTo(windowPosition);
 }
 
-function onAnimationFinished() {
-  isAnimating = false
-  
-  // 动画平滑过渡到脸朝正前方，即rotation.y = 0
-  if (model) {
-    const targetRotation = new THREE.Quaternion();
-    targetRotation.setFromEuler(new THREE.Euler(0, 0, 0));
-    const duration = 500; // 1 second
-    const startTime = performance.now();
-    const easeInOut = (t: number) => {
-      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-    };
-    const animateRotation = () => {
-      const currentTime = performance.now();
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const easedProgress = easeInOut(progress);
-      model.quaternion.slerp(targetRotation, easedProgress);
-      if (progress < 1) {
-        requestAnimationFrame(animateRotation);
-      }
-    };
-    animateRotation();
-  }
-}
-
-const speed = 1
-
-function animate() {
-  requestAnimationFrame(animate)
-  
-  // Update animation mixer
-  if (mixer) {
-    const delta = clock.getDelta()
-    mixer.update(delta)
-  }
-  
-    // Since the animation is "walk in place", we need to manually move the character
-  if (isAnimating && model) {
-    const elapsed = performance.now() - animationStartTime
-    const progress = elapsed / animationDuration
-    
-    if (progress <= 1) {
-      model.position.x = progress * speed;
+/**
+ * 坠落到最底下
+ * @param modelPosition 模型的位置
+ */
+async function downBottom(modelPosition: {x: number, y: number}) {
+    const targetPosition = screenToWorld(modelPosition.x, screenResolution.value.height, screenResolution.value.height, screenResolution.value.width);
+    if (targetPosition) {
+        await walkTo(targetPosition, 2);
+        sitOn("");
     }
-  }
-  
-  // Render the scene
-  renderer.render(scene, camera)
 }
 
-function cleanup() {
-  if (mixer) {
-    mixer.removeEventListener('finished', onAnimationFinished)
-  }
-  
-  if (renderer) {
-    renderer.dispose()
-  }
+/**
+ * 坠落到某个位置
+ * @param targetPosition 屏幕坐标
+ */
+function downTo({x, y}: {x: number, y: number}) {
+    const targetPosition = screenToWorld(x, y, screenResolution.value.height, screenResolution.value.width);
+    if (targetPosition) {
+        walkTo(targetPosition, 2);
+    }
 }
 
-// Handle window resize
-window.addEventListener('resize', () => {
-  if (!threeContainer.value || !camera || !renderer) return
-  
-  camera.aspect = threeContainer.value.clientWidth / threeContainer.value.clientHeight
-  camera.updateProjectionMatrix()
-  renderer.setSize(threeContainer.value.clientWidth, threeContainer.value.clientHeight)
-})
+/**
+ * 动画的逻辑
+ */
+const interval = setTimeout(() => {
+    console.log("currentOpenedWindows.value", currentOpenedWindows.value[2].title);
+    sitOn(currentOpenedWindows.value[2].title);
+    selectWindow(currentOpenedWindows.value[2]);
+}, 5000);
+
+
 </script>
 
-<style scoped>
-.petmate-container {
-  width: 100%;
-  height: 100vh;
-  position: relative;
-  overflow: hidden;
-  background: black;
-}
-
+<style scoped lang="scss">
 .three-container {
-  width: 100%;
-  height: 100%;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1)
 }
 
-.controls {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  z-index: 100;
-}
-
-.status {
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 10px 15px;
-  border-radius: 5px;
-  font-family: Arial, sans-serif;
-  font-size: 14px;
+.petmate-container {
+    width: 100%;
+    height: 100%;
 }
 </style>
