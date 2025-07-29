@@ -11,11 +11,12 @@ import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "./llm";
  */
 interface IElectronAPI {
   // 初始化
-  loadPlayerData: () => Promise<Response<PlayerInfo>>;
+  initPlayerData: () => Promise<Response<PlayerInfo>>;
   initSettings: () => Promise<Response<SettingConfig>>;
   initLLM: () => Promise<Response<void>>;
 
   // get && show
+  getCurrentPlayerData: () => Promise<Response<PlayerInfo>>;
   showActivities: (type: ActivityInfo["type"]) => Promise<Response<ActivityInfo[]>>;
   showItems: (type: ItemType) => Promise<Response<Item[]>>;
   getPetmateCompletedWishesNum: (petmateId: number) => Promise<Response<number>>;
