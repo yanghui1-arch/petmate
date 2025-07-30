@@ -58,12 +58,11 @@ export function startWishGeneration(selectedPetmateId: number): void {
     logger.info(`[scheduler] 启动愿望生成定时任务，间隔: ${WISH_GENERATE_INTERVAL / 1000 / 60 / 60} 小时`);
 
     wishGenerationInterval = setInterval(() => {
-        const success = generateWishForSelectedPetmate(selectedPetmateId);
+        const generateSuccess: boolean = generateWishForSelectedPetmate(selectedPetmateId);
         // 如果生成愿望成功，则发送消息给渲染层，触发通知
-        if (success) {
+        if (generateSuccess) {
             const mainWindow = getMainWindow();
             if (mainWindow) {
-                console.log("发送愿望生成消息", selectedPetmateId);
                 mainWindow.webContents.send('wish-generated', selectedPetmateId);
             }
         }

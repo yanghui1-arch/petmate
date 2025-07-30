@@ -49,6 +49,7 @@ contextBridge.exposeInMainWorld(
     onTextChunk: (callback: (event: Event, text: string) => void) => ipcRenderer.on("chat-chunk", callback),
     onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => ipcRenderer.on("tts-audio-chunk", callback),
     onWishGenerated: (callback: (event: Event, petmateId: number) => void) => ipcRenderer.on("wish-generated", callback),
+    onEndActivity: (callback: (event: Event, petmateId: number) => void) => ipcRenderer.on("end-activity", callback),
     removeAllAudioChunkListeners: () => ipcRenderer.removeAllListeners("tts-audio-chunk"),
 
     // 其他方法

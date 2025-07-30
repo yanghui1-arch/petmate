@@ -27,7 +27,8 @@
 
       <!-- <Home /> -->
       <Settings v-model:active="active" :placement="placement" />
-      <n-notification-provider placement="bottom-right">
+      <!-- 系统消息通知，在右下角弹出，最多同时显示2条 -->
+      <n-notification-provider placement="bottom-right" :max="2">
         <MessageNotification />
       </n-notification-provider>
       <MessageModal

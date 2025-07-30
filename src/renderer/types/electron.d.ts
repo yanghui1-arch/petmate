@@ -51,6 +51,7 @@ interface IElectronAPI {
   onTextChunk: (callback: (event: Event, text: string) => void) => void;
   onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => void;
   onWishGenerated: (callback: (event: Event, petmateId: number) => void) => void,
+  onEndActivity: (callback: (event: Event, petmateId: number) => void) => void,
   removeAllAudioChunkListeners: () => void;
 
   // 其他

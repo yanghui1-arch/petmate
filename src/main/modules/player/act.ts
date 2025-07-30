@@ -9,6 +9,7 @@ import { notActivityPetmateStatus } from "../../types/petmate";
 import { GET_BUFF_NUM_THROUGH_ACT, GET_BUFF_PROB_THROUGH_ACT, RETRY_TIMES_GET_BUFF_THROUGH_ACT } from "../../constant";
 import { wishHandler } from "../wish";
 import { Wish } from "../../types/wish";
+import { getMainWindow } from "../../../main";
 
 /**
  * 开始活动
@@ -50,7 +51,14 @@ export function startActivity(petmateId: number, activityId: number) {
         // 启动一个延时任务，在endTime时结束活动并获得收益
         // 可能会endTime结束前关闭应用，因此一定要在打开游戏时候查一下petmate的status
         setTimeout(() => {
-            endActivity(petmateId);
+            const endSuccess: boolean = endActivity(petmateId);
+            if (endSuccess) {
+                const mainWindow = getMainWindow();
+                if (mainWindow) {
+                    console.log("发送活动结束消息", petmateId);
+                    mainWindow.webContents.send('end-activity', petmateId);
+                }
+            }
         }, consume.spendingTime * buffEffect.spendingTimeRate * 1000);
 
         // 同步文件中的数据

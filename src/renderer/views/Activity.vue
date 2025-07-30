@@ -51,11 +51,8 @@
               object-fit="contain"
               @click="cancelActivity"
             />
-            <n-countdown
-              :duration="countDownSeconds"
-              :active="true"
-              :on-finish="finishActivity"
-            />
+            <!-- 倒计时显示，只做UI展示，由主进程定时器结束发送通知再刷新玩家数据 -->
+            <n-countdown :duration="countDownSeconds" :active="true" />
           </div>
           <div class="active-activity-info">
             <div class="active-activity-title">
@@ -377,14 +374,6 @@ const cancelActivity = () => {
   isModalShow.value = true;
   modalActItem.value = petmateStatus.value?.activity as ActivityInfo;
   modalType.value = "cancel";
-};
-
-/**
- * 倒计时结束
- */
-const finishActivity = async () => {
-  // 主进程以通过定时器更新活动状态数据，此处仅更新UI
-  await refreshPlayerData();
 };
 
 const activitySectionList = [
