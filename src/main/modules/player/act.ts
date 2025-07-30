@@ -36,11 +36,11 @@ export function startActivity(petmateId: number, activityId: number) {
     }
     const buffEffect: BuffEffect = calcBuffEffect(petmate.attrs.buffs);
     try {
-        petmate.updateEnergy(consume.energy);
-        petmate.updateHungry(consume.hungry);
-        petmate.updateEmotion(consume.emotion);
-        petmate.updateHealth(consume.health);
-        playerManager.updateCash(consume.cash * buffEffect.cashCostRate);
+        petmate.updateEnergy(-(consume.energy ?? 0));
+        petmate.updateHungry(-(consume.hungry ?? 0));
+        petmate.updateEmotion(-(consume.emotion ?? 0));
+        petmate.updateHealth(-(consume.health ?? 0));
+        playerManager.updateCash(-(consume.cash ?? 0) * buffEffect.cashCostRate);
         petmate.setStatus({
             status: activity.type,
             startTime: new Date(),
@@ -92,16 +92,16 @@ export function endActivity(petmateId: number): boolean {
     const reward: Reward = activity.reward;
     const buffEffect: BuffEffect = calcBuffEffect(petmate.attrs.buffs);
     // 更新奖励
-    petmate.updateEnergy(reward.energy);
-    petmate.updateHungry(reward.hungry);
-    petmate.updateEmotion(reward.emotion);
-    petmate.updateHealth(reward.health);
-    petmate.addExp(reward.exp);
-    petmate.addGameExp(reward.gameExp);
-    petmate.addSingExp(reward.singExp);
-    petmate.addDrawExp(reward.drawExp);
-    petmate.addAffectionExp(reward.affectionExp);
-    playerManager.updateCash(reward.cash * buffEffect.cashGainRate);
+    petmate.updateEnergy(reward.energy ?? 0);
+    petmate.updateHungry(reward.hungry ?? 0);
+    petmate.updateEmotion(reward.emotion ?? 0);
+    petmate.updateHealth(reward.health ?? 0);
+    petmate.addExp(reward.exp ?? 0);
+    petmate.addGameExp(reward.gameExp ?? 0);
+    petmate.addSingExp(reward.singExp ?? 0);
+    petmate.addDrawExp(reward.drawExp ?? 0);
+    petmate.addAffectionExp(reward.affectionExp ?? 0);
+    playerManager.updateCash(reward.cash ?? 0 * buffEffect.cashGainRate);
 
     // 尝试获取buff
     const toPickBuffs: Buff[] = getBuffThroughAct(petmate);

@@ -62,13 +62,13 @@ const activate = (place: DrawerPlacement) => {
 };
 
 // 全局玩家状态 - 在这里加载数据
-const { playerData, isLoading, error, loadPlayerData } = usePlayer();
+const { playerData, isInit, error, initPlayerData } = usePlayer();
 const { initSettings } = useSettings();
 
 // 当应用挂载时加载玩家数据
 onMounted(async () => {
   console.log("Petmate启动，正在加载玩家数据");
-  await loadPlayerData();
+  await initPlayerData();
   console.log("玩家数据加载完成", playerData.value);
 
   console.log("正在初始化设置");

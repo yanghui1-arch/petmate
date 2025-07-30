@@ -9,11 +9,12 @@ import { ItemType } from "../main/types/item"
 contextBridge.exposeInMainWorld(
     "api", {
     // init
-    loadPlayerData: () => ipcRenderer.invoke("load-player-data"),
+    initPlayerData: () => ipcRenderer.invoke("init-player-data"),
     initSettings: () => ipcRenderer.invoke("init-settings"),
     initLLM: () => ipcRenderer.invoke("init-llm"),
 
     // get && show
+    getCurrentPlayerData: () => ipcRenderer.invoke("get-current-player-data"),
     getChatLLMConfig: () => ipcRenderer.invoke("get-chat-llm-config"),
     getTTSLLMConfig: () => ipcRenderer.invoke("get-tts-config"),
     showActivities: (type: ActivityInfo["type"]) => ipcRenderer.invoke("show-activities", type),
