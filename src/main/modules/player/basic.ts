@@ -18,6 +18,7 @@ import { PetMate } from "../petmate/petmate";
 import { Buff } from "../../types/buff";
 import { wishHandler } from "../wish";
 import { Wish } from "../../types/wish";
+import { getMainWindow } from "../../../main";
 
 /**
  * 购买物品
@@ -29,9 +30,9 @@ import { Wish } from "../../types/wish";
  * @throws 如果物品不存在则抛出NotFoundError
  */
 export function buyItem(itemId: number, count: number): Item {
-    const player:PlayerInfo = playerManager.getPlayer();
+    const player: PlayerInfo = playerManager.getPlayer();
     const playerItemNum: number = player.items.find(item => item.id === itemId)?.count ?? 0;
-    const item:Item | undefined = itemManager.getItem(itemId);
+    const item: Item | undefined = itemManager.getItem(itemId);
     if (!item) {
         throw new NotFoundError(`购买物品的时候发现物品不存在: ${itemId}`);
     }
@@ -42,8 +43,8 @@ export function buyItem(itemId: number, count: number): Item {
     }
     player.cash -= totalPrice;
     if (playerItemNum === 0) {
-        player.items.push({ 
-            id: itemId, 
+        player.items.push({
+            id: itemId,
             count: count,
             name: item.name,
             type: item.type,
@@ -66,15 +67,15 @@ export function buyItem(itemId: number, count: number): Item {
  * @throws 如果petmate的属性不够则抛出NotEnoughError
  * @throws 如果传入的finishedWishes中的愿望的奖励存在未找到的buff，则抛出NotFoundError
  */
-export function consumeItem(itemId: number, count: number=1, petmateId: number): void {
-    const player:PlayerInfo = playerManager.getPlayer();
+export function consumeItem(itemId: number, count: number = 1, petmateId: number): void {
+    const player: PlayerInfo = playerManager.getPlayer();
     const petmate: PetMate | undefined = player.petmates.find(petmate => petmate.id === petmateId);
     if (!petmate) {
         throw new NotFoundError(`Petmate不存在: ${petmateId}`);
     }
 
     // 检查玩家背包中是否有这个物品
-    const consumeItemInPackage:PackageItemInfo | undefined = player.items.find(item => item.id === itemId);
+    const consumeItemInPackage: PackageItemInfo | undefined = player.items.find(item => item.id === itemId);
     if (!consumeItemInPackage) {
         throw new NotFoundError(`玩家背包中不存在物品: ${itemId}`);
     }
@@ -84,12 +85,12 @@ export function consumeItem(itemId: number, count: number=1, petmateId: number):
     if (playerItemNum < count) {
         throw new NotEnoughError(`玩家没有这么多物品: 物品id[${itemId}]， 需要${count}个， 但是只有${playerItemNum}个`);
     }
-    
+
     const item = itemManager.getItem(itemId);
     if (!item) {
         throw new NotFoundError(`物品不存在: ${itemId}`);
     }
-    
+
     petmate.updateHungry(item.effect.hungry * count);
     petmate.updateEmotion(item.effect.emotion * count);
     petmate.updateEnergy(item.effect.energy * count);
@@ -100,7 +101,7 @@ export function consumeItem(itemId: number, count: number=1, petmateId: number):
     petmate.addSingExp(item.effect.singExp ?? 0 * count);
     petmate.addDrawExp(item.effect.drawExp ?? 0 * count);
     petmate.addAffectionExp(item.effect.affectionExp ?? 0 * count);
-    
+
     const toAddBuff: Buff | undefined = item.effect.buff;
     if (toAddBuff) {
         petmate.addBuff(toAddBuff);
@@ -112,8 +113,15 @@ export function consumeItem(itemId: number, count: number=1, petmateId: number):
     }, undefined);
     if (finishedWishes.length > 0) {
         wishHandler.giveReward(petmate, player, finishedWishes);
+        // 心愿完成，发送消息给渲染层
+        const mainWindow = getMainWindow();
+        if (mainWindow) {
+            const finishedWishNames: string[] = finishedWishes.map(wish => wish.name);
+            console.log("发送心愿完成消息", petmateId, finishedWishNames);
+            mainWindow.webContents.send('wish-finished', petmateId, finishedWishNames);
+        }
     }
-    
+
     // 更新背包中的物品数量
     const idx = player.items.findIndex(item => item.id === itemId);
     if (idx !== -1) {

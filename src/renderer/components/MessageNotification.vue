@@ -38,6 +38,22 @@ onMounted(() => {
     // 刷新玩家数据
     refreshPlayerData();
   });
+  // 心愿完成监听回调
+  window.api.onWishFinished(
+    (event: Event, petmateId: number, finishedWishNames: string[]) => {
+      const petmate = playerData.value?.petmates.find(
+        (petmate) => petmate.id === petmateId
+      );
+      // 如果完成了多个心愿，则产生多个通知
+      finishedWishNames.forEach((wishName) => {
+        notification.info({
+          title: "系统消息",
+          content: `${petmate?.name}完成了心愿：${wishName}，快去看看吧`,
+          duration: notificationDuration,
+        });
+      });
+    }
+  );
 });
 </script>
 

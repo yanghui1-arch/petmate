@@ -52,6 +52,7 @@ export function startActivity(petmateId: number, activityId: number) {
         // 可能会endTime结束前关闭应用，因此一定要在打开游戏时候查一下petmate的status
         setTimeout(() => {
             const endSuccess: boolean = endActivity(petmateId);
+            // 活动结束，发送消息给渲染层
             if (endSuccess) {
                 const mainWindow = getMainWindow();
                 if (mainWindow) {
@@ -130,6 +131,13 @@ export function endActivity(petmateId: number): boolean {
     });
     if (finishedWishes.length > 0) {
         wishHandler.giveReward(petmate, player, finishedWishes);
+        // 心愿完成，发送消息给渲染层
+        const mainWindow = getMainWindow();
+        if (mainWindow) {
+            const finishedWishNames: string[] = finishedWishes.map(wish => wish.name);
+            console.log("发送心愿完成消息", petmateId, finishedWishNames);
+            mainWindow.webContents.send('wish-finished', petmateId, finishedWishNames);
+        }
     }
 
     // 同步文件中的数据
