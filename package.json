@@ -5,6 +5,7 @@
     "electron": "^37.1.0",
     "electron-store": "^10.1.0",
     "get-windows": "^9.2.0",
+    "gsap": "^3.13.0",
     "howler": "^2.2.4",
     "openai": "^5.9.0",
     "pcm-player": "^0.0.18",
