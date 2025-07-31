@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-// Mock Electron main process APIs
+// 全局模拟electron的主进程API
 vi.mock('electron', () => ({
   ipcMain: {
     handle: vi.fn(),
@@ -16,20 +16,6 @@ vi.mock('electron', () => ({
     on: vi.fn(),
     getAllWindows: vi.fn(() => [])
   }))
-}))
-
-// Mock the scheduler module to prevent main index.ts from failing
-vi.mock('../src/main/scheduler', () => ({
-  startWishGeneration: vi.fn(),
-  destroyScheduler: vi.fn(),
-  triggerWishGeneration: vi.fn(),
-  stopWishGeneration: vi.fn(),
-  generateWishForSelectedPetmate: vi.fn()
-}))
-
-// Mock the LLM module
-vi.mock('../src/main/llm', () => ({
-  saveChatHistoryMessages: vi.fn()
 }))
 
 // Mock the main index.ts to prevent it from executing during tests
