@@ -40,7 +40,8 @@ type StoreData = {
 }
 
 const store: Store<StoreData> = new Store<StoreData>({
-    name: 'llm'
+    name: 'llm',
+    projectName: 'petmate'
 })
 
 export interface TTSParameters {
