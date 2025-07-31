@@ -5,6 +5,7 @@ import { NotFoundError } from "./error";
 import { WISH_GENERATE_INTERVAL } from "./constant";
 import { PetMate } from "./modules/petmate/petmate";
 import { Wish } from "./types/wish";
+import { getMainWindow } from './index';
 
 
 // 生成愿望的定时器
@@ -18,8 +19,8 @@ let wishGenerationInterval: NodeJS.Timeout | null = null;
 export function generateWishForSelectedPetmate(selectedPetmateId: number): boolean {
     try {
         const player = playerManager.getPlayer();
-        const selectedPetmate:PetMate | undefined = player.petmates.find(petmate => petmate.id === selectedPetmateId);
-        
+        const selectedPetmate: PetMate | undefined = player.petmates.find(petmate => petmate.id === selectedPetmateId);
+
         if (!selectedPetmate) {
             throw new NotFoundError(`未找到ID为 ${selectedPetmateId} 的petmate`);
         }
@@ -33,12 +34,13 @@ export function generateWishForSelectedPetmate(selectedPetmateId: number): boole
 
         // 生成新愿望
         if (Math.random() >= 0.5) {
+            // if (Math.random() >= 1) { // 测试使用，每次都生成愿望
             logger.info(`[scheduler] 该次${selectedPetmate.name}没有愿望`);
             return false;
         }
-        const newWish:Wish = wishHandler.generateWish();
+        const newWish: Wish = wishHandler.generateWish();
         selectedPetmate.addWish(newWish);
-        
+
         // 更新到存储
         playerManager.updatePetmate(selectedPetmate);
         logger.info(`[scheduler] 为 ${selectedPetmate.name} 生成了新愿望: ${newWish.name}`);
@@ -56,7 +58,14 @@ export function startWishGeneration(selectedPetmateId: number): void {
     logger.info(`[scheduler] 启动愿望生成定时任务，间隔: ${WISH_GENERATE_INTERVAL / 1000 / 60 / 60} 小时`);
 
     wishGenerationInterval = setInterval(() => {
-        generateWishForSelectedPetmate(selectedPetmateId);
+        const generateSuccess: boolean = generateWishForSelectedPetmate(selectedPetmateId);
+        // 如果生成愿望成功，则发送消息给渲染层，触发通知
+        if (generateSuccess) {
+            const mainWindow = getMainWindow();
+            if (mainWindow) {
+                mainWindow.webContents.send('wish-generated', selectedPetmateId);
+            }
+        }
     }, WISH_GENERATE_INTERVAL);
 }
 

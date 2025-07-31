@@ -1,0 +1,25 @@
+[
+    {
+        "id": 1,
+        "name": "愿望1",
+        "description": "愿望1描述",
+        "duration": 1000,
+        "affectionExp": 100,
+        "requirements": [
+            {
+                "type": "item",
+                "id": 1,
+                "name": "物品1",
+                "src": "src/main/assets/image/item/item1.png",
+                "count": 1,
+                "userCount": 0,
+                "status": "doing"
+            }
+        ],
+        "reward": {
+            "type": "item",
+            "id": 1,
+            "count": 1
+        }
+    }
+]

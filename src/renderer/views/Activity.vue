@@ -51,6 +51,7 @@
               object-fit="contain"
               @click="cancelActivity"
             />
+            <!-- 倒计时显示，只做UI展示，由主进程定时器结束发送通知再刷新玩家数据 -->
             <n-countdown :duration="countDownSeconds" :active="true" />
           </div>
           <div class="active-activity-info">
@@ -257,7 +258,7 @@ import { useShow } from "../hooks/useShow";
 
 import { convertActivityText, computeActivityTime } from "../utils/activity";
 
-const { playerData } = usePlayer();
+const { playerData, refreshPlayerData } = usePlayer();
 const { getActivities } = useShow();
 
 // Petmate相关

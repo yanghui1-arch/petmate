@@ -22,9 +22,15 @@
           preview-disabled
         />
       </div>
+
       <router-view />
+
       <!-- <Home /> -->
-      <Settings v-model:active="active" :placement="placement" />
+      <Navigator v-model:active="active" :placement="placement" />
+      <!-- 系统消息通知，在右下角弹出，最多同时显示2条 -->
+      <n-notification-provider placement="bottom-right" :max="2">
+        <MessageNotification />
+      </n-notification-provider>
       <MessageModal
         :show="isMessageModalShow"
         :title="messageModalTitle"
@@ -36,8 +42,9 @@
 
 <script setup lang="ts">
 // 你可以在这里写 Composition API 的逻辑
-import Settings from "./components/Settings.vue";
+import Navigator from "./components/Navigator.vue";
 import MessageModal from "./components/MessageModal.vue";
+import MessageNotification from "./components/MessageNotification.vue";
 import type { DrawerPlacement } from "naive-ui";
 import { ref, onMounted } from "vue";
 import { usePlayer } from "./hooks/usePlayer";
@@ -54,8 +61,6 @@ const activate = (place: DrawerPlacement) => {
   active.value = true;
   placement.value = place;
 };
-
-const back = () => {};
 
 // 全局玩家状态 - 在这里加载数据
 const { playerData, isInit, error, initPlayerData } = usePlayer();

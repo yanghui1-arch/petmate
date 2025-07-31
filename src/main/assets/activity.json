@@ -18,7 +18,7 @@
             "health": 10,
             "emotion": 10,
             "cash": 10,
-            "spendingTime": 1
+            "spendingTime": 10
         },
         "reward": {
             "exp": 100,

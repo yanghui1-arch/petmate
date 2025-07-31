@@ -9,7 +9,8 @@ export type SettingConfig = {
 
 
 const store: Store<SettingConfig> = new Store<SettingConfig>({
-    name: 'settings'
+    name: 'settings',
+    projectName: 'petmate'
 })
 
 /**
