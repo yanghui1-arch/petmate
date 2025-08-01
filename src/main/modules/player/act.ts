@@ -48,18 +48,10 @@ export function startActivity(petmateId: number, activityId: number) {
             endTime: new Date(new Date().getTime() + consume.spendingTime * buffEffect.spendingTimeRate * 1000),
             activity: activity
         });
-        // 启动一个延时任务，在endTime时结束活动并获得收益
+        // 启动一个延时任务，在endTime时标记活动为可领取状态
         // 可能会endTime结束前关闭应用，因此一定要在打开游戏时候查一下petmate的status
         setTimeout(() => {
-            const endSuccess: boolean = endActivity(petmateId);
-            // 活动结束，发送消息给渲染层
-            if (endSuccess) {
-                const mainWindow = getMainWindow();
-                if (mainWindow) {
-                    console.log("发送活动结束消息", petmateId);
-                    mainWindow.webContents.send('end-activity', petmateId);
-                }
-            }
+            finishActivity(petmateId);
         }, consume.spendingTime * buffEffect.spendingTimeRate * 1000);
 
         // 同步文件中的数据
@@ -73,7 +65,41 @@ export function startActivity(petmateId: number, activityId: number) {
 }
 
 /**
- * 结束活动
+ * 活动倒计时结束，完成活动回调函数，设置活动为可领取状态
+ * @param petmateId petmate的id
+ */
+export function finishActivity(petmateId: number): boolean {
+    const player = playerManager.getPlayer();
+    const petmate: PetMate | undefined = player.petmates.find(petmate => petmate.id === petmateId);
+    if (petmate === undefined) {
+        throw new NotFoundError(`Petmate不存在: ${petmateId}`);
+    }
+
+    const status = petmate.getStatus();
+    if (status.status === "idle") {
+        logger.warning(`Petmate [${petmateId}] 当前状态为idle，无法结束活动，现在有的活动是: ${status.activity?.name}`);
+        return false;
+    }
+    if (petmate && petmate.getStatus().status !== "idle") {
+        // 设置活动状态为可领取
+        petmate.setStatus({
+            ...petmate.getStatus(),
+            status: "finished"
+        });
+        playerManager.updatePetmate(petmate);
+
+        // 发送活动可领取消息给渲染层
+        const mainWindow = getMainWindow();
+        if (mainWindow) {
+            console.log("发送活动可领取消息", petmateId);
+            mainWindow.webContents.send('activity-finished', petmateId);
+        }
+    }
+    return true;
+}
+
+/**
+ * 结束活动并领取奖励
  * 活动只会按照结束时的buff效果计算奖励并且会再每一次结束活动的时候尝试更新心愿的状态并给予心愿的奖励，最后会同步到文件数据中
  * @param petmateId petmate的id
  * @returns 是否结束成功

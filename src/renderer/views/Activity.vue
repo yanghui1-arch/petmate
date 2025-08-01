@@ -60,10 +60,17 @@
       </div>
     </div>
     <div class="activity-layout">
-      <!-- 当前正在进行的活动 -->
+      <!-- 活动状态 -->
       <div class="active-activity-wrapper">
-        <div class="active-activity" v-if="petmateStatus?.activity">
-          <div class="active-activity-countdown">
+        <!-- 活动进行中，活动可领取 -->
+        <div
+          class="active-activity"
+          v-if="petmateStatus?.activity && petmateStatus?.status !== 'idle'"
+        >
+          <div
+            class="active-activity-countdown"
+            v-if="petmateStatus?.status !== 'finished'"
+          >
             <n-image
               src="../assets/image/activity/switch.png"
               width="25"
@@ -75,10 +82,23 @@
             <!-- 倒计时显示，只做UI展示，由主进程定时器结束发送通知再刷新玩家数据 -->
             <n-countdown :duration="countDownSeconds" :active="true" />
           </div>
+          <div class="btn-activity-reward" v-else>
+            <n-button type="primary" @click="claimReward">领取奖励</n-button>
+          </div>
           <div class="active-activity-info">
-            <div class="active-activity-title">
+            <div
+              class="active-activity-title"
+              v-if="petmateStatus?.status !== 'finished'"
+            >
               <span
                 >{{ currentActivePetmate?.name }}正在{{
+                  petmateStatus?.activity?.name
+                }}</span
+              >
+            </div>
+            <div class="active-activity-title" v-else>
+              <span
+                >{{ currentActivePetmate?.name }}已完成{{
                   petmateStatus?.activity?.name
                 }}</span
               >
@@ -92,6 +112,7 @@
             </div>
           </div>
         </div>
+        <!-- 无活动状态 -->
         <div class="active-activity-none" v-else>
           {{ currentActivePetmate?.name }}当前未进行任何活动
         </div>
@@ -279,7 +300,7 @@ import { useShow } from "../hooks/useShow";
 
 import { convertActivityText, computeActivityTime } from "../utils/activity";
 
-const { playerData, refreshPlayerData } = usePlayer();
+const { playerData, refreshPlayerData, endActivityReward } = usePlayer();
 const { getActivities } = useShow();
 
 // Petmate相关
@@ -395,6 +416,18 @@ const cancelActivity = () => {
   isModalShow.value = true;
   modalActItem.value = petmateStatus.value?.activity as ActivityInfo;
   modalType.value = "cancel";
+};
+
+/**
+ * 领取活动奖励
+ */
+const claimReward = async () => {
+  const success = await endActivityReward(currentPetmateID.value);
+  if (success) {
+    openMessageModal("success", "领取奖励成功");
+  } else {
+    openMessageModal("fail", "领取奖励失败");
+  }
 };
 
 const activitySectionList = [
@@ -909,6 +942,41 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
     padding: 15px;
     backdrop-filter: blur(5px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  // 活动可领取奖励的样式
+  .active-activity-ready-to-claim {
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    backdrop-filter: blur(5px);
+
+    .activity-claim-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+
+      .activity-complete-text {
+        color: #4caf50;
+        font-size: 16px;
+        font-weight: 600;
+      }
+    }
+
+    .active-activity-info {
+      text-align: center;
+    }
+
+    .activity-claim-actions {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
   }
 }
 

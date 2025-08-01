@@ -41,6 +41,7 @@ contextBridge.exposeInMainWorld(
     chat: (message: ChatMessage) => ipcRenderer.invoke("chat", message),
     startActivity: (petmateId: number, activityId: number) => ipcRenderer.invoke("start-activity", petmateId, activityId),
     cancelActivity: (petmateId: number) => ipcRenderer.invoke("cancel-activity", petmateId),
+    endActivityReward: (petmateId: number) => ipcRenderer.invoke("end-activity-reward", petmateId),
 
     // 克隆音色
     cloneVoice: (url: string) => ipcRenderer.invoke("clone-voice", url),
@@ -50,7 +51,7 @@ contextBridge.exposeInMainWorld(
     onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => ipcRenderer.on("tts-audio-chunk", callback),
     onWishGenerated: (callback: (event: Event, petmateId: number) => void) => ipcRenderer.on("wish-generated", callback),
     onWishFinished: (callback: (event: Event, petmateId: number, finishedWishNames: string[]) => void) => ipcRenderer.on("wish-finished", callback),
-    onEndActivity: (callback: (event: Event, petmateId: number) => void) => ipcRenderer.on("end-activity", callback),
+    onActivityFinished: (callback: (event: Event, petmateId: number) => void) => ipcRenderer.on("activity-finished", callback),
     removeAllAudioChunkListeners: () => ipcRenderer.removeAllListeners("tts-audio-chunk"),
 
     // 其他方法

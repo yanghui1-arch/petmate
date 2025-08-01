@@ -9,7 +9,7 @@ import { Response } from '../types/response';
 import { consumeItem } from './modules/player/basic';
 import logger from './log';
 import { PetMate } from './modules/petmate/petmate';
-import { startActivity, endActivity, cancelActivity } from './modules/player/act';
+import { startActivity, finishActivity, endActivity, cancelActivity } from './modules/player/act';
 import { ActiveBuff } from './types/buff';
 import { MAX_WISHES_STORE_NUM } from './constant';
 import { Wish } from './types/wish';
@@ -72,31 +72,27 @@ ipcMain.handle("init-player-data", (event: IpcMainInvokeEvent): Response<PlayerI
         // 检查活动是否完成
         petmates.forEach(petmate => {
             // 如果在活动中，先查看一下是否完成了活动（玩家会开始活动然后又退出游戏）
-            if (petmate.status.status !== "idle") {
+            if (petmate.status.status !== "idle" && petmate.status.status !== "finished") {
                 const currentTime: Date = new Date();
                 /**
-                 * 结束活动
-                 * 如果活动已经结束，则结束活动结算奖励并且同步petmate状态
-                 * 如果活动还没结束，则开启延迟任务
+                 * 检查活动是否已完成
+                 * 如果活动已经完成，则设置为可领取状态
+                 * 如果活动还没完成，则开启延迟任务
                  */
                 if (currentTime >= (petmate.status.endTime ?? new Date())) {
-                    const endSuccess: boolean = endActivity(petmate.id);
-                    if (endSuccess) {
-                        logger.info("初始化玩家数据时，结束早已结束的活动成功。")
-                    } else {
-                        throw new Error("结束活动失败");
-                    }
+                    // 设置状态为可领取
+                    petmate.setStatus({
+                        ...petmate.status,
+                        status: "finished"
+                    });
+                    playerManager.updatePetmate(petmate);
+                    logger.info("初始化玩家数据时，将已完成的活动设置为可领取状态。")
                 } else {
                     if (petmate.status.endTime) {
                         const remainedTime: Date = new Date(petmate.status.endTime.getTime() - currentTime.getTime());
-                        // 开启延迟任务
+                        // 开启延迟任务，活动完成时设置为可领取状态
                         setTimeout(() => {
-                            const endSuccess: boolean = endActivity(petmate.id);
-                            if (endSuccess) {
-                                logger.info("初始化玩家数据时，结束早已结束的活动成功。")
-                            } else {
-                                throw new Error("结束活动失败");
-                            }
+                            finishActivity(petmate.id);
                         }, remainedTime.getTime());
                     }
                 }
@@ -405,6 +401,34 @@ ipcMain.handle("cancel-activity", (event: IpcMainInvokeEvent, petmateId: number)
         return {
             code: 400,
             message: "取消活动失败"
+        } as Response<void>;
+    }
+})
+
+/**
+ * 领取活动奖励
+ * @param petmateId petmate的id
+ * @returns 领取奖励成功或失败
+ */
+ipcMain.handle("end-activity-reward", (event: IpcMainInvokeEvent, petmateId: number): Response<void> => {
+    try {
+        const success = endActivity(petmateId);
+        if (success) {
+            return {
+                code: 200,
+                message: "领取奖励成功"
+            } as Response<void>;
+        } else {
+            return {
+                code: 400,
+                message: "领取奖励失败，活动状态不正确"
+            } as Response<void>;
+        }
+    } catch (error) {
+        logger.error(`领取活动奖励失败: ${error}`);
+        return {
+            code: 400,
+            message: "领取活动奖励失败"
         } as Response<void>;
     }
 })

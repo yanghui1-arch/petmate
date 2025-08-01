@@ -43,6 +43,7 @@ interface IElectronAPI {
   chat: (message: ChatMessage) => Promise<Response<void>>;
   startActivity: (petmateId: number, activityId: number) => Promise<Response<void>>;
   cancelActivity: (petmateId: number) => Promise<Response<void>>;
+  endActivityReward: (petmateId: number) => Promise<Response<void>>;
 
   // 克隆音色
   cloneVoice: (url: string) => Promise<Response<string>>;
@@ -52,7 +53,7 @@ interface IElectronAPI {
   onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => void;
   onWishGenerated: (callback: (event: Event, petmateId: number) => void) => void,
   onWishFinished: (callback: (event: Event, petmateId: number, finishedWishNames: string[]) => void) => void,
-  onEndActivity: (callback: (event: Event, petmateId: number) => void) => void,
+  onActivityFinished: (callback: (event: Event, petmateId: number) => void) => void,
   removeAllAudioChunkListeners: () => void;
 
   // 其他
