@@ -73,7 +73,6 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             loader.load('../assets/models/petmate.glb', (gltf) => {
                 model = gltf.scene;
                 model.position.set(0, -3, 0);
-                // model.scale.set(0.03, 0.03, 0.03);
                 model.scale.set(3, 3, 3);
                 scene?.add(model);
 
