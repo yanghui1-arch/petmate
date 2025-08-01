@@ -262,8 +262,6 @@ class WindowMonitor extends EventEmitter {
 
 }
 
-// 创建单例实例
 export const windowMonitor = new WindowMonitor();
 
-// 导出类型和实例
 export { WindowMonitor };

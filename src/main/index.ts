@@ -13,6 +13,8 @@ const createWindow = () => {
     width: width,
     height: height,
     frame: false,
+    resizable: false,
+    transparent: true,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,

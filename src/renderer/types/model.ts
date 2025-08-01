@@ -6,3 +6,11 @@ export interface ModelStatus {
     standIdle: boolean,
     sittedIdle: boolean,
 }
+
+/**
+ * 模型在屏幕上的位置
+ */
+export interface ScreenPosition {
+    x: number,
+    y: number
+}
