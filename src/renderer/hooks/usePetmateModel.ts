@@ -22,6 +22,10 @@ let directionalLightCenter: THREE.DirectionalLight | null = null;
 let ambientLight: THREE.AmbientLight | null = null;
 let renderer: THREE.WebGLRenderer | null = null;
 
+let petMateModelConfig = {
+    scale: 2,
+}
+
 // 开发辅助用的
 let orbitControls: OrbitControls | null = null;
 
@@ -49,6 +53,10 @@ let defaultModelState: ModelStatus = {
     spyBesideWindow: false
 }
 
+// 正在坐的窗口名字
+// 这个就是由Petmate.vue进行修改的
+export let sittedWindowTitle: string = "";
+
 /**
  * 模型的走路速度
  */
@@ -57,6 +65,10 @@ const walkSpeed: number = 4;
 export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
     const loader = new GLTFLoader();
+    /**
+     * rotation.y 最多只能到(-rotationMaxY, rotationMaxY)
+     */
+    const rotationMaxY = Math.PI / 4;
 
     const init3D = (screenResolution: {width: number, height: number}): Promise<void> => {
         return new Promise((resolve, reject) => {
@@ -90,10 +102,10 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             directionalLightCenter.position.set(0, 50, 0);
 
             // 加载模型
-            loader.load('../assets/models/petmate1.glb', (gltf) => {
+            loader.load('../assets/models/petmate.glb', (gltf) => {
                 model = gltf.scene;
                 model.position.set(0, -3, 0);
-                model.scale.set(3, 3, 3);
+                model.scale.set(petMateModelConfig.scale, petMateModelConfig.scale, petMateModelConfig.scale);
                 scene?.add(model);
 
                 camera?.position.set(0, 2, 10)
@@ -165,13 +177,18 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
      * 这个指令逻辑是要走到目标位置，但是可能由于模型可能面向正面，可能面向左面/右面，所以必须得先根据目标位置先让模型面向转到正确的方向，然后再走过去，最后再转回来
      * @param target 目标位置
      * @param duration 持续时间
+     * @param onComplete 完成后的回调函数
      */
-    const walkTo = (position: ScreenPosition, duration: number = 1) => {
+    const walkTo = (position: ScreenPosition, onCompleted?: () => void) => {
         if (!model) return ;
         const target: THREE.Vector3 = transferScreenToWorld(position, resolution.width, resolution.height);
         const distance:number = target.distanceTo(model.position);
         console.log('target screen pos', transferWorldToScreen(target, resolution.width, resolution.height))
         if (distance < 0.1) return ;
+
+        // 杀死可能存在的位置和旋转动画，避免冲突
+        gsap.killTweensOf(model.position);
+        gsap.killTweensOf(model.rotation);
 
         gsap.to(model.rotation, {
             y: Math.atan2(target.x - model.position.x, target.z - model.position.z),
@@ -182,7 +199,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         if (!walkAction) return ;
         _playAction(walkAction);
         updateModelState({walk: true});
-        duration = distance / walkSpeed;
+        const duration = distance / walkSpeed;
         
         gsap.to(model.position, {
             x: target.x,
@@ -190,15 +207,8 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             z: target.z,
             duration: duration,
             onComplete: () => {
-                let idleAction = getAnimationAction("idle");
-                if (!idleAction) return ;
-                _playAction(idleAction);
-                updateModelState({standIdle: true});
-                if (model) {
-                    gsap.to(model.rotation, {
-                        y: 0,
-                        duration: 0.3
-                    })
+                if (onCompleted) {
+                    onCompleted();
                 }
             }
         });
@@ -207,11 +217,13 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     /**
      * 坐姿
      * 这个是晃腿的
+     * @param rotationY 旋转角度，如果为空，就保持现在的model.rotation.y
      */
     const sitted = () => {
         let sit2 = getAnimationAction("sit 2");
-        if (!sit2) return ;
+        if (!sit2 || !model) return ;
         _playAction(sit2, true);
+
         updateModelState({sittedIdle: true});
     };
 
@@ -223,14 +235,21 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         let sit1 = getAnimationAction("sit 1");
         let sit2 = getAnimationAction("sit 2");
         
-        if (!sit1 || !sit2  || !mixer) return;
+        if (!sit1 || !sit2  || !mixer || !model) return;
         updateModelState({sitting: true});
 
+        // 杀死可能存在的位置动画，避免冲突
+        gsap.killTweensOf(model.position);
+        
         _playAction(sit1, false);
+        gsap.to(model.rotation, {
+            y: 0,
+            duration: 0.2
+        })
         
         const onSit1Finished = () => {
             mixer!.removeEventListener('finished', onSit1Finished);
-            _playAction(sit2, true);
+            sitted();
         };
         
         mixer.addEventListener('finished', onSit1Finished);
@@ -248,9 +267,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         updateModelState({standIdle: true});
         const onSit3Finished = () => {
             mixer!.removeEventListener('finished', onSit3Finished);
-            let idleAction = getAnimationAction("idle");
-            if (!idleAction) return ;
-            _playAction(idleAction, true);
+            standIdle();
         };
         mixer!.addEventListener('finished', onSit3Finished);
     }
@@ -260,8 +277,13 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
      */
     const standIdle = () => {
         let idleAction = getAnimationAction("idle");
-        if (!idleAction) return ;
+        if (!idleAction || !model) return ;
         _playAction(idleAction, true);
+        updateModelState({standIdle: true});
+        gsap.to(model.rotation, {
+            y: 0,
+            duration: 0.3
+        });
     };
 
     /**
@@ -338,19 +360,41 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         return modelState;
     }
 
+    /**
+     * 获取Petmate模型当前在屏幕上的坐标
+     */
+    const getModelScreenPosition = (): ScreenPosition => {
+        if (!model) return {x: 0, y: 0};
+        return transferWorldToScreen(model.position, resolution.width, resolution.height);
+    }
+
+    const setSittedWindowTitle = (title: string) => {
+        sittedWindowTitle = title;
+    }
+
     return {
         init3D,
+        modelConfig: readonly(petMateModelConfig),
+        modelState: readonly(modelState),
+
+        // 动作
         walkTo,
         standIdle,
         sit,
         sitted,
         standFromSit,
-        spyBesideWindow
+        spyBesideWindow,
+
+        // get
+        getModelScreenPosition,
+
+        // set
+        setSittedWindowTitle,
     }
 }
 
 export function transferScreenToWorld(screenPosition: ScreenPosition, width: number, height: number): THREE.Vector3 {
-    if (!renderer || !camera) {
+    if (!renderer || !camera || !model) {
         console.warn('Renderer or camera not initialized');
         return new THREE.Vector3(0, 0, 0);
     }
@@ -381,7 +425,7 @@ export function transferScreenToWorld(screenPosition: ScreenPosition, width: num
     const worldX = rayOrigin.x + t * rayDirection.x;
     const worldY = rayOrigin.y + t * rayDirection.y;
     
-    return new THREE.Vector3(worldX, worldY, 0);
+    return new THREE.Vector3(worldX, worldY, model.position.z);
 }
 
 export function transferWorldToScreen(worldPosition: THREE.Vector3, width: number, height: number): ScreenPosition {

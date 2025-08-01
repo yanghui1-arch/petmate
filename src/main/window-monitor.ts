@@ -33,6 +33,10 @@ export interface WindowEvent {
   previousWindow?: WindowInfo;
 }
 
+/**
+ * 窗口监视器
+ * 负责窗口监视，包括获取打开窗口的个数，窗口的关闭、打开和移动的更新，会自动更新所有窗口的信息，每monitorInterval检查一次
+ */
 class WindowMonitor extends EventEmitter {
   private isRunning = false;
   private intervalId: NodeJS.Timeout | null = null;
