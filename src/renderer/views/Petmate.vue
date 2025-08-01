@@ -14,7 +14,7 @@ import { WindowEvent, WindowInfo } from '../types/window';
 
 const threeContainer = ref();
 const screenResolution = ref({width: 0, height: 0});
-const { init3D, standIdle  } = usePetmateModel(threeContainer);
+const { init3D, standIdle, walkTo,  } = usePetmateModel(threeContainer);
 
 onMounted(() => {
     /* 获取分辨率 */
@@ -46,7 +46,7 @@ onMounted(() => {
     */
     const animTimer = setInterval(() => {
         selectAnimationAndPlay();
-    }, 10 * 1000);
+    }, 5 * 1000);
 
 })
 
@@ -69,6 +69,7 @@ watch(windowEventCount, (newVal: number) => {
 });
 
 const selectAnimationAndPlay = () => {
+    walkTo({x: 800, y: 200});
 };
 
 

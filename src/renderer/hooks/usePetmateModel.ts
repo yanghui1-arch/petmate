@@ -43,15 +43,18 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             resolution = screenResolution;
 
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, resolution.width / resolution.height, 0.1, 1000);
+            // 使用实际窗口大小的宽高比，保持与renderer一致
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             
             renderer = new THREE.WebGLRenderer({
                 antialias: true,
                 alpha: false,
                 premultipliedAlpha: false
             });
-
-            renderer.setSize(resolution.width, resolution.height);
+            
+            console.log(`window的inner (${window.innerWidth}, ${window.innerHeight})`)
+            console.log(`screenResolution (${screenResolution.width}, ${screenResolution.height})`)
+            renderer.setSize(window.innerWidth, window.innerHeight);
             // 要完全透明
             renderer.setClearColor(0xffffff, 0);
             threeContainer.value.appendChild(renderer.domElement);
@@ -67,27 +70,14 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             directionalLightCenter.position.set(0, 50, 0);
 
             // 加载模型
-            loader.load('../assets/models/ali.glb', (gltf) => {
+            loader.load('../assets/models/petmate.glb', (gltf) => {
                 model = gltf.scene;
-                model.position.set(0, 0, 0);
-                model.rotation.set(0, 0, 0);
-                model.scale.set(0.03, 0.03, 0.03);
-                
-                // 计算模型的边界框来检查几何中心
-                const box = new THREE.Box3().setFromObject(model);
-                const center = box.getCenter(new THREE.Vector3());
-                const size = box.getSize(new THREE.Vector3());
-                
-                console.log('模型边界框中心:', center);
-                console.log('模型尺寸:', size);
-                console.log('模型位置:', model.position);
-                
-                // 将模型几何中心对齐到原点（如果需要的话，取消注释下面这行）
-                // model.position.copy(center).negate();
-                
+                model.position.set(0, -3, 0);
+                // model.scale.set(0.03, 0.03, 0.03);
+                model.scale.set(3, 3, 3);
                 scene?.add(model);
 
-                camera?.position.set(0, 0, 30)
+                camera?.position.set(0, 2, 10)
                 
                 animations = gltf.animations;
                 console.log(animations)
