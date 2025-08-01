@@ -43,16 +43,44 @@ describe('Scheduler Functions', () => {
   const mockPlayer = {
     name: '主人',
     petmates: [
-      {
-        id: 0,
-        name: 'Dass',
-        wishes: [
-          { id: '1', status: 'doing', name: 'Test Wish 1' },
-          { id: '2', status: 'doing', name: 'Test Wish 2' }
-        ],
+			{
+				id: 0,
+				name: "Dass",
+				attrs: {
+					level: 3,
+					exp: 138,
+					next_exp: 623,
+					game_level: 3,
+					game_exp: 138,
+					game_next_exp: 623,
+					sing_level: 1,
+					sing_exp: 0,
+					sing_next_exp: 100,
+					draw_level: 1,
+					draw_exp: 0,
+					draw_next_exp: 100,
+					affection_level: 1,
+					affection_exp: 0,
+					affection_next_exp: 100,
+					hungry: 110,
+					emotion: 110,
+					energy: 110,
+					health: 110,
+					max_hungry: 300,
+					max_emotion: 300,
+					max_energy: 300,
+					max_health: 300,
+					buffs: [],
+					max_buffs: 10
+				},
+				status: {
+					status: "idle"
+				},
+				wishes: [],
+				completedWishesNum: 0,
         addWish: vi.fn()
-      }
-    ],
+			}
+		],
     steam_id: null,
     qq: null,
     cash: 500,

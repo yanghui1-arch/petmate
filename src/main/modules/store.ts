@@ -212,7 +212,8 @@ class BuffManager {
 
     constructor() {
         this.store = new Store<BuffStoreData>({
-            name: 'buff-store'
+            name: 'buff-store',
+            projectName: 'petmate'
         });
         this.loadBuff();
     }
