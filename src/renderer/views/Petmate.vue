@@ -14,7 +14,7 @@ import { WindowEvent, WindowInfo } from '../types/window';
 
 const threeContainer = ref();
 const screenResolution = ref({width: 0, height: 0});
-const { init3D, standIdle, walkTo,  } = usePetmateModel(threeContainer);
+const { init3D, standIdle, walkTo, sit } = usePetmateModel(threeContainer);
 
 onMounted(() => {
     /* 获取分辨率 */

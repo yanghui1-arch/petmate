@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ScreenPosition } from '../types/model'
+import { ModelStatus } from '../types/model'
 
 // 屏幕分辨率
 let resolution: {width: number, height: number} = {width: 1920, height: 1080};
@@ -28,6 +29,25 @@ let orbitControls: OrbitControls | null = null;
  * 模型当前状态
  */
 let currentAction: THREE.AnimationAction | null = null;
+let modelState: ModelStatus = {
+    walk: false,
+    jump: false,
+    dance: false,
+    sitting: false,
+    standIdle: false,
+    sittedIdle: false,
+    spyBesideWindow: false
+}
+
+let defaultModelState: ModelStatus = {
+    walk: false,
+    jump: false,
+    dance: false,
+    sitting: false,
+    standIdle: false,
+    sittedIdle: false,
+    spyBesideWindow: false
+}
 
 /**
  * 模型的走路速度
@@ -70,7 +90,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             directionalLightCenter.position.set(0, 50, 0);
 
             // 加载模型
-            loader.load('../assets/models/petmate.glb', (gltf) => {
+            loader.load('../assets/models/petmate1.glb', (gltf) => {
                 model = gltf.scene;
                 model.position.set(0, -3, 0);
                 model.scale.set(3, 3, 3);
@@ -117,14 +137,6 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     };
 
 
-    /**
-     * 播放动画
-     * 当需要播放动画的时候直接调用这个方法即可，不需要在_animate中调用，这个方法只能被各种动画逻辑调用，
-     * 比如说walkTo，jumpTo等这类既需要播放动画又可能需要改变坐标的指令方法中就会调用_playAnimation
-     * 查找动画的时候不是精准查找，只要动画名称中包含animationName，就可以找得到这个动画的，且找到的是第一个包含这个名称的动画
-     * @param animationName 动画名称
-     * @param loop 是否循环播放
-     */
     const _playAction = (action: THREE.AnimationAction, loop: boolean = true, clampWhenFinished: boolean = true) => {
         if (currentAction && currentAction !== action) {
             currentAction.fadeOut(0.1);
@@ -169,48 +181,79 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         if (!walkAction) walkAction = getAnimationAction("run");
         if (!walkAction) return ;
         _playAction(walkAction);
+        updateModelState({walk: true});
         duration = distance / walkSpeed;
-        console.log('distance', distance);
         
         gsap.to(model.position, {
             x: target.x,
             y: target.y,
             z: target.z,
             duration: duration,
-            onUpdate: () => {
-                if (model) {
-                    console.log('model position', transferWorldToScreen(model.position, resolution.width, resolution.height));
-                    console.log('世界坐标model position', model.position);
-                }
-            },
             onComplete: () => {
                 let idleAction = getAnimationAction("idle");
                 if (!idleAction) return ;
                 _playAction(idleAction);
+                updateModelState({standIdle: true});
                 if (model) {
                     gsap.to(model.rotation, {
                         y: 0,
                         duration: 0.3
                     })
                 }
-                if (model) console.log('final model position', transferWorldToScreen(model.position, resolution.width, resolution.height))
             }
         });
     };
 
     /**
      * 坐姿
+     * 这个是晃腿的
      */
     const sitted = () => {
-
+        let sit2 = getAnimationAction("sit 2");
+        if (!sit2) return ;
+        _playAction(sit2, true);
+        updateModelState({sittedIdle: true});
     };
 
     /**
      * 坐下
+     * 这是一整个完整的坐下的动画，因为petmate坐下的动画分成了三段，所以这里需要分段走，站起来是第三段，这里不需要
      */
     const sit = () => {
+        let sit1 = getAnimationAction("sit 1");
+        let sit2 = getAnimationAction("sit 2");
+        
+        if (!sit1 || !sit2  || !mixer) return;
+        updateModelState({sitting: true});
 
+        _playAction(sit1, false);
+        
+        const onSit1Finished = () => {
+            mixer!.removeEventListener('finished', onSit1Finished);
+            _playAction(sit2, true);
+        };
+        
+        mixer.addEventListener('finished', onSit1Finished);
     };
+
+    /**
+     * 从坐姿站起来
+     * 这个方法只能在modelStatus.sittedIdle为true的时候调用，因此调用这个方法的时候，最好先检查一下modelStatus
+     */
+    const standFromSit = () => {
+        if (!modelState.sittedIdle) return ;
+        let sit3 = getAnimationAction("sit 3");
+        if (!sit3) return ;
+        _playAction(sit3, false);
+        updateModelState({standIdle: true});
+        const onSit3Finished = () => {
+            mixer!.removeEventListener('finished', onSit3Finished);
+            let idleAction = getAnimationAction("idle");
+            if (!idleAction) return ;
+            _playAction(idleAction, true);
+        };
+        mixer!.addEventListener('finished', onSit3Finished);
+    }
 
     /**
      * 待机动作
@@ -223,9 +266,13 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
     /**
      * 扶墙偷看
+     * 调用这个方法之前必须要先检查一下Petmate的模型是否在屏幕最边上，否则可能出问题
      */
     const spyBesideWindow = () => {
-
+        let spyBesideWindow = getAnimationAction("see");
+        if (!spyBesideWindow) return ;
+        _playAction(spyBesideWindow, false, true);
+        updateModelState({spyBesideWindow: true});
     };
 
     /**
@@ -234,8 +281,6 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     const dance = () => {
 
     };
-
-
 
     /**
      * 跳跃到指定位置
@@ -282,11 +327,25 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         })
     };
 
+    /**
+     * 更新Petmate模型的动作状态
+     * 传入的state如果没有指明其他的状态的话，其他状态就会变成false
+     * @param state 新的状态
+     * @returns 更新后的状态
+     */
+    const updateModelState = (state: Partial<ModelStatus>): ModelStatus => {
+        modelState = { ...defaultModelState, ...state };
+        return modelState;
+    }
 
     return {
         init3D,
         walkTo,
-        standIdle
+        standIdle,
+        sit,
+        sitted,
+        standFromSit,
+        spyBesideWindow
     }
 }
 
