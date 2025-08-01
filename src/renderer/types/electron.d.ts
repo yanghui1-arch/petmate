@@ -1,7 +1,7 @@
 import { Response } from "../../types/response";
 import { PlayerInfo } from "./player";
 import { Item, ItemType, Wish } from "./common";
-import { ActivityInfo } from "./common"; 
+import { ActivityInfo } from "./common";
 import { SettingConfig } from "./settings";
 import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "./llm";
 import { WindowEvent, WindowInfo } from "../../main/window-monitor";
@@ -11,11 +11,12 @@ import { WindowEvent, WindowInfo } from "../../main/window-monitor";
  */
 interface IElectronAPI {
   // 初始化
-  loadPlayerData: () => Promise<Response<PlayerInfo>>;
+  initPlayerData: () => Promise<Response<PlayerInfo>>;
   initSettings: () => Promise<Response<SettingConfig>>;
   initLLM: () => Promise<Response<void>>;
-  
+
   // get && show
+  getCurrentPlayerData: () => Promise<Response<PlayerInfo>>;
   showActivities: (type: ActivityInfo["type"]) => Promise<Response<ActivityInfo[]>>;
   showItems: (type: ItemType) => Promise<Response<Item[]>>;
   getPetmateCompletedWishesNum: (petmateId: number) => Promise<Response<number>>;
@@ -27,7 +28,7 @@ interface IElectronAPI {
   getTTSVoiceList: () => Promise<Response<TTSVoice[]>>;
   getChatPrompt: () => Promise<Response<string>>;
   getHistoryChatMessages: () => Promise<Response<HistoryChatMessage[]>>;
-  
+
   // set && update && add
   setChatLLMConfig: (config: ChatLLMConfig) => Promise<Response<ChatLLMConfig>>;
   setTTSLLMConfig: (config: TTSLLMConfig) => Promise<Response<TTSLLMConfig>>;
@@ -40,6 +41,8 @@ interface IElectronAPI {
   consumeItem: (itemId: number, count: number, petmateId: number) => Promise<Response<void>>;
   buyItem: (itemId: number, count: number) => Promise<Response<Item>>;
   chat: (message: ChatMessage) => Promise<Response<void>>;
+  startActivity: (petmateId: number, activityId: number) => Promise<Response<void>>;
+  cancelActivity: (petmateId: number) => Promise<Response<void>>;
 
   // 克隆音色
   cloneVoice: (url: string) => Promise<Response<string>>;
@@ -47,6 +50,9 @@ interface IElectronAPI {
   // 监听
   onTextChunk: (callback: (event: Event, text: string) => void) => void;
   onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => void;
+  onWishGenerated: (callback: (event: Event, petmateId: number) => void) => void,
+  onWishFinished: (callback: (event: Event, petmateId: number, finishedWishNames: string[]) => void) => void,
+  onEndActivity: (callback: (event: Event, petmateId: number) => void) => void,
   removeAllAudioChunkListeners: () => void;
 
   // 其他

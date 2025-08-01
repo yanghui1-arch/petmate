@@ -9,6 +9,7 @@ import { notActivityPetmateStatus } from "../../types/petmate";
 import { GET_BUFF_NUM_THROUGH_ACT, GET_BUFF_PROB_THROUGH_ACT, RETRY_TIMES_GET_BUFF_THROUGH_ACT } from "../../constant";
 import { wishHandler } from "../wish";
 import { Wish } from "../../types/wish";
+import { getMainWindow } from "../../../main";
 
 /**
  * 开始活动
@@ -34,13 +35,13 @@ export function startActivity(petmateId: number, activityId: number) {
     if (petmate === undefined) {
         throw new NotFoundError(`Petmate不存在: ${petmateId}`);
     }
-    const buffEffect:BuffEffect = calcBuffEffect(petmate.attrs.buffs);
+    const buffEffect: BuffEffect = calcBuffEffect(petmate.attrs.buffs);
     try {
-        petmate.updateEnergy(consume.energy);
-        petmate.updateHungry(consume.hungry);
-        petmate.updateEmotion(consume.emotion);
-        petmate.updateHealth(consume.health);
-        playerManager.updateCash(consume.cash * buffEffect.cashCostRate);
+        petmate.updateEnergy(-(consume.energy ?? 0));
+        petmate.updateHungry(-(consume.hungry ?? 0));
+        petmate.updateEmotion(-(consume.emotion ?? 0));
+        petmate.updateHealth(-(consume.health ?? 0));
+        playerManager.updateCash(-(consume.cash ?? 0) * buffEffect.cashCostRate);
         petmate.setStatus({
             status: activity.type,
             startTime: new Date(),
@@ -50,7 +51,15 @@ export function startActivity(petmateId: number, activityId: number) {
         // 启动一个延时任务，在endTime时结束活动并获得收益
         // 可能会endTime结束前关闭应用，因此一定要在打开游戏时候查一下petmate的status
         setTimeout(() => {
-            endActivity(petmateId);
+            const endSuccess: boolean = endActivity(petmateId);
+            // 活动结束，发送消息给渲染层
+            if (endSuccess) {
+                const mainWindow = getMainWindow();
+                if (mainWindow) {
+                    console.log("发送活动结束消息", petmateId);
+                    mainWindow.webContents.send('end-activity', petmateId);
+                }
+            }
         }, consume.spendingTime * buffEffect.spendingTimeRate * 1000);
 
         // 同步文件中的数据
@@ -90,18 +99,18 @@ export function endActivity(petmateId: number): boolean {
         throw new NotFoundError("结束的活动不存在");
     }
     const reward: Reward = activity.reward;
-    const buffEffect:BuffEffect = calcBuffEffect(petmate.attrs.buffs);
+    const buffEffect: BuffEffect = calcBuffEffect(petmate.attrs.buffs);
     // 更新奖励
-    petmate.updateEnergy(reward.energy);
-    petmate.updateHungry(reward.hungry);
-    petmate.updateEmotion(reward.emotion);
-    petmate.updateHealth(reward.health);
-    petmate.addExp(reward.exp);
-    petmate.addGameExp(reward.gameExp);
-    petmate.addSingExp(reward.singExp);
-    petmate.addDrawExp(reward.drawExp);
-    petmate.addAffectionExp(reward.affectionExp);
-    playerManager.updateCash(reward.cash * buffEffect.cashGainRate);
+    petmate.updateEnergy(reward.energy ?? 0);
+    petmate.updateHungry(reward.hungry ?? 0);
+    petmate.updateEmotion(reward.emotion ?? 0);
+    petmate.updateHealth(reward.health ?? 0);
+    petmate.addExp(reward.exp ?? 0);
+    petmate.addGameExp(reward.gameExp ?? 0);
+    petmate.addSingExp(reward.singExp ?? 0);
+    petmate.addDrawExp(reward.drawExp ?? 0);
+    petmate.addAffectionExp(reward.affectionExp ?? 0);
+    playerManager.updateCash(reward.cash ?? 0 * buffEffect.cashGainRate);
 
     // 尝试获取buff
     const toPickBuffs: Buff[] = getBuffThroughAct(petmate);
@@ -122,7 +131,44 @@ export function endActivity(petmateId: number): boolean {
     });
     if (finishedWishes.length > 0) {
         wishHandler.giveReward(petmate, player, finishedWishes);
+        // 心愿完成，发送消息给渲染层
+        const mainWindow = getMainWindow();
+        if (mainWindow) {
+            const finishedWishNames: string[] = finishedWishes.map(wish => wish.name);
+            console.log("发送心愿完成消息", petmateId, finishedWishNames);
+            mainWindow.webContents.send('wish-finished', petmateId, finishedWishNames);
+        }
     }
+
+    // 同步文件中的数据
+    playerManager.updatePetmate(petmate);
+    playerManager.updatePlayer(player);
+    return true;
+}
+
+/**
+ * 取消活动
+ * @param petmateId petmate的id
+ * @returns 是否取消成功
+ */
+export function cancelActivity(petmateId: number): boolean {
+    const player = playerManager.getPlayer();
+    const petmate: PetMate | undefined = player.petmates.find(petmate => petmate.id === petmateId);
+    if (petmate === undefined) {
+        throw new NotFoundError(`Petmate不存在: ${petmateId}`);
+    }
+    const status = petmate.getStatus();
+    if (status.status === "idle") {
+        logger.warning(`Petmate [${petmateId}] 当前状态为idle，无法取消活动，现在有的活动是: ${status.activity?.name}`);
+        return false;
+    }
+    const activity: ActivityInfo | undefined = status.activity;
+    if (activity === undefined) {
+        throw new NotFoundError("结束的活动不存在");
+    }
+
+    // 取消活动
+    petmate.setStatus(notActivityPetmateStatus);
 
     // 同步文件中的数据
     playerManager.updatePetmate(petmate);
@@ -149,7 +195,7 @@ export function getBuffThroughAct(petmate: PetMate): Buff[] {
             let retryTimes = RETRY_TIMES_GET_BUFF_THROUGH_ACT;
             // 给retryTimes机会，如果retryTimes次都是已经到了叠加上限的buff，则就没Buff了
             while (retryTimes > 0) {
-                const toPickBuff:Buff = allAvailableBuffs[Math.floor(Math.random() * allAvailableBuffs.length)];
+                const toPickBuff: Buff = allAvailableBuffs[Math.floor(Math.random() * allAvailableBuffs.length)];
                 // 确保buff叠加层数不会超过上限
                 const sameBuffs: ActiveBuff[] = petmateActiveBuffs.filter(buff => buff.buff.id === toPickBuff.id);
                 const currentStacks: number = sameBuffs.length;

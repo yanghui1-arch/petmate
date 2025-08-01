@@ -177,7 +177,7 @@ class ActivityManager {
     }
 
     loadActivity(): void {
-        const activities = readJsonFile<ActivityInfo>('src/main/assets/activity.json');
+        const activities: ActivityInfo[] = readJsonFile<ActivityInfo>('src/main/assets/activity.json');
         (this.store as any).set('activityInfo', activities);
         this.allActivities = activities;
     }
@@ -212,7 +212,8 @@ class BuffManager {
 
     constructor() {
         this.store = new Store<BuffStoreData>({
-            name: 'buff-store'
+            name: 'buff-store',
+            projectName: 'petmate'
         });
         this.loadBuff();
     }

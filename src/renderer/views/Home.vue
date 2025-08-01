@@ -20,15 +20,60 @@
                 />
               </div>
               <div class="home-panel-grade">
+                <span>{{ currentActivePetmate?.name }}</span>
                 <span class="grade-value"
                   >LEVEL {{ petmateAttribute?.level }}</span
                 >
               </div>
             </div>
-            <div class="home-panel-stat">
+            <div class="home-panel-attribute">
               <div class="home-panel-view">
-                <span>Dass</span>
-                <span style="width: 60%; text-align: center">(已喂养2天)</span>
+                <!-- <span>Dass</span> -->
+                <div>
+                  <div class="home-panel-buff">
+                    <n-image
+                      src="../assets/image/buff/buff.png"
+                      width="16"
+                      height="16"
+                      preview-disabled
+                      v-for="(buffItem, index) in petmateAttribute?.buffs"
+                      :key="'buff-icon-' + buffItem.buff.id"
+                      @mouseenter="showBuffPopover($event, buffItem, index)"
+                      @mouseleave="hideBuffPopover"
+                    />
+                  </div>
+                  <!-- <n-carousel
+                    :show-arrow="false"
+                    :show-dots="false"
+                    :loop="false"
+                  >
+                    <div class="home-panel-buff">
+                      <n-image
+                        src="../assets/image/buff/buff.png"
+                        width="16"
+                        height="16"
+                        preview-disabled
+                        v-for="buffItem in buffs.slice(0, 5)"
+                        :key="'buff-icon-' + buffItem.buff.id"
+                        @mouseenter="showBuffPopover($event, buffItem, 'left')"
+                        @mouseleave="hideBuffPopover"
+                      />
+                    </div>
+                    <div class="home-panel-buff">
+                      <n-image
+                        src="../assets/image/buff/buff.png"
+                        width="16"
+                        height="16"
+                        preview-disabled
+                        v-for="buffItem in buffs.slice(0, 5)"
+                        :key="'buff-icon-' + buffItem.buff.id"
+                        @mouseenter="showBuffPopover($event, buffItem, 'left')"
+                        @mouseleave="hideBuffPopover"
+                      />
+                    </div>
+                  </n-carousel> -->
+                  <!-- <span>▶</span> -->
+                </div>
               </div>
 
               <div class="attribute-item">
@@ -109,8 +154,8 @@
                 >
                   <div
                     class="package-item"
-                    @mouseenter="showPopover($event, item)"
-                    @mouseleave="hidePopover"
+                    @mouseenter="showItemPopover($event, item)"
+                    @mouseleave="hideItemPopover"
                     @click="showModal(item)"
                   >
                     <n-image width="38" :src="item.url" preview-disabled />
@@ -145,6 +190,13 @@
         </div>
       </div>
     </div>
+    <BuffPopover
+      :popoverX="popoverX"
+      :popoverY="popoverY"
+      :show="isBuffEnter"
+      :popoverWidth="popoverWidth"
+      :activeBuff="popoverBuff"
+    />
     <ItemPopover
       :popoverX="popoverX"
       :popoverY="popoverY"
@@ -158,6 +210,7 @@
       :title="modalTitle"
       :item="modalItem"
       :hasCount="modalHasCount"
+      :petmateId="currentPetmateID"
       type="use"
     />
   </div>
@@ -167,17 +220,19 @@
 import { ref } from "vue";
 import AttributeBar from "@/components/AttributeBar.vue";
 import Pagedot from "@/components/Pagedot.vue";
-import ItemPopover from "@/components/ItemPopover.vue";
-import ItemModal from "@/components/ItemModal.vue";
+import BuffPopover from "@/components/buff/BuffPopover.vue";
+import ItemPopover from "@/components/item/ItemPopover.vue";
+import ItemModal from "@/components/item/ItemModal.vue";
 import type { CarouselInst } from "naive-ui";
 import { executeItemPage } from "../utils/item";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
 import { PackageItemInfo } from "../types/player";
-import { ItemType, Item } from "../types/common";
+import { ItemType, Item, ActiveBuff } from "../types/common";
 const { playerData, consumeItem } = usePlayer();
 const { getShopItems } = useShow();
 
+// 物品id -> 物品信息，用于物品信息悬浮框和使用弹出框
 const completeItemsMap = ref<Map<number, Item>>(new Map());
 
 /**
@@ -281,7 +336,7 @@ const popoverY = ref(0);
 const isItemEnter = ref(false);
 const popoverWidth = ref(180);
 const popoverItem = ref<Item | null>(null);
-const showPopover = (event: MouseEvent, item: PackageItemInfo) => {
+const showItemPopover = (event: MouseEvent, item: PackageItemInfo) => {
   const target = event.currentTarget as HTMLElement;
   const rect = target?.getBoundingClientRect();
   // 经过实践，popoverX和popoverY暂时确定是悬浮框矩形 '底部中心' 的坐标
@@ -299,7 +354,7 @@ const showPopover = (event: MouseEvent, item: PackageItemInfo) => {
   }
 };
 
-const hidePopover = () => {
+const hideItemPopover = () => {
   isItemEnter.value = false;
 };
 
@@ -318,6 +373,31 @@ const showModal = (item: PackageItemInfo) => {
     };
     modalHasCount.value = item.count;
   }
+};
+
+// buff相关
+const isBuffEnter = ref(false);
+const popoverBuff = ref<ActiveBuff | null>(null);
+const showBuffPopover = (
+  event: MouseEvent,
+  buff: ActiveBuff,
+  index: number
+) => {
+  const target = event.currentTarget as HTMLElement;
+  const rect = target?.getBoundingClientRect();
+  // 经过实践，popoverX和popoverY暂时确定是悬浮框矩形 '底部中心' 的坐标
+  // 前五个buff，悬浮框在右边；后五个buff，悬浮框在左边，防止buff被遮挡
+  if (index < 5) {
+    popoverX.value = rect.x + rect.width / 2 + popoverWidth.value / 2;
+  } else {
+    popoverX.value = rect.x + rect.width / 2 - popoverWidth.value / 2;
+  }
+  popoverY.value = rect.y + rect.height / 2;
+  isBuffEnter.value = true;
+  popoverBuff.value = buff;
+};
+const hideBuffPopover = () => {
+  isBuffEnter.value = false;
 };
 </script>
 
@@ -375,13 +455,19 @@ const showModal = (item: PackageItemInfo) => {
       .home-panel-image {
         margin-top: 10px;
       }
+      .home-panel-grade {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: $color-pink-100;
+      }
       .home-panel-grade .grade-value {
         font-size: 16px;
         font-weight: bold;
         color: $color-pink-100;
       }
     }
-    .home-panel-stat {
+    .home-panel-attribute {
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -394,6 +480,13 @@ const showModal = (item: PackageItemInfo) => {
           width: 60px;
           text-align: center;
           color: $font-light;
+        }
+        .home-panel-buff {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          column-gap: 5px;
         }
       }
       .attribute-item {

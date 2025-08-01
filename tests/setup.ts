@@ -1,5 +1,28 @@
 import { vi } from 'vitest'
 
+// 全局模拟electron的主进程API
+vi.mock('electron', () => ({
+  ipcMain: {
+    handle: vi.fn(),
+    on: vi.fn(),
+  },
+  app: {
+    whenReady: vi.fn(() => Promise.resolve()),
+    on: vi.fn(),
+    quit: vi.fn()
+  },
+  BrowserWindow: vi.fn().mockImplementation(() => ({
+    loadURL: vi.fn(),
+    on: vi.fn(),
+    getAllWindows: vi.fn(() => [])
+  }))
+}))
+
+// Mock the main index.ts to prevent it from executing during tests
+vi.mock('../src/main/index.ts', () => ({
+  getMainWindow: vi.fn(() => null)
+}))
+
 // Mock Electron APIs for testing
 const mockElectronAPI = {
   getAppVersion: vi.fn(),

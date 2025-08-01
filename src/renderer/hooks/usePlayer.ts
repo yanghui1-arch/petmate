@@ -6,19 +6,22 @@ import { ChatMessage } from '../types/llm'
 
 // 全局状态 - 单个实例共享整个应用
 const playerData = ref<PlayerInfo | null>(null)
-const isLoading = ref(false)
+const isInit = ref(false)
 const error = ref<string | null>(null)
 
 export function usePlayer() {
-  // 加载玩家数据
-  const loadPlayerData = async (): Promise<void> => {
-    if (isLoading.value) return // 防止多次同时加载
+  /**
+   * 初始化玩家数据
+   * 该方法只能被初始化一次，且会对活动、buff做一次轮询检查，如果活动、buff有结束的，则结束活动和buff，如果存在还没结束的活动，则继续重新设置倒计时
+   */
+  const initPlayerData = async (): Promise<void> => {
+    if (isInit.value) return // 防止多次同时加载
 
-    isLoading.value = true
+    isInit.value = true
     error.value = null
 
     try {
-      const response: Response<PlayerInfo> = await window.api.loadPlayerData()
+      const response: Response<PlayerInfo> = await window.api.initPlayerData()
 
       if (response.code === 200 && response.data) {
         playerData.value = response.data
@@ -29,26 +32,24 @@ export function usePlayer() {
       error.value = err instanceof Error ? err.message : 'Unknown error occurred'
       console.error('Failed to load player data:', err)
     } finally {
-      isLoading.value = false
+      isInit.value = false
     }
   }
 
   // 重新获取玩家数据
   const refreshPlayerData = async (): Promise<void> => {
-    await loadPlayerData()
-  }
-
-  // 更新本地玩家数据
-  const updatePlayerData = (newData: Partial<PlayerInfo>): void => {
-    if (playerData.value) {
-      playerData.value = { ...playerData.value, ...newData }
+    try {
+      const response: Response<PlayerInfo> = await window.api.getCurrentPlayerData()
+      if (response.code === 200 && response.data) {
+        playerData.value = response.data
+      } else {
+        throw new Error(response.message || 'Failed to load player data')
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error occurred'
+      console.error('Failed to refresh player data:', err)
     }
-  }
-
-  // 设置完整玩家数据
-  const setPlayerData = (newData: PlayerInfo): void => {
-    playerData.value = newData
-  }
+  };
 
   // 消耗物品
   const consumeItem = async (itemId: number, count: number, petmateId: number): Promise<boolean> => {
@@ -86,6 +87,41 @@ export function usePlayer() {
     }
   }
 
+  // 开启活动
+  const startActivity = async (petmateId: number, activityId: number): Promise<boolean> => {
+    try {
+      const response = await window.api.startActivity(petmateId, activityId)
+      if (response.code === 200) {
+        // 开启活动后重新获取玩家数据
+        await refreshPlayerData()
+        return true
+      } else {
+        throw new Error(response.message || 'Failed to start activity')
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error occurred'
+      console.error('Failed to start activity:', err)
+      return false
+    }
+  }
+
+  // 取消活动
+  const cancelActivity = async (petmateId: number): Promise<boolean> => {
+    try {
+      const response = await window.api.cancelActivity(petmateId)
+      if (response.code === 200) {
+        await refreshPlayerData()
+        return true
+      } else {
+        throw new Error(response.message || 'Failed to cancel activity')
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error occurred'
+      console.error('Failed to cancel activity:', err)
+      return false
+    }
+  }
+
   // 聊天
   const chat = async (message: ChatMessage): Promise<boolean> => {
     try {
@@ -116,18 +152,18 @@ export function usePlayer() {
   return {
     // 只读数据访问
     playerData: readonly(playerData),
-    isLoading: readonly(isLoading),
+    isInit: readonly(isInit),
     error: readonly(error),
 
     // 数据管理方法
-    loadPlayerData,
+    initPlayerData,
     refreshPlayerData,
-    updatePlayerData,
-    setPlayerData,
 
     // 操作方法，自动同步数据
     consumeItem,
     buyItem,
+    startActivity,
+    cancelActivity,
 
     // 聊天
     chat,
