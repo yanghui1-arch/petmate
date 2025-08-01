@@ -11,8 +11,15 @@
             preview-disabled
           />
           <span class="activity-grade-label">唱歌</span>
-          <span class="activity-grade-value">LV.1</span>
-          <AttributeBar :value="65" :max="100" width="200px" color="#FF7EB6" />
+          <span class="activity-grade-value"
+            >LV.{{ petmateAttribute?.sing_level ?? 0 }}</span
+          >
+          <AttributeBar
+            :value="petmateAttribute?.sing_exp ?? 0"
+            :max="petmateAttribute?.sing_next_exp ?? 0"
+            width="200px"
+            color="#FF7EB6"
+          />
         </div>
         <div class="activity-grade-item">
           <n-image
@@ -22,8 +29,15 @@
             preview-disabled
           />
           <span class="activity-grade-label">绘画</span>
-          <span class="activity-grade-value">LV.1</span>
-          <AttributeBar :value="80" :max="100" width="200px" color="#7EBAFF" />
+          <span class="activity-grade-value"
+            >LV.{{ petmateAttribute?.draw_level ?? 0 }}</span
+          >
+          <AttributeBar
+            :value="petmateAttribute?.draw_exp ?? 0"
+            :max="petmateAttribute?.draw_next_exp ?? 0"
+            width="200px"
+            color="#7EBAFF"
+          />
         </div>
         <div class="activity-grade-item">
           <n-image
@@ -33,8 +47,15 @@
             preview-disabled
           />
           <span class="activity-grade-label">游戏</span>
-          <span class="activity-grade-value">LV.1</span>
-          <AttributeBar :value="45" :max="100" width="200px" color="#7EFF9E" />
+          <span class="activity-grade-value"
+            >LV.{{ petmateAttribute?.game_level ?? 0 }}</span
+          >
+          <AttributeBar
+            :value="petmateAttribute?.game_exp ?? 0"
+            :max="petmateAttribute?.game_next_exp ?? 0"
+            width="200px"
+            color="#7EFF9E"
+          />
         </div>
       </div>
     </div>
