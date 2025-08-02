@@ -12,13 +12,14 @@ import * as THREE from 'three';
 import { Response } from '../../types/response';
 import { WindowEvent, WindowInfo } from '../types/window';
 import { sittedWindowTitle } from '../hooks/usePetmateModel';
+import { ScreenPosition } from '../types/model';
 
 const threeContainer = ref();
 const screenResolution = ref({width: 0, height: 0});
-const { init3D, standIdle, walkTo, sit, spyBesideWindow, standFromSit, sitted, modelState, getModelScreenPosition, modelConfig, setSittedWindowTitle } = usePetmateModel(threeContainer);
+const { init3D, standIdle, walkTo, sit, spyBesideWindow, standFromSit, sitted, modelState, getModelScreenPosition, modelConfig, setSittedWindowTitle, setModelPosition } = usePetmateModel(threeContainer);
 
 onMounted(async () => {
-    /* 获取分辨率 */
+    /* 获取分辨率并加载模型 */
     window.windowMonitor.getScreenResolution().then((res: Response<{width: number, height: number}>) => {
         screenResolution.value = res.code === 200 ? res.data! : {width: 1920, height: 1080};
         init3D(screenResolution.value).then(() => {
@@ -27,7 +28,8 @@ onMounted(async () => {
         });
     });
 
-    window.windowMonitor.start(1000);
+    /* 监听窗口 */
+    window.windowMonitor.start(100);
     window.windowMonitor.onWindowOpened(async (event, windowEvent: WindowEvent) => {
         const getWindowsRes = await window.windowMonitor.getWindows();
         if (getWindowsRes.code === 200) {
@@ -55,25 +57,30 @@ onMounted(async () => {
         if (getWindowsRes.code === 200) {
             allWindows.value = getWindowsRes.data!;
         }
-        // 如果变的窗口正好的Petmate坐着的窗口，则需要判断一下Petmate是否还可以继续坐在这个窗口上面，如果不行，则应该站起来
-        // 不行的条件是窗口的高度和之前的高度差超过20px || 宽度不对
+        // 如果变的窗口正好的Petmate坐着的窗口，需要判断这个窗口是否还是激活状态
+        // 如果不是激活状态的话，模型就应该起来了
         if (windowEvent.window.title === sittedWindowTitle) {
-            const modelPosition = getModelScreenPosition();
-            if (modelPosition.x >= windowEvent.window.bounds.x && modelPosition.x <= windowEvent.window.bounds.x + windowEvent.window.bounds.width 
-            && Math.abs(modelPosition.y - windowEvent.window.bounds.y) <= 20) {
-                // 继续坐着
-            } else {
-                standFromSit();
-            }
+            const windowPosition: THREE.Vector3 = transferScreenToWorld(
+                {x: windowEvent.window.bounds.x + windowEvent.window.bounds.width / 2, y: windowEvent.window.bounds.y}, 
+                screenResolution.value.width, 
+                screenResolution.value.height
+            );
+            setModelPosition(windowPosition);
         }
     });
-
     
     // 获取当前打开的所有窗口的信息
     const initAllWindows = await window.windowMonitor.getWindows();
     if (initAllWindows.code === 200) {
         allWindows.value = initAllWindows.data!;
     }
+
+    /** 监听鼠标事件 */
+    window.addEventListener("mousemove", (event) => {
+        const mousePosition = {x: event.screenX, y: event.screenY};
+        const modelPosition = getModelScreenPosition();
+        // 如果鼠标滑进了
+    });
 
     /* 动画播放计时器 
     * 5分钟之后选择一个动画
@@ -91,18 +98,67 @@ onUnmounted(() => {
 
 const allWindows = ref<WindowInfo[]>([]);
 
-const selectAnimationAndPlay = () => {
+/**
+ * 主动选择的一些动作
+ * walkToMiddleBottomAndSit: 走到屏幕中间最下面然后坐下
+ * selectOneWindowAndSit: 选择一个窗口然后坐下
+ * spyBesideWindow: 在窗口旁边偷看
+ * spyBesides: 在屏幕最边上偷看
+ */
+const animSelections: Map<string, () => void> = new Map([
+    // ["walkToBottomAndSit", walkToBottomAndSit],
+    ["selectOneWindowAndSit", selectOneWindowAndSit],
+    // ["spyBesides", spyBesides]
+]);
+
+function walkToBottomAndSit() {
+    // targetX [screenResolution.value.width / 3, 2/3 * screenResolution.value.width]
+    const targetX = Math.floor(Math.random() * (screenResolution.value.width / 3)) + screenResolution.value.width / 3;
+    const targetY = screenResolution.value.height - 100;
+    walkTo({x: targetX, y: targetY}, () => {
+        sit();
+    });
+}
+
+/**
+ * 选择一个窗口，坐在这个窗口上
+ */
+function selectOneWindowAndSit() {
+    // 1. 先选择一个可以坐着的窗口
     const idx = Math.floor(Math.random() * allWindows.value.length);
     const window: WindowInfo = allWindows.value[idx];
-    if (window.bounds.y - 200 < 0) return ;
-    
+    // 人物坐上去会超过窗口之外
+    if (window.bounds.y - 150 < 0) return ;
     console.log(`选择了窗口：${window.title}`);
-    
-    // 这个50是裙子身高
-    walkTo({x: window.bounds.x + window.bounds.width / 2, y: window.bounds.y + 200}, () => {
+
+    // 2. 走到窗口旁边
+    walkTo({x: window.bounds.x + window.bounds.width / 2, y: window.bounds.y}, () => {
         sit();
         setSittedWindowTitle(window.title);
     });
+}
+
+/**
+ * 走到屏幕最右边，然后随机选择一个下半区，偷看
+ * 这个目前还不行，因为偷看的动作需要优化
+ */
+function spyBesides() {
+    const targetX = screenResolution.value.width;
+    // 随机的下半区, 越大越在下半区
+    const targetY = Math.floor(Math.random() * (screenResolution.value.height / 2)) + screenResolution.value.height / 2;
+    walkTo({x: targetX, y: targetY}, () => {
+        spyBesideWindow();
+    });
+}
+
+// 随机选择一个主动播放动画播放
+const selectAnimationAndPlay = () => {
+    // 随机从animSelections里选一个主动播放
+    const animSelection = Array.from(animSelections.keys())[Math.floor(Math.random() * animSelections.size)];
+    const animSelectionFunc = animSelections.get(animSelection);
+    if (animSelectionFunc) {
+        animSelectionFunc();
+    }
 };
 
 </script>

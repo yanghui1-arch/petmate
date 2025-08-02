@@ -60,7 +60,7 @@ export let sittedWindowTitle: string = "";
 /**
  * 模型的走路速度
  */
-const walkSpeed: number = 4;
+const walkSpeed: number = 2;
 
 export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
@@ -76,7 +76,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
             scene = new THREE.Scene();
             // 使用实际窗口大小的宽高比，保持与renderer一致
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 1000);
             
             renderer = new THREE.WebGLRenderer({
                 antialias: true,
@@ -108,7 +108,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
                 model.scale.set(petMateModelConfig.scale, petMateModelConfig.scale, petMateModelConfig.scale);
                 scene?.add(model);
 
-                camera?.position.set(0, 2, 10)
+                camera?.position.set(0, 0, 22)
                 
                 animations = gltf.animations;
                 console.log(animations)
@@ -376,6 +376,17 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         sittedWindowTitle = title;
     }
 
+    const setModelPosition = (position: THREE.Vector3) => {
+        if (!model) return ;
+        gsap.killTweensOf(model.position);
+        gsap.to(model.position, {
+            x: position.x,
+            y: position.y,
+            z: position.z,
+            duration: 0.1
+        });
+    }
+
     return {
         init3D,
         modelConfig: readonly(petMateModelConfig),
@@ -394,6 +405,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
         // set
         setSittedWindowTitle,
+        setModelPosition
     }
 }
 
