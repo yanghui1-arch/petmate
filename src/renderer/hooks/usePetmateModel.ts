@@ -118,10 +118,10 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
                 scene?.add(directionalLightLeft!);
                 scene?.add(directionalLightRight!);
                 scene?.add(directionalLightCenter!);
-                if (camera && renderer) orbitControls = new OrbitControls(camera, renderer.domElement);
+                // if (camera && renderer) orbitControls = new OrbitControls(camera, renderer.domElement);
                 
-                const axesHelper = new THREE.AxesHelper(10);
-                scene?.add(axesHelper);
+                // const axesHelper = new THREE.AxesHelper(10);
+                // scene?.add(axesHelper);
                 renderer?.setAnimationLoop(animate);
 
                 // 更新相机矩阵，确保投影计算正确
