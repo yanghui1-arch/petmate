@@ -220,7 +220,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
      * @param rotationY 旋转角度，如果为空，就保持现在的model.rotation.y
      */
     const sitted = () => {
-        let sit2 = getAnimationAction("sit 2");
+        let sit2 = getAnimationAction("sit_2");
         if (!sit2 || !model) return ;
         _playAction(sit2, true);
 
@@ -232,8 +232,8 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
      * 这是一整个完整的坐下的动画，因为petmate坐下的动画分成了三段，所以这里需要分段走，站起来是第三段，这里不需要
      */
     const sit = () => {
-        let sit1 = getAnimationAction("sit 1");
-        let sit2 = getAnimationAction("sit 2");
+        let sit1 = getAnimationAction("sit_1");
+        let sit2 = getAnimationAction("sit_2");
         
         if (!sit1 || !sit2  || !mixer || !model) return;
         updateModelState({sitting: true});
@@ -261,7 +261,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
      */
     const standFromSit = () => {
         if (!modelState.sittedIdle) return ;
-        let sit3 = getAnimationAction("sit 3");
+        let sit3 = getAnimationAction("sit_3");
         if (!sit3) return ;
         _playAction(sit3, false);
         updateModelState({standIdle: true});
@@ -292,8 +292,12 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
      */
     const spyBesideWindow = () => {
         let spyBesideWindow = getAnimationAction("see");
-        if (!spyBesideWindow) return ;
+        if (!spyBesideWindow || !model) return ;
         _playAction(spyBesideWindow, false, true);
+        gsap.to(model.rotation, {
+            y: 0,
+            duration: 0.3
+        });
         updateModelState({spyBesideWindow: true});
     };
 
