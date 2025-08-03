@@ -7,7 +7,7 @@ export type Wish = {
     startTime: Date,
     duration: number,
     endTime: Date,
-    status: "doing" | "finished" | "failed"
+    status: "doing" | "finished" | "claimed" | "failed" // 进行中，已完成（未领取），已领取，已失败
 }
 
 export type WishRequirement = {

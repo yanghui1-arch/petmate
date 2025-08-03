@@ -10,7 +10,7 @@
                 "type": "item",
                 "id": 1,
                 "name": "物品1",
-                "src": "src/main/assets/image/item/item1.png",
+                "src": "../assets/image/item/burger.png",
                 "count": 1,
                 "userCount": 0,
                 "status": "doing"
