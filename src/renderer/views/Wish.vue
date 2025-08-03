@@ -5,7 +5,7 @@
       <div class="wish-header">
         <div class="wish-title">
           <span style="font-family: Petmate; font-size: 30px"
-            >{{ petmateName }} Wish</span
+            >{{ currentActivePetmate?.name ?? "Dass" }} Wish</span
           >
         </div>
       </div>
@@ -23,8 +23,12 @@
             <div class="affection-glow"></div>
           </div>
           <div class="affection-info">
-            <div class="petmate-name">{{ petmateName }}</div>
-            <div class="affection-level">好感 LV. {{ affectionLevel }}</div>
+            <div class="petmate-name">
+              {{ currentActivePetmate?.name ?? "Dass" }}
+            </div>
+            <div class="affection-level">
+              好感 LV. {{ petmateAttribute?.affection_level ?? -1 }}
+            </div>
             <div class="affection-progress">
               <n-progress
                 type="line"
@@ -36,7 +40,8 @@
                 processing
               />
               <div class="progress-text">
-                {{ currentAffectionExp }} / {{ nextAffectionExp }}
+                {{ petmateAttribute?.affection_exp ?? -1 }} /
+                {{ petmateAttribute?.affection_next_exp ?? -1 }}
               </div>
             </div>
           </div>
@@ -190,6 +195,52 @@
                 </div>
               </div>
             </div>
+
+            <!-- 心愿奖励展示 -->
+            <div v-if="wishReward" class="rewards-display-section">
+              <div class="rewards-title">心愿奖励</div>
+              <div class="rewards-container">
+                <div class="reward-item">
+                  <img :src="wishReward.src" class="reward-icon" />
+                  <div class="reward-info">
+                    <span class="reward-name">{{ wishReward.name }}</span>
+                    <span v-if="wishReward.count" class="reward-count">
+                      x{{ wishReward.count }}
+                    </span>
+                  </div>
+                  <div class="reward-badge">
+                    <span>🎁</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 奖励领取区域 -->
+            <div v-if="isWishCompleted" class="reward-claim-section">
+              <div class="claim-divider"></div>
+              <div class="claim-container">
+                <div class="claim-info">
+                  <div class="claim-icon">🎁</div>
+                  <div class="claim-text">
+                    <div class="claim-title">心愿已完成！</div>
+                  </div>
+                </div>
+                <n-button
+                  v-if="checkWishInfo?.status !== 'claimed'"
+                  @click="handleClaimReward"
+                  :loading="isClaimingReward"
+                  size="large"
+                  type="success"
+                  class="claim-button"
+                >
+                  领取奖励
+                </n-button>
+                <div v-else class="claimed-status">
+                  <span class="claimed-icon">✅</span>
+                  <span class="claimed-text">已领取</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -198,46 +249,50 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import WishItem from "../components/wish/WishItem.vue";
-import { useShow } from "../hooks/useShow";
 import { usePlayer } from "../hooks/usePlayer";
-import { PetMate } from "../types/petmate";
 import { WishRequirement } from "../types/common";
 import { formatTime } from "../utils/time";
+import { openMessageModal } from "../hooks/useInteract";
+import { useShow } from "../hooks/useShow";
+const { playerData, claimWishReward } = usePlayer();
+const { getItemInfo } = useShow();
 
-const { getPetmateCompletedWishesNum, getPetmateOneWish } = useShow();
-
-const petmateCompletedWishesNum = ref<number>(0);
-const { playerData } = usePlayer();
-
-const currentPetmateID = ref<number>(0);
-const petmate: PetMate = playerData.value?.petmates[
-  currentPetmateID.value
-] as PetMate;
-
-onMounted(async () => {
-  petmateCompletedWishesNum.value =
-    (await getPetmateCompletedWishesNum(currentPetmateID.value)) ?? -1;
+const currentPetmateID = ref(0);
+const currentActivePetmate = computed(() => {
+  return playerData.value?.petmates.find(
+    (petmate) => petmate.id === currentPetmateID.value
+  );
 });
 
-// 好感度相关
-const petmateName = petmate?.name ?? "Dass";
-const affectionLevel = ref(petmate?.attrs.affection_level ?? -1);
-const currentAffectionExp = ref(petmate?.attrs.affection_exp ?? -1);
-const nextAffectionExp = ref(petmate?.attrs.affection_next_exp ?? -1);
-const progressWishNum = ref(
-  petmate?.wishes.filter((wish) => wish.status === "doing").length ?? -1
-);
+const petmateAttribute = computed(() => {
+  return currentActivePetmate.value?.attrs;
+});
+
+const petmateCompletedWishesNum = computed(() => {
+  return currentActivePetmate.value?.completedWishesNum ?? -1;
+});
+
+const progressWishNum = computed(() => {
+  return (
+    currentActivePetmate.value?.wishes.filter((wish) => wish.status === "doing")
+      .length ?? -1
+  );
+});
 
 // 计算好感度进度百分比
 const affectionProgressPercent = computed(() => {
-  if (nextAffectionExp.value <= 0) return 0;
-  return Math.round((currentAffectionExp.value / nextAffectionExp.value) * 100);
+  const affectionExp = petmateAttribute.value?.affection_exp ?? -1;
+  const nextAffectionExp = petmateAttribute.value?.affection_next_exp ?? -1;
+  if (nextAffectionExp <= 0) return 0;
+  return Math.round((affectionExp / nextAffectionExp) * 100);
 });
 
 // 心愿列表
-const wishList = ref(petmate?.wishes ?? []);
+const wishList = computed(() => {
+  return currentActivePetmate.value?.wishes ?? [];
+});
 
 // 按下心愿后，显示心愿的详细信息
 const check = ref(false);
@@ -246,8 +301,7 @@ const checkWishInfo = ref();
 const checkWish = async (wishID: string) => {
   checkWishID.value = wishID;
   check.value = true;
-  const wish = await getPetmateOneWish(currentPetmateID.value, wishID);
-  checkWishInfo.value = wish;
+  checkWishInfo.value = wishList.value.find((wish) => wish.id === wishID);
 
   // 更新要求列表
   updateRequirements();
@@ -270,6 +324,60 @@ const updateRequirements = () => {
 // 心愿的物品、活动要求和玩家目前的进度
 const itemProgress = ref<WishRequirement[]>([]);
 const activityProgress = ref<WishRequirement[]>([]);
+
+// 心愿奖励
+const wishReward = ref<any>(null);
+
+watch(
+  checkWishInfo,
+  async (newWishInfo) => {
+    if (!newWishInfo?.reward) {
+      wishReward.value = null;
+      return;
+    }
+
+    const reward = newWishInfo.reward;
+    if (reward.type === "item") {
+      const item = await getItemInfo([reward.id]);
+      if (item.length === 1) {
+        wishReward.value = {
+          ...reward,
+          src: item[0].url,
+        };
+      }
+    } else {
+      wishReward.value = reward;
+    }
+  },
+  { immediate: true }
+);
+
+// 奖励领取相关
+const isClaimingReward = ref(false);
+
+// 检查心愿是否已完成（所有要求都完成）
+const isWishCompleted = computed(() => {
+  if (!checkWishInfo.value?.requirements) return false;
+
+  const allRequirements = checkWishInfo.value.requirements;
+  return (
+    allRequirements.length > 0 &&
+    allRequirements.every((req: WishRequirement) => req.status === "finished")
+  );
+});
+
+// 处理奖励领取
+const handleClaimReward = async () => {
+  const success = await claimWishReward(
+    currentPetmateID.value,
+    checkWishInfo.value.id
+  );
+  if (success) {
+    openMessageModal("success", "领取奖励成功");
+    // 重新check一下
+    checkWish(checkWishInfo.value.id);
+  }
+};
 </script>
 
 <style lang="scss" scoped>
@@ -663,6 +771,171 @@ const activityProgress = ref<WishRequirement[]>([]);
 }
 
 /* ==========================================
+   心愿奖励展示
+   ========================================== */
+.rewards-display-section {
+  margin-top: 20px;
+
+  .rewards-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: $font-light;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid rgba(253, 203, 110, 0.3);
+  }
+
+  .rewards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .reward-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: linear-gradient(
+        135deg,
+        rgba(253, 203, 110, 0.1),
+        rgba(255, 255, 255, 0.05)
+      );
+      border-radius: 8px;
+      gap: 12px;
+      transition: all 0.3s ease;
+      border-left: 3px solid #fdcb6e;
+
+      &:hover {
+        background: linear-gradient(
+          135deg,
+          rgba(253, 203, 110, 0.15),
+          rgba(255, 255, 255, 0.08)
+        );
+        transform: translateX(4px);
+      }
+
+      .reward-icon {
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+      }
+
+      .reward-info {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .reward-name {
+          color: $font-light;
+          font-weight: 500;
+        }
+
+        .reward-count {
+          color: #fdcb6e;
+          font-size: 14px;
+          font-weight: 600;
+          background: rgba(253, 203, 110, 0.2);
+          padding: 2px 8px;
+          border-radius: 12px;
+        }
+      }
+
+      .reward-badge {
+        span {
+          font-size: 16px;
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+}
+
+/* ==========================================
+   奖励领取区域
+   ========================================== */
+.reward-claim-section {
+  margin-top: 20px;
+
+  .claim-divider {
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(224, 166, 166, 0.5),
+      transparent
+    );
+    margin-bottom: 20px;
+  }
+
+  .claim-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 15px;
+    background: linear-gradient(
+      135deg,
+      rgba(46, 213, 115, 0.1),
+      rgba(224, 166, 166, 0.1)
+    );
+    border-radius: 12px;
+    border: 2px solid rgba(46, 213, 115, 0.3);
+
+    .claim-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+
+      .claim-icon {
+        font-size: 28px;
+        animation: bounce 2s infinite;
+      }
+
+      .claim-text {
+        .claim-title {
+          font-size: 14px;
+          font-weight: bold;
+          color: $font-light;
+        }
+      }
+    }
+
+    .claim-button {
+      font-weight: 600;
+      padding: 0 24px;
+      height: 35px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      font-size: 14px;
+
+      &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(46, 213, 115, 0.4);
+      }
+    }
+
+    .claimed-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 20px;
+      background: rgba(46, 213, 115, 0.2);
+      border-radius: 8px;
+      border: 1px solid rgba(46, 213, 115, 0.5);
+
+      .claimed-icon {
+        font-size: 16px;
+      }
+
+      .claimed-text {
+        font-size: 14px;
+        font-weight: 600;
+        color: #2ed573;
+      }
+    }
+  }
+}
+
+/* ==========================================
    动画效果
    ========================================== */
 @keyframes pulse {
@@ -677,6 +950,22 @@ const activityProgress = ref<WishRequirement[]>([]);
   100% {
     opacity: 0.4;
     transform: scale(1);
+  }
+}
+
+@keyframes bounce {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8px);
+  }
+  60% {
+    transform: translateY(-4px);
   }
 }
 </style>

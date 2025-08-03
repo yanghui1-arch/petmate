@@ -9,15 +9,16 @@ import { Response } from '../types/response';
 import { consumeItem } from './modules/player/basic';
 import logger from './log';
 import { PetMate } from './modules/petmate/petmate';
-import { startActivity, finishActivity, endActivity, cancelActivity } from './modules/player/act';
+import { startActivity, finishActivity, cancelActivity, claimActivityReward } from './modules/player/act';
 import { ActiveBuff } from './types/buff';
 import { MAX_WISHES_STORE_NUM } from './constant';
 import { Wish } from './types/wish';
 import { Item, ItemType } from './types/item';
 import { buyItem } from './modules/player/basic';
 import { ActivityInfo } from './types/activity';
-import { getCompletedWishesNum, showActivities, showItems } from './modules/show';
+import { getCompletedWishesNum, showActivities, showItems, getItemInfo } from './modules/show';
 import { ChatLLMConfigError, LLMConfigError, NotFoundError, TTSProcessError, UnsupportedError } from './error';
+import { wishHandler } from './modules/wish';
 import { getModelSize, getSettings, SettingConfig, updateSettings, defaultSettings } from './settings';
 import {
     chat,
@@ -101,6 +102,9 @@ ipcMain.handle("init-player-data", (event: IpcMainInvokeEvent): Response<PlayerI
 
         // 检查petmate的心愿信息的数量是否超过了支持的最大心愿数量
         petmates.forEach(petmate => {
+            // 首先清理超过3天的旧愿望
+            wishHandler.cleanupOldWishes(petmate, 3);
+
             // 如果超过了，则按照心愿的开始时间，将之前的心愿删除
             if (petmate.wishes.length > MAX_WISHES_STORE_NUM) {
                 const toDeleteWishesNum: number = petmate.wishes.length - MAX_WISHES_STORE_NUM;
@@ -406,13 +410,13 @@ ipcMain.handle("cancel-activity", (event: IpcMainInvokeEvent, petmateId: number)
 })
 
 /**
- * 领取活动奖励
+ * 领取活动奖励，并结束活动
  * @param petmateId petmate的id
  * @returns 领取奖励成功或失败
  */
-ipcMain.handle("end-activity-reward", (event: IpcMainInvokeEvent, petmateId: number): Response<void> => {
+ipcMain.handle("claim-activity-reward", (event: IpcMainInvokeEvent, petmateId: number): Response<void> => {
     try {
-        const success = endActivity(petmateId);
+        const success = claimActivityReward(petmateId);
         if (success) {
             return {
                 code: 200,
@@ -475,6 +479,27 @@ ipcMain.handle("show-items", (event: IpcMainInvokeEvent, type: ItemType): Respon
 })
 
 /**
+ * 根据物品id获取物品信息
+ * @param itemIds 物品id列表
+ * @returns 物品信息列表
+ */
+ipcMain.handle("get-item-info", (event: IpcMainInvokeEvent, itemIds: number[]): Response<Item[]> => {
+    try {
+        const items: Item[] = getItemInfo(itemIds);
+        return {
+            code: 200,
+            data: items
+        } as Response<Item[]>;
+    } catch (error) {
+        logger.error(`获取物品失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取物品失败"
+        } as Response<Item[]>;
+    }
+})
+
+/**
  * 获取完成petmate的心愿数量
  * @param petmateId petmate的id
  * @returns 完成的心愿数量
@@ -520,6 +545,43 @@ ipcMain.handle("get-petmate-one-wish", (event: IpcMainInvokeEvent, petmateId: nu
             code: 400,
             message: "获取心愿失败"
         } as Response<Wish>;
+    }
+})
+
+/**
+ * 手动领取心愿奖励
+ * @param petmateId petmate的id
+ * @param wishId 要领取的心愿id
+ * @returns 是否成功领取
+ */
+ipcMain.handle("claim-wish-reward", (event: IpcMainInvokeEvent, petmateId: number, wishId: string): Response<boolean> => {
+    try {
+        const player = playerManager.getPlayer();
+        const petmate: PetMate | undefined = player.petmates.find(p => p.id === petmateId);
+
+        if (!petmate) {
+            return {
+                code: 400,
+                message: "未找到指定的Petmate"
+            } as Response<boolean>;
+        }
+
+        const success = wishHandler.claimWishReward(petmate, player, wishId);
+
+        // 更新数据
+        playerManager.updatePetmate(petmate);
+        playerManager.updatePlayer(player);
+
+        return {
+            code: 200,
+            data: success
+        } as Response<boolean>;
+    } catch (error) {
+        logger.error(`领取心愿奖励失败: ${error}`);
+        return {
+            code: 400,
+            message: error instanceof Error ? error.message : "领取心愿奖励失败"
+        } as Response<boolean>;
     }
 })
 

@@ -123,9 +123,9 @@ export function usePlayer() {
   }
 
   // 结束活动，取活动奖励
-  const endActivityReward = async (petmateId: number): Promise<boolean> => {
+  const claimActivityReward = async (petmateId: number): Promise<boolean> => {
     try {
-      const response = await window.api.endActivityReward(petmateId)
+      const response = await window.api.claimActivityReward(petmateId)
       if (response.code === 200) {
         await refreshPlayerData()
         return true
@@ -135,6 +135,29 @@ export function usePlayer() {
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Unknown error occurred'
       console.error('Failed to end activity reward:', err)
+      return false
+    }
+  }
+
+
+  /**
+   * 手动领取心愿奖励
+   * @param petmateId petmate的id
+   * @param wishId 要领取的心愿id
+   * @returns 是否成功领取
+   */
+  const claimWishReward = async (petmateId: number, wishId: string): Promise<boolean> => {
+    const res = await window.api.claimWishReward(petmateId, wishId)
+    try {
+      if (res.code === 200) {
+        await refreshPlayerData()
+        return true
+      } else {
+        throw new Error(res.message || 'Failed to claim wish reward')
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error occurred'
+      console.error('Failed to claim wish reward:', err)
       return false
     }
   }
@@ -181,7 +204,8 @@ export function usePlayer() {
     buyItem,
     startActivity,
     cancelActivity,
-    endActivityReward,
+    claimActivityReward,
+    claimWishReward,
 
     // 聊天
     chat,

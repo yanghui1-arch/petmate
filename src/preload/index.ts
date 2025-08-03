@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld(
     getTTSLLMConfig: () => ipcRenderer.invoke("get-tts-config"),
     showActivities: (type: ActivityInfo["type"]) => ipcRenderer.invoke("show-activities", type),
     showItems: (type: ItemType) => ipcRenderer.invoke("show-items", type),
+    getItemInfo: (itemIds: number[]) => ipcRenderer.invoke("get-item-info", itemIds),
     getPetmateCompletedWishesNum: (petmateId: number) => ipcRenderer.invoke("get-petmate-completed-wishes-num", petmateId),
     getPetmateOneWish: (petmateId: number, wishId: string) => ipcRenderer.invoke("get-petmate-one-wish", petmateId, wishId),
     getModelSize: () => ipcRenderer.invoke("get-model-size"),
@@ -41,7 +42,8 @@ contextBridge.exposeInMainWorld(
     chat: (message: ChatMessage) => ipcRenderer.invoke("chat", message),
     startActivity: (petmateId: number, activityId: number) => ipcRenderer.invoke("start-activity", petmateId, activityId),
     cancelActivity: (petmateId: number) => ipcRenderer.invoke("cancel-activity", petmateId),
-    endActivityReward: (petmateId: number) => ipcRenderer.invoke("end-activity-reward", petmateId),
+    claimActivityReward: (petmateId: number) => ipcRenderer.invoke("claim-activity-reward", petmateId),
+    claimWishReward: (petmateId: number, wishId: string) => ipcRenderer.invoke("claim-wish-reward", petmateId, wishId),
 
     // 克隆音色
     cloneVoice: (url: string) => ipcRenderer.invoke("clone-voice", url),

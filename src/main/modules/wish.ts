@@ -25,7 +25,7 @@ type PlayerBringPetmateTakePartActEvent = {
  * 负责处理愿望的生成，根据事件实时更新愿望的进度和状态，并给予奖励。
  */
 class WishHandler {
-    
+
     /**
      * 生成愿望(临时)
      * @returns 生成的愿望
@@ -87,7 +87,7 @@ class WishHandler {
                     }
                 })
             }
-            
+
             if (playerBringPetmateTakePartActEvent) {
                 toUpdateWishes.forEach(wish => {
                     // 如果愿望还没结束，则先更新一下活动的状态，再判断是否完成了这个愿望
@@ -100,8 +100,9 @@ class WishHandler {
                     }
                 })
             }
-            
+
             // 检查一下每个愿望的requirements是否都被满足，如果是的话，这个愿望就算完成了
+            // completedWishesNum在领取奖励时更新
             toUpdateWishes.forEach(wish => {
                 if (wish.endTime >= now && wish.status === "doing") {
                     let allFinished = true;
@@ -113,8 +114,6 @@ class WishHandler {
                     if (allFinished) {
                         wish.status = "finished";
                         finishedWishes.push(wish);
-                        // 如果愿望完成，则增加完成该Petmate的愿望的数量
-                        petmate.completedWishesNum++;
                     }
                 }
             })
@@ -127,13 +126,103 @@ class WishHandler {
     }
 
     /**
+     * 手动领取奖励
+     * 对于传入的finishedWish，首先判断其状态是否为finished，如果是，则会给予玩家和petmate奖励并将状态设置为claimed
+     * 该方法不会同步到文件中，因此需要确保外部有同步文件的执行逻辑，否则可能导致数据丢失。
+     * @param petmate 相关的petmate
+     * @param player 玩家信息
+     * @param wishId 要领取的愿望ID
+     * @returns 是否成功给予奖励
+     * @throws 如果愿望未找到或状态不正确或奖励物品未找到则抛出错误
+     */
+    claimWishReward(petmate: PetMate, player: PlayerInfo, wishId: string): boolean {
+        const wish = petmate.wishes.find(w => w.id === wishId);
+        if (!wish) {
+            throw new NotFoundError(`[modules/wish.ts/claimWishReward] 未找到愿望: ${wishId}`);
+        }
+
+        if (wish.status !== "finished") {
+            throw new Error(`[modules/wish.ts/claimWishReward] 愿望状态不正确，无法领取奖励: ${wish.status}`);
+        }
+
+        // 给予好感度
+        petmate.addAffectionExp(wish.affectionExp);
+
+        // 给予奖励
+        if (wish.reward) {
+            if (wish.reward.type === "item") {
+                const itemID: number = wish.reward.id;
+                const rewardCount: number = wish.reward.count;
+                let rewardItemExist: boolean = false;
+
+                // 如果背包中存在这个物品，则将这个物品的数量增加
+                player.items.forEach(item => {
+                    if (item.id === itemID) {
+                        item.count += rewardCount;
+                        rewardItemExist = true;
+                    }
+                })
+
+                // 如果背包中不存在这个物品，则将这个物品加入到背包中
+                if (!rewardItemExist) {
+                    const rewardItem: Item | undefined = itemManager.getItem(itemID);
+                    if (!rewardItem) {
+                        throw new NotFoundError(`[modules/wish.ts/claimWishReward] 奖励物品未找到: ${itemID} | 愿望：${wish.name}`);
+                    }
+                    player.items.push({
+                        id: itemID,
+                        name: rewardItem.name,
+                        type: rewardItem.type,
+                        description: rewardItem.description,
+                        url: rewardItem.url,
+                        count: rewardCount,
+                    })
+                }
+            } else if (wish.reward.type === "buff") {
+                const buff: Buff | undefined = buffManager.getBuff(wish.reward.id);
+                if (!buff) {
+                    throw new NotFoundError(`[modules/wish.ts/claimWishReward] 奖励buff未找到: ${wish.reward.id} | 愿望：${wish.name}`);
+                }
+                petmate.addBuff(buff);
+            }
+        }
+
+        // 标记为已领取
+        wish.status = "claimed";
+        petmate.completedWishesNum++;
+
+        return true;
+    }
+
+    /**
+     * 清理旧愿望
+     * 删除超过指定天数的愿望（无论状态如何）
+     * @param petmate 相关的petmate
+     * @param daysToKeep 保留最近几天的愿望
+     */
+    cleanupOldWishes(petmate: PetMate, daysToKeep: number = 3): number {
+        const now = new Date();
+        const cutoffTime = new Date(now.getTime() - (daysToKeep * 24 * 60 * 60 * 1000));
+
+        const originalCount = petmate.wishes.length;
+        petmate.wishes = petmate.wishes.filter(wish => wish.startTime >= cutoffTime);
+        const removedCount = originalCount - petmate.wishes.length;
+
+        if (removedCount > 0) {
+            logger.info(`[modules/wish.ts/cleanupOldWishes] 为 ${petmate.name} 清理了 ${removedCount} 个旧愿望`);
+        }
+
+        return removedCount;
+    }
+
+    /**
      * 给予奖励
      * 对于传入的finishedWishes，首先判断其内的愿望是否已经完成，如果已经完成，则会给予玩家和玩家所属的petmate奖励
      * 该方法不会同步到文件中，因此需要确保外部有同步文件的执行逻辑，否则可能导致数据丢失。
      * @returns 是否成功给予奖励
      * @throws 如果传入的finishedWishes中的愿望的奖励存在未找到的buff，则抛出NotFoundError
      */
-    giveReward(petmate: PetMate, player:PlayerInfo, finishedWishes: Wish[]): boolean {
+    giveReward(petmate: PetMate, player: PlayerInfo, finishedWishes: Wish[]): boolean {
         finishedWishes.forEach(wish => {
             if (wish.status !== "finished") {
                 logger.error(`[modules/wish.ts/giveReward] 传入的finishedWishes中存在未完成的愿望: ${wish.name}`);
@@ -172,7 +261,7 @@ class WishHandler {
                         })
                     }
                 } else if (wish.reward.type === "buff") {
-                    const buff:Buff | undefined = buffManager.getBuff(wish.reward.id);
+                    const buff: Buff | undefined = buffManager.getBuff(wish.reward.id);
                     if (!buff) {
                         throw new NotFoundError(`[modules/wish.ts/giveReward] 传入的finishedWishes中的奖励存在未找到的buff: ${wish.reward.id} | 愿望的名字：${wish.name}`);
                     }

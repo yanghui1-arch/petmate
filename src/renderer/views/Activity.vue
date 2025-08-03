@@ -83,7 +83,9 @@
             <n-countdown :duration="countDownSeconds" :active="true" />
           </div>
           <div class="btn-activity-reward" v-else>
-            <n-button type="primary" @click="claimReward">领取奖励</n-button>
+            <n-button type="primary" @click="handleClaimReward"
+              >领取奖励</n-button
+            >
           </div>
           <div class="active-activity-info">
             <div
@@ -300,7 +302,7 @@ import { useShow } from "../hooks/useShow";
 
 import { convertActivityText, computeActivityTime } from "../utils/activity";
 
-const { playerData, refreshPlayerData, endActivityReward } = usePlayer();
+const { playerData, refreshPlayerData, claimActivityReward } = usePlayer();
 const { getActivities } = useShow();
 
 // Petmate相关
@@ -421,8 +423,8 @@ const cancelActivity = () => {
 /**
  * 领取活动奖励
  */
-const claimReward = async () => {
-  const success = await endActivityReward(currentPetmateID.value);
+const handleClaimReward = async () => {
+  const success = await claimActivityReward(currentPetmateID.value);
   if (success) {
     openMessageModal("success", "领取奖励成功");
   } else {

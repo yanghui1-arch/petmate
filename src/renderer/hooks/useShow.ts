@@ -30,7 +30,7 @@ export function useShow() {
      * @param type 物品类型
      * @returns 物品列表
      */
-    const getShopItems = async (type: ItemType):Promise<Array<Item>> => {
+    const getShopItems = async (type: ItemType): Promise<Array<Item>> => {
         const res = await window.api.showItems(type)
         try {
             if (res.code === 200) {
@@ -48,7 +48,30 @@ export function useShow() {
         }
     }
 
-    const getActivities = async (type: ActivityInfo["type"]):Promise<Array<ActivityInfo>> => {
+    /**
+     * 根据物品id获取物品信息
+     * @param itemIds 物品id列表
+     * @returns 物品信息列表
+     */
+    const getItemInfo = async (itemIds: number[]): Promise<Array<Item>> => {
+        const res = await window.api.getItemInfo(itemIds)
+        try {
+            if (res.code === 200) {
+                if (res.data) {
+                    return res.data
+                } else {
+                    throw new Error("请求获取黑市的物品成功了，但是返回的物品为空")
+                }
+            } else {
+                throw new Error(res.message)
+            }
+        } catch (error) {
+            console.error(error)
+            return []
+        }
+    }
+
+    const getActivities = async (type: ActivityInfo["type"]): Promise<Array<ActivityInfo>> => {
         const res = await window.api.showActivities(type)
         try {
             if (res.code === 200) {
@@ -72,7 +95,7 @@ export function useShow() {
      * @param wishId 需要获取的愿望的id
      * @returns 获取的愿望
      */
-    const getPetmateOneWish = async (petmateId: number, wishId: string):Promise<Wish | undefined> => {
+    const getPetmateOneWish = async (petmateId: number, wishId: string): Promise<Wish | undefined> => {
         const res = await window.api.getPetmateOneWish(petmateId, wishId)
         try {
             if (res.code === 200) {
@@ -114,10 +137,10 @@ export function useShow() {
         }
     }
 
-
     return {
         getPetmateCompletedWishesNum,
         getShopItems,
+        getItemInfo,
         getActivities,
         getPetmateOneWish,
         getLLMConfig

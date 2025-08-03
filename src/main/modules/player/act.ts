@@ -99,15 +99,15 @@ export function finishActivity(petmateId: number): boolean {
 }
 
 /**
- * 结束活动并领取奖励
- * 活动只会按照结束时的buff效果计算奖励并且会再每一次结束活动的时候尝试更新心愿的状态并给予心愿的奖励，最后会同步到文件数据中
+ * 领取奖励，并结束活动
+ * 活动只会按照结束时的buff效果计算奖励并且会在每一次结束活动的时候尝试更新心愿的状态并给予心愿的奖励，最后会同步到文件数据中
  * @param petmateId petmate的id
  * @returns 是否结束成功
  * @throws 如果petmate不存在则抛出NotFoundError
  * @throws 如果活动不存在则抛出NotFoundError
  * @throws 如果传入的finishedWishes中的愿望的奖励存在未找到的buff，则抛出NotFoundError
  */
-export function endActivity(petmateId: number): boolean {
+export function claimActivityReward(petmateId: number): boolean {
     const player = playerManager.getPlayer();
     const petmate: PetMate | undefined = player.petmates.find(petmate => petmate.id === petmateId);
     if (petmate === undefined) {
@@ -150,14 +150,13 @@ export function endActivity(petmateId: number): boolean {
 
     // 结束活动
     petmate.setStatus(notActivityPetmateStatus);
-    // 尝试更新愿望状态，如果愿望完成，则给予奖励
+    // 尝试更新愿望状态（不自动给奖励）
     const finishedWishes: Wish[] = wishHandler.updatePetmateWish(petmate, undefined, {
         type: "act",
         id: activity.id
     });
     if (finishedWishes.length > 0) {
-        wishHandler.giveReward(petmate, player, finishedWishes);
-        // 心愿完成，发送消息给渲染层
+        // 心愿完成，发送消息给渲染层（但不自动给奖励）
         const mainWindow = getMainWindow();
         if (mainWindow) {
             const finishedWishNames: string[] = finishedWishes.map(wish => wish.name);
