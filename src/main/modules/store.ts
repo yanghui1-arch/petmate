@@ -56,6 +56,21 @@ class PlayerManager {
         this.loadPlayer();
     }
 
+
+    /**
+     * 更新Steam信息
+     * 如果Steam信息为空，保存默认值
+     * 如果Steam信息没有变化，则不保存
+     * 如果Steam信息发生了变化，则保存新值
+     * @param steamId Steam ID
+     */
+    updateSteamInfo(steamId: string): void {
+        if (this.currentPlayer.steam_id === null || this.currentPlayer.steam_id !== steamId) {
+            this.currentPlayer.steam_id = steamId;
+            this.savePlayer();
+        }
+    }
+
     /**
      * 从存储中加载玩家信息
      */
@@ -65,8 +80,9 @@ class PlayerManager {
             // 先发http请求获取玩家信息
             const result = null;
             // 如果没有获取到，使用默认值
+            // 注意：在此处不保存，在updateSteamInfo中保存默认值
             if (!result) {
-                this.savePlayer(); // 保存默认值
+                // this.savePlayer(); // 保存默认值
             }
         } else {
             // 重建PetMate实例，因为从存储加载的是普通对象，没有方法
@@ -164,7 +180,7 @@ class PlayerManager {
 /**
  * 活动管理器
  * 负责活动信息的读取、更新和持久化
- */ 
+ */
 class ActivityManager {
     private store: Store<ActivityStoreData>;
     private allActivities: ActivityInfo[] = [];
