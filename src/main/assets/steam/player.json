@@ -1,0 +1,47 @@
+{
+    "playerInfo": {
+        "name": "主人",
+        "petmates": [
+            {
+                "id": 0,
+                "name": "Dass",
+                "attrs": {
+                    "level": 3,
+                    "exp": 538,
+                    "nextExp": 623,
+                    "gameLevel": 3,
+                    "gameExp": 538,
+                    "gameNextExp": 623,
+                    "singLevel": 1,
+                    "singExp": 0,
+                    "singNextExp": 100,
+                    "drawLevel": 1,
+                    "drawExp": 0,
+                    "drawNextExp": 100,
+                    "affectionLevel": 3,
+                    "affectionExp": 538,
+                    "affectionNextExp": 623,
+                    "hungry": 100,
+                    "emotion": 100,
+                    "energy": 100,
+                    "health": 100,
+                    "maxHungry": 300,
+                    "maxEmotion": 300,
+                    "maxEnergy": 300,
+                    "maxHealth": 300,
+                    "buffs": [],
+                    "maxBuffs": 10
+                },
+                "status": {
+                    "status": "idle"
+                },
+                "wishes": [],
+                "completedWishesNum": 10
+            }
+        ],
+        "steamId": null,
+        "qq": null,
+        "cash": 148760,
+        "items": []
+    }
+}

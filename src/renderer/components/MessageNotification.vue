@@ -24,15 +24,15 @@ onMounted(() => {
     // 刷新玩家数据
     refreshPlayerData();
   });
-  // 活动结束监听回调
-  window.api.onEndActivity((event: Event, petmateId: number) => {
-    console.log("活动结束", event, petmateId);
+  // 活动可领取监听回调
+  window.api.onActivityFinished((event: Event, petmateId: number) => {
+    console.log("活动奖励可领取", event, petmateId);
     const petmate = playerData.value?.petmates.find(
       (petmate) => petmate.id === petmateId
     );
-    notification.info({
-      title: "系统消息",
-      content: `${petmate?.name}进行的活动结束了，快去看看吧`,
+    notification.success({
+      title: "活动完成",
+      content: `${petmate?.name}的活动已完成，快去领取奖励吧！`,
       duration: notificationDuration,
     });
     // 刷新玩家数据

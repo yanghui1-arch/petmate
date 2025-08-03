@@ -9,15 +9,16 @@ import { Response } from '../types/response';
 import { consumeItem } from './modules/player/basic';
 import logger from './log';
 import { PetMate } from './modules/petmate/petmate';
-import { startActivity, endActivity, cancelActivity } from './modules/player/act';
+import { startActivity, finishActivity, cancelActivity, claimActivityReward } from './modules/player/act';
 import { ActiveBuff } from './types/buff';
 import { MAX_WISHES_STORE_NUM } from './constant';
 import { Wish } from './types/wish';
 import { Item, ItemType } from './types/item';
 import { buyItem } from './modules/player/basic';
 import { ActivityInfo } from './types/activity';
-import { getCompletedWishesNum, showActivities, showItems } from './modules/show';
+import { getCompletedWishesNum, showActivities, showItems, getItemInfo } from './modules/show';
 import { ChatLLMConfigError, LLMConfigError, NotFoundError, TTSProcessError, UnsupportedError } from './error';
+import { wishHandler } from './modules/wish';
 import { getModelSize, getSettings, SettingConfig, updateSettings, defaultSettings } from './settings';
 import {
     chat,
@@ -72,31 +73,27 @@ ipcMain.handle("init-player-data", (event: IpcMainInvokeEvent): Response<PlayerI
         // 检查活动是否完成
         petmates.forEach(petmate => {
             // 如果在活动中，先查看一下是否完成了活动（玩家会开始活动然后又退出游戏）
-            if (petmate.status.status !== "idle") {
+            if (petmate.status.status !== "idle" && petmate.status.status !== "finished") {
                 const currentTime: Date = new Date();
                 /**
-                 * 结束活动
-                 * 如果活动已经结束，则结束活动结算奖励并且同步petmate状态
-                 * 如果活动还没结束，则开启延迟任务
+                 * 检查活动是否已完成
+                 * 如果活动已经完成，则设置为可领取状态
+                 * 如果活动还没完成，则开启延迟任务
                  */
                 if (currentTime >= (petmate.status.endTime ?? new Date())) {
-                    const endSuccess: boolean = endActivity(petmate.id);
-                    if (endSuccess) {
-                        logger.info("初始化玩家数据时，结束早已结束的活动成功。")
-                    } else {
-                        throw new Error("结束活动失败");
-                    }
+                    // 设置状态为可领取
+                    petmate.setStatus({
+                        ...petmate.status,
+                        status: "finished"
+                    });
+                    playerManager.updatePetmate(petmate);
+                    logger.info("初始化玩家数据时，将已完成的活动设置为可领取状态。")
                 } else {
                     if (petmate.status.endTime) {
                         const remainedTime: Date = new Date(petmate.status.endTime.getTime() - currentTime.getTime());
-                        // 开启延迟任务
+                        // 开启延迟任务，活动完成时设置为可领取状态
                         setTimeout(() => {
-                            const endSuccess: boolean = endActivity(petmate.id);
-                            if (endSuccess) {
-                                logger.info("初始化玩家数据时，结束早已结束的活动成功。")
-                            } else {
-                                throw new Error("结束活动失败");
-                            }
+                            finishActivity(petmate.id);
                         }, remainedTime.getTime());
                     }
                 }
@@ -105,6 +102,9 @@ ipcMain.handle("init-player-data", (event: IpcMainInvokeEvent): Response<PlayerI
 
         // 检查petmate的心愿信息的数量是否超过了支持的最大心愿数量
         petmates.forEach(petmate => {
+            // 首先清理超过3天的旧愿望
+            wishHandler.cleanupOldWishes(petmate, 3);
+
             // 如果超过了，则按照心愿的开始时间，将之前的心愿删除
             if (petmate.wishes.length > MAX_WISHES_STORE_NUM) {
                 const toDeleteWishesNum: number = petmate.wishes.length - MAX_WISHES_STORE_NUM;
@@ -410,6 +410,34 @@ ipcMain.handle("cancel-activity", (event: IpcMainInvokeEvent, petmateId: number)
 })
 
 /**
+ * 领取活动奖励，并结束活动
+ * @param petmateId petmate的id
+ * @returns 领取奖励成功或失败
+ */
+ipcMain.handle("claim-activity-reward", (event: IpcMainInvokeEvent, petmateId: number): Response<void> => {
+    try {
+        const success = claimActivityReward(petmateId);
+        if (success) {
+            return {
+                code: 200,
+                message: "领取奖励成功"
+            } as Response<void>;
+        } else {
+            return {
+                code: 400,
+                message: "领取奖励失败，活动状态不正确"
+            } as Response<void>;
+        }
+    } catch (error) {
+        logger.error(`领取活动奖励失败: ${error}`);
+        return {
+            code: 400,
+            message: "领取活动奖励失败"
+        } as Response<void>;
+    }
+})
+
+/**
  * 获取玩家数据
  * 该方法可以被多次调用，每次调用都会返回玩家最新的数据，如果需要刷新玩家数据，请你调用这个方法
  */
@@ -437,6 +465,27 @@ ipcMain.handle("get-current-player-data", (event: IpcMainInvokeEvent): Response<
 ipcMain.handle("show-items", (event: IpcMainInvokeEvent, type: ItemType): Response<Item[]> => {
     try {
         const items: Item[] = showItems(type);
+        return {
+            code: 200,
+            data: items
+        } as Response<Item[]>;
+    } catch (error) {
+        logger.error(`获取物品失败: ${error}`);
+        return {
+            code: 400,
+            message: "获取物品失败"
+        } as Response<Item[]>;
+    }
+})
+
+/**
+ * 根据物品id获取物品信息
+ * @param itemIds 物品id列表
+ * @returns 物品信息列表
+ */
+ipcMain.handle("get-item-info", (event: IpcMainInvokeEvent, itemIds: number[]): Response<Item[]> => {
+    try {
+        const items: Item[] = getItemInfo(itemIds);
         return {
             code: 200,
             data: items
@@ -496,6 +545,43 @@ ipcMain.handle("get-petmate-one-wish", (event: IpcMainInvokeEvent, petmateId: nu
             code: 400,
             message: "获取心愿失败"
         } as Response<Wish>;
+    }
+})
+
+/**
+ * 手动领取心愿奖励
+ * @param petmateId petmate的id
+ * @param wishId 要领取的心愿id
+ * @returns 是否成功领取
+ */
+ipcMain.handle("claim-wish-reward", (event: IpcMainInvokeEvent, petmateId: number, wishId: string): Response<boolean> => {
+    try {
+        const player = playerManager.getPlayer();
+        const petmate: PetMate | undefined = player.petmates.find(p => p.id === petmateId);
+
+        if (!petmate) {
+            return {
+                code: 400,
+                message: "未找到指定的Petmate"
+            } as Response<boolean>;
+        }
+
+        const success = wishHandler.claimWishReward(petmate, player, wishId);
+
+        // 更新数据
+        playerManager.updatePetmate(petmate);
+        playerManager.updatePlayer(player);
+
+        return {
+            code: 200,
+            data: success
+        } as Response<boolean>;
+    } catch (error) {
+        logger.error(`领取心愿奖励失败: ${error}`);
+        return {
+            code: 400,
+            message: error instanceof Error ? error.message : "领取心愿奖励失败"
+        } as Response<boolean>;
     }
 })
 

@@ -112,8 +112,7 @@ export function consumeItem(itemId: number, count: number = 1, petmateId: number
         count: count
     }, undefined);
     if (finishedWishes.length > 0) {
-        wishHandler.giveReward(petmate, player, finishedWishes);
-        // 心愿完成，发送消息给渲染层
+        // 心愿完成，发送消息给渲染层（但不自动给奖励）
         const mainWindow = getMainWindow();
         if (mainWindow) {
             const finishedWishNames: string[] = finishedWishes.map(wish => wish.name);

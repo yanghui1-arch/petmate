@@ -16,6 +16,22 @@ export function showItems(type: ItemType): Item[] {
 }
 
 /**
+ * 根据物品id获取物品信息
+ * @param itemIds 物品id列表
+ * @returns 物品信息列表
+ */
+export function getItemInfo(itemIds: number[]): Item[] {
+    const items: Item[] = [];
+    itemIds.forEach(itemId => {
+        const item: Item | undefined = itemManager.getItem(itemId);
+        if (item) {
+            items.push(item);
+        }
+    })
+    return items;
+}
+
+/**
  * 获得完成此Petmate的愿望数量
  */
 export function getCompletedWishesNum(petmate: PetMate): number {
