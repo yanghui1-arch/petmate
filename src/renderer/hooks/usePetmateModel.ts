@@ -23,7 +23,7 @@ let ambientLight: THREE.AmbientLight | null = null;
 let renderer: THREE.WebGLRenderer | null = null;
 
 let petMateModelConfig = {
-    scale: 2,
+    scale: 1,
 }
 
 // 开发辅助用的
@@ -104,11 +104,11 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             // 加载模型
             loader.load('../assets/models/petmate.glb', (gltf) => {
                 model = gltf.scene;
-                model.position.set(0, -3, 0);
+                model.position.set(0, -1, 0);
                 model.scale.set(petMateModelConfig.scale, petMateModelConfig.scale, petMateModelConfig.scale);
                 scene?.add(model);
 
-                camera?.position.set(0, 0, 22)
+                camera?.position.set(0, 0, 5)
                 
                 animations = gltf.animations;
                 console.log(animations)

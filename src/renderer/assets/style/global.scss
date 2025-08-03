@@ -12,6 +12,7 @@ body {
   /* Stardew Valley style cursors */
   cursor: url(#{$cursor-default}) 0 0,
   auto;
+  -webkit-app-region: drag;
 }
 
 ol,

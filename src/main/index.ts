@@ -11,8 +11,8 @@ const createWindow = () => {
   const { width, height } = screen.getPrimaryDisplay().bounds;
 
   const win = new BrowserWindow({
-    width: width,
-    height: height,
+    width: 150,
+    height: 350,
     frame: false,
     resizable: false,
     transparent: true,
@@ -26,7 +26,6 @@ const createWindow = () => {
   })
 
   mainWindow = win;
-  mainWindow.setIgnoreMouseEvents(true);
 
   // 加载渲染进程页面
   win.loadURL('http://localhost:5173')
