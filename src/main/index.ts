@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, nativeImage, screen, Tray } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, Tray } from 'electron'
 import * as path from 'path'
 import './ipc'
 import { destroyScheduler, startWishGeneration } from './scheduler'
@@ -26,12 +26,14 @@ const createWindow = () => {
   })
 
   mainWindow = win;
-
+  const WM_INITMENU = 0x0116;
+  mainWindow.hookWindowMessage(WM_INITMENU, () => {
+    mainWindow?.setEnabled(false);
+    mainWindow?.setEnabled(true);
+    mainWindow?.webContents.send('show-context-menu');
+  });
   // 加载渲染进程页面
   win.loadURL('http://localhost:5173')
-  win.on('blur', () => {
-    win.setTitle('')  // 清除标题
-  })
 
   mainWindow.setSkipTaskbar(true);
   const icon = nativeImage.createFromPath('src/renderer/assets/image/card.jpg')
@@ -64,6 +66,9 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+ipcMain.on('quit-app', () => {
+  app.quit()
 })
 
 app.on('before-quit', () => {

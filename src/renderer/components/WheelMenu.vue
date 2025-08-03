@@ -119,28 +119,31 @@
     {
       id: 'home',
       title: '主页',
-      action: () => console.log('Home clicked')
+      action: () => window.api.openNewWindow('/home')
     },
     {
       id: 'shop',
       title: '商店',
+      action: () => window.api.openNewWindow('/shop')
     },
     {
       id: 'settings',
       title: '设置',
-      action: () => console.log('Inventory clicked')
+      action: () => window.api.openNewWindow('/settings')
     },
     {
       id: 'config',
       title: '模型配置',
+      action: () => window.api.openNewWindow('/config')
     },
     {
-      id: 'config',
-      title: '模型配置',
+      id: 'tutorial',
+      title: '操作教程',
     },
     {
-      id: 'config',
-      title: '模型配置',
+      id: 'quit',
+      title: '退出Petmate',
+      action: () => window.api.quitApp()
     }
   ]
   
@@ -148,8 +151,8 @@
   const menuItems = computed(() => props.menuItems || defaultMenuItems)
   const currentMenu = computed(() => menuStack.value[menuLevel.value] || menuItems.value)
   const center = computed(() => props.size / 2)
-  const outerRadius = computed(() => props.size / 2)
-  const innerRadius = computed(() => props.size / 6)
+  const outerRadius = computed(() => props.size / 4)
+  const innerRadius = computed(() => props.size / 8)
   const centerButtonRadius = computed(() => props.size / 8)
   
   const centerText = computed(() => {
@@ -184,7 +187,7 @@
     const itemCount = currentMenu.value.length
     const angleStep = (2 * Math.PI) / itemCount
     const angle = (index * angleStep) + (angleStep / 2) - Math.PI / 2
-    const radius = (innerRadius.value + outerRadius.value) / 2 - 15 // Closer to inner edge for better centering
+    const radius = (innerRadius.value + outerRadius.value) / 2 // 精确居中在 sector 中间
     
     return {
       x: center.value + radius * Math.cos(angle),
@@ -298,6 +301,7 @@
     align-items: center;
     z-index: 1000;
     outline: none;
+    -webkit-app-region: no-drag;
   }
   
   .radial-menu-container {
@@ -539,7 +543,7 @@
   
   // Center text
   .center-text {
-    font-size: 32px;
+    font-size: 16px;
     font-weight: bold;
     fill: rgb(92, 71, 45);;
     text-anchor: middle;
@@ -554,7 +558,7 @@
     
     &:hover {
       fill: rgba(190, 200, 215, 1);;
-      font-size: 48px;
+      font-size: 26px;
     }
   }
   

@@ -1,6 +1,9 @@
 <template>
     <div class="petmate-container">
         <div ref="threeContainer" class="three-container"></div>
+        <div class="context-menu" v-if="isShowContextMenu">
+            <WheelMenu @closed="isShowContextMenu = false"/>
+        </div>
     </div>
 </template>
 
@@ -13,12 +16,17 @@ import { Response } from '../../types/response';
 import { WindowEvent, WindowInfo } from '../types/window';
 import { sittedWindowTitle } from '../hooks/usePetmateModel';
 import { ScreenPosition } from '../types/model';
+import WheelMenu from '../components/WheelMenu.vue';
 
 const threeContainer = ref();
+
 const screenResolution = ref({width: 0, height: 0});
 const { init3D, standIdle, walkTo, sit, spyBesideWindow, standFromSit, sitted, modelState, getModelScreenPosition, modelConfig, setSittedWindowTitle, setModelPosition } = usePetmateModel(threeContainer);
+const isShowContextMenu = ref(false);
+
 
 onMounted(async () => {
+
     /* 获取分辨率并加载模型 */
     window.windowMonitor.getScreenResolution().then((res: Response<{width: number, height: number}>) => {
         screenResolution.value = res.code === 200 ? res.data! : {width: 1920, height: 1080};
@@ -26,6 +34,11 @@ onMounted(async () => {
             standIdle();
             setSittedWindowTitle("");
         });
+    });
+    
+    /* 监听是否右键打开菜单 */
+    window.api.onShowContextMenu((event) => {
+        isShowContextMenu.value = true;
     });
 
     /* 监听窗口 */
@@ -168,4 +181,5 @@ const selectAnimationAndPlay = () => {
     width: 100%;
     height: 100%;
 }
+
 </style>

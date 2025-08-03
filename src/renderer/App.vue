@@ -1,13 +1,109 @@
 <template>
-  <Petmate />
+  <div class="container">
+    <!-- 玩家数据加载中 -->
+    <!-- <div v-if="isLoading" class="loading-overlay">
+      <n-spin size="large" />
+      <p>Loading player data...</p>
+    </div> -->
+
+    <!-- 玩家数据加载失败 -->
+    <!-- <div v-if="error" class="error-overlay">
+      <p>Failed to load player data: {{ error }}</p>
+      <n-button @click="loadPlayerData">Retry</n-button>
+    </div> -->
+
+    <!-- 主应用内容 -->
+    <template v-if="playerData">
+
+      <router-view />
+
+      <!-- 系统消息通知，在右下角弹出，最多同时显示2条 -->
+      <n-notification-provider placement="bottom-right" :max="2">
+        <MessageNotification />
+      </n-notification-provider>
+      <MessageModal
+        :show="isMessageModalShow"
+        :title="messageModalTitle"
+        :type="messageModalType"
+      />
+    </template>
+  </div>
 </template>
 
 <script setup lang="ts">
-import Petmate from './views/Petmate.vue';
+// 你可以在这里写 Composition API 的逻辑
+import Navigator from "./components/Navigator.vue";
+import MessageModal from "./components/MessageModal.vue";
+import MessageNotification from "./components/MessageNotification.vue";
+import type { DrawerPlacement } from "naive-ui";
+import { ref, onMounted } from "vue";
+import { usePlayer } from "./hooks/usePlayer";
+import {
+  isMessageModalShow,
+  messageModalType,
+  messageModalTitle,
+} from "./hooks/useInteract";
+import { useSettings } from "./hooks/useSettings";
 
+const active = ref(false);
+const placement = ref<DrawerPlacement>("right");
+const activate = (place: DrawerPlacement) => {
+  active.value = true;
+  placement.value = place;
+};
+
+// 全局玩家状态 - 在这里加载数据
+const { playerData, isInit, error, initPlayerData } = usePlayer();
+const { initSettings } = useSettings();
+
+// 当应用挂载时加载玩家数据
+onMounted(async () => {
+  console.log("Petmate启动，正在加载玩家数据");
+  await initPlayerData();
+  console.log("玩家数据加载完成", playerData.value);
+
+  console.log("正在初始化设置");
+  await initSettings();
+  console.log("设置初始化完成");
+});
 </script>
 
 <style lang="scss" scoped>
+.container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.settings-drawer {
+  position: fixed;
+  // top: 20px;
+  // left: 10px;
+  top: 0;
+  left: 0;
+  cursor: pointer;
+  z-index: 1000;
+}
 
+.loading-overlay,
+.error-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  z-index: 9999;
+}
+
+.loading-overlay p,
+.error-overlay p {
+  margin-top: 16px;
+  font-size: 16px;
+}
 </style>
-

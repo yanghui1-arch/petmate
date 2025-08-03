@@ -53,10 +53,13 @@ interface IElectronAPI {
   onWishGenerated: (callback: (event: Event, petmateId: number) => void) => void,
   onWishFinished: (callback: (event: Event, petmateId: number, finishedWishNames: string[]) => void) => void,
   onEndActivity: (callback: (event: Event, petmateId: number) => void) => void,
+  onShowContextMenu: (callback: (event: Event) => void) => void,
   removeAllAudioChunkListeners: () => void;
 
   // 其他
   listenTTSVoiceSample: (voice: TTSVoice, text: string) => Promise<Response<void>>;
+  openNewWindow: (route: string) => Promise<Response<void>>;
+  quitApp: () => Promise<Response<void>>;
 }
 
 /**

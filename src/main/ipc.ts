@@ -2,7 +2,7 @@
  * 暴露ipc事件
  */
 
-import { ipcMain, IpcMainInvokeEvent, screen } from 'electron';
+import { ipcMain, IpcMainInvokeEvent, screen, BrowserWindow } from 'electron';
 import { playerManager } from './modules/store';
 import { PlayerInfo } from './types/player';
 import { Response } from '../types/response';
@@ -41,6 +41,7 @@ import {
 } from './llm';
 import { windowMonitor, WindowInfo, WindowEvent } from './window-monitor';
 import { getMainWindow } from './index';
+import * as path from 'path';
 
 /**
  * 初始化加载玩家数据
@@ -905,5 +906,51 @@ windowMonitor.on('window-changed', (event: WindowEvent) => {
     const mainWindow = getMainWindow();
     if (mainWindow) {
         mainWindow.webContents.send('window-changed', event);
+    }
+});
+
+/**
+ * 打开新窗口
+ * @param route 路由路径
+ * @returns 打开窗口成功或失败
+ */
+ipcMain.handle("open-new-window", (event: IpcMainInvokeEvent, route: string): Response<void> => {
+    try {
+        const newWindow = new BrowserWindow({
+            width: 400,
+            height: 580,
+            resizable: false,
+            frame: false,  // 🔧 给子窗口添加标题栏，避免与主窗口的无框模式冲突
+            transparent: false,
+            alwaysOnTop: false,
+            modal: false, // 确保不是模态窗口
+            show: false, // 先不显示，等加载完成后再显示
+            webPreferences: {
+                preload: path.join(__dirname, '../preload/index.js'),
+                contextIsolation: true,
+                nodeIntegration: true,
+                webgl: true
+            },
+        });
+
+        // 当页面准备好后显示窗口
+        newWindow.once('ready-to-show', () => {
+            newWindow.show();
+        });
+
+        // 加载指定路由的页面
+        newWindow.loadURL(`http://localhost:5173${route}`);
+        
+        logger.info(`成功打开新窗口，路由: ${route}`);
+        return {
+            code: 200,
+            message: "打开新窗口成功"
+        } as Response<void>;
+    } catch (error) {
+        logger.error(`打开新窗口失败: ${error}`);
+        return {
+            code: 400,
+            message: "打开新窗口失败"
+        } as Response<void>;
     }
 });
