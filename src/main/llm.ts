@@ -1,11 +1,12 @@
 import Store from 'electron-store';
-import logger  from './log';
+import logger from './log';
 import { ChatLLMConfigError, LLMConfigError, TTSProcessError, NotFoundError } from './error';
 import { OpenAI } from 'openai';
 import { ChatCompletionStream } from 'openai/resources/chat/completions';
 import { v4 as uuidv4 } from 'uuid';
 import { WebSocket } from 'ws';
 import { getMainWindow } from './index';
+import { handleChatAchievement } from './modules/player/achieve';
 
 export interface ChatLLMConfig {
     model: string;
@@ -20,7 +21,7 @@ export interface TTSLLMConfig {
     parameters: TTSParameters;
 }
 
-export interface TTSVoice{
+export interface TTSVoice {
     name: string;
     voice: string;
     createdAt: Date;
@@ -289,7 +290,7 @@ function initChatHistoryMessages(): void {
  * @returns ChatLLM的配置
  */
 function getChatLLMConfig(): ChatLLMConfig {
-    const customConfig =  (store as any).get('chatLLMConfig') as ChatLLMConfig;
+    const customConfig = (store as any).get('chatLLMConfig') as ChatLLMConfig;
     if (!customConfig) {
         logger.info('[llm] 未找到自定义的ChatLLM配置，使用默认配置');
         setChatLLMConfig(DEFAULT_CHAT_LLM_CONFIG);
@@ -338,7 +339,7 @@ function getTTSVoiceList(limit: number = 5): TTSVoice[] {
     }
     // 从文件里读取的时间需要这样转换为对象，不然会报错
     customVoiceList.forEach((voice: TTSVoice) => {
-        if(voice.createdAt) {
+        if (voice.createdAt) {
             voice.createdAt = new Date(voice.createdAt);
         }
     })
@@ -641,7 +642,7 @@ async function chat(message: ChatMessage): Promise<void> {
             createdAt: new Date()
         });
         // [future] 得在这里再考虑一下上下文长度问题，但这一个版本先不考虑
-        
+
         const mainWindow = getMainWindow()
         const runner: ChatCompletionStream = await postChatMessage(chatHistoryMessages.map(message => message.chatMessage));
         let response: string = "";
@@ -653,7 +654,7 @@ async function chat(message: ChatMessage): Promise<void> {
                 mainWindow?.webContents.send('chat-chunk', content);
             }
         }
-        
+
         // 将回复信息加入到历史聊天信息中
         chatHistoryMessages.push({
             chatMessage: ChatMessageFactory.asAssistant(response),
@@ -674,6 +675,9 @@ async function chat(message: ChatMessage): Promise<void> {
             }
         }
         ttsWebsocket?.send(JSON.stringify(finishTaskMessage));
+
+        // 更新聊天成就
+        handleChatAchievement();
     } catch (error) {
         ttsTaskId = null;
         ttsStarted = false;
@@ -767,7 +771,7 @@ async function cloneVoice(url: string): Promise<string> {
     }
     try {
         const response = await axios.post(cloneUrl, data, { headers });
-        const voiceID:string = response.data.output.voice_id;
+        const voiceID: string = response.data.output.voice_id;
         return voiceID;
     } catch (error) {
         console.log(error);
@@ -791,7 +795,7 @@ async function memorySummary(): Promise<string> {
     // 本轮对话总结的时候 system 信息需要去除
     const summary: string = chatHistoryMessages.slice(1, -1).map(message => message.chatMessage.content).join('\n');
     const newUserMessage: ChatMessage = ChatMessageFactory.asUser('<experience>' + summary + '</experience>' + "\n" + beforeExperiencePrompt);
-    
+
     const summaryPrompt: string = `
     <task>
         你是Petmate游戏中的角色，是一个女生，名字待定为黛丝。你需要将'<experience>'包裹的本次的对话和'<before_experience>'包裹的之前的对话记忆作为你未来与玩家对话的记忆，并将这个记忆简短的输出。
@@ -825,7 +829,7 @@ export {
 
     // 克隆音色
     cloneVoice,
-    
+
     // config
     initLLM,
     getChatLLMConfig,

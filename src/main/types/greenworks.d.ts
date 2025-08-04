@@ -8,10 +8,16 @@ declare module 'greenworks' {
     const greenworks: {
         init: () => boolean;
         getSteamId: () => SteamID;
-        activateAchievement: (achievementId: string, successCallback: () => void, failureCallback: (err) => void) => boolean;
-        clearAchievement: (achievementId: string) => boolean;
-        isSteamRunning: () => boolean;
         restartAppIfNecessary: (appId: number) => boolean;
+        activateAchievement: (achievement: string, successCallback: () => void, failureCallback?: (err) => void) => void;
+        clearAchievement: (achievement: string, successCallback: () => void, failureCallback: (err) => void) => void;
+        getAchievement: (achievement: string) => boolean;
+        getAchievementNames: () => string[];
+        isSteamRunning: () => boolean;
+        getStatInt: (name: string) => number;
+        getStatFloat: (name: string) => number;
+        setStat(name: string, value: number): () => void;
+        storeStats: (successCallback: () => void, failureCallback?: (err) => void) => void;
         // 可以继续补你用到的函数
     };
 

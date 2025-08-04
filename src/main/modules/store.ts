@@ -13,6 +13,7 @@ import { readJsonFile } from './utils/file';
 import { NotEnoughError, NotFoundError, DataMigrationError } from '../error';
 import { Buff } from '../types/buff';
 import { PrefabWish } from '../types/wish';
+import { achieveFirstOpen } from './player/achieve';
 
 type PlayerStoreData = {
     playerInfo: PlayerInfo;
@@ -66,6 +67,8 @@ class PlayerManager {
      */
     updateSteamInfo(steamId: string): void {
         if (this.currentPlayer.steam_id === null || this.currentPlayer.steam_id !== steamId) {
+            // 达成初见成就
+            achieveFirstOpen();
             this.currentPlayer.steam_id = steamId;
             this.savePlayer();
         }
