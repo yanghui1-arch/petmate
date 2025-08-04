@@ -22,15 +22,17 @@ import { isShowContextMenu } from '../hooks/usePetmateModel';
 const threeContainer = ref();
 
 const screenResolution = ref({width: 0, height: 0});
+const scaleFator = ref<number>(1);
 const { init3D, standIdle, walkTo, sit, spyBesideWindow, standFromSit, sitted, modelState, getModelScreenPosition, modelConfig, setSittedWindowTitle, setModelPosition } = usePetmateModel(threeContainer);
 
 
 onMounted(async () => {
 
     /* 获取分辨率并加载模型 */
-    window.windowMonitor.getScreenResolution().then((res: Response<{width: number, height: number}>) => {
+    window.windowMonitor.getScreenResolution().then((res: Response<{width: number, height: number, scaleFactor: number}>) => {
         screenResolution.value = res.code === 200 ? res.data! : {width: 1920, height: 1080};
-        init3D(screenResolution.value).then(() => {
+        scaleFator.value = res.code === 200 ? res.data!.scaleFactor : 1;
+        init3D(screenResolution.value, scaleFator.value).then(() => {
             standIdle();
             setSittedWindowTitle("");
         });

@@ -6,8 +6,14 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ScreenPosition } from '../types/model'
 import { ModelStatus } from '../types/model'
 
-// 屏幕分辨率
+/** 屏幕分辨率 
+ * 这个分辨率是一块屏幕的分辨率
+*/
 let resolution: {width: number, height: number} = {width: 1920, height: 1080};
+/**
+ * Electron视口缩放比例
+ */
+let scaleFactor: number = 1;
 
 // three.js 密切相关
 let model: THREE.Group | null = null;
@@ -24,6 +30,7 @@ let renderer: THREE.WebGLRenderer | null = null;
 let raycaster: THREE.Raycaster | null = null;
 let mouse: THREE.Vector2 | null = null;
 
+/** 模型大小 */
 let petMateModelConfig = {
     scale: 1,
 }
@@ -42,7 +49,8 @@ let modelState: ModelStatus = {
     sitting: false,
     standIdle: false,
     sittedIdle: false,
-    spyBesideWindow: false
+    spyBesideWindow: false,
+    dragging: false
 }
 
 let defaultModelState: ModelStatus = {
@@ -52,22 +60,21 @@ let defaultModelState: ModelStatus = {
     sitting: false,
     standIdle: false,
     sittedIdle: false,
-    spyBesideWindow: false
+    spyBesideWindow: false,
+    dragging: false
 }
 
 // 正在坐的窗口名字
 // 这个就是由Petmate.vue进行修改的
 export let sittedWindowTitle: string = "";
 
+/** 是否显示轮盘菜单栏的flag */
+export const isShowContextMenu = ref(false);
+
 /**
  * 模型的走路速度
  */
 const walkSpeed: number = 2;
-
-
-export const isShowContextMenu = ref(false);
-
-
 
 export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
@@ -77,9 +84,10 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
      */
     const rotationMaxY = Math.PI / 4;
 
-    const init3D = (screenResolution: {width: number, height: number}): Promise<void> => {
+    const init3D = (screenResolution: {width: number, height: number}, screenScaleFactor: number): Promise<void> => {
         return new Promise((resolve, reject) => {
             resolution = screenResolution;
+            scaleFactor = screenScaleFactor;
 
             scene = new THREE.Scene();
             // 使用实际窗口大小的宽高比，保持与renderer一致
@@ -106,6 +114,8 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
                 isShowContextMenu.value = true;
                 console.log('右键')
             }, false);
+            renderer.domElement.addEventListener('mousedown', onMouseDown, false);
+            renderer.domElement.addEventListener('mouseup', onMouseUp, false);
             
             ambientLight = new THREE.AmbientLight(0x404040, 1);
             directionalLightLeft = new THREE.DirectionalLight(0xffffff, 1);
@@ -124,7 +134,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
                 model.scale.set(petMateModelConfig.scale, petMateModelConfig.scale, petMateModelConfig.scale);
                 scene?.add(model);
 
-                camera?.position.set(0, 0, 5)
+                camera?.position.set(0, 0, 10)
                 
                 animations = gltf.animations;
                 console.log(animations)
@@ -157,52 +167,12 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         })
     }
 
-    function onMouseMove(event: MouseEvent) {
-        if (!mouse || !camera || !scene) return ;
-        // 将鼠标位置归一化为设备坐标 (-1 to +1)
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        // console.log("鼠标移动")
-
-        // 先检测有没有按到菜单UI
-        const element = document.elementFromPoint(event.clientX, event.clientY);
-        const inOnUI = checkOnUI(element);
-        if (inOnUI) {
-            // window.api.setIgnoreMouseEvents(false);
-            // console.log(`鼠标在${element?.className}上`)
-            return ;
-        }
-
-        // 检测是否与3D对象相交
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(scene.children, true);
-        const hasIntersection = intersects.length > 0;
-
-        // console.log(`点到3D对象了么？: ${hasIntersection} 鼠标位置: ${mouse.x}, ${mouse.y}`)
-        // console.log(`模型位置: ${model?.position.x}, ${model?.position.y}`)
-        
-        // 通知主进程是否忽略鼠标事件
-        window.api.setIgnoreMouseEvents(!hasIntersection);
-    }
-
-    function checkIntersection() {
-        if (!raycaster || !camera || !mouse || !scene) return false;
-        // 从相机位置发射射线
-        raycaster.setFromCamera(mouse, camera);
-        // 检测相交
-        const intersects = raycaster.intersectObjects(scene.children);
-        console.log(`相交对象: ${intersects.length}`)
-        return intersects.length > 0;
-    }
-
     const animate = () => {
         if (!scene || !camera || !renderer || !model) return;
         if (mixer) mixer.update(clock.getDelta());
 
         renderer.render(scene, camera);
     };
-
 
     const _playAction = (action: THREE.AnimationAction, loop: boolean = true, clampWhenFinished: boolean = true) => {
         if (currentAction && currentAction !== action) {
@@ -440,6 +410,59 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             z: position.z,
             duration: 0.1
         });
+    }
+
+    function onMouseDown(event: MouseEvent) {
+        if (!mouse || !camera || !scene) return ;
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(scene.children, true);
+        const hasIntersection = intersects.length > 0;
+        
+        // 模型状态变为dragging
+        updateModelState({dragging: hasIntersection});
+    }
+
+    function onMouseUp(event: MouseEvent) {
+        updateModelState({dragging: false});
+    }
+    
+    /**ss */
+    function onMouseMove(event: MouseEvent) {
+        if (!mouse || !camera || !scene || !model) return ;
+        // 将鼠标位置归一化为设备坐标 (-1 to +1)
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        // console.log("鼠标移动")
+    
+        // 先检测有没有按到菜单UI
+        const element = document.elementFromPoint(event.clientX, event.clientY);
+        const inOnUI = checkOnUI(element);
+        if (inOnUI) {
+            // window.api.setIgnoreMouseEvents(false);
+            // console.log(`鼠标在${element?.className}上`)
+            return ;
+        }
+    
+        // 检测是否与3D对象相交
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(scene.children, true);
+        const hasIntersection = intersects.length > 0;
+    
+        // console.log(`点到3D对象了么？: ${hasIntersection} 鼠标位置: ${mouse.x}, ${mouse.y}`)
+        // console.log(`模型位置: ${model?.position.x}, ${model?.position.y}`)
+        // console.log(`${event.clientX * scaleFactor}, ${event.clientY * scaleFactor}`)
+        
+        // 通知主进程是否忽略鼠标事件
+        window.api.setIgnoreMouseEvents(!hasIntersection);
+        if (modelState.dragging) {
+            // 说明被拖拽了，需要 * scaleFactor才可以拿到绝对位置
+            model.position.copy(transferScreenToWorld({x: event.clientX * scaleFactor, y: event.clientY * scaleFactor}, resolution.width, resolution.height));
+        }
     }
 
     return {

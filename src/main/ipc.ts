@@ -775,15 +775,15 @@ ipcMain.handle("update-settings", (event: IpcMainInvokeEvent, settings: Partial<
 /**
  *  获取分辨率
  */
-ipcMain.handle("get-screen-resolution", (event: IpcMainInvokeEvent): Response<{width: number, height: number}> => {
+ipcMain.handle("get-screen-resolution", (event: IpcMainInvokeEvent): Response<{width: number, height: number, scaleFactor: number}> => {
     const { width, height } = screen.getPrimaryDisplay().bounds;
     const scaleFactor = screen.getPrimaryDisplay().scaleFactor;
     const scaledWidth = width * scaleFactor;
     const scaledHeight = height * scaleFactor;
     return {
         code: 200,
-        data: { width: scaledWidth, height: scaledHeight }
-    } as Response<{width: number, height: number}>;
+        data: { width: scaledWidth, height: scaledHeight, scaleFactor: scaleFactor }
+    } as Response<{width: number, height: number, scaleFactor: number}>;
 })
 
 /**

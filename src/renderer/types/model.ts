@@ -6,6 +6,7 @@ export interface ModelStatus {
     standIdle: boolean,
     sittedIdle: boolean,
     spyBesideWindow: boolean,
+    dragging: boolean
 }
 
 /**
