@@ -79,11 +79,13 @@ const walkSpeed: number = 2;
 export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
     const loader = new GLTFLoader();
+    
     /**
-     * rotation.y 最多只能到(-rotationMaxY, rotationMaxY)
+     * 初始化模型显示
+     * @param screenResolution 模型所在屏幕的分辨率
+     * @param screenScaleFactor 屏幕分辨率缩放因子
+     * @returns 
      */
-    const rotationMaxY = Math.PI / 4;
-
     const init3D = (screenResolution: {width: number, height: number}, screenScaleFactor: number): Promise<void> => {
         return new Promise((resolve, reject) => {
             resolution = screenResolution;
@@ -167,6 +169,9 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         })
     }
 
+    /**
+     * 渲染播放动画
+     */
     const animate = () => {
         if (!scene || !camera || !renderer || !model) return;
         if (mixer) mixer.update(clock.getDelta());
@@ -174,6 +179,12 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         renderer.render(scene, camera);
     };
 
+    /**
+     * 播放动画动作
+     * @param action 动画动作
+     * @param loop 是否循环播放
+     * @param clampWhenFinished 是否停在最后一帧
+     */
     const _playAction = (action: THREE.AnimationAction, loop: boolean = true, clampWhenFinished: boolean = true) => {
         if (currentAction && currentAction !== action) {
             currentAction.fadeOut(0.1);
@@ -189,6 +200,12 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         action.clampWhenFinished = clampWhenFinished;
     };
 
+    /**
+     * 获取动画动作
+     * 如果没找到动画动作就会返回一个undefined
+     * @param animationName 动画名字
+     * @returns 动画动作 | undefined
+     */
     const getAnimationAction = (animationName: string): THREE.AnimationAction | undefined => {
         if (!animations || !mixer || !model) return undefined;
         const animationClip: THREE.AnimationClip | undefined = animations?.find(animation => animation.name.includes(animationName));
@@ -242,7 +259,6 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     /**
      * 坐姿
      * 这个是晃腿的
-     * @param rotationY 旋转角度，如果为空，就保持现在的model.rotation.y
      */
     const sitted = () => {
         let sit2 = getAnimationAction("sit_2");
@@ -254,7 +270,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
     /**
      * 坐下
-     * 这是一整个完整的坐下的动画，因为petmate坐下的动画分成了三段，所以这里需要分段走，站起来是第三段，这里不需要
+     * 这是一整个完整的坐下的动画，因为petmate坐下的动画分成了三段，所以这里需要分段播放，站起来是第三段，这里不需要
      */
     const sit = () => {
         let sit1 = getAnimationAction("sit_1");
@@ -313,6 +329,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
     /**
      * 扶墙偷看
+     * 这个先不能用，因为动画还有点问题
      * 调用这个方法之前必须要先检查一下Petmate的模型是否在屏幕最边上，否则可能出问题
      */
     const spyBesideWindow = () => {
@@ -391,16 +408,26 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
     /**
      * 获取Petmate模型当前在屏幕上的坐标
+     * @returns 模型的屏幕坐标
      */
     const getModelScreenPosition = (): ScreenPosition => {
         if (!model) return {x: 0, y: 0};
         return transferWorldToScreen(model.position, resolution.width, resolution.height);
     }
 
+    /**
+     * 设置模型坐的窗口名字
+     * @param title 窗口名字
+     */
     const setSittedWindowTitle = (title: string) => {
         sittedWindowTitle = title;
     }
 
+    /**
+     * 设置模型的世界位置
+     * @param position 目标世界位置
+     * @returns 
+     */
     const setModelPosition = (position: THREE.Vector3) => {
         if (!model) return ;
         gsap.killTweensOf(model.position);
@@ -412,6 +439,12 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         });
     }
 
+    /**
+     * 鼠标按下
+     * 如果鼠标按下的地方是模型的话，需要设置模型的拖拽状态
+     * @param event 鼠标事件
+     * @returns 
+     */
     function onMouseDown(event: MouseEvent) {
         if (!mouse || !camera || !scene) return ;
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -426,11 +459,19 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         updateModelState({dragging: hasIntersection});
     }
 
+    /**
+     * 鼠标松开
+     */
     function onMouseUp(event: MouseEvent) {
         updateModelState({dragging: false});
     }
     
-    /**ss */
+    /**  
+     * 鼠标移动事件监听
+     * 判断鼠标是否在建模上或者WheelMenu这个组件上，如果鼠标在这两个地方的话，就需要监听鼠标事件，否则不需要监听
+     * 目前是利用鼠标射线来判断是否在模型和WheelMenu上
+     * @param event 鼠标事件
+     */
     function onMouseMove(event: MouseEvent) {
         if (!mouse || !camera || !scene || !model) return ;
         // 将鼠标位置归一化为设备坐标 (-1 to +1)
@@ -440,10 +481,12 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     
         // 先检测有没有按到菜单UI
         const element = document.elementFromPoint(event.clientX, event.clientY);
-        const inOnUI = checkOnUI(element);
-        if (inOnUI) {
+        const inUI = checkOnUI(element);
+        if (inUI) {
             // window.api.setIgnoreMouseEvents(false);
             // console.log(`鼠标在${element?.className}上`)
+            // 如果鼠标移动到了UI上的话，需要响应鼠标事件的
+            window.api.setIgnoreMouseEvents(false);
             return ;
         }
     
@@ -487,6 +530,13 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     }
 }
 
+/**
+ * 将屏幕坐标转换为世界坐标
+ * @param screenPosition 待转换的屏幕坐标
+ * @param width 分辨率 x
+ * @param height 分辨率 y
+ * @returns 世界坐标
+ */
 export function transferScreenToWorld(screenPosition: ScreenPosition, width: number, height: number): THREE.Vector3 {
     if (!renderer || !camera || !model) {
         console.warn('Renderer or camera not initialized');
@@ -522,6 +572,13 @@ export function transferScreenToWorld(screenPosition: ScreenPosition, width: num
     return new THREE.Vector3(worldX, worldY, model.position.z);
 }
 
+/**
+ * 将世界坐标转换为屏幕坐标
+ * @param worldPosition 待转换的世界坐标
+ * @param width 分辨率 x
+ * @param height 分辨率 y
+ * @returns 
+ */
 export function transferWorldToScreen(worldPosition: THREE.Vector3, width: number, height: number): ScreenPosition {
     if (!camera) return {x: width / 2, y: height / 2};
     const vector: THREE.Vector3 = worldPosition.clone();
@@ -531,7 +588,13 @@ export function transferWorldToScreen(worldPosition: THREE.Vector3, width: numbe
     return {x: screenX, y: screenY};
 }
 
-function checkOnUI(element: Element | null) {
+/**
+ * 判断element元素是否是可以穿透的UI element
+ * 目前可以穿透的UI是radial-menu-overlay（WheelMenu的class名字）
+ * @param element html元素
+ * @returns 是否在UI上
+ */
+function checkOnUI(element: Element | null): boolean {
     if (!element) return false;
     const className = element.className || '';
     if (className.includes('radial-menu-overlay') || 
