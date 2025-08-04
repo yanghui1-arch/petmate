@@ -88,13 +88,6 @@ onMounted(async () => {
         allWindows.value = initAllWindows.data!;
     }
 
-    /** 监听鼠标事件 */
-    window.addEventListener("mousemove", (event) => {
-        const mousePosition = {x: event.screenX, y: event.screenY};
-        const modelPosition = getModelScreenPosition();
-        // 如果鼠标滑进了
-    });
-
     /* 动画播放计时器 
     * 5分钟之后选择一个动画
     */
@@ -180,6 +173,13 @@ const selectAnimationAndPlay = () => {
 .three-container {
     width: 100%;
     height: 100%;
+    z-index: 1
+}
+
+.context-menu {
+    z-index: 1000; /* 确保在canvas之上 */
+    pointer-events: auto; /* 确保可以接收鼠标事件 */
+    height: 100px;
 }
 
 </style>

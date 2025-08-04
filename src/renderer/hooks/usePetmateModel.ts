@@ -110,11 +110,11 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             raycaster = new THREE.Raycaster();
             mouse = new THREE.Vector2();
 
+            // 鼠标移动/右键/按下/松开
             renderer.domElement.addEventListener('mousemove', onMouseMove, false);
             renderer.domElement.addEventListener('contextmenu', (event) => {
                 event.preventDefault();
                 isShowContextMenu.value = true;
-                console.log('右键')
             }, false);
             renderer.domElement.addEventListener('mousedown', onMouseDown, false);
             renderer.domElement.addEventListener('mouseup', onMouseUp, false);
@@ -267,6 +267,16 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
         updateModelState({sittedIdle: true});
     };
+
+    /**
+     * 被拖拽的动画
+     */
+    const drag = () => {
+        let pick1 = getAnimationAction("pick_up_1");
+        if (!pick1 || !model) return ;
+        _playAction(pick1, true)
+        updateModelState({dragging: true});
+    }
 
     /**
      * 坐下
@@ -447,6 +457,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
      */
     function onMouseDown(event: MouseEvent) {
         if (!mouse || !camera || !scene) return ;
+        if (event.buttons !== 1) return ;
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     
@@ -454,16 +465,18 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(scene.children, true);
         const hasIntersection = intersects.length > 0;
-        
         // 模型状态变为dragging
         updateModelState({dragging: hasIntersection});
+        drag();
     }
 
     /**
      * 鼠标松开
      */
     function onMouseUp(event: MouseEvent) {
+        if (event.button !== 0) return ;
         updateModelState({dragging: false});
+        standIdle();
     }
     
     /**  
@@ -475,8 +488,8 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     function onMouseMove(event: MouseEvent) {
         if (!mouse || !camera || !scene || !model) return ;
         // 将鼠标位置归一化为设备坐标 (-1 to +1)
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        mouse.x = (event.offsetX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.offsetY / window.innerHeight) * 2 + 1;
         // console.log("鼠标移动")
     
         // 先检测有没有按到菜单UI
@@ -484,11 +497,12 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         const inUI = checkOnUI(element);
         if (inUI) {
             // window.api.setIgnoreMouseEvents(false);
-            // console.log(`鼠标在${element?.className}上`)
+            console.log(`鼠标在${element?.className}上`)
             // 如果鼠标移动到了UI上的话，需要响应鼠标事件的
             window.api.setIgnoreMouseEvents(false);
             return ;
         }
+        console.log(`123鼠标在${element?.className}上`)
     
         // 检测是否与3D对象相交
         const raycaster = new THREE.Raycaster();
@@ -595,10 +609,14 @@ export function transferWorldToScreen(worldPosition: THREE.Vector3, width: numbe
  * @returns 是否在UI上
  */
 function checkOnUI(element: Element | null): boolean {
-    if (!element) return false;
+    if (!element) {
+        console.log(`${element}`);
+        return false;
+    }
     const className = element.className || '';
-    if (className.includes('radial-menu-overlay') || 
-        element.closest('.radial-menu-overlay')) {
+    console.log(`${element}: 有element, 名字是${className}`)
+    if (className.includes('context-menu') || 
+        element.closest('.context-menu')) {
         return true;
     }
     return false
