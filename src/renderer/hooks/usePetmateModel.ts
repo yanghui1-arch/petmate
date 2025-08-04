@@ -501,15 +501,15 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     
         // 先检测有没有按到菜单UI
         const element = document.elementFromPoint(event.clientX, event.clientY);
+
+        // 这个可能没有用，因为只能检测到画布目前，因为菜单的z轴是1000
         const inUI = checkOnUI(element);
         if (inUI) {
             // window.api.setIgnoreMouseEvents(false);
-            console.log(`鼠标在${element?.className}上`)
             // 如果鼠标移动到了UI上的话，需要响应鼠标事件的
             window.api.setIgnoreMouseEvents(false);
             return ;
         }
-        console.log(`123鼠标在${element?.className}上`)
     
         // 检测是否与3D对象相交
         const raycaster = new THREE.Raycaster();
@@ -616,12 +616,8 @@ export function transferWorldToScreen(worldPosition: THREE.Vector3, width: numbe
  * @returns 是否在UI上
  */
 function checkOnUI(element: Element | null): boolean {
-    if (!element) {
-        console.log(`${element}`);
-        return false;
-    }
+    if (!element) return false;
     const className = element.className || '';
-    console.log(`${element}: 有element, 名字是${className}`)
     if (className.includes('context-menu') || 
         element.closest('.context-menu')) {
         return true;
