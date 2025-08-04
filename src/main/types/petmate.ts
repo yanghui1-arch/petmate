@@ -35,7 +35,7 @@ export type PetMateAttribute = {
 }
 
 export type PetMateStatus = {
-    status: "idle" | ActivityInfo["type"];
+    status: "idle" | "finished" | ActivityInfo["type"];
     startTime?: Date;
     endTime?: Date;
     activity?: ActivityInfo;

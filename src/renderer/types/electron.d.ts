@@ -19,6 +19,7 @@ interface IElectronAPI {
   getCurrentPlayerData: () => Promise<Response<PlayerInfo>>;
   showActivities: (type: ActivityInfo["type"]) => Promise<Response<ActivityInfo[]>>;
   showItems: (type: ItemType) => Promise<Response<Item[]>>;
+  getItemInfo: (itemIds: number[]) => Promise<Response<Item[]>>;
   getPetmateCompletedWishesNum: (petmateId: number) => Promise<Response<number>>;
   getPetmateOneWish: (petmateId: number, wishId: string) => Promise<Response<Wish>>;
   getModelSize: () => Promise<Response<number>>;
@@ -43,6 +44,8 @@ interface IElectronAPI {
   chat: (message: ChatMessage) => Promise<Response<void>>;
   startActivity: (petmateId: number, activityId: number) => Promise<Response<void>>;
   cancelActivity: (petmateId: number) => Promise<Response<void>>;
+  claimActivityReward: (petmateId: number) => Promise<Response<void>>;
+  claimWishReward: (petmateId: number, wishId: string) => Promise<Response<boolean>>;
 
   // 克隆音色
   cloneVoice: (url: string) => Promise<Response<string>>;
@@ -52,7 +55,7 @@ interface IElectronAPI {
   onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => void;
   onWishGenerated: (callback: (event: Event, petmateId: number) => void) => void,
   onWishFinished: (callback: (event: Event, petmateId: number, finishedWishNames: string[]) => void) => void,
-  onEndActivity: (callback: (event: Event, petmateId: number) => void) => void,
+  onActivityFinished: (callback: (event: Event, petmateId: number) => void) => void,
   onShowContextMenu: (callback: (event: Event) => void) => void,
   removeAllAudioChunkListeners: () => void;
   setIgnoreMouseEvents: (ignore: boolean) => void;

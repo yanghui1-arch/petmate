@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld(
         getTTSLLMConfig: () => ipcRenderer.invoke("get-tts-config"),
         showActivities: (type: ActivityInfo["type"]) => ipcRenderer.invoke("show-activities", type),
         showItems: (type: ItemType) => ipcRenderer.invoke("show-items", type),
+        getItemInfo: (itemIds: number[]) => ipcRenderer.invoke("get-item-info", itemIds),
         getPetmateCompletedWishesNum: (petmateId: number) => ipcRenderer.invoke("get-petmate-completed-wishes-num", petmateId),
         getPetmateOneWish: (petmateId: number, wishId: string) => ipcRenderer.invoke("get-petmate-one-wish", petmateId, wishId),
         getModelSize: () => ipcRenderer.invoke("get-model-size"),
@@ -43,6 +44,8 @@ contextBridge.exposeInMainWorld(
         chat: (message: ChatMessage) => ipcRenderer.invoke("chat", message),
         startActivity: (petmateId: number, activityId: number) => ipcRenderer.invoke("start-activity", petmateId, activityId),
         cancelActivity: (petmateId: number) => ipcRenderer.invoke("cancel-activity", petmateId),
+        claimActivityReward: (petmateId: number) => ipcRenderer.invoke("claim-activity-reward", petmateId),
+        claimWishReward: (petmateId: number, wishId: string) => ipcRenderer.invoke("claim-wish-reward", petmateId, wishId),
 
         // 克隆音色
         cloneVoice: (url: string) => ipcRenderer.invoke("clone-voice", url),
@@ -52,7 +55,7 @@ contextBridge.exposeInMainWorld(
         onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => ipcRenderer.on("tts-audio-chunk", callback),
         onWishGenerated: (callback: (event: Event, petmateId: number) => void) => ipcRenderer.on("wish-generated", callback),
         onWishFinished: (callback: (event: Event, petmateId: number, finishedWishNames: string[]) => void) => ipcRenderer.on("wish-finished", callback),
-        onEndActivity: (callback: (event: Event, petmateId: number) => void) => ipcRenderer.on("end-activity", callback),
+        onActivityFinished: (callback: (event: Event, petmateId: number) => void) => ipcRenderer.on("activity-finished", callback),
         removeAllAudioChunkListeners: () => ipcRenderer.removeAllListeners("tts-audio-chunk"),
         onShowContextMenu: (callback: (event: Event) => void) => ipcRenderer.on("show-context-menu", callback),
         setIgnoreMouseEvents: (ignore: boolean) => ipcRenderer.send("set-ignore-mouse-events", ignore),
