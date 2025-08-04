@@ -55,6 +55,7 @@ interface IElectronAPI {
   onEndActivity: (callback: (event: Event, petmateId: number) => void) => void,
   onShowContextMenu: (callback: (event: Event) => void) => void,
   removeAllAudioChunkListeners: () => void;
+  setIgnoreMouseEvents: (ignore: boolean) => void;
 
   // 其他
   listenTTSVoiceSample: (voice: TTSVoice, text: string) => Promise<Response<void>>;

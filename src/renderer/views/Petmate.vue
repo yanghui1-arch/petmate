@@ -17,12 +17,12 @@ import { WindowEvent, WindowInfo } from '../types/window';
 import { sittedWindowTitle } from '../hooks/usePetmateModel';
 import { ScreenPosition } from '../types/model';
 import WheelMenu from '../components/WheelMenu.vue';
+import { isShowContextMenu } from '../hooks/usePetmateModel';
 
 const threeContainer = ref();
 
 const screenResolution = ref({width: 0, height: 0});
 const { init3D, standIdle, walkTo, sit, spyBesideWindow, standFromSit, sitted, modelState, getModelScreenPosition, modelConfig, setSittedWindowTitle, setModelPosition } = usePetmateModel(threeContainer);
-const isShowContextMenu = ref(false);
 
 
 onMounted(async () => {
@@ -37,9 +37,7 @@ onMounted(async () => {
     });
     
     /* 监听是否右键打开菜单 */
-    window.api.onShowContextMenu((event) => {
-        isShowContextMenu.value = true;
-    });
+    
 
     /* 监听窗口 */
     window.windowMonitor.start(100);

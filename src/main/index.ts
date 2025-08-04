@@ -11,12 +11,13 @@ const createWindow = () => {
   const { width, height } = screen.getPrimaryDisplay().bounds;
 
   const win = new BrowserWindow({
-    width: 150,
-    height: 350,
+    width: width,
+    height: height,
     frame: false,
     resizable: false,
     transparent: true,
     alwaysOnTop: true,
+    focusable: true,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -55,6 +56,7 @@ const createWindow = () => {
   tray.setToolTip('Petmate')
 }
 
+
 app.whenReady().then(() => {
   createWindow()
   startWishGeneration(0)
@@ -86,3 +88,8 @@ app.commandLine.appendSwitch('ignore-gpu-blacklist');
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow;
 }
+
+ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  win?.setIgnoreMouseEvents(ignore, { forward: true });
+});

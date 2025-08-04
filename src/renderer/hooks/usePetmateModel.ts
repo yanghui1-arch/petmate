@@ -21,6 +21,8 @@ let directionalLightRight: THREE.DirectionalLight | null = null;
 let directionalLightCenter: THREE.DirectionalLight | null = null;
 let ambientLight: THREE.AmbientLight | null = null;
 let renderer: THREE.WebGLRenderer | null = null;
+let raycaster: THREE.Raycaster | null = null;
+let mouse: THREE.Vector2 | null = null;
 
 let petMateModelConfig = {
     scale: 1,
@@ -62,6 +64,11 @@ export let sittedWindowTitle: string = "";
  */
 const walkSpeed: number = 2;
 
+
+export const isShowContextMenu = ref(false);
+
+
+
 export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
     const loader = new GLTFLoader();
@@ -80,7 +87,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             
             renderer = new THREE.WebGLRenderer({
                 antialias: true,
-                alpha: false,
+                alpha: true,
                 premultipliedAlpha: false
             });
             
@@ -90,6 +97,15 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             // 要完全透明
             renderer.setClearColor(0xffffff, 0);
             threeContainer.value.appendChild(renderer.domElement);
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            renderer.domElement.addEventListener('mousemove', onMouseMove, false);
+            renderer.domElement.addEventListener('contextmenu', (event) => {
+                event.preventDefault();
+                isShowContextMenu.value = true;
+                console.log('右键')
+            }, false);
             
             ambientLight = new THREE.AmbientLight(0x404040, 1);
             directionalLightLeft = new THREE.DirectionalLight(0xffffff, 1);
@@ -139,6 +155,45 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
                 reject(error);
             })
         })
+    }
+
+    function onMouseMove(event: MouseEvent) {
+        if (!mouse || !camera || !scene) return ;
+        // 将鼠标位置归一化为设备坐标 (-1 to +1)
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        console.log("鼠标移动")
+
+        // 先检测有没有按到菜单UI
+        const element = document.elementFromPoint(event.clientX, event.clientY);
+        const inOnUI = checkOnUI(element);
+        if (inOnUI) {
+            window.api.setIgnoreMouseEvents(false);
+            console.log(`鼠标在${element?.className}上`)
+            return ;
+        }
+
+        // 检测是否与3D对象相交
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(scene.children, true);
+        const hasIntersection = intersects.length > 0;
+
+        console.log(`点到3D对象了么？: ${hasIntersection} 鼠标位置: ${mouse.x}, ${mouse.y}`)
+        console.log(`模型位置: ${model?.position.x}, ${model?.position.y}`)
+        
+        // 通知主进程是否忽略鼠标事件
+        window.api.setIgnoreMouseEvents(!hasIntersection);
+    }
+
+    function checkIntersection() {
+        if (!raycaster || !camera || !mouse || !scene) return false;
+        // 从相机位置发射射线
+        raycaster.setFromCamera(mouse, camera);
+        // 检测相交
+        const intersects = raycaster.intersectObjects(scene.children);
+        console.log(`相交对象: ${intersects.length}`)
+        return intersects.length > 0;
     }
 
     const animate = () => {
@@ -451,4 +506,14 @@ export function transferWorldToScreen(worldPosition: THREE.Vector3, width: numbe
     const screenX = (vector.x + 1) * width / 2;
     const screenY = -(vector.y - 1) * height / 2;
     return {x: screenX, y: screenY};
+}
+
+function checkOnUI(element: Element | null) {
+    if (!element) return false;
+    const className = element.className || '';
+    if (className.includes('radial-menu-overlay') || 
+        element.closest('.radial-menu-overlay')) {
+        return true;
+    }
+    return false
 }

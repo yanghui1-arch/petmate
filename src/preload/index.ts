@@ -55,6 +55,7 @@ contextBridge.exposeInMainWorld(
         onEndActivity: (callback: (event: Event, petmateId: number) => void) => ipcRenderer.on("end-activity", callback),
         removeAllAudioChunkListeners: () => ipcRenderer.removeAllListeners("tts-audio-chunk"),
         onShowContextMenu: (callback: (event: Event) => void) => ipcRenderer.on("show-context-menu", callback),
+        setIgnoreMouseEvents: (ignore: boolean) => ipcRenderer.send("set-ignore-mouse-events", ignore),
 
         // 其他方法
         listenTTSVoiceSample: (voice: TTSVoice, text: string = "你好，主人，欢迎试听我的音色呢") => ipcRenderer.invoke("listen-tts-voice-sample", voice, text),

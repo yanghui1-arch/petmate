@@ -12,8 +12,8 @@ body {
   /* Stardew Valley style cursors */
   cursor: url(#{$cursor-default}) 0 0,
   auto;
-  -webkit-user-select: none;
-  -webkit-app-region: drag;
+  // -webkit-user-select: none;
+  // -webkit-app-region: drag;
 }
 
 ol,
@@ -58,5 +58,4 @@ label,
 .n-button{
   cursor: url(#{$cursor-pointer}) 10 0,
   pointer;
-  -webkit-app-region: no-drag;
 }
