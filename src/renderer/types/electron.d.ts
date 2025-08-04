@@ -4,7 +4,7 @@ import { Item, ItemType, Wish } from "./common";
 import { ActivityInfo } from "./common";
 import { SettingConfig } from "./settings";
 import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "./llm";
-
+import { WindowEvent, WindowInfo } from "../../main/window-monitor";
 /**
  * 与主进程通信的接口
  * 所有方法都返回Promise
@@ -56,15 +56,36 @@ interface IElectronAPI {
   onWishGenerated: (callback: (event: Event, petmateId: number) => void) => void,
   onWishFinished: (callback: (event: Event, petmateId: number, finishedWishNames: string[]) => void) => void,
   onActivityFinished: (callback: (event: Event, petmateId: number) => void) => void,
+  onShowContextMenu: (callback: (event: Event) => void) => void,
   removeAllAudioChunkListeners: () => void;
+  setIgnoreMouseEvents: (ignore: boolean) => void;
 
   // 其他
   listenTTSVoiceSample: (voice: TTSVoice, text: string) => Promise<Response<void>>;
+  openNewWindow: (route: string) => Promise<Response<void>>;
+  quitApp: () => Promise<Response<void>>;
+}
+
+/**
+ * 窗口监控相关方法
+ */
+interface IWindowMonitor {
+  start: (interval?: number) => Promise<Response<void>>;
+  stop: () => Promise<Response<void>>;
+  getScreenResolution: () => Promise<Response<{width: number, height: number, scaleFactor: number}>>;
+  getStatus: () => Promise<Response<{isRunning: boolean, interval: number}>>;
+  getWindows: () => Promise<Response<WindowInfo[]>>;
+  setInterval: (interval: number) => Promise<Response<void>>;
+  onWindowOpened: (callback: (event: Event, windowEvent: WindowEvent) => void) => void;
+  onWindowClosed: (callback: (event: Event, windowEvent: WindowEvent) => void) => void;
+  onWindowChanged: (callback: (event: Event, windowEvent: WindowEvent) => void) => void;
+  removeWindowListeners: () => void;
 }
 
 // 声明全局window对象，之后渲染层直接window.api.function() 调用即可
 declare global {
   interface Window {
     api: IElectronAPI;
+    windowMonitor: IWindowMonitor;
   }
 }

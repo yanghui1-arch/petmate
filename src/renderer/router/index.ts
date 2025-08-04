@@ -12,7 +12,8 @@ import Chat from '@/views/Chat.vue'
 import Config from '@/views/Config.vue'
 
 const routes = [
-  { path: '/', name: 'App', component: Home }, // name不能重复，否则路由匹配会出错
+  { path: '/', name: 'Root', component: () => import('@/views/Petmate.vue') }, // 根路径显示Petmate页面
+  { path: '/petmate', name: 'Petmate', component: () => import('@/views/Petmate.vue') }, // 专门的Petmate路由
   { path: '/home', name: 'Home', component: Home },
   { path: '/shop', name: 'Shop', component: Shop },
   { path: '/activity', name: 'Activity', component: Activity },

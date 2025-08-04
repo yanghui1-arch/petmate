@@ -1,33 +1,61 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, Tray } from 'electron'
 import * as path from 'path'
 import './ipc'
 import { destroyScheduler, startWishGeneration } from './scheduler'
 import { saveChatHistoryMessages } from './llm'
 
 let mainWindow: BrowserWindow | null = null;
+let tray = null
 
 const createWindow = () => {
+  const { width, height } = screen.getPrimaryDisplay().bounds;
+
   const win = new BrowserWindow({
-    width: 400,
-    height: 580,
-    // frame: false,
+    width: width,
+    height: height,
+    frame: false,
+    resizable: false,
+    transparent: true,
+    alwaysOnTop: true,
+    focusable: true,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
-      nodeIntegration: false,
+      nodeIntegration: true,
+      webgl: true
     },
   })
 
   mainWindow = win;
-
+  const WM_INITMENU = 0x0116;
+  mainWindow.hookWindowMessage(WM_INITMENU, () => {
+    mainWindow?.setEnabled(false);
+    mainWindow?.setEnabled(true);
+    mainWindow?.webContents.send('show-context-menu');
+  });
   // 加载渲染进程页面
-  console.log("nihao")
   win.loadURL('http://localhost:5173')
 
-  win.on('closed', () => {
-    mainWindow = null;
-  })
+  mainWindow.setSkipTaskbar(true);
+  const icon = nativeImage.createFromPath('src/renderer/assets/image/card.jpg')
+  tray = new Tray(icon)
+  // 创建托盘菜单
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: '显示', click: () => {
+        mainWindow?.show()
+      }
+    },
+    {
+      label: '退出', click: () => {
+        app.quit()
+      }
+    }
+  ])
+  tray.setContextMenu(contextMenu)
+  tray.setToolTip('Petmate')
 }
+
 
 app.whenReady().then(() => {
   createWindow()
@@ -41,6 +69,9 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
+ipcMain.on('quit-app', () => {
+  app.quit()
+})
 
 app.on('before-quit', () => {
   // 清理定时任务
@@ -49,6 +80,16 @@ app.on('before-quit', () => {
   saveChatHistoryMessages()
 })
 
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('disable-software-rasterizer');
+app.commandLine.appendSwitch('ignore-gpu-blacklist');
+
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow;
 }
+
+ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  win?.setIgnoreMouseEvents(ignore, { forward: true });
+});

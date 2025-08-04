@@ -2,14 +2,6 @@
   <div class="container">
     <!-- 主应用内容 -->
     <template v-if="playerData">
-      <div class="settings-drawer" @click="activate('left')">
-        <n-image
-          width="40"
-          height="40"
-          src="../assets/image/navigator.png"
-          preview-disabled
-        />
-      </div>
 
       <router-view />
 
@@ -142,4 +134,3 @@ onMounted(async () => {
   }
 }
 </style>
-

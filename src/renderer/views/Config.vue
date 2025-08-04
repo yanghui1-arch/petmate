@@ -958,6 +958,7 @@ onUnmounted(() => {
   margin: 0 auto;
   padding: 15px;
   min-height: 100vh;
+  -webkit-app-region: drag;
 }
 
 .config-header {
@@ -989,6 +990,7 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   min-height: 60vh;
+  -webkit-app-region: no-drag;
 }
 
 .selection-grid {
@@ -1062,6 +1064,7 @@ onUnmounted(() => {
 .config-view {
   max-width: 800px;
   margin: 0 auto;
+  -webkit-app-region: no-drag;
 }
 
 .view-header {
