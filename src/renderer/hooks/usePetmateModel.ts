@@ -162,14 +162,14 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         // 将鼠标位置归一化为设备坐标 (-1 to +1)
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        console.log("鼠标移动")
+        // console.log("鼠标移动")
 
         // 先检测有没有按到菜单UI
         const element = document.elementFromPoint(event.clientX, event.clientY);
         const inOnUI = checkOnUI(element);
         if (inOnUI) {
-            window.api.setIgnoreMouseEvents(false);
-            console.log(`鼠标在${element?.className}上`)
+            // window.api.setIgnoreMouseEvents(false);
+            // console.log(`鼠标在${element?.className}上`)
             return ;
         }
 
@@ -179,8 +179,8 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         const intersects = raycaster.intersectObjects(scene.children, true);
         const hasIntersection = intersects.length > 0;
 
-        console.log(`点到3D对象了么？: ${hasIntersection} 鼠标位置: ${mouse.x}, ${mouse.y}`)
-        console.log(`模型位置: ${model?.position.x}, ${model?.position.y}`)
+        // console.log(`点到3D对象了么？: ${hasIntersection} 鼠标位置: ${mouse.x}, ${mouse.y}`)
+        // console.log(`模型位置: ${model?.position.x}, ${model?.position.y}`)
         
         // 通知主进程是否忽略鼠标事件
         window.api.setIgnoreMouseEvents(!hasIntersection);

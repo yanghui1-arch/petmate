@@ -406,6 +406,7 @@ const hideBuffPopover = () => {
   flex: 1;
   padding: 0 6%;
   background: $system-bgc;
+  -webkit-app-region: drag;
   .home-layout {
     width: 100%;
     height: 100%;

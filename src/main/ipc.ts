@@ -920,11 +920,10 @@ ipcMain.handle("open-new-window", (event: IpcMainInvokeEvent, route: string): Re
             width: 400,
             height: 580,
             resizable: false,
-            frame: false,  // 🔧 给子窗口添加标题栏，避免与主窗口的无框模式冲突
+            frame: false,
             transparent: false,
             alwaysOnTop: false,
             modal: false, // 确保不是模态窗口
-            show: false, // 先不显示，等加载完成后再显示
             webPreferences: {
                 preload: path.join(__dirname, '../preload/index.js'),
                 contextIsolation: true,
