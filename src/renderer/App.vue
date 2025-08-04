@@ -1,22 +1,19 @@
 <template>
   <div class="container">
-    <!-- 玩家数据加载中 -->
-    <!-- <div v-if="isLoading" class="loading-overlay">
-      <n-spin size="large" />
-      <p>Loading player data...</p>
-    </div> -->
-
-    <!-- 玩家数据加载失败 -->
-    <!-- <div v-if="error" class="error-overlay">
-      <p>Failed to load player data: {{ error }}</p>
-      <n-button @click="loadPlayerData">Retry</n-button>
-    </div> -->
-
     <!-- 主应用内容 -->
     <template v-if="playerData">
 
       <router-view />
 
+      <!-- 右上角关闭按钮 -->
+      <div class="close-button-wrapper">
+        <div class="close-button">
+          <span class="close-icon">×</span>
+        </div>
+      </div>
+
+      <!-- <Home /> -->
+      <Navigator v-model:active="active" :placement="placement" />
       <!-- 系统消息通知，在右下角弹出，最多同时显示2条 -->
       <n-notification-provider placement="bottom-right" :max="2">
         <MessageNotification />
@@ -74,36 +71,66 @@ onMounted(async () => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
+
+/* 右上角关闭按钮 */
+.close-button-wrapper {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 1001;
+  pointer-events: none;
+}
+
+.close-button {
+  position: relative;
+  width: 48px;
+  height: 40px;
+  background: linear-gradient(225deg, #f8818d, #fe7784);
+  border-radius: 0 0 0 50px;
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(173, 96, 103, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+
+  &:hover {
+    background: linear-gradient(225deg, #f8818d, #fe7784);
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(122, 63, 68, 0.6),
+      inset 0 2px 4px rgba(255, 255, 255, 0.3),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.close-icon {
+  color: white;
+  font-size: 22px;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  margin-top: -8px;
+  margin-right: -8px;
+  user-select: none;
+}
+
 .settings-drawer {
   position: fixed;
-  // top: 20px;
-  // left: 10px;
   top: 0;
   left: 0;
   cursor: pointer;
   z-index: 1000;
-}
+  transition: transform 0.3s ease;
 
-.loading-overlay,
-.error-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  z-index: 9999;
-}
-
-.loading-overlay p,
-.error-overlay p {
-  margin-top: 16px;
-  font-size: 16px;
+  &:hover {
+    transform: scale(1.1);
+  }
 }
 </style>
