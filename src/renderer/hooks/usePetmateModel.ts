@@ -42,6 +42,10 @@ let orbitControls: OrbitControls | null = null;
  * 模型当前状态
  */
 let currentAction: THREE.AnimationAction | null = null;
+
+/**
+ * 模型的动作状态，如果需要组合播放动画，请将这组合动画导致的状态同时设置为true
+ */
 let modelState: ModelStatus = {
     walk: false,
     jump: false,
@@ -110,12 +114,11 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             raycaster = new THREE.Raycaster();
             mouse = new THREE.Vector2();
 
-            // 鼠标移动/右键/按下/松开
+            // 鼠标移动/按下/松开
             renderer.domElement.addEventListener('mousemove', onMouseMove, false);
-            renderer.domElement.addEventListener('contextmenu', (event) => {
-                event.preventDefault();
-                isShowContextMenu.value = true;
-            }, false);
+            /**
+             * 不要使用contextmenu来触发右键事件，这会导致鼠标按住右键+移动的时候直接卡死
+             */
             renderer.domElement.addEventListener('mousedown', onMouseDown, false);
             renderer.domElement.addEventListener('mouseup', onMouseUp, false);
             
@@ -451,13 +454,17 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
     /**
      * 鼠标按下
-     * 如果鼠标按下的地方是模型的话，需要设置模型的拖拽状态
+     * 如果鼠标按下的地方是模型的话，需要设置模型的拖拽状态并播放拖拽动画，这会导致原来的动画被强制打断的。
+     * 这里会判断一下是鼠标左键按下的还是鼠标右键按下的，如果是左键按下的话，则判断有没有按到模型，如果是右键按下的话，就直接显示菜单
      * @param event 鼠标事件
      * @returns 
      */
     function onMouseDown(event: MouseEvent) {
         if (!mouse || !camera || !scene) return ;
-        if (event.buttons !== 1) return ;
+        if (event.button !== 0) {
+            isShowContextMenu.value = true;
+            return ;
+        }
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     
@@ -471,7 +478,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     }
 
     /**
-     * 鼠标松开
+     * 鼠标松开，模型就会待机
      */
     function onMouseUp(event: MouseEvent) {
         if (event.button !== 0) return ;
