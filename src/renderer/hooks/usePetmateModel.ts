@@ -5,6 +5,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ScreenPosition } from '../types/model'
 import { ModelStatus } from '../types/model'
+import { throttle } from 'lodash'
 
 /** 屏幕分辨率 
  * 这个分辨率是一块屏幕的分辨率
@@ -116,7 +117,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             mouse = new THREE.Vector2();
 
             // 鼠标移动/按下/松开
-            renderer.domElement.addEventListener('mousemove', onMouseMove, false);
+            renderer.domElement.addEventListener('mousemove', throttle(onMouseMove, 20), false);
             /**
              * 不要使用contextmenu来触发右键事件，这会导致鼠标按住右键+移动的时候直接卡死
              */
