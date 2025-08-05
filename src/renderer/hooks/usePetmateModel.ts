@@ -5,6 +5,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ScreenPosition } from '../types/model'
 import { ModelStatus } from '../types/model'
+import { throttle } from 'lodash'
 
 /** 屏幕分辨率 
  * 这个分辨率是一块屏幕的分辨率
@@ -30,13 +31,18 @@ let renderer: THREE.WebGLRenderer | null = null;
 let raycaster: THREE.Raycaster | null = null;
 let mouse: THREE.Vector2 | null = null;
 
-/** 模型大小 */
+/** 模型缩放大小 */
 let petMateModelConfig = {
     scale: 1,
 }
+let modelSize: THREE.Vector3 = new THREE.Vector3();
 
 // 开发辅助用的
 let orbitControls: OrbitControls | null = null;
+
+// 优化
+let lastFrameTime = 0;
+let fps = 60;
 
 /**
  * 模型当前状态
@@ -102,7 +108,8 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             renderer = new THREE.WebGLRenderer({
                 antialias: true,
                 alpha: true,
-                premultipliedAlpha: false
+                premultipliedAlpha: false,
+                // powerPreference: "low-power" // 优先使用低功耗GPU
             });
             
             console.log(`window的inner (${window.innerWidth}, ${window.innerHeight})`)
@@ -115,7 +122,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             mouse = new THREE.Vector2();
 
             // 鼠标移动/按下/松开
-            renderer.domElement.addEventListener('mousemove', onMouseMove, false);
+            renderer.domElement.addEventListener('mousemove', throttle(onMouseMove, 20), false);
             /**
              * 不要使用contextmenu来触发右键事件，这会导致鼠标按住右键+移动的时候直接卡死
              */
@@ -149,10 +156,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
                 scene?.add(directionalLightLeft!);
                 scene?.add(directionalLightRight!);
                 scene?.add(directionalLightCenter!);
-                // if (camera && renderer) orbitControls = new OrbitControls(camera, renderer.domElement);
                 
-                // const axesHelper = new THREE.AxesHelper(10);
-                // scene?.add(axesHelper);
                 renderer?.setAnimationLoop(animate);
 
                 // 更新相机矩阵，确保投影计算正确
@@ -160,7 +164,16 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
                     camera.updateMatrixWorld();
                     camera.updateProjectionMatrix();
                 }
-                console.log('模型初始位置', transferWorldToScreen(model.position, resolution.width, resolution.height))
+                const modelScreenPosition = transferWorldToScreen(model.position, window.innerWidth, window.innerHeight)
+                console.log('模型初始位置', JSON.stringify(modelScreenPosition))
+
+                // 辅助3D开发使用的一些工具
+                // if (camera && renderer) orbitControls = new OrbitControls(camera, renderer.domElement);
+                // const axesHelper = new THREE.AxesHelper(10);
+                // scene?.add(axesHelper);
+                // let box = new THREE.Box3().setFromObject(model);
+                // let helper = new THREE.Box3Helper(box, new THREE.Color(0, 255, 0));
+                // scene?.add(helper)
                 resolve();
 
             }, (event) => {
@@ -175,11 +188,16 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     /**
      * 渲染播放动画
      */
-    const animate = () => {
+    const animate = (time: number) => {
         if (!scene || !camera || !renderer || !model) return;
         if (mixer) mixer.update(clock.getDelta());
-
-        renderer.render(scene, camera);
+        const now = performance.now();
+        // 渲染60帧
+        const delta = now - lastFrameTime;
+        if (delta > 1000 / fps) {
+            lastFrameTime = now;
+            renderer.render(scene, camera);
+        }
     };
 
     /**
@@ -220,21 +238,22 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     /**
      * 走到指定位置
      * 这个指令逻辑是要走到目标位置，但是可能由于模型可能面向正面，可能面向左面/右面，所以必须得先根据目标位置先让模型面向转到正确的方向，然后再走过去，最后再转回来
+     * 重置了模型状态和模型所处的窗口
      * @param target 目标位置
-     * @param duration 持续时间
      * @param onComplete 完成后的回调函数
      */
     const walkTo = (position: ScreenPosition, onCompleted?: () => void) => {
         if (!model) return ;
-        const target: THREE.Vector3 = transferScreenToWorld(position, resolution.width, resolution.height);
+        const target: THREE.Vector3 = transferScreenToWorld(position, window.innerWidth, window.innerHeight);
         const distance:number = target.distanceTo(model.position);
-        console.log('target screen pos', transferWorldToScreen(target, resolution.width, resolution.height))
+        console.log('target screen pos', transferWorldToScreen(target, window.innerWidth, window.innerHeight))
         if (distance < 0.1) return ;
 
         // 杀死可能存在的位置和旋转动画，避免冲突
         gsap.killTweensOf(model.position);
         gsap.killTweensOf(model.rotation);
 
+        // 先让模型转向
         gsap.to(model.rotation, {
             y: Math.atan2(target.x - model.position.x, target.z - model.position.z),
             duration: 0.1
@@ -242,8 +261,14 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         let walkAction = getAnimationAction("walk");
         if (!walkAction) walkAction = getAnimationAction("run");
         if (!walkAction) return ;
+
+        // 播放走路动画
         _playAction(walkAction);
         updateModelState({walk: true});
+        // 重置一下坐着的窗口
+        setSittedWindowTitle("");
+
+        // 计算动画播放时间
         const duration = distance / walkSpeed;
         
         gsap.to(model.position, {
@@ -279,6 +304,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         if (!pick1 || !model) return ;
         _playAction(pick1, true)
         updateModelState({dragging: true});
+        setSittedWindowTitle("");
     }
 
     /**
@@ -312,6 +338,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     /**
      * 从坐姿站起来
      * 这个方法只能在modelStatus.sittedIdle为true的时候调用，因此调用这个方法的时候，最好先检查一下modelStatus
+     * 重置了模型状态和模型所处的窗口
      */
     const standFromSit = () => {
         if (!modelState.sittedIdle) return ;
@@ -319,6 +346,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         if (!sit3) return ;
         _playAction(sit3, false);
         updateModelState({standIdle: true});
+        setSittedWindowTitle("");
         const onSit3Finished = () => {
             mixer!.removeEventListener('finished', onSit3Finished);
             standIdle();
@@ -328,12 +356,14 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
     /**
      * 待机动作
+     * 重置模型所处窗口
      */
     const standIdle = () => {
         let idleAction = getAnimationAction("idle");
         if (!idleAction || !model) return ;
         _playAction(idleAction, true);
         updateModelState({standIdle: true});
+        setSittedWindowTitle("");
         gsap.to(model.rotation, {
             y: 0,
             duration: 0.3
@@ -425,8 +455,16 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
      */
     const getModelScreenPosition = (): ScreenPosition => {
         if (!model) return {x: 0, y: 0};
-        return transferWorldToScreen(model.position, resolution.width, resolution.height);
+        return transferWorldToScreen(model.position, window.innerWidth, window.innerHeight);
     }
+
+    // const getModelScreenSize = (): { width: number, height: number } => {
+    //     if (!modelSize || !model) throw new Error("请init3D初始化完成了以后再调用该方法");
+
+    //     const modelPosition: THREE.Vector3 = model?.position;
+
+
+    // }
 
     /**
      * 设置模型坐的窗口名字
@@ -525,7 +563,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         window.api.setIgnoreMouseEvents(!hasIntersection);
         if (modelState.dragging) {
             // 说明被拖拽了，需要 * scaleFactor才可以拿到绝对位置
-            model.position.copy(transferScreenToWorld({x: event.clientX * scaleFactor, y: event.clientY * scaleFactor}, resolution.width, resolution.height));
+            model.position.copy(transferScreenToWorld({x: event.clientX * scaleFactor, y: event.clientY * scaleFactor}, window.innerWidth, window.innerHeight));
         }
     }
 
@@ -553,7 +591,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
 /**
  * 将屏幕坐标转换为世界坐标
- * @param screenPosition 待转换的屏幕坐标
+ * @param screenPosition 待转换的屏幕坐标 （基于分辨率的坐标）
  * @param width 分辨率 x
  * @param height 分辨率 y
  * @returns 世界坐标
@@ -564,8 +602,9 @@ export function transferScreenToWorld(screenPosition: ScreenPosition, width: num
         return new THREE.Vector3(0, 0, 0);
     }
 
-    const screenX = screenPosition.x;
-    const screenY = screenPosition.y;
+    // 先转换成画布坐标
+    const screenX = screenPosition.x / scaleFactor;
+    const screenY = screenPosition.y / scaleFactor;
 
     const coords = new THREE.Vector2(
         (screenX / width) * 2 - 1,
@@ -573,10 +612,6 @@ export function transferScreenToWorld(screenPosition: ScreenPosition, width: num
     )
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(coords, camera);
-
-    /**
-     * 不知道为什么把屏幕的坐标转换成three.js里的三维坐标是这样的，但这样搞是正确的，尽量不要动这个了
-     */
 
     const rayOrigin = raycaster.ray.origin;
     const rayDirection = raycaster.ray.direction;
@@ -596,8 +631,8 @@ export function transferScreenToWorld(screenPosition: ScreenPosition, width: num
 /**
  * 将世界坐标转换为屏幕坐标
  * @param worldPosition 待转换的世界坐标
- * @param width 分辨率 x
- * @param height 分辨率 y
+ * @param width 画布的宽window.innerWidth
+ * @param height 画布的高window.innerHeight
  * @returns 
  */
 export function transferWorldToScreen(worldPosition: THREE.Vector3, width: number, height: number): ScreenPosition {
@@ -605,8 +640,8 @@ export function transferWorldToScreen(worldPosition: THREE.Vector3, width: numbe
     const vector: THREE.Vector3 = worldPosition.clone();
     vector.project(camera);
     const screenX = (vector.x + 1) * width / 2;
-    const screenY = -(vector.y - 1) * height / 2;
-    return {x: screenX, y: screenY};
+    const screenY = (1 - vector.y) * height / 2;
+    return {x: screenX * scaleFactor, y: screenY * scaleFactor};
 }
 
 /**

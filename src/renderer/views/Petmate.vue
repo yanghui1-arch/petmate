@@ -41,8 +41,8 @@ onMounted(async () => {
     /* 监听是否右键打开菜单 */
     
 
-    /* 监听窗口 */
-    window.windowMonitor.start(100);
+    /* 监听窗口 (优化：从100ms改为500ms减少CPU使用) */
+    window.windowMonitor.start(1000);
     window.windowMonitor.onWindowOpened(async (event, windowEvent: WindowEvent) => {
         const getWindowsRes = await window.windowMonitor.getWindows();
         if (getWindowsRes.code === 200) {
@@ -75,8 +75,8 @@ onMounted(async () => {
         if (windowEvent.window.title === sittedWindowTitle) {
             const windowPosition: THREE.Vector3 = transferScreenToWorld(
                 {x: windowEvent.window.bounds.x + windowEvent.window.bounds.width / 2, y: windowEvent.window.bounds.y}, 
-                screenResolution.value.width, 
-                screenResolution.value.height
+                window.innerWidth, 
+                window.innerHeight
             );
             setModelPosition(windowPosition);
         }
@@ -93,7 +93,7 @@ onMounted(async () => {
     */
     const animTimer = setInterval(() => {
         selectAnimationAndPlay();
-    }, 10 * 1000);
+    }, 5 * 60 * 1000);
 
 })
 
