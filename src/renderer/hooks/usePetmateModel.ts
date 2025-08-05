@@ -30,10 +30,11 @@ let renderer: THREE.WebGLRenderer | null = null;
 let raycaster: THREE.Raycaster | null = null;
 let mouse: THREE.Vector2 | null = null;
 
-/** 模型大小 */
+/** 模型缩放大小 */
 let petMateModelConfig = {
     scale: 1,
 }
+let modelSize: THREE.Vector3 = new THREE.Vector3();
 
 // 开发辅助用的
 let orbitControls: OrbitControls | null = null;
@@ -149,10 +150,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
                 scene?.add(directionalLightLeft!);
                 scene?.add(directionalLightRight!);
                 scene?.add(directionalLightCenter!);
-                // if (camera && renderer) orbitControls = new OrbitControls(camera, renderer.domElement);
                 
-                // const axesHelper = new THREE.AxesHelper(10);
-                // scene?.add(axesHelper);
                 renderer?.setAnimationLoop(animate);
 
                 // 更新相机矩阵，确保投影计算正确
@@ -161,6 +159,13 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
                     camera.updateProjectionMatrix();
                 }
                 console.log('模型初始位置', transferWorldToScreen(model.position, resolution.width, resolution.height))
+                // 辅助3D开发使用的一些工具
+                // if (camera && renderer) orbitControls = new OrbitControls(camera, renderer.domElement);
+                // const axesHelper = new THREE.AxesHelper(10);
+                // scene?.add(axesHelper);
+                // let box = new THREE.Box3().setFromObject(model);
+                // let helper = new THREE.Box3Helper(box, new THREE.Color(0, 255, 0));
+                // scene?.add(helper)
                 resolve();
 
             }, (event) => {
@@ -440,6 +445,14 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         return transferWorldToScreen(model.position, resolution.width, resolution.height);
     }
 
+    // const getModelScreenSize = (): { width: number, height: number } => {
+    //     if (!modelSize || !model) throw new Error("请init3D初始化完成了以后再调用该方法");
+
+    //     const modelPosition: THREE.Vector3 = model?.position;
+
+
+    // }
+
     /**
      * 设置模型坐的窗口名字
      * @param title 窗口名字
@@ -565,7 +578,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
 /**
  * 将屏幕坐标转换为世界坐标
- * @param screenPosition 待转换的屏幕坐标
+ * @param screenPosition 待转换的屏幕坐标 （基于分辨率的坐标）
  * @param width 分辨率 x
  * @param height 分辨率 y
  * @returns 世界坐标
@@ -576,8 +589,9 @@ export function transferScreenToWorld(screenPosition: ScreenPosition, width: num
         return new THREE.Vector3(0, 0, 0);
     }
 
-    const screenX = screenPosition.x;
-    const screenY = screenPosition.y;
+    // 先转换成画布坐标
+    const screenX = screenPosition.x / scaleFactor;
+    const screenY = screenPosition.y / scaleFactor;
 
     const coords = new THREE.Vector2(
         (screenX / width) * 2 - 1,
@@ -608,8 +622,8 @@ export function transferScreenToWorld(screenPosition: ScreenPosition, width: num
 /**
  * 将世界坐标转换为屏幕坐标
  * @param worldPosition 待转换的世界坐标
- * @param width 分辨率 x
- * @param height 分辨率 y
+ * @param width 画布的宽window.innerWidth
+ * @param height 画布的高window.innerHeight
  * @returns 
  */
 export function transferWorldToScreen(worldPosition: THREE.Vector3, width: number, height: number): ScreenPosition {
@@ -617,8 +631,8 @@ export function transferWorldToScreen(worldPosition: THREE.Vector3, width: numbe
     const vector: THREE.Vector3 = worldPosition.clone();
     vector.project(camera);
     const screenX = (vector.x + 1) * width / 2;
-    const screenY = -(vector.y - 1) * height / 2;
-    return {x: screenX, y: screenY};
+    const screenY = (1 - vector.y) * height / 2;
+    return {x: screenX * scaleFactor, y: screenY * scaleFactor};
 }
 
 /**
