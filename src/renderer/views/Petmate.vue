@@ -75,8 +75,8 @@ onMounted(async () => {
         if (windowEvent.window.title === sittedWindowTitle) {
             const windowPosition: THREE.Vector3 = transferScreenToWorld(
                 {x: windowEvent.window.bounds.x + windowEvent.window.bounds.width / 2, y: windowEvent.window.bounds.y}, 
-                screenResolution.value.width, 
-                screenResolution.value.height
+                window.innerWidth, 
+                window.innerHeight
             );
             setModelPosition(windowPosition);
         }

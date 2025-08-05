@@ -158,7 +158,9 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
                     camera.updateMatrixWorld();
                     camera.updateProjectionMatrix();
                 }
-                console.log('模型初始位置', transferWorldToScreen(model.position, resolution.width, resolution.height))
+                const modelScreenPosition = transferWorldToScreen(model.position, window.innerWidth, window.innerHeight)
+                console.log('模型初始位置', JSON.stringify(modelScreenPosition))
+
                 // 辅助3D开发使用的一些工具
                 // if (camera && renderer) orbitControls = new OrbitControls(camera, renderer.domElement);
                 // const axesHelper = new THREE.AxesHelper(10);
@@ -231,9 +233,9 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
      */
     const walkTo = (position: ScreenPosition, onCompleted?: () => void) => {
         if (!model) return ;
-        const target: THREE.Vector3 = transferScreenToWorld(position, resolution.width, resolution.height);
+        const target: THREE.Vector3 = transferScreenToWorld(position, window.innerWidth, window.innerHeight);
         const distance:number = target.distanceTo(model.position);
-        console.log('target screen pos', transferWorldToScreen(target, resolution.width, resolution.height))
+        console.log('target screen pos', transferWorldToScreen(target, window.innerWidth, window.innerHeight))
         if (distance < 0.1) return ;
 
         // 杀死可能存在的位置和旋转动画，避免冲突
@@ -442,7 +444,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
      */
     const getModelScreenPosition = (): ScreenPosition => {
         if (!model) return {x: 0, y: 0};
-        return transferWorldToScreen(model.position, resolution.width, resolution.height);
+        return transferWorldToScreen(model.position, window.innerWidth, window.innerHeight);
     }
 
     // const getModelScreenSize = (): { width: number, height: number } => {
@@ -550,7 +552,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         window.api.setIgnoreMouseEvents(!hasIntersection);
         if (modelState.dragging) {
             // 说明被拖拽了，需要 * scaleFactor才可以拿到绝对位置
-            model.position.copy(transferScreenToWorld({x: event.clientX * scaleFactor, y: event.clientY * scaleFactor}, resolution.width, resolution.height));
+            model.position.copy(transferScreenToWorld({x: event.clientX * scaleFactor, y: event.clientY * scaleFactor}, window.innerWidth, window.innerHeight));
         }
     }
 
@@ -599,10 +601,6 @@ export function transferScreenToWorld(screenPosition: ScreenPosition, width: num
     )
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(coords, camera);
-
-    /**
-     * 不知道为什么把屏幕的坐标转换成three.js里的三维坐标是这样的，但这样搞是正确的，尽量不要动这个了
-     */
 
     const rayOrigin = raycaster.ray.origin;
     const rayDirection = raycaster.ray.direction;
