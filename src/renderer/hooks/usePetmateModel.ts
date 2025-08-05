@@ -220,8 +220,8 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     /**
      * 走到指定位置
      * 这个指令逻辑是要走到目标位置，但是可能由于模型可能面向正面，可能面向左面/右面，所以必须得先根据目标位置先让模型面向转到正确的方向，然后再走过去，最后再转回来
+     * 重置了模型状态和模型所处的窗口
      * @param target 目标位置
-     * @param duration 持续时间
      * @param onComplete 完成后的回调函数
      */
     const walkTo = (position: ScreenPosition, onCompleted?: () => void) => {
@@ -235,6 +235,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         gsap.killTweensOf(model.position);
         gsap.killTweensOf(model.rotation);
 
+        // 先让模型转向
         gsap.to(model.rotation, {
             y: Math.atan2(target.x - model.position.x, target.z - model.position.z),
             duration: 0.1
@@ -242,8 +243,14 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         let walkAction = getAnimationAction("walk");
         if (!walkAction) walkAction = getAnimationAction("run");
         if (!walkAction) return ;
+
+        // 播放走路动画
         _playAction(walkAction);
         updateModelState({walk: true});
+        // 重置一下坐着的窗口
+        setSittedWindowTitle("");
+
+        // 计算动画播放时间
         const duration = distance / walkSpeed;
         
         gsap.to(model.position, {
@@ -279,6 +286,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         if (!pick1 || !model) return ;
         _playAction(pick1, true)
         updateModelState({dragging: true});
+        setSittedWindowTitle("");
     }
 
     /**
@@ -312,6 +320,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     /**
      * 从坐姿站起来
      * 这个方法只能在modelStatus.sittedIdle为true的时候调用，因此调用这个方法的时候，最好先检查一下modelStatus
+     * 重置了模型状态和模型所处的窗口
      */
     const standFromSit = () => {
         if (!modelState.sittedIdle) return ;
@@ -319,6 +328,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         if (!sit3) return ;
         _playAction(sit3, false);
         updateModelState({standIdle: true});
+        setSittedWindowTitle("");
         const onSit3Finished = () => {
             mixer!.removeEventListener('finished', onSit3Finished);
             standIdle();
@@ -328,12 +338,14 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
     /**
      * 待机动作
+     * 重置模型所处窗口
      */
     const standIdle = () => {
         let idleAction = getAnimationAction("idle");
         if (!idleAction || !model) return ;
         _playAction(idleAction, true);
         updateModelState({standIdle: true});
+        setSittedWindowTitle("");
         gsap.to(model.rotation, {
             y: 0,
             duration: 0.3
