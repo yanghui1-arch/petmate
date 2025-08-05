@@ -41,8 +41,8 @@ onMounted(async () => {
     /* 监听是否右键打开菜单 */
     
 
-    /* 监听窗口 */
-    window.windowMonitor.start(100);
+    /* 监听窗口 (优化：从100ms改为500ms减少CPU使用) */
+    window.windowMonitor.start(1000);
     window.windowMonitor.onWindowOpened(async (event, windowEvent: WindowEvent) => {
         const getWindowsRes = await window.windowMonitor.getWindows();
         if (getWindowsRes.code === 200) {
@@ -93,7 +93,7 @@ onMounted(async () => {
     */
     const animTimer = setInterval(() => {
         selectAnimationAndPlay();
-    }, 10 * 1000);
+    }, 5 * 60 * 1000);
 
 })
 

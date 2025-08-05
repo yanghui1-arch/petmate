@@ -40,6 +40,10 @@ let modelSize: THREE.Vector3 = new THREE.Vector3();
 // 开发辅助用的
 let orbitControls: OrbitControls | null = null;
 
+// 优化
+let lastFrameTime = 0;
+let fps = 60;
+
 /**
  * 模型当前状态
  */
@@ -104,7 +108,8 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             renderer = new THREE.WebGLRenderer({
                 antialias: true,
                 alpha: true,
-                premultipliedAlpha: false
+                premultipliedAlpha: false,
+                // powerPreference: "low-power" // 优先使用低功耗GPU
             });
             
             console.log(`window的inner (${window.innerWidth}, ${window.innerHeight})`)
@@ -183,11 +188,16 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     /**
      * 渲染播放动画
      */
-    const animate = () => {
+    const animate = (time: number) => {
         if (!scene || !camera || !renderer || !model) return;
         if (mixer) mixer.update(clock.getDelta());
-
-        renderer.render(scene, camera);
+        const now = performance.now();
+        // 渲染60帧
+        const delta = now - lastFrameTime;
+        if (delta > 1000 / fps) {
+            lastFrameTime = now;
+            renderer.render(scene, camera);
+        }
     };
 
     /**
