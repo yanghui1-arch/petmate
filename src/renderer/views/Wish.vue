@@ -116,7 +116,7 @@
             </n-button>
             <div class="wish-detail-info">
               <div class="wish-icon">
-                <img src="../../assets/image/wish.png" alt="wish" />
+                <img src="../assets/image/wish.png" alt="wish" />
               </div>
               <div class="wish-detail-text">
                 <div class="wish-name">{{ checkWishInfo?.name }}</div>
@@ -149,12 +149,12 @@
                     <div class="requirement-status">
                       <img
                         v-if="progress.status === 'finished'"
-                        src="../../assets/image/right.png"
+                        src="../assets/image/right.png"
                         class="status-icon"
                       />
                       <img
                         v-else
-                        src="../../assets/image/wrong.png"
+                        src="../assets/image/wrong.png"
                         class="status-icon"
                       />
                     </div>
@@ -182,12 +182,12 @@
                     <div class="requirement-status">
                       <img
                         v-if="progress.status === 'finished'"
-                        src="../../assets/image/right.png"
+                        src="../assets/image/right.png"
                         class="status-icon"
                       />
                       <img
                         v-else
-                        src="../../assets/image/wrong.png"
+                        src="../assets/image/wrong.png"
                         class="status-icon"
                       />
                     </div>
