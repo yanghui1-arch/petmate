@@ -29,7 +29,7 @@ export default defineConfig({
   ],
   base: './',
   build: {
-    outDir: '../../dist/renderer',
+    outDir: '../../dist/src/renderer',
     emptyOutDir: true,
   },
   resolve: {
@@ -43,5 +43,6 @@ export default defineConfig({
         additionalData: `@import "@/assets/style/color.scss";`,
       },
     },
-  }
+  },
+  assetsInclude: ['**/*.glb']
 })
