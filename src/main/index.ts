@@ -5,6 +5,7 @@ import { destroyScheduler, startWishGeneration } from './scheduler'
 import { saveChatHistoryMessages } from './llm'
 import { is } from '@electron-toolkit/utils'
 import { join } from 'path'
+import trayIcon from '../../resources/icon.png?asset'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -43,7 +44,7 @@ const createWindow = (): void => {
   }
 
   mainWindow.setSkipTaskbar(true)
-  const icon = nativeImage.createFromPath('src/renderer/assets/image/card.jpg')
+  const icon = nativeImage.createFromPath(trayIcon)
   tray = new Tray(icon)
   // 创建托盘菜单
   const contextMenu = Menu.buildFromTemplate([
