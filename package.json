@@ -6,7 +6,6 @@
   "dependencies": {
     "animate.css": "^4.1.1",
     "axios": "^1.10.0",
-    "electron": "^38.0.0-alpha.12",
     "electron-store": "^10.1.0",
     "get-windows": "^9.2.0",
     "gsap": "^3.13.0",
@@ -31,6 +30,7 @@
     "@vitest/coverage-v8": "^2.1.9",
     "@vue/test-utils": "^2.4.0",
     "concurrently": "^9.2.0",
+    "electron": "^38.0.0-alpha.12",
     "jsdom": "^25.0.0",
     "naive-ui": "^2.42.0",
     "ts-node": "^10.9.2",
