@@ -1,4 +1,8 @@
 {
+  "name": "Petmate",
+  "version": "0.5.1",
+  "description": "Petmate",
+  "author": "Petmate",
   "dependencies": {
     "animate.css": "^4.1.1",
     "axios": "^1.10.0",
