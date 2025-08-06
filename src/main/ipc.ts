@@ -17,7 +17,7 @@ import { Item, ItemType } from './types/item';
 import { buyItem } from './modules/player/basic';
 import { ActivityInfo } from './types/activity';
 import { getCompletedWishesNum, showActivities, showItems, getItemInfo } from './modules/show';
-import { ChatLLMConfigError, LLMConfigError, NotFoundError, TTSProcessError, UnsupportedError } from './error';
+import { ChatLLMConfigError, LLMConfigError, NotFoundError, TTSProcessError } from './error';
 import { wishHandler } from './modules/wish';
 import { getModelSize, getSettings, SettingConfig, updateSettings, defaultSettings } from './settings';
 import {
@@ -53,7 +53,7 @@ import * as path from 'path';
  * 会同步文件中的数据
  * @returns 加载玩家数据成功或失败，如果失败会返回一个code=400的响应，如果成功会返回一个code=200的响应，并且返回玩家信息
  */
-ipcMain.handle("init-player-data", (event: IpcMainInvokeEvent): Response<PlayerInfo> => {
+ipcMain.handle("init-player-data", (_: IpcMainInvokeEvent): Response<PlayerInfo> => {
     try {
         const playerInfo: PlayerInfo = playerManager.getPlayer();
         const petmates: PetMate[] = playerInfo.petmates;
@@ -142,7 +142,7 @@ ipcMain.handle("init-player-data", (event: IpcMainInvokeEvent): Response<PlayerI
  * 将玩家自定义的设置数据加载到内存中，如果玩家没有自定义的设置数据，则初始化默认设置，并写入到自定义的设置数据中
  * @returns 玩家自定义的设置数据
  */
-ipcMain.handle("init-settings", (event: IpcMainInvokeEvent): Response<SettingConfig> => {
+ipcMain.handle("init-settings", (_: IpcMainInvokeEvent): Response<SettingConfig> => {
     try {
         const settings: SettingConfig = getSettings();
         return {
@@ -172,7 +172,7 @@ ipcMain.handle("init-settings", (event: IpcMainInvokeEvent): Response<SettingCon
  * 初始化llm配置
  * 玩家会有自己的llm的api_key和base_url，如果没有定义自己的api_key或者base_url, 需要给一个提醒，否则应该加载默认的配置
  */
-ipcMain.handle("init-llm", (event: IpcMainInvokeEvent): Response<void> => {
+ipcMain.handle("init-llm", (_: IpcMainInvokeEvent): Response<void> => {
     try {
         initLLM()
         logger.info("llm所需要的东西已准备就绪")
@@ -202,7 +202,7 @@ ipcMain.handle("init-llm", (event: IpcMainInvokeEvent): Response<void> => {
  * @param petmateId petmate的id
  * @returns 消耗物品成功或失败
  */
-ipcMain.handle("consume-item", (event: IpcMainInvokeEvent, itemId: number, count: number, petmateId: number): Response<void> => {
+ipcMain.handle("consume-item", (_: IpcMainInvokeEvent, itemId: number, count: number, petmateId: number): Response<void> => {
     try {
         consumeItem(itemId, count, petmateId);
         return {
@@ -224,7 +224,7 @@ ipcMain.handle("consume-item", (event: IpcMainInvokeEvent, itemId: number, count
  * @param count 购买数量
  * @returns 购买的物品
  */
-ipcMain.handle("buy-item", (event: IpcMainInvokeEvent, itemId: number, count: number): Response<Item> => {
+ipcMain.handle("buy-item", (_: IpcMainInvokeEvent, itemId: number, count: number): Response<Item> => {
     try {
         const item: Item = buyItem(itemId, count);
         return {
@@ -248,7 +248,7 @@ ipcMain.handle("buy-item", (event: IpcMainInvokeEvent, itemId: number, count: nu
  * @param url 根据这个url克隆音色
  * @returns 克隆音色成功或失败，如果成功的话会返回一个音色id，如果失败的话会返回一个详细的错误信息
  */
-ipcMain.handle("clone-voice", async (event: IpcMainInvokeEvent, url: string): Promise<Response<string>> => {
+ipcMain.handle("clone-voice", async (_: IpcMainInvokeEvent, url: string): Promise<Response<string>> => {
     try {
         const voiceID: string = await cloneVoice(url);
         return {
@@ -272,7 +272,7 @@ ipcMain.handle("clone-voice", async (event: IpcMainInvokeEvent, url: string): Pr
  * @param voice 要试听的音色
  * @returns 试听音色成功或失败，如果成功的话会返回一个音色id，如果失败的话会返回一个详细的错误信息
  */
-ipcMain.handle("listen-tts-voice-sample", async (event: IpcMainInvokeEvent, voice: TTSVoice, text: string): Promise<Response<void>> => {
+ipcMain.handle("listen-tts-voice-sample", async (_: IpcMainInvokeEvent, voice: TTSVoice, text: string): Promise<Response<void>> => {
     try {
         await listenTTSVoiceSample(voice, text);
         return {
@@ -296,7 +296,7 @@ ipcMain.handle("listen-tts-voice-sample", async (event: IpcMainInvokeEvent, voic
  * @param message 聊天信息
  * @returns 发送聊天信息成功或失败
  */
-ipcMain.handle("chat", async (event: IpcMainInvokeEvent, message: ChatMessage): Promise<Response<void>> => {
+ipcMain.handle("chat", async (_: IpcMainInvokeEvent, message: ChatMessage): Promise<Response<void>> => {
     try {
         await chat(message);
         return {
@@ -354,7 +354,7 @@ ipcMain.handle("chat", async (event: IpcMainInvokeEvent, message: ChatMessage): 
  * @param type 活动类型
  * @returns 活动列表
  */
-ipcMain.handle("show-activities", (event: IpcMainInvokeEvent, type: ActivityInfo["type"]): Response<ActivityInfo[]> => {
+ipcMain.handle("show-activities", (_: IpcMainInvokeEvent, type: ActivityInfo["type"]): Response<ActivityInfo[]> => {
     try {
         const activities: ActivityInfo[] = showActivities(type);
         return {
@@ -376,7 +376,7 @@ ipcMain.handle("show-activities", (event: IpcMainInvokeEvent, type: ActivityInfo
  * @param activityId 活动的id
  * @returns 开启活动成功或失败
  */
-ipcMain.handle("start-activity", (event: IpcMainInvokeEvent, petmateId: number, activityId: number): Response<void> => {
+ipcMain.handle("start-activity", (_: IpcMainInvokeEvent, petmateId: number, activityId: number): Response<void> => {
     try {
         startActivity(petmateId, activityId);
         return {
@@ -397,7 +397,7 @@ ipcMain.handle("start-activity", (event: IpcMainInvokeEvent, petmateId: number, 
  * @param petmateId petmate的id
  * @returns 取消活动成功或失败
  */
-ipcMain.handle("cancel-activity", (event: IpcMainInvokeEvent, petmateId: number): Response<void> => {
+ipcMain.handle("cancel-activity", (_: IpcMainInvokeEvent, petmateId: number): Response<void> => {
     try {
         cancelActivity(petmateId);
         return {
@@ -417,7 +417,7 @@ ipcMain.handle("cancel-activity", (event: IpcMainInvokeEvent, petmateId: number)
  * @param petmateId petmate的id
  * @returns 领取奖励成功或失败
  */
-ipcMain.handle("claim-activity-reward", (event: IpcMainInvokeEvent, petmateId: number): Response<void> => {
+ipcMain.handle("claim-activity-reward", (_: IpcMainInvokeEvent, petmateId: number): Response<void> => {
     try {
         const success = claimActivityReward(petmateId);
         if (success) {
@@ -444,7 +444,7 @@ ipcMain.handle("claim-activity-reward", (event: IpcMainInvokeEvent, petmateId: n
  * 获取玩家数据
  * 该方法可以被多次调用，每次调用都会返回玩家最新的数据，如果需要刷新玩家数据，请你调用这个方法
  */
-ipcMain.handle("get-current-player-data", (event: IpcMainInvokeEvent): Response<PlayerInfo> => {
+ipcMain.handle("get-current-player-data", (_: IpcMainInvokeEvent): Response<PlayerInfo> => {
     try {
         const playerInfo: PlayerInfo = playerManager.getPlayer();
         return {
@@ -465,7 +465,7 @@ ipcMain.handle("get-current-player-data", (event: IpcMainInvokeEvent): Response<
  * @param type 物品类型
  * @returns 物品列表
  */
-ipcMain.handle("show-items", (event: IpcMainInvokeEvent, type: ItemType): Response<Item[]> => {
+ipcMain.handle("show-items", (_: IpcMainInvokeEvent, type: ItemType): Response<Item[]> => {
     try {
         const items: Item[] = showItems(type);
         return {
@@ -486,7 +486,7 @@ ipcMain.handle("show-items", (event: IpcMainInvokeEvent, type: ItemType): Respon
  * @param itemIds 物品id列表
  * @returns 物品信息列表
  */
-ipcMain.handle("get-item-info", (event: IpcMainInvokeEvent, itemIds: number[]): Response<Item[]> => {
+ipcMain.handle("get-item-info", (_: IpcMainInvokeEvent, itemIds: number[]): Response<Item[]> => {
     try {
         const items: Item[] = getItemInfo(itemIds);
         return {
@@ -507,7 +507,7 @@ ipcMain.handle("get-item-info", (event: IpcMainInvokeEvent, itemIds: number[]): 
  * @param petmateId petmate的id
  * @returns 完成的心愿数量
  */
-ipcMain.handle("get-petmate-completed-wishes-num", (event: IpcMainInvokeEvent, petmateId: number): Response<number> => {
+ipcMain.handle("get-petmate-completed-wishes-num", (_: IpcMainInvokeEvent, petmateId: number): Response<number> => {
     try {
         const petmate: PetMate | undefined = playerManager.getPlayer().petmates.find(petmate => petmate.id === petmateId);
         if (!petmate) {
@@ -529,9 +529,9 @@ ipcMain.handle("get-petmate-completed-wishes-num", (event: IpcMainInvokeEvent, p
 
 /**
  * 获取Petmate的某个特定的心愿
- * 
+ *
  */
-ipcMain.handle("get-petmate-one-wish", (event: IpcMainInvokeEvent, petmateId: number, wishId: string): Response<Wish> => {
+ipcMain.handle("get-petmate-one-wish", (_: IpcMainInvokeEvent, petmateId: number, wishId: string): Response<Wish> => {
     try {
         const petmate: PetMate | undefined = playerManager.getPlayer().petmates.find(petmate => petmate.id === petmateId);
         if (!petmate) {
@@ -557,7 +557,7 @@ ipcMain.handle("get-petmate-one-wish", (event: IpcMainInvokeEvent, petmateId: nu
  * @param wishId 要领取的心愿id
  * @returns 是否成功领取
  */
-ipcMain.handle("claim-wish-reward", (event: IpcMainInvokeEvent, petmateId: number, wishId: string): Response<boolean> => {
+ipcMain.handle("claim-wish-reward", (_: IpcMainInvokeEvent, petmateId: number, wishId: string): Response<boolean> => {
     try {
         const player = playerManager.getPlayer();
         const petmate: PetMate | undefined = player.petmates.find(p => p.id === petmateId);
@@ -592,7 +592,7 @@ ipcMain.handle("claim-wish-reward", (event: IpcMainInvokeEvent, petmateId: numbe
  * 获取模型大小
  * @returns 模型大小
  */
-ipcMain.handle("get-model-size", (event: IpcMainInvokeEvent): Response<number> => {
+ipcMain.handle("get-model-size", (_: IpcMainInvokeEvent): Response<number> => {
     try {
         const size: number = getModelSize();
         return {
@@ -612,7 +612,7 @@ ipcMain.handle("get-model-size", (event: IpcMainInvokeEvent): Response<number> =
  * 获取设置
  * @returns 设置
  */
-ipcMain.handle("get-settings", (event: IpcMainInvokeEvent): Response<SettingConfig> => {
+ipcMain.handle("get-settings", (_: IpcMainInvokeEvent): Response<SettingConfig> => {
     try {
         const settings: SettingConfig = getSettings();
         return {
@@ -632,7 +632,7 @@ ipcMain.handle("get-settings", (event: IpcMainInvokeEvent): Response<SettingConf
  * 获取Chat LLM配置
  * @returns Chat LLM配置, 如果失败的话则返回一个错误信息
  */
-ipcMain.handle("get-chat-llm-config", (event: IpcMainInvokeEvent): Response<ChatLLMConfig> => {
+ipcMain.handle("get-chat-llm-config", (_: IpcMainInvokeEvent): Response<ChatLLMConfig> => {
     try {
         const chatLLMConfig: ChatLLMConfig = getChatLLMConfig();
         return {
@@ -651,7 +651,7 @@ ipcMain.handle("get-chat-llm-config", (event: IpcMainInvokeEvent): Response<Chat
 /**
  * 获取Chat LLM的提示词
  */
-ipcMain.handle("get-chat-prompt", (event: IpcMainInvokeEvent): Response<string> => {
+ipcMain.handle("get-chat-prompt", (_: IpcMainInvokeEvent): Response<string> => {
     try {
         const prompt: string = getChatPrompt();
         return {
@@ -671,7 +671,7 @@ ipcMain.handle("get-chat-prompt", (event: IpcMainInvokeEvent): Response<string> 
  * 获取历史聊天记录信息
  * @returns 历史聊天记录信息
  */
-ipcMain.handle("get-history-chat-messages", (event: IpcMainInvokeEvent): Response<HistoryChatMessage[]> => {
+ipcMain.handle("get-history-chat-messages", (_: IpcMainInvokeEvent): Response<HistoryChatMessage[]> => {
     try {
         const historyChatMessages: HistoryChatMessage[] = getHistoryChatMessages();
         return {
@@ -691,7 +691,7 @@ ipcMain.handle("get-history-chat-messages", (event: IpcMainInvokeEvent): Respons
  * 获取TTS LLM配置
  * @returns TTS LLM配置, 如果失败的话则返回一个错误信息
  */
-ipcMain.handle("get-tts-config", (event: IpcMainInvokeEvent): Response<TTSLLMConfig> => {
+ipcMain.handle("get-tts-config", (_: IpcMainInvokeEvent): Response<TTSLLMConfig> => {
     try {
         const ttsLLMConfig: TTSLLMConfig = getTTSLLMConfig();
         return {
@@ -711,7 +711,7 @@ ipcMain.handle("get-tts-config", (event: IpcMainInvokeEvent): Response<TTSLLMCon
  * 获取音色库
  * @returns 音色库
  */
-ipcMain.handle("get-tts-voice-list", (event: IpcMainInvokeEvent): Response<TTSVoice[]> => {
+ipcMain.handle("get-tts-voice-list", (_: IpcMainInvokeEvent): Response<TTSVoice[]> => {
     try {
         const ttsVoiceList: TTSVoice[] = getTTSVoiceList();
         return {
@@ -734,7 +734,7 @@ ipcMain.handle("get-tts-voice-list", (event: IpcMainInvokeEvent): Response<TTSVo
  * @param config 新的Chat LLM配置
  * @returns 设置后的Chat LLM配置, 如果失败的话则返回一个错误信息
  */
-ipcMain.handle("set-chat-llm-config", (event: IpcMainInvokeEvent, config: ChatLLMConfig): Response<ChatLLMConfig> => {
+ipcMain.handle("set-chat-llm-config", (_: IpcMainInvokeEvent, config: ChatLLMConfig): Response<ChatLLMConfig> => {
     try {
         const newConfig: ChatLLMConfig = setChatLLMConfig(config);
         return {
@@ -756,7 +756,7 @@ ipcMain.handle("set-chat-llm-config", (event: IpcMainInvokeEvent, config: ChatLL
  * @param prompt 新的Chat LLM提示词
  * @returns 设置后的Chat LLM提示词, 如果失败的话则返回一个错误信息
  */
-ipcMain.handle("set-chat-prompt", (event: IpcMainInvokeEvent, prompt: string): Response<void> => {
+ipcMain.handle("set-chat-prompt", (_: IpcMainInvokeEvent, prompt: string): Response<void> => {
     try {
         updateChatPrompt(prompt);
         return {
@@ -776,7 +776,7 @@ ipcMain.handle("set-chat-prompt", (event: IpcMainInvokeEvent, prompt: string): R
 /**
  * 保存聊天记录
  */
-ipcMain.handle("save-chat-messages", (event: IpcMainInvokeEvent): Response<void> => {
+ipcMain.handle("save-chat-messages", (_: IpcMainInvokeEvent): Response<void> => {
     try {
         saveChatHistoryMessages();
         return {
@@ -798,7 +798,7 @@ ipcMain.handle("save-chat-messages", (event: IpcMainInvokeEvent): Response<void>
  * @param config 新的TTS LLM配置
  * @returns 设置后的TTS LLM配置, 如果失败的话则返回一个错误信息
  */
-ipcMain.handle("set-tts-config", (event: IpcMainInvokeEvent, config: TTSLLMConfig): Response<TTSLLMConfig> => {
+ipcMain.handle("set-tts-config", (_: IpcMainInvokeEvent, config: TTSLLMConfig): Response<TTSLLMConfig> => {
     try {
         const newConfig: TTSLLMConfig = setTTSLLMConfig(config);
         return {
@@ -819,7 +819,7 @@ ipcMain.handle("set-tts-config", (event: IpcMainInvokeEvent, config: TTSLLMConfi
  * @param voice 要添加的音色
  * @returns 添加音色成功或失败，如果成功的话会返回一个音色id，如果失败的话会返回一个详细的错误信息
  */
-ipcMain.handle("add-tts-voice", (event: IpcMainInvokeEvent, voice: TTSVoice): Response<void> => {
+ipcMain.handle("add-tts-voice", (_: IpcMainInvokeEvent, voice: TTSVoice): Response<void> => {
     try {
         addTTSVoice(voice);
         logger.info(`音色${voice.name}添加成功，已经将音色写入到文件中`);
@@ -840,7 +840,7 @@ ipcMain.handle("add-tts-voice", (event: IpcMainInvokeEvent, voice: TTSVoice): Re
  * 更改设置
  * @param settings 新的设置内容，可以是SettingConfig的一部分内容
  */
-ipcMain.handle("update-settings", (event: IpcMainInvokeEvent, settings: Partial<SettingConfig>): Response<void> => {
+ipcMain.handle("update-settings", (_: IpcMainInvokeEvent, settings: Partial<SettingConfig>): Response<void> => {
     try {
         updateSettings(settings);
         return {
@@ -861,7 +861,7 @@ ipcMain.handle("update-settings", (event: IpcMainInvokeEvent, settings: Partial<
 /**
  *  获取分辨率
  */
-ipcMain.handle("get-screen-resolution", (event: IpcMainInvokeEvent): Response<{width: number, height: number, scaleFactor: number}> => {
+ipcMain.handle("get-screen-resolution", (_: IpcMainInvokeEvent): Response<{width: number, height: number, scaleFactor: number}> => {
     const { width, height } = screen.getPrimaryDisplay().bounds;
     const scaleFactor = screen.getPrimaryDisplay().scaleFactor;
     const scaledWidth = width * scaleFactor;
@@ -876,7 +876,7 @@ ipcMain.handle("get-screen-resolution", (event: IpcMainInvokeEvent): Response<{w
  * 启动窗口监控
  * @param interval 监控间隔，默认1000ms
  */
-ipcMain.handle("window-monitor-start", async (event: IpcMainInvokeEvent, interval: number = 1000): Promise<Response<void>> => {
+ipcMain.handle("window-monitor-start", async (_: IpcMainInvokeEvent, interval: number = 1000): Promise<Response<void>> => {
     try {
         await windowMonitor.start(interval);
         return {
@@ -895,7 +895,7 @@ ipcMain.handle("window-monitor-start", async (event: IpcMainInvokeEvent, interva
 /**
  * 停止窗口监控
  */
-ipcMain.handle("window-monitor-stop", (event: IpcMainInvokeEvent): Response<void> => {
+ipcMain.handle("window-monitor-stop", (_: IpcMainInvokeEvent): Response<void> => {
     try {
         windowMonitor.stop();
         return {
@@ -914,11 +914,11 @@ ipcMain.handle("window-monitor-stop", (event: IpcMainInvokeEvent): Response<void
 /**
  * 获取窗口监控状态
  */
-ipcMain.handle("window-monitor-status", (event: IpcMainInvokeEvent): Response<{isRunning: boolean, interval: number}> => {
+ipcMain.handle("window-monitor-status", (_: IpcMainInvokeEvent): Response<{isRunning: boolean, interval: number}> => {
     try {
         const isRunning = windowMonitor.isMonitoring();
         const interval = windowMonitor.getInterval();
-        
+
         return {
             code: 200,
             message: "获取窗口监控状态成功",
@@ -936,7 +936,7 @@ ipcMain.handle("window-monitor-status", (event: IpcMainInvokeEvent): Response<{i
 /**
  * 获取当前所有打开的窗口
  */
-ipcMain.handle("window-monitor-get-windows", (event: IpcMainInvokeEvent): Response<WindowInfo[]> => {
+ipcMain.handle("window-monitor-get-windows", (_: IpcMainInvokeEvent): Response<WindowInfo[]> => {
     try {
         const windows = windowMonitor.getCurrentWindows();
         return {
@@ -957,7 +957,7 @@ ipcMain.handle("window-monitor-get-windows", (event: IpcMainInvokeEvent): Respon
  * 设置监控间隔
  * @param interval 新的监控间隔
  */
-ipcMain.handle("window-monitor-set-interval", (event: IpcMainInvokeEvent, interval: number): Response<void> => {
+ipcMain.handle("window-monitor-set-interval", (_: IpcMainInvokeEvent, interval: number): Response<void> => {
     try {
         windowMonitor.setInterval(interval);
         return {
@@ -1000,7 +1000,7 @@ windowMonitor.on('window-changed', (event: WindowEvent) => {
  * @param route 路由路径
  * @returns 打开窗口成功或失败
  */
-ipcMain.handle("open-new-window", (event: IpcMainInvokeEvent, route: string): Response<void> => {
+ipcMain.handle("open-new-window", (_: IpcMainInvokeEvent, route: string): Response<void> => {
     try {
         const newWindow = new BrowserWindow({
             width: 400,
@@ -1025,7 +1025,7 @@ ipcMain.handle("open-new-window", (event: IpcMainInvokeEvent, route: string): Re
 
         // 加载指定路由的页面
         newWindow.loadURL(`http://localhost:5173${route}`);
-        
+
         logger.info(`成功打开新窗口，路由: ${route}`);
         return {
             code: 200,

@@ -36,3 +36,6 @@ docs-generated/
 
 # Testing
 coverage/
+
+# out
+out/

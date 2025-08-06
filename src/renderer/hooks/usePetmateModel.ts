@@ -6,8 +6,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ScreenPosition } from '../types/model'
 import { ModelStatus } from '../types/model'
 import { throttle } from 'lodash'
+import modelPath from '@/assets/models/petmate.glb'
 
-/** 屏幕分辨率 
+/** 屏幕分辨率
  * 这个分辨率是一块屏幕的分辨率
 */
 let resolution: {width: number, height: number} = {width: 1920, height: 1080};
@@ -89,12 +90,12 @@ const walkSpeed: number = 2;
 export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
     const loader = new GLTFLoader();
-    
+
     /**
      * 初始化模型显示
      * @param screenResolution 模型所在屏幕的分辨率
      * @param screenScaleFactor 屏幕分辨率缩放因子
-     * @returns 
+     * @returns
      */
     const init3D = (screenResolution: {width: number, height: number}, screenScaleFactor: number): Promise<void> => {
         return new Promise((resolve, reject) => {
@@ -104,14 +105,14 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             scene = new THREE.Scene();
             // 使用实际窗口大小的宽高比，保持与renderer一致
             camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 1000);
-            
+
             renderer = new THREE.WebGLRenderer({
                 antialias: true,
                 alpha: true,
                 premultipliedAlpha: false,
                 // powerPreference: "low-power" // 优先使用低功耗GPU
             });
-            
+
             console.log(`window的inner (${window.innerWidth}, ${window.innerHeight})`)
             console.log(`screenResolution (${screenResolution.width}, ${screenResolution.height})`)
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -128,7 +129,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
              */
             renderer.domElement.addEventListener('mousedown', onMouseDown, false);
             renderer.domElement.addEventListener('mouseup', onMouseUp, false);
-            
+
             ambientLight = new THREE.AmbientLight(0x404040, 1);
             directionalLightLeft = new THREE.DirectionalLight(0xffffff, 1);
             directionalLightLeft.position.set(-20, 50, 50);
@@ -140,23 +141,23 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             directionalLightCenter.position.set(0, 50, 0);
 
             // 加载模型
-            loader.load('../assets/models/petmate.glb', (gltf) => {
+            loader.load(modelPath, (gltf) => {
                 model = gltf.scene;
                 model.position.set(0, -1, 0);
                 model.scale.set(petMateModelConfig.scale, petMateModelConfig.scale, petMateModelConfig.scale);
                 scene?.add(model);
 
                 camera?.position.set(0, 0, 10)
-                
+
                 animations = gltf.animations;
                 console.log(animations)
                 mixer = new THREE.AnimationMixer(model);
-                
+
                 scene?.add(ambientLight!);
                 scene?.add(directionalLightLeft!);
                 scene?.add(directionalLightRight!);
                 scene?.add(directionalLightCenter!);
-                
+
                 renderer?.setAnimationLoop(animate);
 
                 // 更新相机矩阵，确保投影计算正确
@@ -270,7 +271,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
         // 计算动画播放时间
         const duration = distance / walkSpeed;
-        
+
         gsap.to(model.position, {
             x: target.x,
             y: target.y,
@@ -314,24 +315,24 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     const sit = () => {
         let sit1 = getAnimationAction("sit_1");
         let sit2 = getAnimationAction("sit_2");
-        
+
         if (!sit1 || !sit2  || !mixer || !model) return;
         updateModelState({sitting: true});
 
         // 杀死可能存在的位置动画，避免冲突
         gsap.killTweensOf(model.position);
-        
+
         _playAction(sit1, false);
         gsap.to(model.rotation, {
             y: 0,
             duration: 0.2
         })
-        
+
         const onSit1Finished = () => {
             mixer!.removeEventListener('finished', onSit1Finished);
             sitted();
         };
-        
+
         mixer.addEventListener('finished', onSit1Finished);
     };
 
@@ -410,10 +411,10 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         const startPos = model.position.clone();
         const distance = startPos.distanceTo(target);
         const jumpHeight = Math.max(1, distance * 0.5);
-        
+
         // 创建时间轴，精确控制动画
         const tl = gsap.timeline();
-        
+
         // 水平移动（X, Z轴）
         tl.to(model.position, {
             x: target.x,
@@ -477,7 +478,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     /**
      * 设置模型的世界位置
      * @param position 目标世界位置
-     * @returns 
+     * @returns
      */
     const setModelPosition = (position: THREE.Vector3) => {
         if (!model) return ;
@@ -495,7 +496,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
      * 如果鼠标按下的地方是模型的话，需要设置模型的拖拽状态并播放拖拽动画，这会导致原来的动画被强制打断的。
      * 这里会判断一下是鼠标左键按下的还是鼠标右键按下的，如果是左键按下的话，则判断有没有按到模型，如果是右键按下的话，就直接显示菜单
      * @param event 鼠标事件
-     * @returns 
+     * @returns
      */
     function onMouseDown(event: MouseEvent) {
         if (!mouse || !camera || !scene) return ;
@@ -505,7 +506,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         }
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    
+
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(scene.children, true);
@@ -523,8 +524,8 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         updateModelState({dragging: false});
         standIdle();
     }
-    
-    /**  
+
+    /**
      * 鼠标移动事件监听
      * 判断鼠标是否在建模上或者WheelMenu这个组件上，如果鼠标在这两个地方的话，就需要监听鼠标事件，否则不需要监听
      * 目前是利用鼠标射线来判断是否在模型和WheelMenu上
@@ -536,7 +537,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
         mouse.x = (event.offsetX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.offsetY / window.innerHeight) * 2 + 1;
         // console.log("鼠标移动")
-    
+
         // 先检测有没有按到菜单UI
         const element = document.elementFromPoint(event.clientX, event.clientY);
 
@@ -548,17 +549,17 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             window.api.setIgnoreMouseEvents(false);
             return ;
         }
-    
+
         // 检测是否与3D对象相交
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(scene.children, true);
         const hasIntersection = intersects.length > 0;
-    
+
         // console.log(`点到3D对象了么？: ${hasIntersection} 鼠标位置: ${mouse.x}, ${mouse.y}`)
         // console.log(`模型位置: ${model?.position.x}, ${model?.position.y}`)
         // console.log(`${event.clientX * scaleFactor}, ${event.clientY * scaleFactor}`)
-        
+
         // 通知主进程是否忽略鼠标事件
         window.api.setIgnoreMouseEvents(!hasIntersection);
         if (modelState.dragging) {
@@ -615,16 +616,16 @@ export function transferScreenToWorld(screenPosition: ScreenPosition, width: num
 
     const rayOrigin = raycaster.ray.origin;
     const rayDirection = raycaster.ray.direction;
-    
+
     // Ray equation: point = origin + t * direction
     // For z=0 plane: rayOrigin.z + t * rayDirection.z = 0
     // Solve for t: t = -rayOrigin.z / rayDirection.z
     const t = -(rayOrigin.z) / rayDirection.z;
-    
+
     // Calculate intersection point
     const worldX = rayOrigin.x + t * rayDirection.x;
     const worldY = rayOrigin.y + t * rayDirection.y;
-    
+
     return new THREE.Vector3(worldX, worldY, model.position.z);
 }
 
@@ -633,7 +634,7 @@ export function transferScreenToWorld(screenPosition: ScreenPosition, width: num
  * @param worldPosition 待转换的世界坐标
  * @param width 画布的宽window.innerWidth
  * @param height 画布的高window.innerHeight
- * @returns 
+ * @returns
  */
 export function transferWorldToScreen(worldPosition: THREE.Vector3, width: number, height: number): ScreenPosition {
     if (!camera) return {x: width / 2, y: height / 2};
@@ -653,7 +654,7 @@ export function transferWorldToScreen(worldPosition: THREE.Vector3, width: numbe
 function checkOnUI(element: Element | null): boolean {
     if (!element) return false;
     const className = element.className || '';
-    if (className.includes('context-menu') || 
+    if (className.includes('context-menu') ||
         element.closest('.context-menu')) {
         return true;
     }

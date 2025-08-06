@@ -3,12 +3,14 @@ import * as path from 'path'
 import './ipc'
 import { destroyScheduler, startWishGeneration } from './scheduler'
 import { saveChatHistoryMessages } from './llm'
+import { is } from '@electron-toolkit/utils'
+import { join } from 'path'
 
-let mainWindow: BrowserWindow | null = null;
-let tray = null
+let mainWindow: BrowserWindow | null = null
+let tray: Tray | null = null
 
-const createWindow = () => {
-  const { width, height } = screen.getPrimaryDisplay().bounds;
+const createWindow = (): void => {
+  const { width, height } = screen.getPrimaryDisplay().bounds
 
   const win = new BrowserWindow({
     width: width,
@@ -23,31 +25,37 @@ const createWindow = () => {
       contextIsolation: true,
       nodeIntegration: true,
       webgl: true
-    },
+    }
   })
 
-  mainWindow = win;
-  const WM_INITMENU = 0x0116;
+  mainWindow = win
+  const WM_INITMENU = 0x0116
   mainWindow.hookWindowMessage(WM_INITMENU, () => {
-    mainWindow?.setEnabled(false);
-    mainWindow?.setEnabled(true);
-    mainWindow?.webContents.send('show-context-menu');
-  });
+    mainWindow?.setEnabled(false)
+    mainWindow?.setEnabled(true)
+    mainWindow?.webContents.send('show-context-menu')
+  })
   // 加载渲染进程页面
-  win.loadURL('http://localhost:5173')
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+  } else {
+    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+  }
 
-  mainWindow.setSkipTaskbar(true);
+  mainWindow.setSkipTaskbar(true)
   const icon = nativeImage.createFromPath('src/renderer/assets/image/card.jpg')
   tray = new Tray(icon)
   // 创建托盘菜单
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: '显示', click: () => {
+      label: '显示',
+      click: () => {
         mainWindow?.show()
       }
     },
     {
-      label: '退出', click: () => {
+      label: '退出',
+      click: () => {
         app.quit()
       }
     }
@@ -55,7 +63,6 @@ const createWindow = () => {
   tray.setContextMenu(contextMenu)
   tray.setToolTip('Petmate')
 }
-
 
 app.whenReady().then(() => {
   createWindow()
@@ -80,16 +87,16 @@ app.on('before-quit', () => {
   saveChatHistoryMessages()
 })
 
-app.commandLine.appendSwitch('enable-gpu-rasterization');
-app.commandLine.appendSwitch('enable-zero-copy');
-app.commandLine.appendSwitch('disable-software-rasterizer');
-app.commandLine.appendSwitch('ignore-gpu-blacklist');
+app.commandLine.appendSwitch('enable-gpu-rasterization')
+app.commandLine.appendSwitch('enable-zero-copy')
+app.commandLine.appendSwitch('disable-software-rasterizer')
+app.commandLine.appendSwitch('ignore-gpu-blacklist')
 
 export function getMainWindow(): BrowserWindow | null {
-  return mainWindow;
+  return mainWindow
 }
 
 ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
-  const win = BrowserWindow.fromWebContents(event.sender);
-  win?.setIgnoreMouseEvents(ignore, { forward: true });
-});
+  const win = BrowserWindow.fromWebContents(event.sender)
+  win?.setIgnoreMouseEvents(ignore, { forward: true })
+})

@@ -160,7 +160,7 @@ import { useShow } from "../hooks/useShow";
 import { ItemType, Item } from "../types/common";
 import { executeItemPage } from "../utils/item";
 
-const { buyItem, playerData } = usePlayer();
+const { playerData } = usePlayer();
 const { getShopItems } = useShow();
 
 const shopCurrType = ref<ItemType>("limit" as ItemType);
@@ -269,11 +269,9 @@ const nextPage = () => {
 
 // 鼠标离开商品或悬浮框内容时，悬浮框消失
 const isItemEnter = ref(false);
-const isPopoverEnter = ref(false);
 const popoverX = ref(0);
 const popoverY = ref(0);
 const popoverWidth = ref(180);
-const popoverHeight = ref(130);
 const popoverItem = ref<Item | null>(null);
 const showPopover = (event: MouseEvent, item: Item) => {
   const target = event.currentTarget as HTMLElement;
