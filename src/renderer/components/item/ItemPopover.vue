@@ -5,7 +5,7 @@
       :show-arrow="false"
       :x="popoverX"
       :y="popoverY"
-      :show="show || isPopoverEnter"
+      :show="show"
       raw
       ><div
         :style="{
@@ -14,8 +14,6 @@
       >
         <div
           class="popover-wrapper"
-          @mouseenter="isPopoverEnter = true"
-          @mouseleave="isPopoverEnter = false"
         >
           <div class="popover-title">{{ item.name }}</div>
           <div class="popover-content">
@@ -56,8 +54,6 @@ defineProps({
   isSourceShow: { type: Boolean, default: false }, // 是否显示获得方式
   item: { type: Object as PropType<Item>, required: true }, // 物品
 });
-
-const isPopoverEnter = ref(false);
 </script>
 
 <style scoped lang="scss">
