@@ -5,6 +5,7 @@
     { "path": "./tsconfig.web.json" }
   ],
   "compilerOptions": {
-    "types": ["electron-vite/node", "vite-plugin-glsl/ext", "./src/types/index.d.ts"]
+    "types": ["electron-vite/node", "vite-plugin-glsl/ext", "./src/types/index.d.ts"],
+    "noUnusedLocals": false
   }
 }
