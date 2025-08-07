@@ -164,7 +164,7 @@
       :popoverY="popoverY"
       :show="isBuffEnter"
       :popoverWidth="popoverWidth"
-      :activeBuff="popoverBuff"
+      :activeBuff="popoverBuff!"
     />
     <ItemPopover
       :popoverX="popoverX"
@@ -172,12 +172,12 @@
       :show="isItemEnter"
       :popoverWidth="popoverWidth"
       :isSourceShow="true"
-      :item="popoverItem"
+      :item="popoverItem!"
     />
     <ItemModal
       v-model:show="isModalShow"
       :title="modalTitle"
-      :item="modalItem"
+      :item="modalItem!"
       :hasCount="modalHasCount"
       :petmateId="currentPetmateID"
       type="use"
@@ -193,7 +193,7 @@ import BuffPopover from "@/components/buff/BuffPopover.vue";
 import ItemPopover from "@/components/item/ItemPopover.vue";
 import ItemModal from "@/components/item/ItemModal.vue";
 import type { CarouselInst } from "naive-ui";
-import { executeItemPage } from "../utils/item";
+import { executePackageItemPage } from "../utils/item";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
 import { PackageItemInfo } from "../types/player";
@@ -279,7 +279,7 @@ const packagePageList = computed(() => {
   const filteredPackageItems = allItems.filter(
     (item) => item.type === packageCurrType.value
   );
-  return executeItemPage([...filteredPackageItems], packagePageSize.value);
+  return executePackageItemPage([...filteredPackageItems], packagePageSize.value);
 });
 const packagePageNum = computed(() => packagePageList.value.length);
 
