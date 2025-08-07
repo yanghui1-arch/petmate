@@ -5,7 +5,7 @@
       :show-arrow="false"
       :x="popoverX"
       :y="popoverY"
-      :show="show || isPopoverEnter"
+      :show="show"
       raw
       ><div
         :style="{
@@ -14,8 +14,6 @@
       >
         <div
           class="popover-wrapper"
-          @mouseenter="isPopoverEnter = true"
-          @mouseleave="isPopoverEnter = false"
         >
           <div class="popover-title">
             <span>{{ activeBuff.buff.name }}</span>
@@ -58,8 +56,6 @@ const props = defineProps({
   activeBuff: { type: Object as PropType<ActiveBuff>, required: true }, // buff
   isLocked: { type: Boolean, default: false }, // 是否锁定
 });
-
-const isPopoverEnter = ref(false);
 // 过滤掉默认倍率
 const filteredEffect = computed(() => {
   let result = {};

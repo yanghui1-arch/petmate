@@ -5,7 +5,7 @@
       :show-arrow="false"
       :x="popoverX"
       :y="popoverY"
-      :show="show || isPopoverEnter"
+      :show="show"
       raw
       ><div
         :style="{
@@ -14,8 +14,6 @@
       >
         <div
           class="popover-wrapper"
-          @mouseenter="isPopoverEnter = true"
-          @mouseleave="isPopoverEnter = false"
         >
           <div class="popover-title">
             <span v-if="isLocked">??</span>
@@ -98,8 +96,6 @@ const filteredConsume = computed(() => {
   }
   return result;
 });
-
-const isPopoverEnter = ref(false);
 </script>
   
   <style scoped lang="scss">

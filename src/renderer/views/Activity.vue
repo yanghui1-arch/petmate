@@ -203,8 +203,6 @@
                   ),
                 }"
                 @animationend="contentAnimationEnd"
-                @mouseenter="showPopover($event, actItem)"
-                @mouseleave="hidePopover"
                 @click="showModal(actItem)"
               >
                 <div class="activity-item-header">
@@ -299,6 +297,7 @@ import { openMessageModal } from "../hooks/useInteract";
 import { ActivityInfo } from "../types/common";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
+import { showActItemPopover, popoverX, popoverY, popoverWidth, popoverActItem, isActItemEnter } from "../hooks/useInteract";
 
 import { convertActivityText, computeActivityTime } from "../utils/activity";
 
@@ -459,27 +458,11 @@ const activitySectionList = [
   },
 ];
 
-const isActItemEnter = ref(false);
-const popoverX = ref(0);
-const popoverY = ref(0);
-const popoverWidth = ref(180);
-const popoverActItem = ref<ActivityInfo | null>(null);
+
 const isActItemLocked = ref(false);
-
-const showPopover = (event: MouseEvent, actItem: ActivityInfo) => {
-  const target = event.currentTarget as HTMLElement;
-  const rect = target?.getBoundingClientRect();
-  // 经过实践，popoverX和popoverY暂时确定是悬浮框矩形 '底部中心' 的坐标
-  popoverX.value = rect.x + rect.width / 2 + popoverWidth.value / 2;
-  popoverY.value = rect.y + rect.height / 2;
-
-  isActItemEnter.value = true;
-  popoverActItem.value = actItem;
+const handleActItemPopover = (event: MouseEvent, actItem: ActivityInfo) => {
+  showActItemPopover(event, actItem);
   isActItemLocked.value = checkActivityLocked(actItem.requirement);
-};
-
-const hidePopover = () => {
-  isActItemEnter.value = false;
 };
 
 const activityItemRefs = ref<HTMLElement[]>([]);
