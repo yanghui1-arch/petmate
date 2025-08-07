@@ -1010,6 +1010,7 @@ ipcMain.handle("open-new-window", (_: IpcMainInvokeEvent, route: string): Respon
             frame: false,
             transparent: false,
             alwaysOnTop: false,
+            show: false,
             modal: false, // 确保不是模态窗口
             webPreferences: {
                 preload: path.join(__dirname, '../preload/index.js'),
@@ -1019,7 +1020,6 @@ ipcMain.handle("open-new-window", (_: IpcMainInvokeEvent, route: string): Respon
             },
         });
 
-        // 当页面准备好后显示窗口
         newWindow.once('ready-to-show', () => {
             newWindow.show();
         });

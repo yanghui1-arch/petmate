@@ -21,12 +21,17 @@ const createWindow = (): void => {
     transparent: true,
     alwaysOnTop: true,
     focusable: true,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: true,
       webgl: true
     }
+  })
+
+  win.once('ready-to-show', () => {
+    win.show()
   })
 
   mainWindow = win
