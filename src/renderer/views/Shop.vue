@@ -100,7 +100,6 @@
                     <div
                       class="shop-item"
                       @mouseenter="handleItemPopover($event, item)"
-                      @mouseleave="hidePopover"
                       @click="showModal(item)"
                     >
                       <div class="special-label">
