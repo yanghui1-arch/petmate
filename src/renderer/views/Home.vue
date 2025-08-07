@@ -15,7 +15,7 @@
                 <n-avatar
                   round
                   :size="70"
-                  src="../assets/image/petmate-1.jpg"
+                  :src="avator"
                   object-fit="cover"
                 />
               </div>
@@ -42,37 +42,6 @@
                       @mouseleave="hideBuffPopover"
                     />
                   </div>
-                  <!-- <n-carousel
-                    :show-arrow="false"
-                    :show-dots="false"
-                    :loop="false"
-                  >
-                    <div class="home-panel-buff">
-                      <n-image
-                        src="../assets/image/buff/buff.png"
-                        width="16"
-                        height="16"
-                        preview-disabled
-                        v-for="buffItem in buffs.slice(0, 5)"
-                        :key="'buff-icon-' + buffItem.buff.id"
-                        @mouseenter="showBuffPopover($event, buffItem, 'left')"
-                        @mouseleave="hideBuffPopover"
-                      />
-                    </div>
-                    <div class="home-panel-buff">
-                      <n-image
-                        src="../assets/image/buff/buff.png"
-                        width="16"
-                        height="16"
-                        preview-disabled
-                        v-for="buffItem in buffs.slice(0, 5)"
-                        :key="'buff-icon-' + buffItem.buff.id"
-                        @mouseenter="showBuffPopover($event, buffItem, 'left')"
-                        @mouseleave="hideBuffPopover"
-                      />
-                    </div>
-                  </n-carousel> -->
-                  <!-- <span>▶</span> -->
                 </div>
               </div>
 
@@ -158,7 +127,7 @@
                     @mouseleave="hideItemPopover"
                     @click="showModal(item)"
                   >
-                    <n-image width="38" :src="item.url" preview-disabled />
+                    <n-image width="38" :src="getImageURL(item.url) ?? ''" preview-disabled />
                     <span class="package-item-num">{{ item.count }}</span>
                   </div>
                 </n-gi>
@@ -229,8 +198,19 @@ import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
 import { PackageItemInfo } from "../types/player";
 import { ItemType, Item, ActiveBuff } from "../types/common";
+import avator from "../assets/image/petmate-1.jpg";
+
 const { playerData, consumeItem } = usePlayer();
 const { getShopItems } = useShow();
+
+
+const getImageURL = (itemname: string) => {
+    try {
+      return new URL(`../assets/image/item/${itemname}.png`, import.meta.url).pathname
+    } catch {
+      return null
+    }
+}
 
 // 物品id -> 物品信息，用于物品信息悬浮框和使用弹出框
 const completeItemsMap = ref<Map<number, Item>>(new Map());

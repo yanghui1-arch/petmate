@@ -1,6 +1,6 @@
 import Store from 'electron-store';
 import logger  from './log';
-import { ChatLLMConfigError, LLMConfigError, TTSProcessError, NotFoundError } from './error';
+import { ChatLLMConfigError, LLMConfigError, TTSProcessError } from './error';
 import { OpenAI } from 'openai';
 import { ChatCompletionStream } from 'openai/resources/chat/completions';
 import { v4 as uuidv4 } from 'uuid';
@@ -40,8 +40,7 @@ type StoreData = {
 }
 
 const store: Store<StoreData> = new Store<StoreData>({
-    name: 'llm',
-    projectName: 'petmate'
+    name: 'llm'
 })
 
 export interface TTSParameters {
@@ -382,7 +381,7 @@ function setChatLLMConfig(config: ChatLLMConfig): ChatLLMConfig {
  * @returns 设置后的TTSLLM配置
  */
 function setTTSLLMConfig(config: TTSLLMConfig): TTSLLMConfig {
-    const customConfig = (store as any).set('ttsLLMConfig', config);
+    (store as any).set('ttsLLMConfig', config);
     currentTTSLLMConfig = config;
     return config;
 }
@@ -641,7 +640,7 @@ async function chat(message: ChatMessage): Promise<void> {
             createdAt: new Date()
         });
         // [future] 得在这里再考虑一下上下文长度问题，但这一个版本先不考虑
-        
+
         const mainWindow = getMainWindow()
         const runner: ChatCompletionStream = await postChatMessage(chatHistoryMessages.map(message => message.chatMessage));
         let response: string = "";
@@ -653,7 +652,7 @@ async function chat(message: ChatMessage): Promise<void> {
                 mainWindow?.webContents.send('chat-chunk', content);
             }
         }
-        
+
         // 将回复信息加入到历史聊天信息中
         chatHistoryMessages.push({
             chatMessage: ChatMessageFactory.asAssistant(response),
@@ -777,10 +776,10 @@ async function cloneVoice(url: string): Promise<string> {
 
 /**
  * 记忆总结
- * 会总结历史聊天记录，将最后一个user信息删除，并且将总结后的信息作为一条新的user输入. 
+ * 会总结历史聊天记录，将最后一个user信息删除，并且将总结后的信息作为一条新的user输入.
  * 由于调用这个方法的时候，默认认为是超过了上下文，即玩家在发送最后一条消息之前，上下文的长度是正常的，因此总结的是从第一条user -> 倒数第二条user的信息内容
  * 最后一个user信息（也就是玩家发送的最后一条消息）会被删除
- * 
+ *
  * @returns 总结后的记忆信息
  */
 async function memorySummary(): Promise<string> {
@@ -791,7 +790,7 @@ async function memorySummary(): Promise<string> {
     // 本轮对话总结的时候 system 信息需要去除
     const summary: string = chatHistoryMessages.slice(1, -1).map(message => message.chatMessage.content).join('\n');
     const newUserMessage: ChatMessage = ChatMessageFactory.asUser('<experience>' + summary + '</experience>' + "\n" + beforeExperiencePrompt);
-    
+
     const summaryPrompt: string = `
     <task>
         你是Petmate游戏中的角色，是一个女生，名字待定为黛丝。你需要将'<experience>'包裹的本次的对话和'<before_experience>'包裹的之前的对话记忆作为你未来与玩家对话的记忆，并将这个记忆简短的输出。
@@ -825,7 +824,7 @@ export {
 
     // 克隆音色
     cloneVoice,
-    
+
     // config
     initLLM,
     getChatLLMConfig,

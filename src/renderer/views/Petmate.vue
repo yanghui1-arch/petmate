@@ -37,20 +37,21 @@ onMounted(async () => {
             setSittedWindowTitle("");
         });
     });
-    
+
     /* 监听是否右键打开菜单 */
-    
+
 
     /* 监听窗口 (优化：从100ms改为500ms减少CPU使用) */
     window.windowMonitor.start(1000);
-    window.windowMonitor.onWindowOpened(async (event, windowEvent: WindowEvent) => {
+    // @ts-ignore
+    window.windowMonitor.onWindowOpened(async (_: Event, windowEvent: WindowEvent) => {
         const getWindowsRes = await window.windowMonitor.getWindows();
         if (getWindowsRes.code === 200) {
             allWindows.value = getWindowsRes.data!;
         }
     });
 
-    window.windowMonitor.onWindowClosed(async (event, windowEvent: WindowEvent) => {
+    window.windowMonitor.onWindowClosed(async (_: Event, windowEvent: WindowEvent) => {
         console.log(windowEvent);
         const getWindowsRes = await window.windowMonitor.getWindows();
         if (getWindowsRes.code === 200) {
@@ -63,8 +64,8 @@ onMounted(async () => {
             setSittedWindowTitle("");
         }
     });
-    
-    window.windowMonitor.onWindowChanged(async (event, windowEvent: WindowEvent) => {
+
+    window.windowMonitor.onWindowChanged(async (_, windowEvent: WindowEvent) => {
         console.log(windowEvent);
         const getWindowsRes = await window.windowMonitor.getWindows();
         if (getWindowsRes.code === 200) {
@@ -74,21 +75,21 @@ onMounted(async () => {
         // 如果不是激活状态的话，模型就应该起来了
         if (windowEvent.window.title === sittedWindowTitle) {
             const windowPosition: THREE.Vector3 = transferScreenToWorld(
-                {x: windowEvent.window.bounds.x + windowEvent.window.bounds.width / 2, y: windowEvent.window.bounds.y}, 
-                window.innerWidth, 
+                {x: windowEvent.window.bounds.x + windowEvent.window.bounds.width / 2, y: windowEvent.window.bounds.y},
+                window.innerWidth,
                 window.innerHeight
             );
             setModelPosition(windowPosition);
         }
     });
-    
+
     // 获取当前打开的所有窗口的信息
     const initAllWindows = await window.windowMonitor.getWindows();
     if (initAllWindows.code === 200) {
         allWindows.value = initAllWindows.data!;
     }
 
-    /* 动画播放计时器 
+    /* 动画播放计时器
     * 5分钟之后选择一个动画
     */
     const animTimer = setInterval(() => {

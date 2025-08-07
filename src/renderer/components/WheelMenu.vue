@@ -78,7 +78,7 @@
   </template>
   
   <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+  import { ref, computed, onMounted, nextTick } from 'vue'
   
   interface MenuItem {
     id: string

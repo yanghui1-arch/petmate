@@ -249,7 +249,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, watch } from "vue";
 import WishItem from "../components/wish/WishItem.vue";
 import { usePlayer } from "../hooks/usePlayer";
 import { WishRequirement } from "../types/common";

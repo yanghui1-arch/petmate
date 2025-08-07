@@ -1,8 +1,8 @@
 <template>
   <div id="config">
     <!-- Notification Toast -->
-    <div v-if="notification && notification.show" 
-         class="notification-toast" 
+    <div v-if="notification && notification.show"
+         class="notification-toast"
          :class="notification.type">
       <div class="notification-content">
         <n-icon size="20">
@@ -38,7 +38,7 @@
             <p>配置你的AI聊天模型设置、API密钥和自定义提示词</p>
             <div class="card-arrow">→</div>
           </div>
-          
+
           <div class="selection-card" @click="showTTSConfig">
             <h3>语音合成</h3>
             <p>设置文本转语音参数和音色克隆选项</p>
@@ -65,16 +65,16 @@
             <div class="config-form">
               <div class="form-group">
                 <label>接口地址</label>
-                <n-input 
-                  v-model:value="chatConfig.baseUrl" 
+                <n-input
+                  v-model:value="chatConfig.baseUrl"
                   placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1"
                   class="config-input"
                 />
               </div>
               <div class="form-group">
                 <label>API密钥</label>
-                <n-input 
-                  v-model:value="chatConfig.apiKey" 
+                <n-input
+                  v-model:value="chatConfig.apiKey"
                   type="password"
                   placeholder="输入你的API密钥"
                   class="config-input"
@@ -91,8 +91,8 @@
                 />
               </div>
               <div class="form-actions">
-                <n-button 
-                  type="primary" 
+                <n-button
+                  type="primary"
                   class="save-btn"
                   @click="saveLLMConfig"
                   :loading="savingLLM"
@@ -120,8 +120,8 @@
                 />
               </div>
               <div class="form-actions">
-                <n-button 
-                  type="info" 
+                <n-button
+                  type="info"
                   class="save-btn"
                   @click="setChatStyle(customPrompt)"
                   :loading="settingStyle"
@@ -165,7 +165,7 @@
               <div class="form-row">
                 <div class="form-group half-width">
                   <label>Rate (语速)</label>
-                  <n-slider 
+                  <n-slider
                     v-model:value="ttsConfig.parameters.rate"
                     :min="0.5"
                     :max="2.0"
@@ -176,7 +176,7 @@
                 </div>
                 <div class="form-group half-width">
                   <label>Pitch (音调)</label>
-                  <n-slider 
+                  <n-slider
                     v-model:value="ttsConfig.parameters.pitch"
                     :min="0.5"
                     :max="2.0"
@@ -197,7 +197,7 @@
                 </div>
                 <div class="form-group half-width">
                   <label>音量</label>
-                  <n-slider 
+                  <n-slider
                     v-model:value="ttsConfig.parameters.volume"
                     :min="0"
                     :max="100"
@@ -217,8 +217,8 @@
                 />
               </div>
               <div class="form-actions">
-                <n-button 
-                  type="primary" 
+                <n-button
+                  type="primary"
                   class="save-btn"
                   @click="saveTTSConfig"
                   :loading="savingTTS"
@@ -290,11 +290,11 @@
                     <span>💡提示：输入测试文本，克隆完成后会自动生成音频供试听</span>
                   </div>
                 </div>
-                
+
                 <!-- Clone and Test Voice Action -->
                 <div class="form-actions">
-                  <n-button 
-                    type="success" 
+                  <n-button
+                    type="success"
                     class="clone-btn"
                     @click="cloneAndTestVoice"
                     :disabled="!voiceUrl.trim() || !customVoiceName.trim() || !!voiceNameError || !testText.trim()"
@@ -339,7 +339,7 @@
                     <span>音色名称: <strong>{{ getVoiceDisplayName() }}</strong></span>
                   </div>
                 </div>
-                
+
                 <!-- Edit test text -->
                 <div class="form-group" style="margin-bottom: 15px;">
                   <label>测试文本</label>
@@ -353,11 +353,11 @@
                     show-count
                   />
                 </div>
-                
+
                 <div class="audio-player-container">
-                  <audio 
-                    ref="voiceAudioPlayer" 
-                    controls 
+                  <audio
+                    ref="voiceAudioPlayer"
+                    controls
                     class="voice-audio-player"
                     @ended="onAudioEnded"
                   >
@@ -366,13 +366,13 @@
                   <p v-if="!audioReady" class="audio-hint">点击"生成测试音频"按钮来生成音频</p>
                   <p v-else class="audio-hint">音频已准备就绪，点击播放按钮试听</p>
                 </div>
-                
+
                 <!-- Actions -->
                 <div class="voice-actions-section">
                   <div class="voice-actions-grid">
-                    <n-button 
+                    <n-button
                       v-if="!audioReady"
-                      type="warning" 
+                      type="warning"
                       size="medium"
                       @click="generateTestAudio"
                       :loading="testingVoice"
@@ -380,10 +380,10 @@
                     >
                       🎵 生成测试音频
                     </n-button>
-                    
-                    <n-button 
+
+                    <n-button
                       v-if="audioReady"
-                      type="primary" 
+                      type="primary"
                       size="medium"
                       @click="replayCurrentAudio"
                       :loading="replayingAudio"
@@ -391,9 +391,9 @@
                     >
                       🔄 重新播放
                     </n-button>
-                    
-                    <n-button 
-                      type="success" 
+
+                    <n-button
+                      type="success"
                       size="medium"
                       @click="saveVoiceWithName"
                       :loading="savingVoice"
@@ -402,8 +402,8 @@
                       💾 保存到语音库
                     </n-button>
 
-                    <n-button 
-                      type="default" 
+                    <n-button
+                      type="default"
                       size="medium"
                       @click="resetToInput"
                       class="action-btn"
@@ -619,29 +619,29 @@ const saveTTSConfig = async () => {
 // 验证语音名称
 const validateVoiceName = () => {
   const name = customVoiceName.value.trim()
-  
+
   if (!name) {
     voiceNameError.value = '请输入语音名称'
     return false
   }
-  
+
   if (name.length < 2) {
     voiceNameError.value = '名称至少需要2个字符'
     return false
   }
-  
+
   if (name.length > 20) {
     voiceNameError.value = '名称不能超过20个字符'
     return false
   }
-  
+
   // 只允许字母、数字、中文，不允许空格和特殊字符
   const validPattern = /^[a-zA-Z0-9\u4e00-\u9fa5]+$/
   if (!validPattern.test(name)) {
     voiceNameError.value = '只能使用字母、数字和中文'
     return false
   }
-  
+
   voiceNameError.value = ''
   return true
 }
@@ -677,7 +677,7 @@ const cloneAndTestVoice = async () => {
       throw new Error(cloneRes.message);
     }
     clonedVoiceId.value = cloneRes.data!;
-    
+
     // 清除状态，让成功界面显示
     cloneStatus.value = null
     showNotification('success', `语音"${customVoiceName.value.trim()}"克隆完成! ID: ${clonedVoiceId.value}`)
@@ -715,9 +715,11 @@ const generateTestAudio = async () => {
     // 生成音频并收集数据
     let audioChunks: ArrayBuffer[] = []
     let isCollecting = true
-    
-    const audioChunkListener = (event: Event, audio: Buffer) => {
+
+    const audioChunkListener = (_: Event, audio: Buffer) => {
       if (isCollecting) {
+        // @ts-ignore
+        // 先忽视一下这个问题，之后把这个问题好好解决一下
         audioChunks.push(audio.buffer.slice(audio.byteOffset, audio.byteOffset + audio.byteLength))
       }
     }
@@ -733,7 +735,7 @@ const generateTestAudio = async () => {
 
     // 等待音频数据收集（更简单的方式）
     await new Promise(resolve => setTimeout(resolve, 3000))
-    
+
     // 停止收集并清理监听器
     isCollecting = false
     window.api.removeAllAudioChunkListeners()
@@ -741,7 +743,7 @@ const generateTestAudio = async () => {
     // 创建音频Blob并设置到播放器
     if (audioChunks.length > 0) {
       currentAudioBlob.value = new Blob(audioChunks, { type: 'audio/mpeg' })
-      
+
       // 等待DOM更新后设置音频
       await nextTick()
       const audioPlayer = document.querySelector('.voice-audio-player') as HTMLAudioElement
@@ -919,7 +921,7 @@ onMounted(async () => {
 
   // 获取聊天风格
   getChatStyle()
-  
+
   // 获取音色列表
   getTTSVoiceList()
 
@@ -968,14 +970,14 @@ onUnmounted(() => {
   background: linear-gradient(135deg, $btn-grad-start 0%, $btn-grad-end 100%);
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  
+
   h1 {
     font-size: 1.8em;
     color: $font-gray;
     margin-bottom: 5px;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
   }
-  
+
   p {
     font-size: 0.9em;
     color: $font-gray;
@@ -999,7 +1001,7 @@ onUnmounted(() => {
   gap: 30px;
   max-width: 700px;
   width: 100%;
-  
+
   @media (max-width: 700px) {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -1017,18 +1019,18 @@ onUnmounted(() => {
   border: 2px solid transparent;
   position: relative;
   overflow: hidden;
-  
+
   &:hover {
     transform: translateY(-8px) scale(1.02);
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
     border-color: $border-orange-300;
-    
+
     .card-arrow {
       transform: translateX(5px);
       opacity: 1;
     }
   }
-  
+
   &:active {
     transform: translateY(-4px) scale(1.01);
   }
@@ -1076,7 +1078,7 @@ onUnmounted(() => {
   background: linear-gradient(135deg, $item-bg-start 0%, $item-bg-end 100%);
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  
+
   h2 {
     font-size: 1.4em;
     color: $font-gray;
@@ -1103,7 +1105,7 @@ onUnmounted(() => {
   align-items: center;
   margin: 20px 0;
   position: relative;
-  
+
   &.bottom-hint {
     position: fixed;
     bottom: 15px;
@@ -1112,7 +1114,7 @@ onUnmounted(() => {
     z-index: 100;
     margin: 0;
     pointer-events: none;
-    
+
     @media (max-height: 600px) {
       bottom: 10px;
     }
@@ -1147,7 +1149,7 @@ onUnmounted(() => {
   opacity: 0.6;
   transform: rotate(45deg);
   position: relative;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -1159,17 +1161,17 @@ onUnmounted(() => {
     transform: rotate(-90deg);
     transform-origin: right;
   }
-  
+
   &:nth-child(1) {
     animation: subtleChevronBounce 3s ease-in-out infinite;
     animation-delay: 0s;
   }
-  
+
   &:nth-child(2) {
     animation: subtleChevronBounce 3s ease-in-out infinite;
     animation-delay: 0.3s;
   }
-  
+
   &:nth-child(3) {
     animation: subtleChevronBounce 3s ease-in-out infinite;
     animation-delay: 0.6s;
@@ -1216,7 +1218,7 @@ onUnmounted(() => {
   margin-bottom: 15px;
   padding-bottom: 10px;
   border-bottom: 1px solid $bg-white-200;
-  
+
   h3 {
     font-size: 1.1em;
     color: $font-gray;
@@ -1240,11 +1242,11 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  
+
   &.half-width {
     min-width: 0;
   }
-  
+
   label {
     font-size: 13px;
     font-weight: 600;
@@ -1256,7 +1258,7 @@ onUnmounted(() => {
 .config-input {
   border-radius: 6px;
   transition: all 0.2s ease;
-  
+
   &:focus-within {
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -1291,12 +1293,12 @@ onUnmounted(() => {
   border-radius: 18px;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
-  
+
   &:active {
     transform: translateY(0);
   }
@@ -1317,7 +1319,7 @@ onUnmounted(() => {
   border: 2px solid $border-orange-300;
   border-radius: 8px;
   padding: 15px;
-  
+
   h4 {
     margin: 0 0 10px 0;
     color: $font-gray;
@@ -1342,7 +1344,7 @@ onUnmounted(() => {
   border-radius: 10px;
   padding: 20px;
   margin: 20px 0;
-  
+
   label {
     font-size: 15px;
     font-weight: 600;
@@ -1368,7 +1370,7 @@ onUnmounted(() => {
 
 .voice-name-input {
   border-radius: 8px;
-  
+
   &.n-input--focus {
     border-color: $accent-pink-dark;
   }
@@ -1389,7 +1391,7 @@ onUnmounted(() => {
   font-size: 11px;
   color: $font-gray;
   opacity: 0.8;
-  
+
   span {
     font-style: italic;
   }
@@ -1400,7 +1402,7 @@ onUnmounted(() => {
   font-size: 11px;
   color: $font-gray;
   opacity: 0.8;
-  
+
   span {
     font-style: italic;
   }
@@ -1417,14 +1419,14 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  
+
   .voice-label {
     font-weight: 600;
     color: $font-gray;
     min-width: 70px;
     font-size: 12px;
   }
-  
+
   .voice-name {
     color: $accent-pink-dark;
     font-weight: 600;
@@ -1441,7 +1443,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   flex: 1;
-  
+
   .voice-id {
     background: $bg-white-200;
     color: $accent-pink-dark;
@@ -1454,7 +1456,7 @@ onUnmounted(() => {
     flex: 1;
     word-break: break-all;
   }
-  
+
   .copy-btn {
     padding: 4px 8px;
     font-size: 11px;
@@ -1469,7 +1471,7 @@ onUnmounted(() => {
   background: linear-gradient(135deg, $bg-white-100 0%, $bg-white-200 100%);
   border: 1px solid $border-orange-300;
   border-radius: 8px;
-  
+
   h5 {
     margin: 0 0 12px 0;
     color: $font-gray;
@@ -1490,23 +1492,23 @@ onUnmounted(() => {
   height: 40px;
   border-radius: 6px;
   outline: none;
-  
+
   &::-webkit-media-controls-panel {
     background-color: $bg-white-100;
     border-radius: 6px;
   }
-  
+
   &::-webkit-media-controls-play-button,
   &::-webkit-media-controls-pause-button {
     background-color: $accent-pink-dark;
     border-radius: 50%;
   }
-  
+
   &::-webkit-media-controls-timeline {
     background-color: $bg-white-200;
     border-radius: 4px;
   }
-  
+
   &::-webkit-media-controls-current-time-display,
   &::-webkit-media-controls-time-remaining-display {
     color: $font-gray;
@@ -1536,7 +1538,7 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
-  
+
   h5 {
     margin: 0;
     color: $font-gray;
@@ -1564,7 +1566,7 @@ onUnmounted(() => {
 .voice-text-input {
   width: 100%;
   border-radius: 6px;
-  
+
   &:deep(.n-input__textarea) {
     border-radius: 6px;
     resize: vertical;
@@ -1590,27 +1592,27 @@ onUnmounted(() => {
   border-radius: 8px;
   padding: 15px;
   margin-bottom: 20px;
-  
+
   h5 {
     margin: 0 0 10px 0;
     color: #2e7d32;
     font-size: 16px;
     font-weight: 600;
   }
-  
+
   .voice-info {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    
+
     span {
       font-size: 13px;
       color: #1b5e20;
-      
+
       strong {
         color: #2e7d32;
       }
-      
+
       code {
         background: rgba(76, 175, 80, 0.1);
         padding: 2px 6px;
@@ -1621,7 +1623,7 @@ onUnmounted(() => {
       }
     }
   }
-  
+
   .copy-btn {
     margin-left: 8px;
     font-size: 11px;
@@ -1650,16 +1652,16 @@ onUnmounted(() => {
   transition: all 0.2s ease;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   min-width: 120px;
-  
+
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
   }
-  
+
   &:active {
     transform: translateY(0);
   }
-  
+
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -1668,7 +1670,7 @@ onUnmounted(() => {
   }
 }
 
-// Clone button styles  
+// Clone button styles
 .clone-btn {
   padding: 12px 24px;
   font-size: 14px;
@@ -1676,12 +1678,12 @@ onUnmounted(() => {
   border-radius: 20px;
   transition: all 0.2s ease;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-  
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
   }
-  
+
   &:active {
     transform: translateY(0);
   }
@@ -1695,23 +1697,23 @@ onUnmounted(() => {
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  
+
   &.processing {
     background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
     color: #1976d2;
     border: 1px solid #64b5f6;
-    
+
     svg {
       animation: spin 1s linear infinite;
     }
   }
-  
+
   &.success {
     background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
     color: #388e3c;
     border: 1px solid #81c784;
   }
-  
+
   &.error {
     background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
     color: #d32f2f;
@@ -1737,25 +1739,25 @@ onUnmounted(() => {
   animation: slideInRight 0.25s ease-out;
   min-width: 250px;
   max-width: 320px;
-  
+
   &.success {
     background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
     color: #388e3c;
     border: 1px solid #81c784;
   }
-  
+
   &.error {
     background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
     color: #d32f2f;
     border: 1px solid #e57373;
   }
-  
+
   &.warning {
     background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
     color: #f57c00;
     border: 1px solid #ffb74d;
   }
-  
+
   &.info {
     background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
     color: #1976d2;
@@ -1787,83 +1789,83 @@ onUnmounted(() => {
   .config-container {
     padding: 10px;
   }
-  
+
   .config-header {
     padding: 10px;
     margin-bottom: 15px;
-    
+
     h1 {
       font-size: 1.5em;
     }
   }
-  
+
   .selection-grid {
     gap: 20px;
     max-width: 500px;
   }
-  
+
   .selection-card {
     padding: 25px 20px;
-    
-    
+
+
     h3 {
       font-size: 1.2em;
     }
-    
+
     p {
       font-size: 0.85em;
     }
   }
-  
+
   .config-view {
     max-width: none;
   }
-  
+
   .view-header {
     padding: 12px 15px;
     margin-bottom: 20px;
-    
+
     h2 {
       font-size: 1.2em;
     }
   }
-  
+
   .form-row {
     grid-template-columns: 1fr;
     gap: 10px;
   }
-  
+
   .config-card {
     padding: 15px;
   }
-  
+
   .scroll-hint-content {
     padding: 6px 12px;
-    
+
     .scroll-text {
       font-size: 11px;
     }
-    
+
     .scroll-chevron {
       width: 10px;
       height: 2px;
-      
+
       &::before {
         width: 10px;
         height: 2px;
       }
     }
   }
-  
+
   .voice-naming {
     padding: 15px;
     margin: 15px 0;
-    
+
     label {
       font-size: 14px;
     }
   }
-  
+
   .notification-toast {
     right: 10px;
     left: 10px;
@@ -1876,102 +1878,102 @@ onUnmounted(() => {
   .config-container {
     padding: 8px;
   }
-  
+
   .selection-card {
     padding: 20px 15px;
-    
+
     h3 {
       font-size: 1.1em;
     }
-    
+
     p {
       font-size: 0.8em;
     }
   }
-  
+
   .view-header {
     padding: 10px 12px;
-    
+
     h2 {
       font-size: 1.1em;
     }
   }
-  
+
   .scroll-hint-content {
     padding: 5px 10px;
-    
+
     .scroll-text {
       font-size: 10px;
     }
-    
+
     .scroll-chevron {
       width: 8px;
       height: 1px;
-      
+
       &::before {
         width: 8px;
         height: 1px;
       }
     }
   }
-  
+
   .voice-naming {
     padding: 12px;
     margin: 12px 0;
-    
+
     label {
       font-size: 13px;
     }
   }
-  
+
   .voice-info-row {
     .voice-label {
       min-width: 60px;
       font-size: 11px;
     }
-    
+
     .voice-name {
       font-size: 12px;
       padding: 3px 6px;
     }
   }
-  
+
   .voice-id-container {
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
-    
+
     .voice-id {
       font-size: 11px;
       padding: 3px 6px;
     }
-    
+
     .copy-btn {
       align-self: center;
       padding: 3px 6px;
       font-size: 10px;
     }
   }
-  
+
   .audio-player-section {
     margin: 15px 0;
     padding: 10px;
-    
+
     h5 {
       font-size: 13px;
       margin-bottom: 8px;
     }
   }
-  
+
   .voice-audio-player {
     height: 35px;
     max-width: 100%;
   }
-  
+
   .audio-hint {
     font-size: 10px;
   }
-  
+
   .save-voice-btn {
     padding: 8px 16px;
     font-size: 13px;

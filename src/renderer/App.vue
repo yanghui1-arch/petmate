@@ -44,17 +44,14 @@ import { useSettings } from "./hooks/useSettings";
 
 const active = ref(false);
 const placement = ref<DrawerPlacement>("right");
-const activate = (place: DrawerPlacement) => {
-  active.value = true;
-  placement.value = place;
-};
 
 // 全局玩家状态 - 在这里加载数据
-const { playerData, isInit, error, initPlayerData } = usePlayer();
+const { playerData, initPlayerData } = usePlayer();
 const { initSettings } = useSettings();
 
 // 当应用挂载时加载玩家数据
 onMounted(async () => {
+
   console.log("Petmate启动，正在加载玩家数据");
   await initPlayerData();
   console.log("玩家数据加载完成", playerData.value);

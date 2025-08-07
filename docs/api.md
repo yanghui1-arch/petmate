@@ -4,7 +4,7 @@
 
 ## 文档类型
 
-### 自动生成的 API 文档
+### 自动生成的 API （目前只提供主进程的API）
 我们使用 TypeDoc 从代码注释自动生成详细的 API 文档。
 
 #### 生成文档
@@ -13,41 +13,17 @@
 npm install
 
 # 生成 API 文档
-npm run docs:generate
+npm run docs
 
-# 在浏览器中查看文档
-npm run docs:serve
+# 之后访问localhost:8889
 ```
 
-生成的文档将位于 `docs-generated/` 目录中，包含：
-- **工具函数**：计算、文件操作等实用工具
-- **玩家操作**：购买物品、使用道具等基础操作  
-- **Petmate 系统**：宠物属性、行为、升级机制
-- **游戏机制**：活动、许愿、Buff 系统
-- **类型定义**：完整的 TypeScript 接口和类型
+生成的文档将位于 `docs-generated/` 目录中
 
 ### 开发文档
 - [开发规范](./develop.md) - 代码风格和开发流程
 - [Git 规范](./git.md) - 分支管理和提交规范  
 - [项目概览](./overview.md) - 项目结构说明
-
-## 快速开始
-
-1. **安装依赖**
-   ```bash
-   npm install
-   ```
-
-2. **生成最新文档**
-   ```bash
-   npm run docs:generate
-   ```
-
-3. **启动本地服务器查看文档**
-   ```bash
-   npm run docs:serve
-   ```
-   然后在浏览器中访问 `http://localhost:8889`, 需要等一段时间
 
 ## 文档维护
 

@@ -6,11 +6,7 @@
           <n-image
             width="32"
             height="32"
-            :src="
-              type === 'success'
-                ? '../assets/image/message/success.png'
-                : '../assets/image/message/fail.png'
-            "
+            :src="type === 'success'? success : fail"
             preview-disabled
           />
           <div class="message-modal-title">{{ title }}</div>
@@ -25,15 +21,14 @@
     </n-modal>
   </div>
 </template>
-  
+
   <script setup lang="ts">
-import { defineProps, ref } from "vue";
-import { isMessageModalShow, closeMessageModal } from "../hooks/useInteract";
-import { usePlayer } from "../hooks/usePlayer";
+import { defineProps } from "vue";
+import { closeMessageModal } from "../hooks/useInteract";
+import success from "../assets/image/message/success.png";
+import fail from "../assets/image/message/fail.png";
 
-const { buyItem, consumeItem } = usePlayer();
-
-const props = defineProps({
+defineProps({
   show: { type: Boolean, required: true }, // 是否显示
   title: { type: String, required: true }, // 弹出框标题
   type: { type: String, required: true }, // 弹出框类型：成功、失败
@@ -44,7 +39,7 @@ const confirm = () => {
   closeMessageModal();
 };
 </script>
-  
+
   <style scoped lang="scss">
 .message-modal-wrapper {
   width: 280px;
