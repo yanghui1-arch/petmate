@@ -6,7 +6,7 @@
       <router-view />
 
       <!-- 右上角关闭按钮 -->
-      <div class="close-button-wrapper">
+      <div class="close-button-wrapper" v-if="showClosedButton">
         <div class="close-button">
           <span class="close-icon" @click="closeWin" style="-webkit-app-region: no-drag;">×</span>
         </div>
@@ -34,6 +34,7 @@ import MessageModal from "./components/MessageModal.vue";
 import MessageNotification from "./components/MessageNotification.vue";
 import type { DrawerPlacement } from "naive-ui";
 import { ref, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import { usePlayer } from "./hooks/usePlayer";
 import {
   isMessageModalShow,
@@ -41,6 +42,10 @@ import {
   messageModalTitle,
 } from "./hooks/useInteract";
 import { useSettings } from "./hooks/useSettings";
+
+// 根据路由的meta属性，决定是否显示关闭按钮，petmate页面不显示
+const route = useRoute();
+const showClosedButton = computed(() => !route.meta.hideClosedButton === true);
 
 const active = ref(false);
 const placement = ref<DrawerPlacement>("right");
