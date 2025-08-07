@@ -40,7 +40,7 @@ onMounted(() => {
   });
   // 心愿完成监听回调
   window.api.onWishFinished(
-    (event: Event, petmateId: number, finishedWishNames: string[]) => {
+    (_: Event, petmateId: number, finishedWishNames: string[]) => {
       const petmate = playerData.value?.petmates.find(
         (petmate) => petmate.id === petmateId
       );

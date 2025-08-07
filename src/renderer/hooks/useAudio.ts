@@ -23,7 +23,7 @@ export function useAudio() {
             sourceBuffer = mediaSource!.addSourceBuffer('audio/mpeg');
 
             // 创建新的监听器函数
-            audioChunkListener = (event: Event, audio: Buffer) => {
+            audioChunkListener = (_: Event, audio: Buffer) => {
                 console.log('Received audio chunk:', audio);
                 appendAudioData(audio);
             };

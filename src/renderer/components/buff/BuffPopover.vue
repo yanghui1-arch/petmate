@@ -47,7 +47,7 @@
     <script setup lang="ts">
 import { defineProps } from "vue";
 import { convertBuffText } from "../../utils/buff";
-import { ActivityInfo, ActiveBuff } from "../../types/common";
+import { ActiveBuff } from "../../types/common";
 
 const props = defineProps({
   // 悬浮矩形框的坐标，经过实践，popoverX和popoverY 表示'底部中心' 距离视口边缘的坐标

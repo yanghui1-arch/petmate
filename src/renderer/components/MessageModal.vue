@@ -27,8 +27,8 @@
 </template>
   
   <script setup lang="ts">
-import { defineProps, ref } from "vue";
-import { isMessageModalShow, closeMessageModal } from "../hooks/useInteract";
+import { defineProps } from "vue";
+import { closeMessageModal } from "../hooks/useInteract";
 import { usePlayer } from "../hooks/usePlayer";
 
 const { buyItem, consumeItem } = usePlayer();

@@ -42,37 +42,6 @@
                       @mouseleave="hideBuffPopover"
                     />
                   </div>
-                  <!-- <n-carousel
-                    :show-arrow="false"
-                    :show-dots="false"
-                    :loop="false"
-                  >
-                    <div class="home-panel-buff">
-                      <n-image
-                        src="../assets/image/buff/buff.png"
-                        width="16"
-                        height="16"
-                        preview-disabled
-                        v-for="buffItem in buffs.slice(0, 5)"
-                        :key="'buff-icon-' + buffItem.buff.id"
-                        @mouseenter="showBuffPopover($event, buffItem, 'left')"
-                        @mouseleave="hideBuffPopover"
-                      />
-                    </div>
-                    <div class="home-panel-buff">
-                      <n-image
-                        src="../assets/image/buff/buff.png"
-                        width="16"
-                        height="16"
-                        preview-disabled
-                        v-for="buffItem in buffs.slice(0, 5)"
-                        :key="'buff-icon-' + buffItem.buff.id"
-                        @mouseenter="showBuffPopover($event, buffItem, 'left')"
-                        @mouseleave="hideBuffPopover"
-                      />
-                    </div>
-                  </n-carousel> -->
-                  <!-- <span>▶</span> -->
                 </div>
               </div>
 
