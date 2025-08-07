@@ -20,7 +20,7 @@
 import { defineProps } from "vue";
 
 // 暴露wishItemName属性
-const props = defineProps<{
+defineProps<{
   wishItemName: string;
 }>();
 </script>

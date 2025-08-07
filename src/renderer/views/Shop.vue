@@ -138,13 +138,13 @@
       :popoverY="popoverY"
       :show="isItemEnter"
       :popoverWidth="popoverWidth"
-      :item="popoverItem"
+      :item="popoverItem!"
     />
     <!-- 商品购买弹出框 -->
     <ItemModal
       v-model:show="isModalShow"
       :title="modalTitle"
-      :item="modalItem"
+      :item="modalItem!"
       type="buy"
     />
   </div>

@@ -15,7 +15,7 @@
                 <n-avatar
                   round
                   :size="70"
-                  src="../assets/image/petmate-1.jpg"
+                  :src="avator"
                   object-fit="cover"
                 />
               </div>
@@ -198,6 +198,8 @@ import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
 import { PackageItemInfo } from "../types/player";
 import { ItemType, Item, ActiveBuff } from "../types/common";
+import avator from "../assets/image/petmate-1.jpg";
+
 const { playerData, consumeItem } = usePlayer();
 const { getShopItems } = useShow();
 

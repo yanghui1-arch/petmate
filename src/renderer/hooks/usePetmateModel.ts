@@ -10,8 +10,10 @@ import modelPath from '@/assets/models/petmate.glb'
 
 /** 屏幕分辨率
  * 这个分辨率是一块屏幕的分辨率
-*/
+ */
 let resolution: {width: number, height: number} = {width: 1920, height: 1080};
+
+
 /**
  * Electron视口缩放比例
  */
@@ -36,6 +38,10 @@ let mouse: THREE.Vector2 | null = null;
 let petMateModelConfig = {
     scale: 1,
 }
+/**
+ * model size
+ * need it to calculate model width and height.
+ */
 let modelSize: THREE.Vector3 = new THREE.Vector3();
 
 // 开发辅助用的
@@ -189,7 +195,7 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
     /**
      * 渲染播放动画
      */
-    const animate = (time: number) => {
+    const animate = () => {
         if (!scene || !camera || !renderer || !model) return;
         if (mixer) mixer.update(clock.getDelta());
         const now = performance.now();

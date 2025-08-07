@@ -47,7 +47,7 @@ import { defineProps, PropType } from "vue";
 import { convertItemEffect } from "../../utils/item";
 import { Item } from "../../types/common";
 
-const props = defineProps({
+defineProps({
   // 悬浮矩形框的坐标，经过实践，popoverX和popoverY 表示'底部中心' 距离视口边缘的坐标
   popoverX: { type: Number, required: true },
   popoverY: { type: Number, required: true },
