@@ -44,6 +44,5 @@ export default defineConfig({
         },
       },
     },
-    publicDir: resolve('resources'),
   }
 })
