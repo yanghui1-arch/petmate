@@ -3,6 +3,7 @@
  */
 
 import { ipcMain, IpcMainInvokeEvent, screen, BrowserWindow } from 'electron';
+import { is } from '@electron-toolkit/utils'
 import { playerManager } from './modules/store';
 import { PlayerInfo } from './types/player';
 import { Response } from '../types/response';
@@ -1024,7 +1025,13 @@ ipcMain.handle("open-new-window", (_: IpcMainInvokeEvent, route: string): Respon
         });
 
         // 加载指定路由的页面
-        newWindow.loadURL(`http://localhost:5173${route}`);
+        if (is.dev) {
+            newWindow.loadURL(`http://localhost:5173/#${route}`);
+        } else {
+            newWindow.loadFile(path.join(__dirname, '../renderer/index.html'), {
+                hash: route
+            });
+        }
 
         logger.info(`成功打开新窗口，路由: ${route}`);
         return {
