@@ -4,7 +4,7 @@
         "name": "汉堡",
         "type": "food",
         "description": "汉堡",
-        "url": "../assets/image/item/burger.png",
+        "url": "burger",
         "price": 200,
         "effect": {
             "hungry": 10,
@@ -18,7 +18,7 @@
         "name": "汉堡123",
         "type": "food",
         "description": "汉堡123",
-        "url": "../assets/image/item/burger.png",
+        "url": "burger",
         "price": 400,
         "effect": {
             "hungry": 20,
@@ -32,7 +32,7 @@
         "name": "汉堡1234",
         "type": "drink",
         "description": "汉堡1234",
-        "url": "../assets/image/item/burger.png",
+        "url": "burger",
         "price": 4020,
         "effect": {
             "hungry": 20,
@@ -46,7 +46,7 @@
         "name": "汉堡123444",
         "type": "drink",
         "description": "汉堡14423",
-        "url": "../assets/image/item/burger.png",
+        "url": "burger",
         "price": 4002,
         "effect": {
             "hungry": 20,
@@ -60,7 +60,7 @@
         "name": "汉堡123444",
         "type": "medicine",
         "description": "汉堡144234",
-        "url": "../assets/image/item/burger.png",
+        "url": "burger",
         "price": 4002,
         "effect": {
             "hungry": 20,
@@ -74,7 +74,7 @@
         "name": "汉堡123444",
         "type": "limit",
         "description": "汉堡144234",
-        "url": "../assets/image/item/burger.png",
+        "url": "burger",
         "price": 4002,
         "effect": {
             "hungry": 20,
@@ -88,7 +88,7 @@
         "name": "汉堡123444",
         "type": "limit",
         "description": "汉堡144234",
-        "url": "../assets/image/item/burger.png",
+        "url": "burger",
         "price": 4002,
         "effect": {
             "hungry": 20,
@@ -102,7 +102,7 @@
         "name": "汉堡123444",
         "type": "limit",
         "description": "汉堡144234",
-        "url": "../assets/image/item/burger.png",
+        "url": "burger",
         "price": 4002,
         "effect": {
             "hungry": 20,
@@ -116,7 +116,7 @@
         "name": "汉堡123444",
         "type": "limit",
         "description": "汉堡144234",
-        "url": "../assets/image/item/burger.png",
+        "url": "burger",
         "price": 4002,
         "effect": {
             "hungry": 20,
@@ -130,7 +130,7 @@
         "name": "汉堡123444",
         "type": "limit",
         "description": "汉堡144234",
-        "url": "../assets/image/item/burger.png",
+        "url": "burger",
         "price": 4002,
         "effect": {
             "hungry": 20,
@@ -144,7 +144,7 @@
         "name": "汉堡123444",
         "type": "limit",
         "description": "汉堡144234",
-        "url": "../assets/image/item/burger.png",
+        "url": "burger",
         "price": 4002,
         "effect": {
             "hungry": 20,
@@ -158,7 +158,7 @@
         "name": "汉堡123444",
         "type": "limit",
         "description": "汉堡144234",
-        "url": "../assets/image/item/burger.png",
+        "url": "burger",
         "price": 4002,
         "effect": {
             "hungry": 20,

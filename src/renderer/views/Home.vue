@@ -127,7 +127,7 @@
                     @mouseleave="hideItemPopover"
                     @click="showModal(item)"
                   >
-                    <n-image width="38" :src="item.url" preview-disabled />
+                    <n-image width="38" :src="getImageURL(item.url) ?? ''" preview-disabled />
                     <span class="package-item-num">{{ item.count }}</span>
                   </div>
                 </n-gi>
@@ -200,6 +200,15 @@ import { PackageItemInfo } from "../types/player";
 import { ItemType, Item, ActiveBuff } from "../types/common";
 const { playerData, consumeItem } = usePlayer();
 const { getShopItems } = useShow();
+
+
+const getImageURL = (itemname: string) => {
+    try {
+      return new URL(`../assets/image/item/${itemname}.png`, import.meta.url).pathname
+    } catch {
+      return null
+    }
+}
 
 // 物品id -> 物品信息，用于物品信息悬浮框和使用弹出框
 const completeItemsMap = ref<Map<number, Item>>(new Map());
