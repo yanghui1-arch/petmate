@@ -2,7 +2,7 @@
  * 暴露ipc事件
  */
 
-import { ipcMain, IpcMainInvokeEvent, screen, BrowserWindow } from 'electron';
+import { ipcMain, IpcMainInvokeEvent, IpcMainEvent, screen, BrowserWindow } from 'electron';
 import { is } from '@electron-toolkit/utils'
 import { playerManager } from './modules/store';
 import { PlayerInfo } from './types/player';
@@ -857,7 +857,9 @@ ipcMain.handle("update-settings", (_: IpcMainInvokeEvent, settings: Partial<Sett
     }
 })
 
-// ============ 窗口监控相关IPC处理器 ============
+/* ============ 窗口相关IPC处理器 ============
+ * 主要是玩家窗口监控和Electron窗口打开、关闭等。
+ */
 
 /**
  *  获取分辨率
@@ -999,17 +1001,32 @@ windowMonitor.on('window-changed', (event: WindowEvent) => {
 /**
  * 打开新窗口
  * @param route 路由路径
+ * @param {number} width 新开窗口的宽度，默认400
+ * @param {number} height 新开窗口的高度，默认580
  * @returns 打开窗口成功或失败
  */
-ipcMain.handle("open-new-window", (_: IpcMainInvokeEvent, route: string): Response<void> => {
+ipcMain.handle("open-new-window", (_: IpcMainInvokeEvent, route: string, width: number = 400, height: number = 580): Response<void> => {
     try {
+        const mainWindow: BrowserWindow | null = getMainWindow();
+        if (!mainWindow) throw new NotFoundError("主窗口未找到");
+        const mainWindowID: number = mainWindow.id;
+        const currentWindowNum: number = BrowserWindow.getAllWindows().length;
+        // 最多只能一个主窗口 + 一个新窗口
+        if (currentWindowNum > 1) {
+            const currentWindows: BrowserWindow[] = BrowserWindow.getAllWindows();
+            for (const win of currentWindows) {
+                if (win.id !== mainWindowID) win.close();
+            }
+        }
+
         const newWindow = new BrowserWindow({
-            width: 400,
-            height: 580,
+            width: width,
+            height: height,
             resizable: false,
             frame: false,
             transparent: false,
             alwaysOnTop: false,
+            show: false,
             modal: false, // 确保不是模态窗口
             webPreferences: {
                 preload: path.join(__dirname, '../preload/index.js'),
@@ -1019,7 +1036,6 @@ ipcMain.handle("open-new-window", (_: IpcMainInvokeEvent, route: string): Respon
             },
         });
 
-        // 当页面准备好后显示窗口
         newWindow.once('ready-to-show', () => {
             newWindow.show();
         });
@@ -1045,4 +1061,13 @@ ipcMain.handle("open-new-window", (_: IpcMainInvokeEvent, route: string): Respon
             message: "打开新窗口失败"
         } as Response<void>;
     }
+});
+
+/**
+ * 谁发的关闭窗口请求，就关闭谁
+ * @param event 事件对象
+ */
+ipcMain.on("close-window", (event: IpcMainEvent): void => {
+    const win: BrowserWindow | null = BrowserWindow.fromWebContents(event.sender);
+    if (win) win.close();
 });

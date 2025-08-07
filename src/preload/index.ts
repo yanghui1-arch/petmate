@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld('api', {
   // 其他方法
   listenTTSVoiceSample: (voice: TTSVoice, text: string = '你好，主人，欢迎试听我的音色呢') => ipcRenderer.invoke('listen-tts-voice-sample', voice, text),
   openNewWindow: (route: string) => ipcRenderer.invoke('open-new-window', route),
+  closeWindow: () => ipcRenderer.send('close-window'),
   quitApp: () => ipcRenderer.send('quit-app')
 })
 
