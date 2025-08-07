@@ -8,7 +8,7 @@
       <!-- 右上角关闭按钮 -->
       <div class="close-button-wrapper">
         <div class="close-button">
-          <span class="close-icon">×</span>
+          <span class="close-icon" @click="closeWin" style="-webkit-app-region: no-drag;">×</span>
         </div>
       </div>
 
@@ -60,6 +60,12 @@ onMounted(async () => {
   await initSettings();
   console.log("设置初始化完成");
 });
+
+const closeWin = () => {
+    console.log("关闭窗口")
+    window.api.closeWindow();
+}
+
 </script>
 
 <style lang="scss" scoped>

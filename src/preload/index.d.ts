@@ -64,6 +64,7 @@ interface IElectronAPI {
   // 其他
   listenTTSVoiceSample: (voice: TTSVoice, text: string) => Promise<Response<void>>;
   openNewWindow: (route: string) => Promise<Response<void>>;
+  closeWindow: () => void;
   quitApp: () => Promise<Response<void>>;
 }
 
@@ -90,3 +91,5 @@ declare global {
     windowMonitor: IWindowMonitor;
   }
 }
+
+export {};
