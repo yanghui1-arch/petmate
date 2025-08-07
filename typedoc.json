@@ -1,0 +1,63 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "entryPoints": [
+      "./src/main"
+    ],
+    "entryPointStrategy": "expand",
+    "out": "./docs-generated",
+    "name": "Petmate API Documentation",
+    "includeVersion": true,
+    "excludePrivate": false,
+    "excludeProtected": false,
+    "excludeInternal": false,
+    "readme": "./docs/api.md",
+    "theme": "default",
+    "hideGenerator": true,
+    "sort": ["source-order"],
+    "kindSortOrder": [
+      "Module",
+      "Class",
+      "Constructor", 
+      "Property",
+      "Method",
+      "Function",
+      "TypeAlias",
+      "Interface"
+    ],
+    "categorizeByGroup": true,
+    "defaultCategory": "Other",
+    "categoryOrder": [
+      "Player Operations",
+      "Petmate System", 
+      "Game Mechanics",
+      "Utilities",
+      "Types",
+      "*"
+    ],
+    "exclude": [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/tests/**",
+      "**/*.test.ts",
+      "**/*.spec.ts",
+      "**/coverage/**",
+      "**/*.vue",
+      "**/auto-imports.d.ts",
+      "**/components.d.ts",
+      "**/shims-vue.d.ts",
+      "**/vite-env.d.ts",
+      "**/out/**"
+    ],
+    "externalPattern": [
+      "**/node_modules/**"
+    ],
+    "excludeExternals": true,
+    "plugin": [],
+    "logLevel": "Info",
+    "treatWarningsAsErrors": false,
+    "validation": {
+      "notExported": true,
+      "invalidLink": true,
+      "notDocumented": false
+    }
+  } 
