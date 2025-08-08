@@ -58,6 +58,9 @@ const onMouseMoveForPopover = (event: MouseEvent) => {
     if (isBuffEnter.value) {
       isBuffEnter.value = false;
     }
+    if (isActItemEnter.value) {
+      isActItemEnter.value = false;
+    }
     // 用完就移除
     window.removeEventListener("mousemove", onMouseMoveForPopover);
   }

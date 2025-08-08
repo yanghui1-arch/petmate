@@ -203,6 +203,7 @@
                   ),
                 }"
                 @animationend="contentAnimationEnd"
+                @mouseenter="handleActItemPopover($event, actItem)"
                 @click="showModal(actItem)"
               >
                 <div class="activity-item-header">
@@ -211,7 +212,7 @@
                 <div class="activity-item-content">
                   <div class="activity-item-icon">
                     <n-image
-                      src="../assets/image/activity/activity-item-tmp.png"
+                      :src="getImageURL(actItem.url, 'activity', actItem.type) ?? ''"
                       width="50"
                       height="50"
                       preview-disabled
@@ -302,7 +303,7 @@ import { showActItemPopover, popoverX, popoverY, popoverWidth, popoverActItem, i
 import { convertActivityText, computeActivityTime } from "../utils/activity";
 
 const { playerData, refreshPlayerData, claimActivityReward } = usePlayer();
-const { getActivities } = useShow();
+const { getActivities, getImageURL } = useShow();
 
 // Petmate相关
 const currentPetmateID = ref(0);

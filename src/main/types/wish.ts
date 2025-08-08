@@ -29,10 +29,14 @@ export type WishRequirement = {
 export type WishReward = {
     type: "item",
     id: number,
+    name: string,
+    src: string,
     count: number,
 } | {
     type: "buff",
-    id: number
+    id: number,
+    name: string,
+    src: string,
 }
 
 export interface PrefabWish {

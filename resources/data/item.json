@@ -4,7 +4,7 @@
         "name": "曲奇饼",
         "type": "food",
         "description": "好吃的曲奇饼，在下一阶段前可以回复少量的精力和部分饱食度",
-        "url": "cookie",
+        "url": "food/cookie",
         "price": 20,
         "effect": {
             "hungry": 10,
@@ -16,7 +16,7 @@
         "name": "甜甜圈",
         "type": "food",
         "description": "Dass比较喜欢的食物之一，可以回复大量的饱食度。",
-        "url": "donut",
+        "url": "food/donut",
         "price": 80,
         "effect": {
             "hungry": 50
@@ -27,7 +27,7 @@
         "name": "小笼包",
         "type": "food",
         "description": "正宗的南翔小笼包，能让人全身充满力量，回复大量的饱食度",
-        "url": "buns",
+        "url": "food/buns",
         "price": 200,
         "effect": {
             "hungry": 140
@@ -38,7 +38,7 @@
         "name": "可乐",
         "type": "drink",
         "description": "冰镇的可乐可以回复少量的心情。如果只想要回复心情，可乐会是一个非常棒的选择。",
-        "url": "colacoke",
+        "url": "drink/colacoke",
         "price": 10,
         "effect": {
             "emotion": 3
@@ -49,7 +49,7 @@
         "name": "西瓜酒",
         "type": "drink",
         "description": "西瓜酒可以回复大量的心情和少量的饱食度。在Dass心情不好的时候，来上一杯吧。",
-        "url": "watermelon-cocktail",
+        "url": "drink/watermelon-cocktail",
         "price": 100,
         "effect": {
             "hungry": 14,
@@ -61,7 +61,7 @@
         "name": "欧润橘汁",
         "type": "drink",
         "description": "听说这种饮品在回复心情的时候效果非常的棒！",
-        "url": "orange-juice",
+        "url": "drink/orange-juice",
         "price": 50,
         "effect": {
             "hungry": 4,
@@ -73,7 +73,7 @@
         "name": "药片",
         "type": "medicine",
         "description": "药片可以回复部分健康值",
-        "url": "tablets",
+        "url": "medicine/tablets",
         "price": 100,
         "effect": {
             "health": 17
@@ -84,7 +84,7 @@
         "name": "扎一针",
         "type": "medicine",
         "description": "健康太低就来扎一针吧！见效快",
-        "url": "syringe",
+        "url": "medicine/syringe",
         "price": 400,
         "effect": {
             "health": 80
@@ -95,7 +95,7 @@
         "name": "个人计算机",
         "type": "gift",
         "description": "或许你可以买一台PC，让黛丝开心",
-        "url": "desktop",
+        "url": "gift/desktop",
         "price": 1000,
         "effect": {
             "emotion": 350
@@ -106,7 +106,7 @@
         "name": "手提包",
         "type": "gift",
         "description": "没有人可以拒绝包包的诱惑",
-        "url": "hand-bag",
+        "url": "gift/hand-bag",
         "price": 200,
         "effect": {
             "emotion": 70
@@ -117,7 +117,7 @@
         "name": "帕梅拉帽",
         "type": "gift",
         "description": "来一顶吧",
-        "url": "pamela-hat",
+        "url": "gift/pamela-hat",
         "price": 100,
         "effect": {
             "emotion": 35
