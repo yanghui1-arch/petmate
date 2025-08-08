@@ -94,7 +94,7 @@
   }
 
   const props = withDefaults(defineProps<Props>(), {
-    size: 400,
+    size: 300,
     closeOnClick: true
   })
 
@@ -125,16 +125,6 @@
       id: 'shop',
       title: '商店',
       action: () => window.api.openNewWindow('/shop')
-    },
-    {
-      id: 'activity',
-      title: '活动',
-      action: () => window.api.openNewWindow('/activity')
-    },
-    {
-      id: 'wish',
-      title: '心愿',
-      action: () => window.api.openNewWindow('/wish')
     },
     {
       id: 'settings',
