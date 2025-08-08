@@ -110,7 +110,7 @@
                       <n-image
                         width="38"
                         class="item-image"
-                        :src="item.url"
+                        :src="getImageURL(item.url, 'item', shopCurrType) ?? ''"
                         preview-disabled
                       />
                       <div class="item-price-wrapper">
@@ -161,7 +161,7 @@ import { ItemType, Item } from "../types/common";
 import { executeItemPage } from "../utils/item";
 
 const { playerData } = usePlayer();
-const { getShopItems } = useShow();
+const { getShopItems, getImageURL } = useShow();
 
 const shopCurrType = ref<ItemType>("limit" as ItemType);
 const shopPageNum = ref(0);

@@ -89,13 +89,13 @@
         <div class="home-package-type">
           <button
             type="button"
-            v-for="item in packageTypeList"
-            :key="item.name"
-            @click="handleTypeClick(item.name)"
-            :class="{ 'active-package-type': packageCurrType === item.name }"
+            v-for="packageType in packageTypeList"
+            :key="packageType.name"
+            @click="handleTypeClick(packageType.name)"
+            :class="{ 'active-package-type': packageCurrType === packageType.name }"
             class="package-type-btn"
           >
-            {{ item.label }}
+            {{ packageType.label }}
           </button>
         </div>
         <div class="home-package-wrapper">
@@ -125,7 +125,7 @@
                     @mouseenter="handleItemPopover($event, item)"
                     @click="showModal(item)"
                   >
-                    <n-image width="38" :src="getImageURL(item.url) ?? ''" preview-disabled />
+                    <n-image width="38" :src="getImageURL(item.url, 'item', packageCurrType) ?? ''" preview-disabled />
                     <span class="package-item-num">{{ item.count }}</span>
                   </div>
                 </n-gi>
@@ -200,16 +200,7 @@ import { ItemType, Item, ActiveBuff } from "../types/common";
 import avator from "../assets/image/petmate-1.jpg";
 
 const { playerData, consumeItem } = usePlayer();
-const { getShopItems } = useShow();
-
-
-const getImageURL = (itemname: string) => {
-    try {
-      return new URL(`../assets/image/item/${itemname}.png`, import.meta.url).pathname
-    } catch {
-      return null
-    }
-}
+const { getShopItems, getImageURL } = useShow();
 
 // 物品id -> 物品信息，用于物品信息悬浮框和使用弹出框
 const completeItemsMap = ref<Map<number, Item>>(new Map());
