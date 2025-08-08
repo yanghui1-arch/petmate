@@ -127,6 +127,11 @@
       action: () => window.api.openNewWindow('/shop')
     },
     {
+      id: 'activity',
+      title: '活动',
+      action: () => window.api.openNewWindow('/activity')
+    },
+    {
       id: 'settings',
       title: '设置',
       action: () => window.api.openNewWindow('/settings')
