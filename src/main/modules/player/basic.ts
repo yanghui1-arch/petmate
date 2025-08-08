@@ -19,6 +19,7 @@ import { Buff } from "../../types/buff";
 import { wishHandler } from "../wish";
 import { Wish } from "../../types/wish";
 import { getMainWindow } from "../../../main";
+import { calcBuffEffect } from "../utils/calc";
 
 /**
  * 购买物品
@@ -60,6 +61,7 @@ export function buyItem(itemId: number, count: number): Item {
 
 /**
  * 使用物品
+ * 物品的计算奖励方式是会根据现有的Petmate的buff进行结算的
  * @param itemId 物品id
  * @param count 使用数量
  * @param petmateId petmate的id
@@ -101,6 +103,7 @@ export function consumeItem(itemId: number, count: number = 1, petmateId: number
     petmate.addSingExp((item.effect.singExp ?? 0) * count);
     petmate.addDrawExp((item.effect.drawExp ?? 0) * count);
     petmate.addAffectionExp((item.effect.affectionExp ?? 0) * count);
+    player.cash += ((item.effect.cash ?? 0) * calcBuffEffect(petmate.attrs.buffs).cashGainRate) * count;
 
     const toAddBuff: Buff | undefined = item.effect.buff;
     if (toAddBuff) {
