@@ -3,7 +3,7 @@
         "id": 1,
         "type": "study",
         "name": "学习",
-        "url": "../assets/image/item/burger.png",
+        "url": "activity-item-tmp",
         "description": "学习知识1",
         "rewardSummary": "获得大量经验",
         "requirement": {
@@ -29,7 +29,7 @@
         "id": 2,
         "type": "study",
         "name": "学习",
-        "url": "../assets/image/item/burger.png",
+        "url": "activity-item-tmp",
         "description": "学习知识2",
         "rewardSummary": "获得大量经验",
         "requirement": {
@@ -55,7 +55,7 @@
         "id": 3,
         "type": "study",
         "name": "学习",
-        "url": "../assets/image/item/burger.png",
+        "url": "activity-item-tmp",
         "description": "学习知识3",
         "rewardSummary": "获得大量经验",
         "requirement": {
