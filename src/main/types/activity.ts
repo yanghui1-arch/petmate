@@ -9,6 +9,7 @@
  *  affectionExp: 100,
  * }
  */
+import { Requirement } from "./common"
 
 /**
  * 活动的奖励
@@ -51,12 +52,4 @@ export type ActivityInfo = {
     consume: Consume;
     requirement: Requirement;
     rewardSummary: string; // 奖励概述
-}
-
-export type Requirement = {
-    level?: number,
-    sing_level?: number,
-    draw_level?: number,
-    game_level?: number,
-    affection_level?: number,
 }

@@ -8,7 +8,8 @@ export interface Item {
     type: ItemType,
     price: number,
     effect: ItemEffect,
-    description: string
+    description: string,
+    requirement: Requirement
 }
 
 export interface ItemEffect {
@@ -149,9 +150,9 @@ export interface Consume {
 }
 
 export interface Requirement {
-    level: number,
-    sing_level: number,
-    draw_level: number,
-    game_level: number,
-    affection_level: number,
+    level?: number,
+    sing_level?: number,
+    draw_level?: number,
+    game_level?: number,
+    affection_level?: number,
 }

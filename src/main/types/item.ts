@@ -1,10 +1,12 @@
 import { Buff } from "./buff";
+import { Requirement } from "./common";
 
 export type ItemType = "food" | "drink" | "medicine" | "gift" | "exp" | "limit" | "others"
 
 export type Item = {
     id: number,
     name: string,
+    requirement: Requirement
     url: string,
     type: ItemType,
     price: number,
