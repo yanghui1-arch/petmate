@@ -30,15 +30,15 @@
               <div class="home-panel-view">
                 <!-- <span>Dass</span> -->
                 <div>
-                  <div class="home-panel-buff">
+                  <div class="home-panel-buff" v-for="(buffItem, index) in petmateAttribute?.buffs"
+                      :key="'buff-icon-' + buffItem.buff.id"
+                      @mouseenter="handleBuffPopover($event, buffItem, index)">
                     <n-image
-                      src="../assets/image/buff/buff.png"
+                      :src="getImageURL(buffItem.buff.icon, 'buff') ?? ''"
                       width="16"
                       height="16"
                       preview-disabled
-                      v-for="(buffItem, index) in petmateAttribute?.buffs"
-                      :key="'buff-icon-' + buffItem.buff.id"
-                      @mouseenter="handleBuffPopover($event, buffItem, index)"
+                      
                     />
                   </div>
                 </div>
@@ -338,7 +338,7 @@ const showModal = (item: PackageItemInfo) => {
   flex: 1;
   padding: 0 6%;
   background: $system-bgc;
-  -webkit-app-region: drag;
+  // -webkit-app-region: drag;
   .home-layout {
     width: 100%;
     height: 100%;
