@@ -125,7 +125,7 @@
                     @mouseenter="handleItemPopover($event, item)"
                     @click="showModal(item)"
                   >
-                    <n-image width="38" :src="getImageURL(item.url, 'item', packageCurrType) ?? ''" preview-disabled />
+                    <n-image width="38" :src="getImageURL(item.url, 'item') ?? ''" preview-disabled />
                     <span class="package-item-num">{{ item.count }}</span>
                   </div>
                 </n-gi>
