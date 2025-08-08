@@ -273,9 +273,9 @@ ipcMain.handle("clone-voice", async (_: IpcMainInvokeEvent, url: string): Promis
  * @param voice 要试听的音色
  * @returns 试听音色成功或失败，如果成功的话会返回一个音色id，如果失败的话会返回一个详细的错误信息
  */
-ipcMain.handle("listen-tts-voice-sample", async (_: IpcMainInvokeEvent, voice: TTSVoice, text: string): Promise<Response<void>> => {
+ipcMain.handle("listen-tts-voice-sample", async (event: IpcMainInvokeEvent, voice: TTSVoice, text: string): Promise<Response<void>> => {
     try {
-        await listenTTSVoiceSample(voice, text);
+        await listenTTSVoiceSample(voice, text, event.sender);
         return {
             code: 200,
             message: "试听音色成功"
@@ -297,9 +297,9 @@ ipcMain.handle("listen-tts-voice-sample", async (_: IpcMainInvokeEvent, voice: T
  * @param message 聊天信息
  * @returns 发送聊天信息成功或失败
  */
-ipcMain.handle("chat", async (_: IpcMainInvokeEvent, message: ChatMessage): Promise<Response<void>> => {
+ipcMain.handle("chat", async (event: IpcMainInvokeEvent, message: ChatMessage): Promise<Response<void>> => {
     try {
-        await chat(message);
+        await chat(message, event.sender);
         return {
             code: 200,
             message: "发送聊天信息成功"

@@ -55,15 +55,19 @@ interface IElectronAPI {
   onTextChunk: (callback: (event: Event, text: string) => void) => void;
   onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => void;
   onWishGenerated: (callback: (event: Event, petmateId: number) => void) => void,
+  onTTSFinished: (callback: (event: Event) => void) => void,
+  onTTSFailed: (callback: (event: Event) => void) => void,
   onWishFinished: (callback: (event: Event, petmateId: number, finishedWishNames: string[]) => void) => void,
   onActivityFinished: (callback: (event: Event, petmateId: number) => void) => void,
   onShowContextMenu: (callback: (event: Event) => void) => void,
   removeAllAudioChunkListeners: () => void;
+  removeAllTTSFinishedListeners: () => void;
+  removeAllTTSFailedListeners: () => void;
   setIgnoreMouseEvents: (ignore: boolean) => void;
 
   // 其他
   listenTTSVoiceSample: (voice: TTSVoice, text: string) => Promise<Response<void>>;
-  openNewWindow: (route: string) => Promise<Response<void>>;
+  openNewWindow: (route: string, width?: number, height?: number) => Promise<Response<void>>;
   closeWindow: () => void;
   quitApp: () => Promise<Response<void>>;
 }
