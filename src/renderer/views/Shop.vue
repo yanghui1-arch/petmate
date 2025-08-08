@@ -99,8 +99,7 @@
                   >
                     <div
                       class="shop-item"
-                      @mouseenter="showPopover($event, item)"
-                      @mouseleave="hidePopover"
+                      @mouseenter="handleItemPopover($event, item)"
                       @click="showModal(item)"
                     >
                       <div class="special-label">
@@ -157,6 +156,7 @@ import ItemModal from "@/components/item/ItemModal.vue";
 import type { CarouselInst } from "naive-ui";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
+import { showItemPopover, popoverX, popoverY, popoverWidth, popoverItem, isItemEnter } from "../hooks/useInteract";
 import { ItemType, Item } from "../types/common";
 import { executeItemPage } from "../utils/item";
 
@@ -267,25 +267,9 @@ const nextPage = () => {
   shopPageRef.value?.next();
 };
 
-// 鼠标离开商品或悬浮框内容时，悬浮框消失
-const isItemEnter = ref(false);
-const popoverX = ref(0);
-const popoverY = ref(0);
-const popoverWidth = ref(180);
-const popoverItem = ref<Item | null>(null);
-const showPopover = (event: MouseEvent, item: Item) => {
-  const target = event.currentTarget as HTMLElement;
-  const rect = target?.getBoundingClientRect();
-  // 经过实践，popoverX和popoverY暂时确定是悬浮框矩形 '底部中心' 的坐标
-  popoverX.value = rect.x + rect.width / 2 + popoverWidth.value / 2;
-  popoverY.value = rect.y + rect.height / 2;
 
-  isItemEnter.value = true;
-  popoverItem.value = item;
-};
-
-const hidePopover = () => {
-  isItemEnter.value = false;
+const handleItemPopover = (event: MouseEvent, item: Item) => {
+  showItemPopover(event, item);
 };
 
 // 物品购买弹出框相关

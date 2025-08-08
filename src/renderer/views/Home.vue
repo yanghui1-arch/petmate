@@ -38,8 +38,7 @@
                       preview-disabled
                       v-for="(buffItem, index) in petmateAttribute?.buffs"
                       :key="'buff-icon-' + buffItem.buff.id"
-                      @mouseenter="showBuffPopover($event, buffItem, index)"
-                      @mouseleave="hideBuffPopover"
+                      @mouseenter="handleBuffPopover($event, buffItem, index)"
                     />
                   </div>
                 </div>
@@ -123,8 +122,7 @@
                 >
                   <div
                     class="package-item"
-                    @mouseenter="showItemPopover($event, item)"
-                    @mouseleave="hideItemPopover"
+                    @mouseenter="handleItemPopover($event, item)"
                     @click="showModal(item)"
                   >
                     <n-image width="38" :src="getImageURL(item.url) ?? ''" preview-disabled />
@@ -164,7 +162,7 @@
       :popoverY="popoverY"
       :show="isBuffEnter"
       :popoverWidth="popoverWidth"
-      :activeBuff="popoverBuff"
+      :activeBuff="popoverBuff!"
     />
     <ItemPopover
       :popoverX="popoverX"
@@ -172,12 +170,12 @@
       :show="isItemEnter"
       :popoverWidth="popoverWidth"
       :isSourceShow="true"
-      :item="popoverItem"
+      :item="popoverItem!"
     />
     <ItemModal
       v-model:show="isModalShow"
       :title="modalTitle"
-      :item="modalItem"
+      :item="modalItem!"
       :hasCount="modalHasCount"
       :petmateId="currentPetmateID"
       type="use"
@@ -193,9 +191,10 @@ import BuffPopover from "@/components/buff/BuffPopover.vue";
 import ItemPopover from "@/components/item/ItemPopover.vue";
 import ItemModal from "@/components/item/ItemModal.vue";
 import type { CarouselInst } from "naive-ui";
-import { executeItemPage } from "../utils/item";
+import { executePackageItemPage } from "../utils/item";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
+import { showItemPopover, showBuffPopover, popoverX, popoverY, popoverWidth, popoverItem, isItemEnter, popoverBuff, isBuffEnter } from "../hooks/useInteract";
 import { PackageItemInfo } from "../types/player";
 import { ItemType, Item, ActiveBuff } from "../types/common";
 import avator from "../assets/image/petmate-1.jpg";
@@ -279,7 +278,7 @@ const packagePageList = computed(() => {
   const filteredPackageItems = allItems.filter(
     (item) => item.type === packageCurrType.value
   );
-  return executeItemPage([...filteredPackageItems], packagePageSize.value);
+  return executePackageItemPage([...filteredPackageItems], packagePageSize.value);
 });
 const packagePageNum = computed(() => packagePageList.value.length);
 
@@ -310,32 +309,19 @@ const nextPage = () => {
   packagePageRef.value?.next();
 };
 
-// 物品信息悬浮框相关
-const popoverX = ref(0);
-const popoverY = ref(0);
-const isItemEnter = ref(false);
-const popoverWidth = ref(180);
-const popoverItem = ref<Item | null>(null);
-const showItemPopover = (event: MouseEvent, item: PackageItemInfo) => {
-  const target = event.currentTarget as HTMLElement;
-  const rect = target?.getBoundingClientRect();
-  // 经过实践，popoverX和popoverY暂时确定是悬浮框矩形 '底部中心' 的坐标
-  popoverX.value = rect.x + rect.width / 2 + popoverWidth.value / 2;
-  popoverY.value = rect.y + rect.height / 2;
 
-  isItemEnter.value = true;
+
+const handleItemPopover = (event: MouseEvent, item: PackageItemInfo) => {
   // 根据id查询物品信息
   const completeItem = completeItemsMap.value.get(item.id);
   if (completeItem) {
     // 根据id查询物品信息
-    popoverItem.value = {
-      ...completeItem,
-    };
+    showItemPopover(event, completeItem);
   }
 };
 
-const hideItemPopover = () => {
-  isItemEnter.value = false;
+const handleBuffPopover = (event: MouseEvent, buff: ActiveBuff, index: number) => {
+  showBuffPopover(event, buff, index);
 };
 
 // 物品使用弹出框相关
@@ -353,31 +339,6 @@ const showModal = (item: PackageItemInfo) => {
     };
     modalHasCount.value = item.count;
   }
-};
-
-// buff相关
-const isBuffEnter = ref(false);
-const popoverBuff = ref<ActiveBuff | null>(null);
-const showBuffPopover = (
-  event: MouseEvent,
-  buff: ActiveBuff,
-  index: number
-) => {
-  const target = event.currentTarget as HTMLElement;
-  const rect = target?.getBoundingClientRect();
-  // 经过实践，popoverX和popoverY暂时确定是悬浮框矩形 '底部中心' 的坐标
-  // 前五个buff，悬浮框在右边；后五个buff，悬浮框在左边，防止buff被遮挡
-  if (index < 5) {
-    popoverX.value = rect.x + rect.width / 2 + popoverWidth.value / 2;
-  } else {
-    popoverX.value = rect.x + rect.width / 2 - popoverWidth.value / 2;
-  }
-  popoverY.value = rect.y + rect.height / 2;
-  isBuffEnter.value = true;
-  popoverBuff.value = buff;
-};
-const hideBuffPopover = () => {
-  isBuffEnter.value = false;
 };
 </script>
 

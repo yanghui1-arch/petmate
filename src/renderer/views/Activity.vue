@@ -203,8 +203,6 @@
                   ),
                 }"
                 @animationend="contentAnimationEnd"
-                @mouseenter="showPopover($event, actItem)"
-                @mouseleave="hidePopover"
                 @click="showModal(actItem)"
               >
                 <div class="activity-item-header">
@@ -278,12 +276,12 @@
       :popoverY="popoverY"
       :show="isActItemEnter"
       :popoverWidth="popoverWidth"
-      :actItem="popoverActItem"
+      :actItem="popoverActItem!"
       :isLocked="isActItemLocked"
     />
     <ActivityModal
       v-model:show="isModalShow"
-      :actItem="modalActItem"
+      :actItem="modalActItem!"
       :type="modalType"
       :petmateId="currentPetmateID"
     />
@@ -299,6 +297,7 @@ import { openMessageModal } from "../hooks/useInteract";
 import { ActivityInfo } from "../types/common";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
+import { showActItemPopover, popoverX, popoverY, popoverWidth, popoverActItem, isActItemEnter } from "../hooks/useInteract";
 
 import { convertActivityText, computeActivityTime } from "../utils/activity";
 
@@ -358,7 +357,7 @@ const checkActivityLocked = (requirement: ActivityInfo["requirement"]) => {
  * @param requirements 活动条件
  * @returns 不满足的条件
  */
-const getMissingRequirements = (requirements: ActivityInfo["requirement"]) => {
+const getMissingRequirements = (requirement: ActivityInfo["requirement"]) => {
   const { level, sing_level, draw_level, game_level, affection_level } =
     petmateAttribute.value ?? {
       level: 1,
@@ -367,21 +366,21 @@ const getMissingRequirements = (requirements: ActivityInfo["requirement"]) => {
       game_level: 1,
       affection_level: 1,
     };
-  const missing = [];
-  if (level < requirements.level) {
-    missing.push(`等级 Lv.${requirements.level}`);
+  const missing: string[] = [];
+  if (level < requirement.level) {
+    missing.push(`等级 Lv.${requirement.level}`);
   }
-  if (sing_level < requirements.sing_level) {
-    missing.push(`唱歌 Lv.${requirements.sing_level}`);
+  if (sing_level < requirement.sing_level) {
+    missing.push(`唱歌 Lv.${requirement.sing_level}`);
   }
-  if (draw_level < requirements.draw_level) {
-    missing.push(`绘画 Lv.${requirements.draw_level}`);
+  if (draw_level < requirement.draw_level) {
+    missing.push(`绘画 Lv.${requirement.draw_level}`);
   }
-  if (game_level < requirements.game_level) {
-    missing.push(`游戏 Lv.${requirements.game_level}`);
+  if (game_level < requirement.game_level) {
+    missing.push(`游戏 Lv.${requirement.game_level}`);
   }
-  if (affection_level < requirements.affection_level) {
-    missing.push(`亲密度 Lv.${requirements.affection_level}`);
+  if (affection_level < requirement.affection_level) {
+    missing.push(`亲密度 Lv.${requirement.affection_level}`);
   }
   return missing;
 };
@@ -459,27 +458,11 @@ const activitySectionList = [
   },
 ];
 
-const isActItemEnter = ref(false);
-const popoverX = ref(0);
-const popoverY = ref(0);
-const popoverWidth = ref(180);
-const popoverActItem = ref<ActivityInfo | null>(null);
+
 const isActItemLocked = ref(false);
-
-const showPopover = (event: MouseEvent, actItem: ActivityInfo) => {
-  const target = event.currentTarget as HTMLElement;
-  const rect = target?.getBoundingClientRect();
-  // 经过实践，popoverX和popoverY暂时确定是悬浮框矩形 '底部中心' 的坐标
-  popoverX.value = rect.x + rect.width / 2 + popoverWidth.value / 2;
-  popoverY.value = rect.y + rect.height / 2;
-
-  isActItemEnter.value = true;
-  popoverActItem.value = actItem;
+const handleActItemPopover = (event: MouseEvent, actItem: ActivityInfo) => {
+  showActItemPopover(event, actItem);
   isActItemLocked.value = checkActivityLocked(actItem.requirement);
-};
-
-const hidePopover = () => {
-  isActItemEnter.value = false;
 };
 
 const activityItemRefs = ref<HTMLElement[]>([]);
