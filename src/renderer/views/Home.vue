@@ -15,7 +15,7 @@
                 <n-avatar
                   round
                   :size="70"
-                  src="../assets/image/petmate-1.jpg"
+                  :src="avator"
                   object-fit="cover"
                 />
               </div>
@@ -30,49 +30,17 @@
               <div class="home-panel-view">
                 <!-- <span>Dass</span> -->
                 <div>
-                  <div class="home-panel-buff">
+                  <div class="home-panel-buff" v-for="(buffItem, index) in petmateAttribute?.buffs"
+                      :key="'buff-icon-' + buffItem.buff.id"
+                      @mouseenter="handleBuffPopover($event, buffItem, index)">
                     <n-image
-                      src="../assets/image/buff/buff.png"
+                      :src="getImageURL(buffItem.buff.icon, 'buff') ?? ''"
                       width="16"
                       height="16"
                       preview-disabled
-                      v-for="(buffItem, index) in petmateAttribute?.buffs"
-                      :key="'buff-icon-' + buffItem.buff.id"
-                      @mouseenter="showBuffPopover($event, buffItem, index)"
-                      @mouseleave="hideBuffPopover"
+                      
                     />
                   </div>
-                  <!-- <n-carousel
-                    :show-arrow="false"
-                    :show-dots="false"
-                    :loop="false"
-                  >
-                    <div class="home-panel-buff">
-                      <n-image
-                        src="../assets/image/buff/buff.png"
-                        width="16"
-                        height="16"
-                        preview-disabled
-                        v-for="buffItem in buffs.slice(0, 5)"
-                        :key="'buff-icon-' + buffItem.buff.id"
-                        @mouseenter="showBuffPopover($event, buffItem, 'left')"
-                        @mouseleave="hideBuffPopover"
-                      />
-                    </div>
-                    <div class="home-panel-buff">
-                      <n-image
-                        src="../assets/image/buff/buff.png"
-                        width="16"
-                        height="16"
-                        preview-disabled
-                        v-for="buffItem in buffs.slice(0, 5)"
-                        :key="'buff-icon-' + buffItem.buff.id"
-                        @mouseenter="showBuffPopover($event, buffItem, 'left')"
-                        @mouseleave="hideBuffPopover"
-                      />
-                    </div>
-                  </n-carousel> -->
-                  <!-- <span>▶</span> -->
                 </div>
               </div>
 
@@ -121,13 +89,13 @@
         <div class="home-package-type">
           <button
             type="button"
-            v-for="item in packageTypeList"
-            :key="item.name"
-            @click="handleTypeClick(item.name)"
-            :class="{ 'active-package-type': packageCurrType === item.name }"
+            v-for="packageType in packageTypeList"
+            :key="packageType.name"
+            @click="handleTypeClick(packageType.name)"
+            :class="{ 'active-package-type': packageCurrType === packageType.name }"
             class="package-type-btn"
           >
-            {{ item.label }}
+            {{ packageType.label }}
           </button>
         </div>
         <div class="home-package-wrapper">
@@ -154,11 +122,10 @@
                 >
                   <div
                     class="package-item"
-                    @mouseenter="showItemPopover($event, item)"
-                    @mouseleave="hideItemPopover"
+                    @mouseenter="handleItemPopover($event, item)"
                     @click="showModal(item)"
                   >
-                    <n-image width="38" :src="item.url" preview-disabled />
+                    <n-image width="38" :src="getImageURL(item.url, 'item') ?? ''" preview-disabled />
                     <span class="package-item-num">{{ item.count }}</span>
                   </div>
                 </n-gi>
@@ -195,7 +162,7 @@
       :popoverY="popoverY"
       :show="isBuffEnter"
       :popoverWidth="popoverWidth"
-      :activeBuff="popoverBuff"
+      :activeBuff="popoverBuff!"
     />
     <ItemPopover
       :popoverX="popoverX"
@@ -203,12 +170,12 @@
       :show="isItemEnter"
       :popoverWidth="popoverWidth"
       :isSourceShow="true"
-      :item="popoverItem"
+      :item="popoverItem!"
     />
     <ItemModal
       v-model:show="isModalShow"
       :title="modalTitle"
-      :item="modalItem"
+      :item="modalItem!"
       :hasCount="modalHasCount"
       :petmateId="currentPetmateID"
       type="use"
@@ -224,13 +191,16 @@ import BuffPopover from "@/components/buff/BuffPopover.vue";
 import ItemPopover from "@/components/item/ItemPopover.vue";
 import ItemModal from "@/components/item/ItemModal.vue";
 import type { CarouselInst } from "naive-ui";
-import { executeItemPage } from "../utils/item";
+import { executePackageItemPage } from "../utils/item";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
+import { showItemPopover, showBuffPopover, popoverX, popoverY, popoverWidth, popoverItem, isItemEnter, popoverBuff, isBuffEnter } from "../hooks/useInteract";
 import { PackageItemInfo } from "../types/player";
 import { ItemType, Item, ActiveBuff } from "../types/common";
+import avator from "../assets/image/petmate-1.jpg";
+
 const { playerData, consumeItem } = usePlayer();
-const { getShopItems } = useShow();
+const { getShopItems, getImageURL } = useShow();
 
 // 物品id -> 物品信息，用于物品信息悬浮框和使用弹出框
 const completeItemsMap = ref<Map<number, Item>>(new Map());
@@ -299,7 +269,7 @@ const packagePageList = computed(() => {
   const filteredPackageItems = allItems.filter(
     (item) => item.type === packageCurrType.value
   );
-  return executeItemPage([...filteredPackageItems], packagePageSize.value);
+  return executePackageItemPage([...filteredPackageItems], packagePageSize.value);
 });
 const packagePageNum = computed(() => packagePageList.value.length);
 
@@ -330,32 +300,19 @@ const nextPage = () => {
   packagePageRef.value?.next();
 };
 
-// 物品信息悬浮框相关
-const popoverX = ref(0);
-const popoverY = ref(0);
-const isItemEnter = ref(false);
-const popoverWidth = ref(180);
-const popoverItem = ref<Item | null>(null);
-const showItemPopover = (event: MouseEvent, item: PackageItemInfo) => {
-  const target = event.currentTarget as HTMLElement;
-  const rect = target?.getBoundingClientRect();
-  // 经过实践，popoverX和popoverY暂时确定是悬浮框矩形 '底部中心' 的坐标
-  popoverX.value = rect.x + rect.width / 2 + popoverWidth.value / 2;
-  popoverY.value = rect.y + rect.height / 2;
 
-  isItemEnter.value = true;
+
+const handleItemPopover = (event: MouseEvent, item: PackageItemInfo) => {
   // 根据id查询物品信息
   const completeItem = completeItemsMap.value.get(item.id);
   if (completeItem) {
     // 根据id查询物品信息
-    popoverItem.value = {
-      ...completeItem,
-    };
+    showItemPopover(event, completeItem);
   }
 };
 
-const hideItemPopover = () => {
-  isItemEnter.value = false;
+const handleBuffPopover = (event: MouseEvent, buff: ActiveBuff, index: number) => {
+  showBuffPopover(event, buff, index);
 };
 
 // 物品使用弹出框相关
@@ -374,31 +331,6 @@ const showModal = (item: PackageItemInfo) => {
     modalHasCount.value = item.count;
   }
 };
-
-// buff相关
-const isBuffEnter = ref(false);
-const popoverBuff = ref<ActiveBuff | null>(null);
-const showBuffPopover = (
-  event: MouseEvent,
-  buff: ActiveBuff,
-  index: number
-) => {
-  const target = event.currentTarget as HTMLElement;
-  const rect = target?.getBoundingClientRect();
-  // 经过实践，popoverX和popoverY暂时确定是悬浮框矩形 '底部中心' 的坐标
-  // 前五个buff，悬浮框在右边；后五个buff，悬浮框在左边，防止buff被遮挡
-  if (index < 5) {
-    popoverX.value = rect.x + rect.width / 2 + popoverWidth.value / 2;
-  } else {
-    popoverX.value = rect.x + rect.width / 2 - popoverWidth.value / 2;
-  }
-  popoverY.value = rect.y + rect.height / 2;
-  isBuffEnter.value = true;
-  popoverBuff.value = buff;
-};
-const hideBuffPopover = () => {
-  isBuffEnter.value = false;
-};
 </script>
 
 <style lang="scss" scoped>
@@ -406,6 +338,7 @@ const hideBuffPopover = () => {
   flex: 1;
   padding: 0 6%;
   background: $system-bgc;
+  // -webkit-app-region: drag;
   .home-layout {
     width: 100%;
     height: 100%;

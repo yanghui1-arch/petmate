@@ -5,7 +5,7 @@
       :show-arrow="false"
       :x="popoverX"
       :y="popoverY"
-      :show="show || isPopoverEnter"
+      :show="show"
       raw
       ><div
         :style="{
@@ -14,8 +14,6 @@
       >
         <div
           class="popover-wrapper"
-          @mouseenter="isPopoverEnter = true"
-          @mouseleave="isPopoverEnter = false"
         >
           <div class="popover-title">{{ item.name }}</div>
           <div class="popover-content">
@@ -47,7 +45,7 @@ import { defineProps, PropType } from "vue";
 import { convertItemEffect } from "../../utils/item";
 import { Item } from "../../types/common";
 
-const props = defineProps({
+defineProps({
   // 悬浮矩形框的坐标，经过实践，popoverX和popoverY 表示'底部中心' 距离视口边缘的坐标
   popoverX: { type: Number, required: true },
   popoverY: { type: Number, required: true },
@@ -56,8 +54,6 @@ const props = defineProps({
   isSourceShow: { type: Boolean, default: false }, // 是否显示获得方式
   item: { type: Object as PropType<Item>, required: true }, // 物品
 });
-
-const isPopoverEnter = ref(false);
 </script>
 
 <style scoped lang="scss">

@@ -4,12 +4,12 @@
             <span style="font-family: Petmate; font-size: 30px">Dass Chat</span>
             <n-switch :value="isMuted" @update:value="changeMuted"/>
         </div>
-        
+
         <!-- 聊天消息显示区域 -->
         <div class="chat-content" ref="chatContentRef">
-            <div 
-                v-for="(message, index) in messages" 
-                :key="index" 
+            <div
+                v-for="(message, index) in messages"
+                :key="index"
                 class="message-wrapper"
                 :class="message.role === 'user' ? 'user-message' : 'assistant-message'"
             >
@@ -18,28 +18,28 @@
                     <img src="../assets/image/petmate-1.jpg" alt="Dass Avatar" />
                     <div class="avatar-glow"></div>
                 </div>
-                
+
                 <div class="message-container">
                     <div class="message-time">{{ formatTime(message.timestamp) }}</div>
                     <div class="message-bubble" :class="{ 'typing': message.isLoading }">
                         <div class="message-background"></div>
-                        
+
                         <!-- Show typing indicator when loading -->
                         <div v-if="message.isLoading" class="typing-indicator">
                             <span></span>
                             <span></span>
                             <span></span>
                         </div>
-                        
+
                         <!-- Show content when not loading -->
                         <div v-else class="message-content" :class="{ 'content-typing': message.isTyping }">
                             {{ message.content }}
                         </div>
-                        
+
                         <div class="message-shimmer"></div>
                     </div>
                 </div>
-                
+
                 <!-- User Avatar (right side) -->
                 <div v-if="message.role === 'user'" class="avatar">
                     <img src="../assets/image/petmate-3.jpg" alt="User Avatar" />
@@ -53,7 +53,7 @@
             <n-input
                 v-model:value="inputMessage"
                 size="small"
-                placeholder="和 Dass 聊聊吧ヾ(≧▽≦*)o" 
+                placeholder="和 Dass 聊聊吧ヾ(≧▽≦*)o"
                 type="textarea"
                 :autosize="{ minRows: 1, maxRows: 3 }"
                 @keydown="handleEnter"
@@ -61,9 +61,9 @@
                 :disabled="loading || isTyping"
             />
 
-            <n-button 
+            <n-button
                 color="#55484b"
-                size="large" 
+                size="large"
                 :loading="loading"
                 :disabled="loading || isTyping || !inputMessage.trim()"
                 :keyboard="true"
@@ -113,9 +113,9 @@ let isProcessingChunks = false;
 
 // 格式化时间显示
 const formatTime = (date: Date): string => {
-    return date.toLocaleTimeString('zh-CN', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+    return date.toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit'
     });
 };
 
@@ -135,7 +135,7 @@ const addMessage = (role: ChatMessage['role'], content: string) => {
         timestamp: new Date()
     };
     messages.value.push(newMessage);
-    
+
     // Immediate scroll for real-time feedback
     scrollToBottom();
 };
@@ -148,7 +148,7 @@ const processChunk = async (chunk: string) => {
 
     // Add chunk to buffer
     streamBuffer += chunk;
-    
+
     // If message is still loading, start typing mode
     if (messages.value[currentAssistantMessageIndex].isLoading) {
         messages.value[currentAssistantMessageIndex].isLoading = false;
@@ -160,11 +160,11 @@ const processChunk = async (chunk: string) => {
 
     // Update content in real-time with typing effect
     messages.value[currentAssistantMessageIndex].content = streamBuffer;
-    
+
     // Force immediate DOM update and scroll
     await nextTick();
     await scrollToBottom();
-    
+
     // Update the last chunk time
     lastChunkTime = Date.now();
 };
@@ -172,9 +172,9 @@ const processChunk = async (chunk: string) => {
 // 处理文本块队列，带延迟以实现流式效果
 const processChunkQueue = async () => {
     if (isProcessingChunks) return;
-    
+
     isProcessingChunks = true;
-    
+
     while (chunkQueue.length > 0) {
         const chunk = chunkQueue.shift();
         if (chunk) {
@@ -183,7 +183,7 @@ const processChunkQueue = async () => {
             await new Promise(resolve => setTimeout(resolve, 30));
         }
     }
-    
+
     isProcessingChunks = false;
 };
 
@@ -198,7 +198,7 @@ const finishStreamResponse = async () => {
     if (currentAssistantMessageIndex >= 0 && currentAssistantMessageIndex < messages.value.length) {
         messages.value[currentAssistantMessageIndex].isTyping = false;
     }
-    
+
     // Reset all state
     currentAssistantMessageIndex = -1;
     streamBuffer = '';
@@ -206,17 +206,17 @@ const finishStreamResponse = async () => {
     isTyping.value = false;
     loading.value = false;
     buttonStatus.value = '↑';
-    
+
     // Clear chunk queue and processing state
     chunkQueue = [];
     isProcessingChunks = false;
-    
+
     // Clear interval if exists
     if (streamCheckInterval) {
         clearInterval(streamCheckInterval);
         streamCheckInterval = null;
     }
-    
+
     await scrollToBottom();
 };
 
@@ -241,10 +241,10 @@ const setupStreamChecker = () => {
         clearInterval(streamCheckInterval);
         streamCheckInterval = null;
     }
-    
+
     // 初始化时间
     lastChunkTime = Date.now();
-    
+
     // 设置新的定时器检查流是否结束
     streamCheckInterval = setInterval(() => {
         if (Date.now() - lastChunkTime > 1000) { // 1秒没有新块就认为结束
@@ -266,7 +266,7 @@ const handleSend = async () => {
     try {
         // 添加用户消息
         addMessage('user', message);
-        
+
         // 清空输入框
         inputMessage.value = '';
 
@@ -282,7 +282,7 @@ const handleSend = async () => {
 
         // 发送消息到主进程
         const success = await chat(chatMessage);
-        
+
         if (success) {
             // 如果发送成功，开始接收流式回复
             isTyping.value = true;
@@ -346,7 +346,7 @@ onMounted(async () => {
     console.log(`[chat] 初始化聊天记录: ${JSON.stringify(messages.value)}`);
 
     // 监听文本流块
-    window.api.onTextChunk((event: Event, text: string) => {
+    window.api.onTextChunk((_: Event, text: string) => {
         console.log('Received text chunk:', text);
         handleTextChunk(text);
     });
@@ -392,7 +392,8 @@ onUnmounted(async () => {
     background-color: $system-bgc; // 全局系统背景色
     padding: 10px;
     box-sizing: border-box;
-    
+    -webkit-app-region: drag;
+
     /* ==========================================
        聊天头部 - 标题区域
        ========================================== */
@@ -408,7 +409,7 @@ onUnmounted(async () => {
         color: $font-light; // 浅色字体提供对比度
         box-shadow: 0 4px 24px 0 rgba(253, 203, 110, 0.15); // 温暖的金色阴影
     }
-    
+
     /* ==========================================
        聊天内容 - 可滚动消息区域
        ========================================== */
@@ -424,7 +425,8 @@ onUnmounted(async () => {
         flex-direction: column;
         gap: 15px; // 消息之间的间距
         box-shadow: 0 4px 24px 0 rgba(253, 203, 110, 0.15);
-        
+        -webkit-app-region: no-drag;
+
         /* ==========================================
            自定义滚动条样式
            增强可见性以提升用户体验
@@ -432,42 +434,42 @@ onUnmounted(async () => {
         // 仅在内容溢出时显示的增强滚动条样式
         scrollbar-width: thin; // Firefox 浏览器
         scrollbar-color: rgba(224, 166, 166, 0.8) rgba(139, 19, 19, 0.15); // Firefox
-        
+
         // Webkit 浏览器的自定义滚动条 (Chrome, Safari, Edge)
         &::-webkit-scrollbar {
             width: 14px; // 足够宽度便于点击
             background: rgba(139, 19, 19, 0.05); // 轨道区域的浅色背景
         }
-        
+
         &::-webkit-scrollbar-track {
             background: rgba(139, 19, 19, 0.15); // 主题色的轨道背景
             border-radius: 7px;
             border: 1px solid rgba(224, 166, 166, 0.2);
             margin: 2px; // 添加边距以获得更好的视觉分离
         }
-        
+
         &::-webkit-scrollbar-thumb {
             background: rgba(224, 166, 166, 0.8); // 可见的滑块颜色
             border-radius: 7px;
             border: 2px solid rgba(255, 255, 255, 0.3); // 白色边框增强定义
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
             min-height: 30px; // 确保最小滑块尺寸便于使用
-            
+
             &:hover {
                 background: rgba(197, 81, 81, 0.9); // 悬停时变暗提供反馈
                 box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
             }
-            
+
             &:active {
                 background: rgba(197, 81, 81, 1); // 拖拽时的实心颜色
             }
         }
-        
+
         // 确保滚动条角落样式一致
         &::-webkit-scrollbar-corner {
             background: rgba(139, 19, 19, 0.15);
         }
-        
+
         /* ==========================================
            欢迎消息 - 初始状态
            ========================================== */
@@ -477,7 +479,7 @@ onUnmounted(async () => {
             margin-top: 20px;
             font-size: 16px;
         }
-        
+
         /* ==========================================
            消息包装器 - 单个消息容器
            处理头像 + 消息 + 动画的布局
@@ -488,43 +490,43 @@ onUnmounted(async () => {
             margin-bottom: 8px;
             align-items: flex-start; // 头像与消息气泡顶部对齐
             gap: 12px; // 头像和消息之间的间距
-            
+
             // 入场动画 - 从底部平滑滑入
             animation: messageEntrance 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
             opacity: 1; // 实时内容从可见状态开始
             transform: translateY(0) scale(1); // 从最终位置开始
-            
+
             // 手动触发的可选入场动画类
             &.message-entering {
                 opacity: 0;
                 transform: translateY(20px) scale(0.95);
             }
-            
+
             /* ==========================================
                悬停效果 - 交互反馈
                ========================================== */
             &:hover {
                 transform: translateY(-2px); // 微妙的提升效果
                 transition: transform 0.3s ease;
-                
+
                 .avatar {
                     .avatar-glow {
                         opacity: 0.8;
                         transform: scale(1.2); // 悬停时扩展光晕
                     }
                 }
-                
+
                 .message-bubble {
                     transform: translateY(-1px);
                     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important; // 增强阴影
-                    
+
                     .message-shimmer {
                         opacity: 1;
                         animation: shimmer 2s ease-in-out infinite; // 激活闪光效果
                     }
                 }
             }
-            
+
             /* ==========================================
                头像样式 - 圆形头像图片
                ========================================== */
@@ -534,7 +536,7 @@ onUnmounted(async () => {
                 flex-shrink: 0; // 防止头像收缩
                 position: relative;
                 animation: avatarBounce 0.3s ease-out; // 快速弹跳入场
-                
+
                 img {
                     width: 100%;
                     height: 100%;
@@ -546,7 +548,7 @@ onUnmounted(async () => {
                     position: relative;
                     z-index: 2; // 在光晕效果之上
                 }
-                
+
                 // 头像后的光晕效果
                 .avatar-glow {
                     position: absolute;
@@ -563,7 +565,7 @@ onUnmounted(async () => {
                     animation: pulse 3s ease-in-out infinite; // 轻柔脉动
                 }
             }
-            
+
             /* ==========================================
                消息容器 - 时间戳 + 气泡包装器
                ========================================== */
@@ -572,7 +574,7 @@ onUnmounted(async () => {
                 flex-direction: column;
                 align-items: flex-start;
                 max-width: calc(85% - 52px); // 考虑头像宽度 + 间距
-                
+
                 .message-time {
                     font-size: 10px;
                     opacity: 0.5; // 微妙的时间戳
@@ -585,21 +587,21 @@ onUnmounted(async () => {
                     animation-fill-mode: both;
                 }
             }
-            
+
             /* ==========================================
                用户消息样式 - 右对齐
                ========================================== */
             &.user-message {
                 justify-content: flex-end; // 右对齐
-                
+
                 .message-container {
                     align-items: flex-end; // 右对齐容器内容
-                    
+
                     .message-time {
                         align-self: flex-end; // 右对齐时间戳
                     }
                 }
-                
+
                 .message-bubble {
                     // 视觉吸引力的渐变背景
                     background: linear-gradient(135deg, $accent-pink-dark 0%, #d65a5a 50%, $accent-pink-dark 100%);
@@ -607,13 +609,13 @@ onUnmounted(async () => {
                     box-shadow: 0 6px 20px rgba(197, 81, 81, 0.3); // 匹配的粉色阴影
                     position: relative;
                     overflow: hidden; // 裁剪动画元素
-                    
+
                     // 动画背景渐变
                     .message-background {
                         background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.1));
                         animation: backgroundSlide 3s ease-in-out infinite;
                     }
-                    
+
                     // 消息上的滑动光效
                     &::before {
                         content: '';
@@ -628,13 +630,13 @@ onUnmounted(async () => {
                     }
                 }
             }
-            
+
             /* ==========================================
                助手消息样式 - 左对齐
                ========================================== */
             &.assistant-message {
                 justify-content: flex-start; // 左对齐
-                
+
                 .message-bubble {
                     // 助手的浅色渐变背景
                     background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 248, 248, 0.95) 50%, rgba(255, 255, 255, 0.98) 100%);
@@ -643,13 +645,13 @@ onUnmounted(async () => {
                     border: 1px solid rgba(224, 166, 166, 0.3); // 微妙边框
                     position: relative;
                     overflow: hidden;
-                    
+
                     // 助手的微妙动画背景
                     .message-background {
                         background: linear-gradient(45deg, rgba(224, 166, 166, 0.05), rgba(253, 203, 110, 0.03), rgba(224, 166, 166, 0.05));
                         animation: backgroundSlide 4s ease-in-out infinite reverse; // 更慢，反向
                     }
-                    
+
                     // 打字指示器状态的特殊样式
                     &.typing {
                         background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 248, 248, 0.9), rgba(255, 255, 255, 0.95));
@@ -658,7 +660,7 @@ onUnmounted(async () => {
                     }
                 }
             }
-            
+
             /* ==========================================
                消息气泡 - 核心消息样式
                ========================================== */
@@ -675,12 +677,12 @@ onUnmounted(async () => {
                 animation: bubblePopIn 0.3s cubic-bezier(0.4, 0, 0.2, 1); // 弹出入场
                 animation-fill-mode: both;
                 transform: scale(1); // 从完整尺寸开始
-                
+
                 // 可选的入场缩放
                 &.bubble-entering {
                     transform: scale(0.95);
                 }
-                
+
                 // 动画效果的背景层
                 .message-background {
                     position: absolute;
@@ -691,7 +693,7 @@ onUnmounted(async () => {
                     border-radius: 10px; // 匹配气泡半径
                     z-index: 0; // 在内容之后
                 }
-                
+
                 /* ==========================================
                    消息内容 - 文本显示
                    ========================================== */
@@ -706,7 +708,7 @@ onUnmounted(async () => {
                     opacity: 1;
                     animation: none; // 默认无动画
                     max-width: 100%; // 防止溢出
-                    
+
                     // 实时打字时的光标效果
                     &.content-typing {
                         &::after {
@@ -717,7 +719,7 @@ onUnmounted(async () => {
                         }
                     }
                 }
-                
+
                 // 悬停交互的闪光效果
                 .message-shimmer {
                     position: absolute;
@@ -730,7 +732,7 @@ onUnmounted(async () => {
                     z-index: 1;
                     border-radius: 10px; // 匹配气泡半径
                 }
-                
+
                 /* ==========================================
                    打字指示器 - 加载动画
                    ========================================== */
@@ -742,7 +744,7 @@ onUnmounted(async () => {
                     padding: 8px 0;
                     position: relative;
                     z-index: 2; // 在背景之上
-                    
+
                     // 打字效果的动画点
                     span {
                         width: 10px;
@@ -751,7 +753,7 @@ onUnmounted(async () => {
                         background: linear-gradient(45deg, $accent-brown, #a0522d); // 渐变点
                         animation: typingBounce 1.4s ease-in-out infinite;
                         box-shadow: 0 2px 8px rgba(139, 69, 19, 0.4);
-                        
+
                         // 波浪效果的错开动画延迟
                         &:nth-child(1) { animation-delay: 0s; }
                         &:nth-child(2) { animation-delay: 0.2s; }
@@ -761,7 +763,7 @@ onUnmounted(async () => {
             }
         }
     }
-    
+
     /* ==========================================
        聊天底部 - 输入区域
        ========================================== */
@@ -774,6 +776,7 @@ onUnmounted(async () => {
         height: auto;
         min-height: 50px; // 最小可用高度
         flex-shrink: 0; // 防止底部收缩
+        -webkit-app-region: no-drag;
     }
 }
 

@@ -1,6 +1,7 @@
+import { BrowserWindow, WebContents } from 'electron';
 import Store from 'electron-store';
-import logger from './log';
-import { ChatLLMConfigError, LLMConfigError, TTSProcessError, NotFoundError } from './error';
+import logger  from './log';
+import { ChatLLMConfigError, LLMConfigError, TTSProcessError } from './error';
 import { OpenAI } from 'openai';
 import { ChatCompletionStream } from 'openai/resources/chat/completions';
 import { v4 as uuidv4 } from 'uuid';
@@ -41,8 +42,7 @@ type StoreData = {
 }
 
 const store: Store<StoreData> = new Store<StoreData>({
-    name: 'llm',
-    projectName: 'petmate'
+    name: 'llm'
 })
 
 export interface TTSParameters {
@@ -383,7 +383,7 @@ function setChatLLMConfig(config: ChatLLMConfig): ChatLLMConfig {
  * @returns 设置后的TTSLLM配置
  */
 function setTTSLLMConfig(config: TTSLLMConfig): TTSLLMConfig {
-    const customConfig = (store as any).set('ttsLLMConfig', config);
+    (store as any).set('ttsLLMConfig', config);
     currentTTSLLMConfig = config;
     return config;
 }
@@ -456,6 +456,7 @@ async function postChatMessage(messages: ChatMessage[]): Promise<ChatCompletionS
 
 /**
  * 发送tts任务
+ * 只要发送了就一定是可以合成出来的
  * @param text 要tts的文本
  */
 function tts(text: string): void {
@@ -480,10 +481,12 @@ function tts(text: string): void {
 }
 
 /**
- * 连接TTS的websocket
+ * 为特定窗口连接TTS的websocket
+ * @param {TTSLLMConfig} ttsLLMConfig TTS的配置
+ * @param {number} senderId 发请求的id
  * @returns 任务id
  */
-function connectTTSWebsocket(ttsLLMConfig: TTSLLMConfig): string {
+function connectTTSWebsocket(ttsLLMConfig: TTSLLMConfig, sender: WebContents): string {
     ttsWebsocket = new WebSocket(ttsLLMConfig.baseUrl, {
         headers: {
             Authorization: `bearer ${ttsLLMConfig.apiKey}`,
@@ -521,14 +524,14 @@ function connectTTSWebsocket(ttsLLMConfig: TTSLLMConfig): string {
         console.log('已发送开始任务的事件');
     });
 
-    ttsWebsocket.on('message', (data, isBinary) => {
+    ttsWebsocket.on('message', (data: any, isBinary: boolean) => {
         // 如果是二进制，则为音频数据
         if (isBinary) {
             // 发给渲染层
-            const mainWindow = getMainWindow();
-            if (mainWindow) {
+            const win = BrowserWindow.fromWebContents(sender);
+            if (win) {
                 // 发送tts转录buffer数据
-                mainWindow.webContents.send('tts-audio-chunk', data);
+                win.webContents.send('tts-audio-chunk', data as Buffer);
             }
         } else {
             const message = JSON.parse(data.toString());
@@ -540,7 +543,7 @@ function connectTTSWebsocket(ttsLLMConfig: TTSLLMConfig): string {
                 case 'task-finished':
                     console.log('tts任务已全部完成');
                     // 通知渲染进程TTS结束
-                    const finishWindow = getMainWindow();
+                    const finishWindow = BrowserWindow.fromWebContents(sender);
                     if (finishWindow) {
                         finishWindow.webContents.send('tts-finished');
                     }
@@ -551,7 +554,7 @@ function connectTTSWebsocket(ttsLLMConfig: TTSLLMConfig): string {
                 case 'task-failed':
                     logger.error('[llm] tts任务失败');
                     // 通知渲染进程TTS失败
-                    const failWindow = getMainWindow();
+                    const failWindow = BrowserWindow.fromWebContents(sender);
                     if (failWindow) {
                         failWindow.webContents.send('tts-failed', message);
                     }
@@ -620,11 +623,11 @@ function waitForTTSReady(timeout: number = 5000): Promise<boolean> {
  * @throws ChatLLMConfigError 如果传过来的聊天信息不是用户消息
  * @throws LLMConfigError 如果大模型配置错误
  */
-async function chat(message: ChatMessage): Promise<void> {
+async function chat(message: ChatMessage, sender: WebContents): Promise<void> {
     try {
         // 如果websocket没建立连接，先建立一下连接
         if (!ttsWebsocket && !ttsStarted) {
-            ttsTaskId = connectTTSWebsocket(currentTTSLLMConfig);
+            ttsTaskId = connectTTSWebsocket(currentTTSLLMConfig, sender);
         }
         if (message.role !== 'user') {
             throw new ChatLLMConfigError("[llm] 请确保传过来的聊天信息是用户消息");
@@ -643,7 +646,7 @@ async function chat(message: ChatMessage): Promise<void> {
         });
         // [future] 得在这里再考虑一下上下文长度问题，但这一个版本先不考虑
 
-        const mainWindow = getMainWindow()
+        const mainWindow = BrowserWindow.fromWebContents(sender);
         const runner: ChatCompletionStream = await postChatMessage(chatHistoryMessages.map(message => message.chatMessage));
         let response: string = "";
         for await (const chunk of runner) {
@@ -693,10 +696,11 @@ async function chat(message: ChatMessage): Promise<void> {
  * 会发送一个tts-audio-chunk事件给渲染层，渲染层通过接收tts-audio-chunk就可以获取到音频内容
  * 当结束的时候会发送一个tts-finished事件给渲染层
  * @param voice 要听的音色
+ * @param {string} text 要听的文本
+ * @param {WebContents} sender 发请求的渲染层
  */
-async function listenTTSVoiceSample(voice: TTSVoice, text: string = "你好，主人，欢迎试听我的音色呢") {
+async function listenTTSVoiceSample(voice: TTSVoice, text: string = "你好，主人，欢迎试听我的音色呢", sender: WebContents) {
     try {
-
         // 初始化一下试听的tts配置
         const sampleTTSLLMConfig: TTSLLMConfig = {
             model: currentTTSLLMConfig.model,
@@ -711,7 +715,7 @@ async function listenTTSVoiceSample(voice: TTSVoice, text: string = "你好，�
 
         // 如果websocket没建立连接，先建立一下连接
         if (!ttsWebsocket && !ttsStarted) {
-            ttsTaskId = connectTTSWebsocket(sampleTTSLLMConfig);
+            ttsTaskId = connectTTSWebsocket(sampleTTSLLMConfig, sender);
         }
         // 等待TTS任务准备就绪
         // 必须得保证TTS任务准备就绪，不然会因为websocket的异步性导致ttsStarted=False
@@ -781,10 +785,10 @@ async function cloneVoice(url: string): Promise<string> {
 
 /**
  * 记忆总结
- * 会总结历史聊天记录，将最后一个user信息删除，并且将总结后的信息作为一条新的user输入. 
+ * 会总结历史聊天记录，将最后一个user信息删除，并且将总结后的信息作为一条新的user输入.
  * 由于调用这个方法的时候，默认认为是超过了上下文，即玩家在发送最后一条消息之前，上下文的长度是正常的，因此总结的是从第一条user -> 倒数第二条user的信息内容
  * 最后一个user信息（也就是玩家发送的最后一条消息）会被删除
- * 
+ *
  * @returns 总结后的记忆信息
  */
 async function memorySummary(): Promise<string> {

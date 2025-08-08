@@ -116,7 +116,7 @@
             </n-button>
             <div class="wish-detail-info">
               <div class="wish-icon">
-                <img src="../../assets/image/wish.png" alt="wish" />
+                <img src="../assets/image/wish.png" alt="wish" />
               </div>
               <div class="wish-detail-text">
                 <div class="wish-name">{{ checkWishInfo?.name }}</div>
@@ -144,17 +144,17 @@
                     class="requirement-item"
                     :class="{ completed: progress.status === 'finished' }"
                   >
-                    <img :src="progress.src" class="requirement-icon" />
+                    <img :src="getImageURL(progress.src, 'activity', progress.type) ?? ''" class="requirement-icon" />
                     <span class="requirement-name">{{ progress.name }}</span>
                     <div class="requirement-status">
                       <img
                         v-if="progress.status === 'finished'"
-                        src="../../assets/image/right.png"
+                        src="../assets/image/right.png"
                         class="status-icon"
                       />
                       <img
                         v-else
-                        src="../../assets/image/wrong.png"
+                        src="../assets/image/wrong.png"
                         class="status-icon"
                       />
                     </div>
@@ -172,7 +172,7 @@
                     class="requirement-item"
                     :class="{ completed: progress.status === 'finished' }"
                   >
-                    <img :src="progress.src" class="requirement-icon" />
+                    <img :src="getImageURL(progress.src, 'item') ?? ''" class="requirement-icon" />
                     <span class="requirement-name">
                       {{ progress.name }}
                       <span v-if="progress.type === 'item'" class="item-count">
@@ -182,12 +182,12 @@
                     <div class="requirement-status">
                       <img
                         v-if="progress.status === 'finished'"
-                        src="../../assets/image/right.png"
+                        src="../assets/image/right.png"
                         class="status-icon"
                       />
                       <img
                         v-else
-                        src="../../assets/image/wrong.png"
+                        src="../assets/image/wrong.png"
                         class="status-icon"
                       />
                     </div>
@@ -201,13 +201,21 @@
               <div class="rewards-title">心愿奖励</div>
               <div class="rewards-container">
                 <div class="reward-item">
-                  <img :src="wishReward.src" class="reward-icon" />
-                  <div class="reward-info">
-                    <span class="reward-name">{{ wishReward.name }}</span>
-                    <span v-if="wishReward.count" class="reward-count">
-                      x{{ wishReward.count }}
-                    </span>
-                  </div>
+                  <template v-if="wishReward.type === 'item'">
+                    <img :src="getImageURL(wishReward.src, 'item') ?? ''" class="reward-icon" />
+                    <div class="reward-info">
+                      <span class="reward-name">{{ wishReward.name }}</span>
+                      <span v-if="wishReward.count" class="reward-count">
+                        x{{ wishReward.count }}
+                      </span>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <img :src="getImageURL(wishReward.src, 'buff') ?? ''" class="reward-icon" />
+                    <div class="reward-info">
+                      <span class="reward-name">{{ wishReward.name }}</span>
+                    </div>
+                  </template>
                   <div class="reward-badge">
                     <span>🎁</span>
                   </div>
@@ -249,15 +257,16 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, watch } from "vue";
 import WishItem from "../components/wish/WishItem.vue";
 import { usePlayer } from "../hooks/usePlayer";
 import { WishRequirement } from "../types/common";
 import { formatTime } from "../utils/time";
 import { openMessageModal } from "../hooks/useInteract";
 import { useShow } from "../hooks/useShow";
+import { Wish, WishReward } from "../types/common";
 const { playerData, claimWishReward } = usePlayer();
-const { getItemInfo } = useShow();
+const { getItemInfo, getImageURL } = useShow();
 
 const currentPetmateID = ref(0);
 const currentActivePetmate = computed(() => {
@@ -294,19 +303,9 @@ const wishList = computed(() => {
   return currentActivePetmate.value?.wishes ?? [];
 });
 
-// 按下心愿后，显示心愿的详细信息
-const check = ref(false);
-const checkWishID = ref<string | null>(null);
-const checkWishInfo = ref();
-const checkWish = async (wishID: string) => {
-  checkWishID.value = wishID;
-  check.value = true;
-  checkWishInfo.value = wishList.value.find((wish) => wish.id === wishID);
-
-  // 更新要求列表
-  updateRequirements();
-};
-
+// 心愿的物品、活动要求和玩家目前的进度
+const itemProgress = ref<WishRequirement[]>([]);
+const activityProgress = ref<WishRequirement[]>([]);
 // 更新要求列表
 const updateRequirements = () => {
   if (checkWishInfo.value?.requirements) {
@@ -321,36 +320,23 @@ const updateRequirements = () => {
   }
 };
 
-// 心愿的物品、活动要求和玩家目前的进度
-const itemProgress = ref<WishRequirement[]>([]);
-const activityProgress = ref<WishRequirement[]>([]);
-
+// 按下心愿后，显示心愿的详细信息
+const check = ref(false);
+const checkWishID = ref<string | null>(null);
+const checkWishInfo = ref<Wish | null>(null);
 // 心愿奖励
-const wishReward = ref<any>(null);
-
-watch(
-  checkWishInfo,
-  async (newWishInfo) => {
-    if (!newWishInfo?.reward) {
-      wishReward.value = null;
-      return;
-    }
-
-    const reward = newWishInfo.reward;
-    if (reward.type === "item") {
-      const item = await getItemInfo([reward.id]);
-      if (item.length === 1) {
-        wishReward.value = {
-          ...reward,
-          src: item[0].url,
-        };
-      }
-    } else {
-      wishReward.value = reward;
-    }
-  },
-  { immediate: true }
-);
+const wishReward = ref<WishReward | null>(null);
+const checkWish = async (wishID: string) => {
+  checkWishID.value = wishID;
+  check.value = true;
+  checkWishInfo.value = wishList.value.find((wish) => wish.id === wishID) as Wish;
+  if(checkWishInfo.value) {
+  // 更新要求列表
+  updateRequirements();
+  // 更新奖励
+  wishReward.value = checkWishInfo.value?.reward as WishReward;
+  }
+};
 
 // 奖励领取相关
 const isClaimingReward = ref(false);

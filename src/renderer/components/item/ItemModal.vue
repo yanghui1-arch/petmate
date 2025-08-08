@@ -29,7 +29,7 @@
 import { defineProps, ref, PropType, watch } from "vue";
 import { usePlayer } from "../../hooks/usePlayer";
 import { Item } from "../../types/common";
-import { openMessageModal, closeMessageModal } from "../../hooks/useInteract";
+import { openMessageModal } from "../../hooks/useInteract";
 const { buyItem, consumeItem } = usePlayer();
 
 const props = defineProps({
@@ -38,7 +38,7 @@ const props = defineProps({
   type: { type: String, required: true }, // 弹出框类型：使用、购买
   item: { type: Object as PropType<Item>, required: true }, // 物品
   hasCount: { type: Number, required: false, default: 0 }, // 数量，使用时传入
-  petmateId: { type: Number, required: true }, // petmaetId，使用时传入
+  petmateId: { type: Number, required: false, default: 0 }, // petmaetId，使用时传入
 });
 
 const emit = defineEmits<{

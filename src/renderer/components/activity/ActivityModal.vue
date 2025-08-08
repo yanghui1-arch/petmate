@@ -33,7 +33,7 @@
 </template>
     
     <script setup lang="ts">
-import { defineProps, ref } from "vue";
+import { defineProps } from "vue";
 import { usePlayer } from "../../hooks/usePlayer";
 import { ActivityInfo } from "../../types/common";
 import { computeActivityTime } from "../../utils/activity";

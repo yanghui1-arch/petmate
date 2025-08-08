@@ -1,0 +1,80 @@
+[
+    {
+        "id": 1,
+        "type": "study",
+        "name": "学习",
+        "url": "study/activity-item-tmp",
+        "description": "学习知识1",
+        "rewardSummary": "获得大量经验",
+        "requirement": {
+            "level": 1,
+            "sing_level": 1,
+            "draw_level": 1,
+            "game_level": 1
+        },
+        "consume": {
+            "energy": 10,
+            "hungry": 10,
+            "health": 10,
+            "emotion": 10,
+            "cash": 10,
+            "spendingTime": 10
+        },
+        "reward": {
+            "exp": 100,
+            "gameExp": 100
+        }
+    },
+    {
+        "id": 2,
+        "type": "study",
+        "name": "学习",
+        "url": "study/activity-item-tmp",
+        "description": "学习知识2",
+        "rewardSummary": "获得大量经验",
+        "requirement": {
+            "level": 2,
+            "sing_level": 1,
+            "draw_level": 5,
+            "game_level": 1
+        },
+        "consume": {
+            "energy": 10,
+            "hungry": 10,
+            "health": 10,
+            "emotion": 10,
+            "cash": 10,
+            "spendingTime": 3200
+        },
+        "reward": {
+            "exp": 100,
+            "gameExp": 100
+        }
+    },
+    {
+        "id": 3,
+        "type": "study",
+        "name": "学习",
+        "url": "study/activity-item-tmp",
+        "description": "学习知识3",
+        "rewardSummary": "获得大量经验",
+        "requirement": {
+            "level": 3,
+            "sing_level": 2,
+            "draw_level": 2,
+            "game_level": 4
+        },
+        "consume": {
+            "energy": 10,
+            "hungry": 10,
+            "health": 10,
+            "emotion": 10,
+            "cash": 10,
+            "spendingTime": 3000
+        },
+        "reward": {
+            "exp": 100,
+            "gameExp": 100
+        }
+    }
+]

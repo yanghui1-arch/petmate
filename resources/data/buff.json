@@ -1,0 +1,15 @@
+[
+    {
+        "id": 1,
+        "name": "第一个buff",
+        "description": "第一个buff的描述",
+        "icon": "buff",
+        "type": "negative",
+        "duration": 10000,
+        "effect": {
+            "energyCostRate": 1.1,
+            "hungryCostRate": 1.1
+        },
+        "maxStack": 10
+    }
+]
