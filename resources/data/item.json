@@ -1,170 +1,126 @@
 [
     {
         "id": 0,
-        "name": "汉堡",
+        "name": "曲奇饼",
         "type": "food",
-        "description": "汉堡",
-        "url": "burger",
-        "price": 200,
+        "description": "好吃的曲奇饼，在下一阶段前可以回复少量的精力和部分饱食度",
+        "url": "cookie",
+        "price": 20,
         "effect": {
             "hungry": 10,
-            "emotion": 10,
-            "energy": 10,
-            "health": 10
+            "energy": 3
         }
     },
     {
         "id": 1,
-        "name": "汉堡123",
+        "name": "甜甜圈",
         "type": "food",
-        "description": "汉堡123",
-        "url": "burger",
-        "price": 400,
+        "description": "Dass比较喜欢的食物之一，可以回复大量的饱食度。",
+        "url": "donut",
+        "price": 80,
         "effect": {
-            "hungry": 20,
-            "emotion": 20,
-            "energy": 20,
-            "health": 20
+            "hungry": 50
         }
     },
     {
         "id": 2,
-        "name": "汉堡1234",
-        "type": "drink",
-        "description": "汉堡1234",
-        "url": "burger",
-        "price": 4020,
+        "name": "小笼包",
+        "type": "food",
+        "description": "正宗的南翔小笼包，能让人全身充满力量，回复大量的饱食度",
+        "url": "buns",
+        "price": 200,
         "effect": {
-            "hungry": 20,
-            "emotion": 20,
-            "energy": 20,
-            "health": 20
+            "hungry": 140
         }
     },
     {
         "id": 3,
-        "name": "汉堡123444",
+        "name": "可乐",
         "type": "drink",
-        "description": "汉堡14423",
-        "url": "burger",
-        "price": 4002,
+        "description": "冰镇的可乐可以回复少量的心情。如果只想要回复心情，可乐会是一个非常棒的选择。",
+        "url": "colacoke",
+        "price": 10,
         "effect": {
-            "hungry": 20,
-            "emotion": 20,
-            "energy": 20,
-            "health": 20
+            "emotion": 3
         }
     },
     {
         "id": 4,
-        "name": "汉堡123444",
-        "type": "medicine",
-        "description": "汉堡144234",
-        "url": "burger",
-        "price": 4002,
+        "name": "西瓜酒",
+        "type": "drink",
+        "description": "西瓜酒可以回复大量的心情和少量的饱食度。在Dass心情不好的时候，来上一杯吧。",
+        "url": "watermelon-cocktail",
+        "price": 100,
         "effect": {
-            "hungry": 20,
-            "emotion": 20,
-            "energy": 20,
-            "health": 20
+            "hungry": 14,
+            "emotion": 27
         }
     },
     {
         "id": 5,
-        "name": "汉堡123444",
-        "type": "limit",
-        "description": "汉堡144234",
-        "url": "burger",
-        "price": 4002,
+        "name": "欧润橘汁",
+        "type": "drink",
+        "description": "听说这种饮品在回复心情的时候效果非常的棒！",
+        "url": "orange-juice",
+        "price": 50,
         "effect": {
-            "hungry": 20,
-            "emotion": 20,
-            "energy": 20,
-            "health": 20
+            "hungry": 4,
+            "emotion": 17
         }
     },
     {
         "id": 6,
-        "name": "汉堡123444",
-        "type": "limit",
-        "description": "汉堡144234",
-        "url": "burger",
-        "price": 4002,
+        "name": "药片",
+        "type": "medicine",
+        "description": "药片可以回复部分健康值",
+        "url": "tablets",
+        "price": 100,
         "effect": {
-            "hungry": 20,
-            "emotion": 20,
-            "energy": 20,
-            "health": 20
+            "health": 17
         }
     },
     {
         "id": 7,
-        "name": "汉堡123444",
-        "type": "limit",
-        "description": "汉堡144234",
-        "url": "burger",
-        "price": 4002,
+        "name": "扎一针",
+        "type": "medicine",
+        "description": "健康太低就来扎一针吧！见效快",
+        "url": "syringe",
+        "price": 400,
         "effect": {
-            "hungry": 20,
-            "emotion": 20,
-            "energy": 20,
-            "health": 20
+            "health": 80
         }
     },
     {
         "id": 8,
-        "name": "汉堡123444",
-        "type": "limit",
-        "description": "汉堡144234",
-        "url": "burger",
-        "price": 4002,
+        "name": "个人计算机",
+        "type": "gift",
+        "description": "或许你可以买一台PC，让黛丝开心",
+        "url": "desktop",
+        "price": 1000,
         "effect": {
-            "hungry": 20,
-            "emotion": 20,
-            "energy": 20,
-            "health": 20
+            "emotion": 350
         }
     },
     {
         "id": 9,
-        "name": "汉堡123444",
-        "type": "limit",
-        "description": "汉堡144234",
-        "url": "burger",
-        "price": 4002,
+        "name": "手提包",
+        "type": "gift",
+        "description": "没有人可以拒绝包包的诱惑",
+        "url": "hand-bag",
+        "price": 200,
         "effect": {
-            "hungry": 20,
-            "emotion": 20,
-            "energy": 20,
-            "health": 20
+            "emotion": 70
         }
     },
     {
         "id": 10,
-        "name": "汉堡123444",
-        "type": "limit",
-        "description": "汉堡144234",
-        "url": "burger",
-        "price": 4002,
+        "name": "帕梅拉帽",
+        "type": "gift",
+        "description": "来一顶吧",
+        "url": "pamela-hat",
+        "price": 100,
         "effect": {
-            "hungry": 20,
-            "emotion": 20,
-            "energy": 20,
-            "health": 20
-        }
-    },
-    {
-        "id": 11,
-        "name": "汉堡123444",
-        "type": "limit",
-        "description": "汉堡144234",
-        "url": "burger",
-        "price": 4002,
-        "effect": {
-            "hungry": 20,
-            "emotion": 20,
-            "energy": 20,
-            "health": 20
+            "emotion": 35
         }
     }
 ]
