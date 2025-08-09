@@ -143,6 +143,7 @@
       :show="isItemEnter"
       :popoverWidth="popoverWidth"
       :item="popoverItem!"
+      :isLocked="isItemLocked"
     />
     <!-- 商品购买弹出框 -->
     <ItemModal
@@ -297,9 +298,10 @@ const nextPage = () => {
   shopPageRef.value?.next();
 };
 
-
+const isItemLocked = ref(false);
 const handleItemPopover = (event: MouseEvent, item: Item) => {
   showItemPopover(event, item);
+  isItemLocked.value = !checkItemLocked(item.requirement);
 };
 
 // 物品购买弹出框相关

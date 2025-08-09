@@ -1,6 +1,18 @@
 import { Requirement } from "@/types/common";
 import { PetMateAttribute } from "@/types/petmate";
 
+const REQUIREMENT_MAP = {
+    level: "Lv.",
+    sing_level: "唱歌Lv.",
+    draw_level: "绘画Lv.",
+    game_level: "游戏Lv.",
+    affection_level: "亲密度Lv.",
+}
+
+export const convertRequirementText = (key: string) => {
+    return REQUIREMENT_MAP[key as keyof typeof REQUIREMENT_MAP]
+}
+
 /**
  * 检查是否会被禁止使用
  * @param requirement 活动条件
