@@ -392,7 +392,6 @@ onUnmounted(async () => {
     background-color: $system-bgc; // 全局系统背景色
     padding: 10px;
     box-sizing: border-box;
-    -webkit-app-region: drag;
 
     /* ==========================================
        聊天头部 - 标题区域
@@ -425,7 +424,6 @@ onUnmounted(async () => {
         flex-direction: column;
         gap: 15px; // 消息之间的间距
         box-shadow: 0 4px 24px 0 rgba(253, 203, 110, 0.15);
-        -webkit-app-region: no-drag;
 
         /* ==========================================
            自定义滚动条样式
@@ -776,7 +774,6 @@ onUnmounted(async () => {
         height: auto;
         min-height: 50px; // 最小可用高度
         flex-shrink: 0; // 防止底部收缩
-        -webkit-app-region: no-drag;
     }
 }
 
