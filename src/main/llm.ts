@@ -7,6 +7,7 @@ import { ChatCompletionStream } from 'openai/resources/chat/completions';
 import { v4 as uuidv4 } from 'uuid';
 import { WebSocket } from 'ws';
 import { getMainWindow } from './index';
+import { handleChatAchievement } from './modules/player/achieve';
 
 export interface ChatLLMConfig {
     model: string;
@@ -21,7 +22,7 @@ export interface TTSLLMConfig {
     parameters: TTSParameters;
 }
 
-export interface TTSVoice{
+export interface TTSVoice {
     name: string;
     voice: string;
     createdAt: Date;
@@ -289,7 +290,7 @@ function initChatHistoryMessages(): void {
  * @returns ChatLLM的配置
  */
 function getChatLLMConfig(): ChatLLMConfig {
-    const customConfig =  (store as any).get('chatLLMConfig') as ChatLLMConfig;
+    const customConfig = (store as any).get('chatLLMConfig') as ChatLLMConfig;
     if (!customConfig) {
         logger.info('[llm] 未找到自定义的ChatLLM配置，使用默认配置');
         setChatLLMConfig(DEFAULT_CHAT_LLM_CONFIG);
@@ -338,7 +339,7 @@ function getTTSVoiceList(limit: number = 5): TTSVoice[] {
     }
     // 从文件里读取的时间需要这样转换为对象，不然会报错
     customVoiceList.forEach((voice: TTSVoice) => {
-        if(voice.createdAt) {
+        if (voice.createdAt) {
             voice.createdAt = new Date(voice.createdAt);
         }
     })
@@ -677,6 +678,9 @@ async function chat(message: ChatMessage, sender: WebContents): Promise<void> {
             }
         }
         ttsWebsocket?.send(JSON.stringify(finishTaskMessage));
+
+        // 更新聊天成就
+        handleChatAchievement();
     } catch (error) {
         ttsTaskId = null;
         ttsStarted = false;
@@ -771,7 +775,7 @@ async function cloneVoice(url: string): Promise<string> {
     }
     try {
         const response = await axios.post(cloneUrl, data, { headers });
-        const voiceID:string = response.data.output.voice_id;
+        const voiceID: string = response.data.output.voice_id;
         return voiceID;
     } catch (error) {
         console.log(error);

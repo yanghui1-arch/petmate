@@ -3,10 +3,11 @@ import { PetMate } from "./petmate/petmate";
 import { v4 as uuidv4 } from 'uuid';
 import { PlayerInfo } from "../types/player";
 import logger from "../log";
-import { buffManager, itemManager, prefabWishManager } from "./store";
+import { buffManager, itemManager, prefabWishManager, playerManager } from "./store";
 import { Buff } from "../types/buff";
 import { Item } from "../types/item";
 import { NotFoundError } from "../error";
+import { handleFiftyAffectionAchievement } from "./player/achieve";
 
 type PlayerGiveItemEvent = {
     type: "item",
@@ -53,7 +54,7 @@ class WishHandler {
     /**
      * 更新愿望
      * 对于每一个可能可以完成愿望的操作而言，最后都应该尝试更新一下petmate的愿望，但不会同步到文件中，因此需要确保外部有同步文件的执行逻辑，否则可能导致数据丢失。
-     * 该方法只是判断愿望是否能够在发生事件后能否完成，并不会为玩家或者玩家所属的petmate给予任何奖励和经验加成等，因此还需要调用者调用WishHandler中的giveReward方法给予奖励
+     * 该方法只是判断愿望是否能够在发生事件后能否完成，并不会为玩家或者玩家所属的petmate给予任何奖励和经验加成等，因此还需要调用者调用WishHandler中的claimWishReward方法给予奖励
      * 原则上而言，只能同时最多传入一个事件而不可同时传入两个事件。如果不传入事件，则会将petmate.wishes中的愿望状态更新为失败，然后返回一个空的数组。
      * @param petmate 要更新愿望的petmate
      * @returns 完成的愿望数组
@@ -128,7 +129,7 @@ class WishHandler {
     /**
      * 手动领取奖励
      * 对于传入的finishedWish，首先判断其状态是否为finished，如果是，则会给予玩家和petmate奖励并将状态设置为claimed
-     * 该方法不会同步到文件中，因此需要确保外部有同步文件的执行逻辑，否则可能导致数据丢失。
+     * 该方法会同步到文件中
      * @param petmate 相关的petmate
      * @param player 玩家信息
      * @param wishId 要领取的愿望ID
@@ -191,6 +192,13 @@ class WishHandler {
         wish.status = "claimed";
         petmate.completedWishesNum++;
 
+        // 更新数据
+        playerManager.updatePetmate(petmate);
+        playerManager.updatePlayer(player);
+
+        // 更新好感度成就
+        handleFiftyAffectionAchievement(petmate.attrs.affection_exp);
+
         return true;
     }
 
@@ -213,64 +221,6 @@ class WishHandler {
         }
 
         return removedCount;
-    }
-
-    /**
-     * 给予奖励
-     * 对于传入的finishedWishes，首先判断其内的愿望是否已经完成，如果已经完成，则会给予玩家和玩家所属的petmate奖励
-     * 该方法不会同步到文件中，因此需要确保外部有同步文件的执行逻辑，否则可能导致数据丢失。
-     * @returns 是否成功给予奖励
-     * @throws 如果传入的finishedWishes中的愿望的奖励存在未找到的buff，则抛出NotFoundError
-     */
-
-    giveReward(petmate: PetMate, player: PlayerInfo, finishedWishes: Wish[]): boolean {
-      // Validate all wishes are finished
-      const hasUnfinishedWish = finishedWishes.some(wish => wish.status !== "finished");
-      if (hasUnfinishedWish) {
-          const unfinishedWish = finishedWishes.find(wish => wish.status !== "finished");
-          logger.error(`[modules/wish.ts/giveReward] 传入的finishedWishes中存在未完成的愿望: ${unfinishedWish?.name}`);
-          return false;
-      }
-
-      // 处理每一个wish
-      for (const wish of finishedWishes) {
-          petmate.addAffectionExp(wish.affectionExp);
-          if (wish.reward) {
-              if (wish.reward.type === "item") {
-                  const itemID: number = wish.reward.id;
-                  const rewardCount: number = wish.reward.count;
-
-                  // Check if item exists in player's inventory
-                  const existingItem = player.items.find(item => item.id === itemID);
-                  if (existingItem) {
-                      // 如果背包中存在这个物品，则将这个物品的数量增加
-                      existingItem.count += rewardCount;
-                  } else {
-                      // 如果背包中不存在这个物品，则将这个物品加入到背包中
-                      const rewardItem: Item | undefined = itemManager.getItem(itemID);
-                      if (!rewardItem) {
-                          logger.error(`[modules/wish.ts/giveReward] 传入的finishedWishes中的奖励存在未找到的物品: ${itemID} | 愿望的名字：${wish.name}`);
-                          return false;
-                      }
-                      player.items.push({
-                          id: itemID,
-                          name: rewardItem.name,
-                          type: rewardItem.type,
-                          description: rewardItem.description,
-                          url: rewardItem.url,
-                          count: rewardCount,
-                      });
-                  }
-              } else if (wish.reward.type === "buff") {
-                  const buff: Buff | undefined = buffManager.getBuff(wish.reward.id);
-                  if (!buff) {
-                      throw new NotFoundError(`[modules/wish.ts/giveReward] 传入的finishedWishes中的奖励存在未找到的buff: ${wish.reward.id} | 愿望的名字：${wish.name}`);
-                  }
-                  petmate.addBuff(buff);
-              }
-          }
-      }
-      return true;
     }
 }
 

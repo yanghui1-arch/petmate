@@ -20,6 +20,7 @@ import { wishHandler } from "../wish";
 import { Wish } from "../../types/wish";
 import { getMainWindow } from "../../../main";
 import { calcBuffEffect } from "../utils/calc";
+import { handleCharacterLevelAchievement, handleFiftyAffectionAchievement, handleEmotionAchievement } from "./achieve";
 
 /**
  * 购买物品
@@ -137,4 +138,11 @@ export function consumeItem(itemId: number, count: number = 1, petmateId: number
     // 同步文件中的数据
     playerManager.updatePetmate(petmate);
     playerManager.updatePlayer(player);
+
+    // 更新等级成就
+    handleCharacterLevelAchievement(petmate.attrs.level);
+    // 更新好感度成就
+    handleFiftyAffectionAchievement(petmate.attrs.affection_exp);
+    // 更新心情成就
+    handleEmotionAchievement(petmate.attrs.emotion);
 }
