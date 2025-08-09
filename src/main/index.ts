@@ -80,9 +80,10 @@ const createWindow = (): void => {
 app.whenReady().then(async () => {
     // init greenworks
     const initResult = greenworksManager.init()
+    const steamID: string = greenworksManager.getSteamInfo().steamId
 
     // init store
-    playerManager.initPlayer()
+    playerManager.initPlayer(steamID)
     activityManager.initActivity()
     buffManager.initBuff()
     itemManager.initItem()
@@ -105,8 +106,9 @@ app.whenReady().then(async () => {
             })
         }
         const steamInfo = greenworksManager.getSteamInfo()
+        console.log(steamInfo)
         console.log('Username:', steamInfo.screenName)
-        console.log('Steam ID:', steamInfo.steamId)
+        console.log('Steam ID:', steamInfo.steamId, "type", typeof steamInfo.steamId)
         playerManager.updateSteamInfo(steamInfo.steamId)
         console.log('Steam information saved to player manager')
     } catch (error) {

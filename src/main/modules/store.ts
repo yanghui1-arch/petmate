@@ -3,6 +3,7 @@
  */
 
 import Store from 'electron-store'
+import axios, { AxiosResponse } from 'axios'
 import { PetMate } from './petmate/petmate'
 import { notActivityPetmateStatus } from '../types/petmate'
 import { Item } from '../types/item'
@@ -18,6 +19,7 @@ import buffFilePath from '../../../resources/data/buff.json?commonjs-external&as
 import wishFilePath from '../../../resources/data/prefab_wish.json?commonjs-external&asset'
 import itemFilePath from '../../../resources/data/item.json?commonjs-external&asset'
 import { achieveFirstOpen } from './player/achieve';
+import logger from '../log';
 
 type PlayerStoreData = {
   playerInfo: PlayerInfo
@@ -37,6 +39,14 @@ type ItemStoreData = {
 
 type PrefabWishStoreData = {
   prefabWishInfo: PrefabWish[]
+}
+
+/**
+ * 服务器返回的数据，移除了code，message的字段
+ */
+interface ServerData {
+    playerInfo: PlayerInfo;
+    inventoryValue: number;
 }
 
 /**
@@ -80,12 +90,45 @@ class PlayerManager {
 
     /**
      * 从存储中加载玩家信息
+     * @param steamId 玩家的steamId
      */
-    private loadPlayer(): void {
+    private loadPlayer(steamId:string): void {
         const stored = (this.store as any).get('playerInfo') as PlayerInfo | undefined
         if (!stored) {
             // 先发http请求获取玩家信息
-            const result = null
+            const result = axios.post('http://petmate.fun/api/user/player_info_by_steamid', {
+                steamid: steamId
+            }).then((res: AxiosResponse) => {
+                const response = res.data;
+                const code = response.code;
+                if (code === 200) {
+                    const data: ServerData = response.data;
+                    this.currentPlayer = data.playerInfo;
+                    this.currentPlayer.cash = this.currentPlayer.cash + data.inventoryValue;
+                    const reconstructedPetmates: PetMate[] = this.currentPlayer.petmates.map((petmateData: any) => {
+                        // 根据petmate的类型创建对应的实例，目前只有Dass类型
+                        return new Dass(
+                            petmateData.id,
+                            petmateData.name,
+                            petmateData.attrs,
+                            petmateData.status,
+                            petmateData.wishes,
+                            petmateData.completedWishesNum
+                        )
+                    });
+                    this.currentPlayer = {
+                        ...this.currentPlayer,
+                        petmates: reconstructedPetmates
+                    }
+                    this.savePlayer();
+                    logger.info("从服务器获取玩家信息成功");
+                } else {
+                    logger.error("服务器返回非200的code");
+                    this.savePlayer();
+                }
+            }).catch((err) => {
+                logger.error(`获取steamID为${steamId}的玩家信息失败:${err}`)
+            })
             // 如果没有获取到，使用默认值
             // 注意：在此处不保存，在updateSteamInfo中保存默认值
             if (!result) {
@@ -119,10 +162,10 @@ class PlayerManager {
         (this.store as any).set('playerInfo', this.currentPlayer)
     }
 
-    initPlayer(): void {
+    initPlayer(steamID): void {
         if (this.isInit) return;
         this.isInit = true;
-        this.loadPlayer();
+        this.loadPlayer(steamID);
     }
 
     /**
