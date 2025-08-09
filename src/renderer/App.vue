@@ -5,6 +5,10 @@
 
       <router-view />
 
+      <div class="navigator-drawer" v-if="showNavigator" @click="activate('left')">
+          <n-image :src="navigatorIcon" width="28" height="28" preview-disabled class="clickable"/>
+      </div>
+
       <!-- 右上角关闭按钮 -->
       <div class="close-button-wrapper" v-if="showClosedButton">
         <div class="close-button">
@@ -12,7 +16,6 @@
         </div>
       </div>
 
-      <!-- <Home /> -->
       <Navigator v-model:active="active" :placement="placement" />
       <!-- 系统消息通知，在右下角弹出，最多同时显示2条 -->
       <n-notification-provider placement="bottom-right" :max="2">
@@ -42,13 +45,19 @@ import {
   messageModalTitle,
 } from "./hooks/useInteract";
 import { useSettings } from "./hooks/useSettings";
+import navigatorIcon from "./assets/image/navigator.png";
 
 // 根据路由的meta属性，决定是否显示关闭按钮，petmate页面不显示
 const route = useRoute();
 const showClosedButton = computed(() => !route.meta.hideClosedButton === true);
+const showNavigator = computed(() => !route.meta.hideNavigator === true);
 
 const active = ref(false);
 const placement = ref<DrawerPlacement>("right");
+const activate = (place: DrawerPlacement) => {
+  active.value = true;
+  placement.value = place;
+};
 
 // 全局玩家状态 - 在这里加载数据
 const { playerData, initPlayerData } = usePlayer();
@@ -129,12 +138,13 @@ const closeWin = () => {
   user-select: none;
 }
 
-.settings-drawer {
+.navigator-drawer {
   position: fixed;
-  top: 0;
-  left: 0;
+  top: 10px;
+  left: 10px;
+  z-index: 1001;
   cursor: pointer;
-  z-index: 1000;
+  z-index: 1001;
   transition: transform 0.3s ease;
 
   &:hover {
