@@ -121,7 +121,7 @@
               <div class="wish-detail-text">
                 <div class="wish-name">{{ checkWishInfo?.name }}</div>
                 <div class="wish-deadline">
-                  截止: {{ formatTime(checkWishInfo?.endTime) }}
+                  截止: {{ formatTime(checkWishInfo?.endTime ?? new Date()) }}
                 </div>
               </div>
             </div>
@@ -144,7 +144,7 @@
                     class="requirement-item"
                     :class="{ completed: progress.status === 'finished' }"
                   >
-                    <img :src="getImageURL(progress.src, 'activity', progress.type) ?? ''" class="requirement-icon" />
+                    <img :src="getImageURL(progress.src, 'activity') ?? ''" class="requirement-icon" />
                     <span class="requirement-name">{{ progress.name }}</span>
                     <div class="requirement-status">
                       <img
@@ -354,6 +354,10 @@ const isWishCompleted = computed(() => {
 
 // 处理奖励领取
 const handleClaimReward = async () => {
+  if (!checkWishInfo.value) {
+    openMessageModal("fail", "心愿不存在");
+    return;
+  }
   const success = await claimWishReward(
     currentPetmateID.value,
     checkWishInfo.value.id
