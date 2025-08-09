@@ -103,15 +103,15 @@
                       @mouseenter="handleItemPopover($event, item)"
                       @click="showModal(item)"
                     >
-                      <div class="special-label">
+                      <!-- <div class="special-label">
                         <i class="fold-label"></i>
                         <span class="label-text">7折</span>
-                      </div>
+                      </div> -->
                       <div class="item-name">{{ item.name }}</div>
                       <n-image
                         width="38"
                         class="item-image"
-                        :src="getImageURL(item.url, 'item') ?? ''"
+                        :src="getImageURL('item', item.url) ?? ''"
                         preview-disabled
                       />
                       <div class="item-price-wrapper">
