@@ -2,7 +2,7 @@ import { PetMate } from "../modules/petmate/petmate";
 import { ItemType } from "./item";
 
 export type PlayerInfo = {
-    steam_id?: string | null;
+    steamId?: string | null;
     name: string;
     qq?: string | null;
     petmates: Array<PetMate>;

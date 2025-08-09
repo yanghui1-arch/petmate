@@ -2,7 +2,7 @@ import { ItemType } from "./common";
 import { PetMate } from "./petmate";
 
 export interface PlayerInfo {
-    steam_id?: string | null;
+    steamId?: string | null;
     name: string;
     qq?: string | null;
     petmates: PetMate[];
