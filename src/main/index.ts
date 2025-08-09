@@ -6,7 +6,7 @@ import { saveChatHistoryMessages } from './llm'
 import { is } from '@electron-toolkit/utils'
 import { join } from 'path'
 import trayIcon from '../../resources/icon.png?asset'
-import { playerManager } from './modules/store'
+import { activityManager, buffManager, itemManager, playerManager, prefabWishManager } from './modules/store'
 import { greenworksManager } from './greenworks'
 
 app.commandLine.appendSwitch('--in-process-gpu')
@@ -78,8 +78,15 @@ const createWindow = (): void => {
 }
 
 app.whenReady().then(async () => {
-    // 初始化 Steam
-    const initResult = greenworksManager.init();
+    // init greenworks
+    const initResult = greenworksManager.init()
+
+    // init store
+    playerManager.initPlayer()
+    activityManager.initActivity()
+    buffManager.initBuff()
+    itemManager.initItem()
+    prefabWishManager.initPrefabWish()
 
     if (initResult === false) {
         app.quit()

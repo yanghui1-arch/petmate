@@ -53,12 +53,12 @@ class PlayerManager {
         cash: 500,
         items: []
     }
+    private isInit: boolean = false;
 
     constructor() {
         this.store = new Store<PlayerStoreData>({
             name: 'player-store'
         });
-        this.loadPlayer();
     }
 
 
@@ -117,6 +117,12 @@ class PlayerManager {
      */
     private savePlayer(): void {
         (this.store as any).set('playerInfo', this.currentPlayer)
+    }
+
+    initPlayer(): void {
+        if (this.isInit) return;
+        this.isInit = true;
+        this.loadPlayer();
     }
 
     /**
@@ -191,12 +197,18 @@ class PlayerManager {
 class ActivityManager {
     private store: Store<ActivityStoreData>
     private allActivities: ActivityInfo[] = []
+    private isInit: boolean = false;
 
     constructor() {
         this.store = new Store<ActivityStoreData>({
             name: 'activity-store'
         })
-        this.loadActivity()
+    }
+
+    initActivity(): void {
+        if (this.isInit) return;
+        this.isInit = true;
+        this.loadActivity();
     }
 
     loadActivity(): void {
@@ -232,12 +244,18 @@ class ActivityManager {
 class BuffManager {
     private store: Store<BuffStoreData>
     private buffs: Buff[] = []
+    private isInit: boolean = false;
 
     constructor() {
         this.store = new Store<BuffStoreData>({
             name: 'buff-store',
         })
-        this.loadBuff()
+    }
+
+    initBuff(): void {
+        if (this.isInit) return;
+        this.isInit = true;
+        this.loadBuff();
     }
 
     loadBuff(): void {
@@ -269,12 +287,18 @@ class BuffManager {
 class ItemManager {
     private store: Store<ItemStoreData>
     private items: Item[] = []
+    private isInit: boolean = false;
 
     constructor() {
         this.store = new Store<ItemStoreData>({
             name: 'item-store'
         })
-        this.loadItem()
+    }
+
+    initItem(): void {
+        if (this.isInit) return;
+        this.isInit = true;
+        this.loadItem();
     }
 
     loadItem(): void {
@@ -304,12 +328,18 @@ class ItemManager {
 class PrefabWishManager {
     private store: Store<PrefabWishStoreData>
     private prefabWishes: PrefabWish[] = []
+    private isInit: boolean = false;
 
     constructor() {
         this.store = new Store<PrefabWishStoreData>({
             name: 'prefab-wish-store'
         })
-        this.loadPrefabWish()
+    }
+
+    initPrefabWish(): void {
+        if (this.isInit) return;
+        this.isInit = true;
+        this.loadPrefabWish();
     }
 
     loadPrefabWish(): void {
