@@ -103,10 +103,10 @@
                       @mouseenter="handleItemPopover($event, item)"
                       @click="showModal(item)"
                     >
-                      <div class="special-label">
+                      <!-- <div class="special-label">
                         <i class="fold-label"></i>
                         <span class="label-text">7折</span>
-                      </div>
+                      </div> -->
                       <div class="item-name">{{ item.name }}</div>
                       <n-image
                         width="38"
