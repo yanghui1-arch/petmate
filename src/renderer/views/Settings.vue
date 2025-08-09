@@ -75,14 +75,12 @@ watch(modelMaxSize, async (newVal) => {
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
-  -webkit-app-region: drag;
   .settings-item {
     display: flex;
     background-color: $bg-white-300;
     width: 50%;
     border-radius: 10px;
     padding: 5px;
-    -webkit-app-region: no-drag;
     .settings-label {
       padding: 5px;
     }

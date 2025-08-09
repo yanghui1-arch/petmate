@@ -301,7 +301,6 @@
     align-items: center;
     z-index: 1000;
     outline: none;
-    -webkit-app-region: no-drag;
   }
 
   .radial-menu-container {

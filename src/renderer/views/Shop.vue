@@ -320,7 +320,6 @@ const showModal = (shopItem: Item) => {
   flex: 1;
   padding: 0 6%;
   background: #231e1f;
-  -webkit-app-region: drag;
   .shop-layout {
     width: 100%;
     height: 100%;
@@ -334,7 +333,6 @@ const showModal = (shopItem: Item) => {
     .shop-content-layout {
       position: relative;
       z-index: 10;
-      -webkit-app-region: no-drag;
     }
   }
 }
