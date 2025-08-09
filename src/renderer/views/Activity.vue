@@ -426,25 +426,25 @@ const activitySectionList = [
     id: 1,
     type: "study",
     name: "学习",
-    description: "Read interesting books with your pet.",
+    description: "每一篇鼓舞诗章，都是时代的远航",
   },
   {
     id: 2,
     type: "work",
     name: "工作",
-    description: "Create beautiful artwork together.",
+    description: "真正的工作，在于把每一份付出，都变成你未来版图上的一座新城。",
   },
   {
     id: 3,
     type: "play",
     name: "娱乐",
-    description: "Play interactive games.",
+    description: "休憩是为下一次伟大的远征积蓄最充沛的能量",
   },
   {
     id: 4,
     type: "empty",
     name: "empty",
-    description: "Learn programming together.",
+    description: "最有价值的活动，都在这里了",
   },
 ];
 
