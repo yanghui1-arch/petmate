@@ -1,80 +1,89 @@
 [
     {
-        "id": 1,
-        "type": "study",
-        "name": "学习",
-        "url": "study/activity-item-tmp",
-        "description": "学习知识1",
-        "rewardSummary": "获得大量经验",
+        "id": 0,
+        "type": "entertainment",
+        "name": "掌机游戏",
+        "url": "entertainment/game",
+        "description": "游戏是最好的放松方式",
+        "reward": {
+            "exp": 100,
+            "gameExp": 40,
+            "emotion": 26
+        },
+        "consume": {
+            "energy": 12,
+            "hungry": 30,
+            "spendingTime": 1500
+        },
         "requirement": {
             "level": 1,
-            "singLevel": 1,
-            "drawLevel": 1,
             "gameLevel": 1
+        },
+        "rewardSummary": "前期大量的心情、经验、游戏经验"
+    },
+    {
+        "id": 1,
+        "type": "study",
+        "name": "初学绘画",
+        "url": "study/draw-basic",
+        "description": "或许有一天，黛丝会成为一个画家",
+        "reward": {
+            "exp": 110,
+            "drawExp": 115
         },
         "consume": {
             "energy": 10,
-            "hungry": 10,
-            "health": 10,
-            "emotion": 10,
-            "cash": 10,
-            "spendingTime": 10
+            "hungry": 30,
+            "cash": 48,
+            "spendingTime": 1500
         },
-        "reward": {
-            "exp": 100,
-            "gameExp": 100
-        }
+        "requirement": {
+            "level": 1,
+            "drawLevel": 1
+        },
+        "rewardSummary": "前期大量的经验、绘画经验"
     },
     {
         "id": 2,
         "type": "study",
-        "name": "学习",
-        "url": "study/activity-item-tmp",
-        "description": "学习知识2",
-        "rewardSummary": "获得大量经验",
-        "requirement": {
-            "level": 2,
-            "singLevel": 1,
-            "drawLevel": 5,
-            "gameLevel": 1
+        "name": "练习吉他",
+        "url": "study/guitar",
+        "description": "悄悄的弹吉他...",
+        "reward": {
+            "exp": 110,
+            "singExp": 75
         },
         "consume": {
-            "energy": 10,
             "hungry": 10,
-            "health": 10,
-            "emotion": 10,
-            "cash": 10,
-            "spendingTime": 3200
+            "cash": 88,
+            "spendingTime": 1500
         },
-        "reward": {
-            "exp": 100,
-            "gameExp": 100
-        }
+        "requirement": {
+            "level": 1,
+            "drawLevel": 1
+        },
+        "rewardSummary": "前期大量的经验、绘画经验"
     },
     {
         "id": 3,
-        "type": "study",
-        "name": "学习",
-        "url": "study/activity-item-tmp",
-        "description": "学习知识3",
-        "rewardSummary": "获得大量经验",
-        "requirement": {
-            "level": 3,
-            "singLevel": 2,
-            "drawLevel": 2,
-            "gameLevel": 4
-        },
-        "consume": {
-            "energy": 10,
-            "hungry": 10,
-            "health": 10,
-            "emotion": 10,
-            "cash": 10,
-            "spendingTime": 3000
-        },
+        "type": "work",
+        "name": "兼职",
+        "url": "work/part-time",
+        "description": "总是得赚点钱的",
         "reward": {
             "exp": 100,
-            "gameExp": 100
-        }
+            "cash": 330
+        },
+        "consume": {
+            "hungry": 30,
+            "health": 10,
+            "emotion": 10,
+            "energy": 10,
+            "spendingTime": 3000
+        },
+        "requirement": {
+            "level": 1
+        },
+        "rewardSummary": "前期唯一的赚钱来源"
     }
 ]
