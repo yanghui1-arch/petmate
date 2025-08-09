@@ -79,34 +79,34 @@ const createWindow = (): void => {
 
 app.whenReady().then(async () => {
     // 初始化 Steam
-  const initResult = await greenworksManager.initialize(appId)
+    const initResult = greenworksManager.init();
 
-  if (initResult === false) {
-    app.quit()
-    return
-  }
-
-  // 更新玩家信息，添加Steam数据
-  try {
-    // 开发环境下，清除成就，用于测试
-    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-        greenworksManager.clearAchievement("ACH_FIRST_OPEN", () => { }, (err) => {
-            console.log("ACH_FIRST_OPEN clear failed:", err)
-        })
-        greenworksManager.clearAchievement("ACH_FIRST_CHAT", () => { }, (err) => {
-            console.log("ACH_FIRST_CHAT clear failed:", err)
-        })
+    if (initResult === false) {
+        app.quit()
+        return
     }
-    const steamInfo = greenworksManager.getSteamInfo()
-    console.log('Username:', steamInfo.screenName)
-    console.log('Steam ID:', steamInfo.steamId)
-    playerManager.updateSteamInfo(steamInfo.steamId)
-    console.log('Steam information saved to player manager')
-  } catch (error) {
-    console.log('Failed to save Steam information:', error)
-    app.quit()
-    return
-  }
+
+    // 更新玩家信息，添加Steam数据
+    try {
+        // 开发环境下，清除成就，用于测试
+        if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+            greenworksManager.clearAchievement("ACH_FIRST_OPEN", () => { }, (err) => {
+                console.log("ACH_FIRST_OPEN clear failed:", err)
+            })
+            greenworksManager.clearAchievement("ACH_FIRST_CHAT", () => { }, (err) => {
+                console.log("ACH_FIRST_CHAT clear failed:", err)
+            })
+        }
+        const steamInfo = greenworksManager.getSteamInfo()
+        console.log('Username:', steamInfo.screenName)
+        console.log('Steam ID:', steamInfo.steamId)
+        playerManager.updateSteamInfo(steamInfo.steamId)
+        console.log('Steam information saved to player manager')
+    } catch (error) {
+        console.log('Failed to save Steam information:', error)
+        app.quit()
+        return
+    }
 
     // 创建窗口
     createWindow()
