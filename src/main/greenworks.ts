@@ -1,53 +1,39 @@
 import greenworks from "greenworks";
+import logger from "./log";
+
+const appId = 3657100;
 
 class GreenworksManager {
-    private static instance: GreenworksManager;
     private isInitialized = false;
-    private appId: number | null = null;
     private steamInfo: any = null;
-
-    private constructor() { }
-
-    static getInstance(): GreenworksManager {
-        if (!GreenworksManager.instance) {
-            GreenworksManager.instance = new GreenworksManager();
-        }
-        return GreenworksManager.instance;
-    }
 
     /**
      * 初始化greenworks
      * @param appId 游戏appId
      * @returns 是否初始化成功
      */
-    async initialize(appId: number): Promise<boolean> {
+    init(): boolean {
         if (this.isInitialized) {
             return true;
         }
 
-        this.appId = appId;
-
         try {
-            // 根据appId判断是否需要重启
-            // restartAppIfNecessary 方法将查看游戏可执行文件是否通过 Steam 启动
-            const hasLaunchInSteam = greenworks.restartAppIfNecessary(appId);
-            // 如果游戏可执行文件已经通过 Steam 启动，则在外部关闭应用
-            if (hasLaunchInSteam) {
-                console.log("relaunch");
+            const launchWithoutUsingSteam = greenworks.restartAppIfNecessary(appId);
+            if (launchWithoutUsingSteam) {
+                logger.error("需要开启Steam启动Petmate")
                 return false;
             }
 
-            // 如果游戏没有通过 Steam 启动，则初始化 Steam
             if (greenworks.init()) {
                 this.steamInfo = greenworks.getSteamId();
                 this.isInitialized = true;
                 return true;
             } else {
-                console.error('Failed to initialize Steam');
+                logger.error('初始化greenworks失败');
                 return false;
             }
         } catch (error) {
-            console.error('Error initializing greenworks:', error);
+            logger.error('初始化greenworks失败:', error);
             return false;
         }
     }
@@ -67,16 +53,6 @@ class GreenworksManager {
      */
     isReady(): boolean {
         return this.isInitialized;
-    }
-
-    /**
-     * 获取原始的greenworks实例
-     */
-    getGreenworks() {
-        if (!this.isInitialized) {
-            throw new Error('Greenworks not initialized. Call initialize() first.');
-        }
-        return greenworks;
     }
 
     /**
@@ -156,5 +132,4 @@ class GreenworksManager {
     }
 }
 
-// 导出单例实例
-export const greenworksManager = GreenworksManager.getInstance();
+export const greenworksManager: GreenworksManager = new GreenworksManager();
