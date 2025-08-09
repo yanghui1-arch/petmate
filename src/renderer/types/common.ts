@@ -87,28 +87,28 @@ export interface Buff {
 
 export interface BuffEffect {
     // 经验获取相关
-    expGainRate: number;          // 经验获取倍率
-    gameExpGainRate: number;      // 游戏经验获取倍率
-    singExpGainRate: number;      // 唱歌经验获取倍率
-    drawExpGainRate: number;      // 画画经验获取倍率
-    affectionExpGainRate: number; // 亲密度经验获取倍率
+    expGainRate: number;            // 经验获取倍率
+    gameExpGainRate: number;        // 游戏经验获取倍率
+    singExpGainRate: number;        // 唱歌经验获取倍率
+    drawExpGainRate: number;        // 画画经验获取倍率
+    affectionExpGainRate: number;   // 亲密度经验获取倍率
 
     // 属性消耗相关
-    energyCostRate: number;       // 精力消耗倍率
-    hungryCostRate: number;       // 饱食度消耗倍率
-    healthCostRate: number;       // 健康消耗倍率
-    emotionCostRate: number;      // 心情消耗倍率
-    cashCostRate: number;         // 金币消耗倍率
+    energyCostRate: number;         // 精力消耗倍率
+    hungryCostRate: number;         // 饱食度消耗倍率
+    healthCostRate: number;         // 健康消耗倍率
+    emotionCostRate: number;        // 心情消耗倍率
+    cashCostRate: number;           // 金币消耗倍率
 
     // 属性获取相关
-    energyGainRate: number;       // 精力恢复倍率
-    hungryGainRate: number;       // 饱食度恢复倍率
-    healthGainRate: number;       // 健康恢复倍率
-    emotionGainRate: number;      // 心情恢复倍率
+    energyGainRate: number;         // 精力恢复倍率
+    hungryGainRate: number;         // 饱食度恢复倍率
+    healthGainRate: number;         // 健康恢复倍率
+    emotionGainRate: number;        // 心情恢复倍率
 
     // 其他效果
-    spendingTimeRate: number;           // 消耗时间倍率
-    cashGainRate: number;               // 金币获取倍率
+    spendingTimeRate: number;       // 消耗时间倍率
+    cashGainRate: number;           // 金币获取倍率
 }
 
 export interface ActiveBuff {
@@ -145,11 +145,11 @@ export interface Reward {
 }
 
 export interface Consume {
-    energy: number;
-    hungry: number;
-    health: number;
-    emotion: number;
-    cash: number;
+    energy?: number;
+    hungry?: number;
+    health?: number;
+    emotion?: number;
+    cash?: number;
     spendingTime: number; // seconds
 }
 
