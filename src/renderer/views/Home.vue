@@ -34,7 +34,7 @@
                       :key="'buff-icon-' + buffItem.buff.id"
                       @mouseenter="handleBuffPopover($event, buffItem, index)">
                     <n-image
-                      :src="getImageURL(buffItem.buff.icon, 'buff') ?? ''"
+                      :src="getImageURL('buff', buffItem.buff.icon) ?? ''"
                       width="16"
                       height="16"
                       preview-disabled
