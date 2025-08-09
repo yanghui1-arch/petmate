@@ -4,8 +4,8 @@
  */
 export interface Requirement {
     level?: number,
-    sing_level?: number,
-    draw_level?: number,
-    game_level?: number,
-    affection_level?: number,
+    singLevel?: number,
+    drawLevel?: number,
+    gameLevel?: number,
+    affectionLevel?: number,
 }
