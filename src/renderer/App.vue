@@ -12,7 +12,7 @@
       <!-- 右上角关闭按钮 -->
       <div class="close-button-wrapper" v-if="showClosedButton">
         <div class="close-button">
-          <span class="close-icon" @click="closeWin" style="-webkit-app-region: no-drag;">×</span>
+          <span class="close-icon" @click="closeWin">×</span>
         </div>
       </div>
 
