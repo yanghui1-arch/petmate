@@ -58,7 +58,7 @@ class PlayerManager {
     private currentPlayer: PlayerInfo = {
         name: '主人',
         petmates: [new Dass(0, 'Dass', DEFAULT_DASS_ATTRIBUTE, notActivityPetmateStatus, [], 0)],
-        steam_id: null,
+        steamId: null,
         qq: null,
         cash: 500,
         items: []
@@ -80,10 +80,10 @@ class PlayerManager {
      * @param steamId Steam ID
      */
     updateSteamInfo(steamId: string): void {
-        if (this.currentPlayer.steam_id === null || this.currentPlayer.steam_id !== steamId) {
+        if (this.currentPlayer.steamId === null || this.currentPlayer.steamId !== steamId) {
             // 达成初见成就
             achieveFirstOpen();
-            this.currentPlayer.steam_id = steamId;
+            this.currentPlayer.steamId = steamId;
             this.savePlayer();
         }
     }
