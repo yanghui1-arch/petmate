@@ -12,10 +12,10 @@ export interface Item {
 }
 
 export interface ItemEffect {
-    hungry: number,
-    emotion: number,
-    energy: number,
-    health: number,
+    hungry?: number,
+    emotion?: number,
+    energy?: number,
+    health?: number,
     exp?: number,
     gameExp?: number,
     singExp?: number,
