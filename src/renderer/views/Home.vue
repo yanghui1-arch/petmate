@@ -38,7 +38,7 @@
                       width="16"
                       height="16"
                       preview-disabled
-                      
+
                     />
                   </div>
                 </div>
@@ -49,28 +49,28 @@
                 <!-- <AttributeBar :value="hp" color="#ff9812" /> -->
                 <AttributeBar
                   :value="petmateAttribute?.hungry ?? 0"
-                  :max="petmateAttribute?.max_hungry ?? 100"
+                  :max="petmateAttribute?.maxHungry ?? 100"
                 />
               </div>
               <div class="attribute-item">
                 <span>精力</span>
                 <AttributeBar
                   :value="petmateAttribute?.energy ?? 0"
-                  :max="petmateAttribute?.max_energy ?? 100"
+                  :max="petmateAttribute?.maxEnergy ?? 100"
                 />
               </div>
               <div class="attribute-item">
                 <span>心情</span>
                 <AttributeBar
                   :value="petmateAttribute?.emotion ?? 0"
-                  :max="petmateAttribute?.max_emotion ?? 100"
+                  :max="petmateAttribute?.maxEmotion ?? 100"
                 />
               </div>
               <div class="attribute-item">
                 <span>健康</span>
                 <AttributeBar
                   :value="petmateAttribute?.health ?? 0"
-                  :max="petmateAttribute?.max_health ?? 100"
+                  :max="petmateAttribute?.maxHealth ?? 100"
                 />
               </div>
             </div>
@@ -80,7 +80,7 @@
               :value="exp"
               color="#e28fac"
               :width="'100%'"
-              :max="petmateAttribute?.next_exp ?? 100"
+              :max="petmateAttribute?.nextExp ?? 100"
             />
           </div>
         </div>

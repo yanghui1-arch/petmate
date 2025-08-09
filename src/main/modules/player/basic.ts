@@ -142,7 +142,7 @@ export function consumeItem(itemId: number, count: number = 1, petmateId: number
     // 更新等级成就
     handleCharacterLevelAchievement(petmate.attrs.level);
     // 更新好感度成就
-    handleFiftyAffectionAchievement(petmate.attrs.affection_exp);
+    handleFiftyAffectionAchievement(petmate.attrs.affectionExp);
     // 更新心情成就
     handleEmotionAchievement(petmate.attrs.emotion);
 }

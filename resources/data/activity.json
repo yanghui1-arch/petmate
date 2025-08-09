@@ -8,9 +8,9 @@
         "rewardSummary": "获得大量经验",
         "requirement": {
             "level": 1,
-            "sing_level": 1,
-            "draw_level": 1,
-            "game_level": 1
+            "singLevel": 1,
+            "drawLevel": 1,
+            "gameLevel": 1
         },
         "consume": {
             "energy": 10,
@@ -34,9 +34,9 @@
         "rewardSummary": "获得大量经验",
         "requirement": {
             "level": 2,
-            "sing_level": 1,
-            "draw_level": 5,
-            "game_level": 1
+            "singLevel": 1,
+            "drawLevel": 5,
+            "gameLevel": 1
         },
         "consume": {
             "energy": 10,
@@ -60,9 +60,9 @@
         "rewardSummary": "获得大量经验",
         "requirement": {
             "level": 3,
-            "sing_level": 2,
-            "draw_level": 2,
-            "game_level": 4
+            "singLevel": 2,
+            "drawLevel": 2,
+            "gameLevel": 4
         },
         "consume": {
             "energy": 10,

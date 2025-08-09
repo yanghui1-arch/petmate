@@ -27,7 +27,7 @@
               {{ currentActivePetmate?.name ?? "Dass" }}
             </div>
             <div class="affection-level">
-              好感 LV. {{ petmateAttribute?.affection_level ?? -1 }}
+              好感 LV. {{ petmateAttribute?.affectionLevel ?? -1 }}
             </div>
             <div class="affection-progress">
               <n-progress
@@ -40,8 +40,8 @@
                 processing
               />
               <div class="progress-text">
-                {{ petmateAttribute?.affection_exp ?? -1 }} /
-                {{ petmateAttribute?.affection_next_exp ?? -1 }}
+                {{ petmateAttribute?.affectionExp ?? -1 }} /
+                {{ petmateAttribute?.affectionNextExp ?? -1 }}
               </div>
             </div>
           </div>
@@ -292,8 +292,8 @@ const progressWishNum = computed(() => {
 
 // 计算好感度进度百分比
 const affectionProgressPercent = computed(() => {
-  const affectionExp = petmateAttribute.value?.affection_exp ?? -1;
-  const nextAffectionExp = petmateAttribute.value?.affection_next_exp ?? -1;
+  const affectionExp = petmateAttribute.value?.affectionExp ?? -1;
+  const nextAffectionExp = petmateAttribute.value?.affectionNextExp ?? -1;
   if (nextAffectionExp <= 0) return 0;
   return Math.round((affectionExp / nextAffectionExp) * 100);
 });

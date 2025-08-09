@@ -197,7 +197,7 @@ class WishHandler {
         playerManager.updatePlayer(player);
 
         // 更新好感度成就
-        handleFiftyAffectionAchievement(petmate.attrs.affection_exp);
+        handleFiftyAffectionAchievement(petmate.attrs.affectionExp);
 
         return true;
     }

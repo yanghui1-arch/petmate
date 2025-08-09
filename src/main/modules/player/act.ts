@@ -144,7 +144,7 @@ export function claimActivityReward(petmateId: number): boolean {
 
     // 尝试获取buff
     const toPickBuffs: Buff[] = getBuffThroughAct(petmate);
-    const validToPickBuffsNum: number = petmate.attrs.max_buffs - petmate.getActiveBuffs().length;
+    const validToPickBuffsNum: number = petmate.attrs.maxBuffs - petmate.getActiveBuffs().length;
     const validToPickBuffs: Buff[] = toPickBuffs.slice(0, validToPickBuffsNum);
     const newBuffs: ActiveBuff[] | undefined = petmate.addBuffs(validToPickBuffs);
 
@@ -180,7 +180,7 @@ export function claimActivityReward(petmateId: number): boolean {
     // 更新等级成就
     handleCharacterLevelAchievement(petmate.attrs.level);
     // 更新好感度成就
-    handleFiftyAffectionAchievement(petmate.attrs.affection_exp);
+    handleFiftyAffectionAchievement(petmate.attrs.affectionExp);
     // 更新心情成就
     handleEmotionAchievement(petmate.attrs.emotion);
     return true;

@@ -10,10 +10,10 @@ const ACTIVITY_MAP = {
     drawExp: "绘画经验",
     affectionExp: "亲密度经验",
     level: "Lv.",
-    sing_level: "唱歌Lv.",
-    draw_level: "绘画Lv.",
-    game_level: "游戏Lv.",
-    affection_level: "亲密度Lv.",
+    singLevel: "唱歌Lv.",
+    drawLevel: "绘画Lv.",
+    gameLevel: "游戏Lv.",
+    affectionLevel: "亲密度Lv.",
 }
 
 /**
