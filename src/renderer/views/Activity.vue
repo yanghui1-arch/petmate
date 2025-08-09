@@ -436,7 +436,7 @@ const activitySectionList = [
   },
   {
     id: 3,
-    type: "play",
+    type: "entertainment",
     name: "娱乐",
     description: "休憩是为下一次伟大的远征积蓄最充沛的能量",
   },
@@ -682,7 +682,7 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
   }
 
   &.activity-theme-work,
-  &.activity-theme-play {
+  &.activity-theme-entertainment {
     background: linear-gradient(
       135deg,
       rgba(250, 84, 28, 0.15) 0%,
@@ -745,7 +745,7 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
           mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20,6C20.58,6 21.05,6.2 21.42,6.59C21.8,7 22,7.45 22,8V19C22,19.55 21.8,20 21.42,20.41C21.05,20.8 20.58,21 20,21H4C3.42,21 2.95,20.8 2.58,20.41C2.2,20 2,19.55 2,19V8C2,7.45 2.2,7 2.58,6.59C2.95,6.2 3.42,6 4,6H8V4C8,3.42 8.2,2.95 8.58,2.58C8.95,2.2 9.42,2 10,2H14C14.58,2 15.05,2.2 15.42,2.58C15.8,2.95 16,3.42 16,4V6H20M4,8V19H20V8H4M14,6V4H10V6H14Z'/%3E%3C/svg%3E");
         }
 
-        &.play::before {
+        &.entertainment::before {
           mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21,6H3A2,2 0 0,0 1,8V16A2,2 0 0,0 3,18H21A2,2 0 0,0 23,16V8A2,2 0 0,0 21,6M21,16H3V8H21M6,15H8V13H10V11H8V9H6V11H4V13H6M14.5,12A1.5,1.5 0 0,1 16,13.5A1.5,1.5 0 0,1 14.5,15A1.5,1.5 0 0,1 13,13.5A1.5,1.5 0 0,1 14.5,12M18.5,9A1.5,1.5 0 0,1 20,10.5A1.5,1.5 0 0,1 18.5,12A1.5,1.5 0 0,1 17,10.5A1.5,1.5 0 0,1 18.5,9Z'/%3E%3C/svg%3E");
         }
       }
