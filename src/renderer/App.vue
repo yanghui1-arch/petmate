@@ -143,7 +143,6 @@ const closeWin = () => {
   top: 10px;
   left: 10px;
   z-index: 1001;
-  cursor: pointer;
   z-index: 1001;
   transition: transform 0.3s ease;
 
