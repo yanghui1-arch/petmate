@@ -111,7 +111,7 @@
                       <n-image
                         width="38"
                         class="item-image"
-                        :src="item.url"
+                        :src="getImageURL(item.url, 'item') ?? ''"
                         preview-disabled
                       />
                       <div class="item-price-wrapper">
@@ -170,7 +170,7 @@ import { executeItemPage } from "../utils/item";
 import { checkLocked } from "../utils/check";
 
 const { playerData } = usePlayer();
-const { getShopItems } = useShow();
+const { getShopItems, getImageURL } = useShow();
 
 // Petmate相关
 const currentPetmateID = ref(0);

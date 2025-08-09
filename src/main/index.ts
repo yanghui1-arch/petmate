@@ -6,9 +6,16 @@ import { saveChatHistoryMessages } from './llm'
 import { is } from '@electron-toolkit/utils'
 import { join } from 'path'
 import trayIcon from '../../resources/icon.png?asset'
+import { activityManager, buffManager, itemManager, playerManager, prefabWishManager } from './modules/store'
+import { greenworksManager } from './greenworks'
+
+app.commandLine.appendSwitch('--in-process-gpu')
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+
+// 游戏在 steam 中的 应用id
+const appId = 3657100
 
 const createWindow = (): void => {
     const { width, height } = screen.getPrimaryDisplay().bounds
@@ -70,7 +77,47 @@ const createWindow = (): void => {
     tray.setToolTip('Petmate')
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+    // init greenworks
+    const initResult = greenworksManager.init()
+    const steamID: string = greenworksManager.getSteamInfo().steamId
+
+    // init store
+    playerManager.initPlayer(steamID)
+    activityManager.initActivity()
+    buffManager.initBuff()
+    itemManager.initItem()
+    prefabWishManager.initPrefabWish()
+
+    if (initResult === false) {
+        app.quit()
+        return
+    }
+
+    // 更新玩家信息，添加Steam数据
+    try {
+        // 开发环境下，清除成就，用于测试
+        if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+            greenworksManager.clearAchievement("ACH_FIRST_OPEN", () => { }, (err) => {
+                console.log("ACH_FIRST_OPEN clear failed:", err)
+            })
+            greenworksManager.clearAchievement("ACH_FIRST_CHAT", () => { }, (err) => {
+                console.log("ACH_FIRST_CHAT clear failed:", err)
+            })
+        }
+        const steamInfo = greenworksManager.getSteamInfo()
+        console.log(steamInfo)
+        console.log('Username:', steamInfo.screenName)
+        console.log('Steam ID:', steamInfo.steamId, "type", typeof steamInfo.steamId)
+        playerManager.updateSteamInfo(steamInfo.steamId)
+        console.log('Steam information saved to player manager')
+    } catch (error) {
+        console.log('Failed to save Steam information:', error)
+        app.quit()
+        return
+    }
+
+    // 创建窗口
     createWindow()
     startWishGeneration(0)
 

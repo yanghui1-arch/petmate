@@ -571,15 +571,17 @@ ipcMain.handle("claim-wish-reward", (_: IpcMainInvokeEvent, petmateId: number, w
         }
 
         const success = wishHandler.claimWishReward(petmate, player, wishId);
-
-        // 更新数据
-        playerManager.updatePetmate(petmate);
-        playerManager.updatePlayer(player);
-
-        return {
-            code: 200,
-            data: success
-        } as Response<boolean>;
+        if (success) {
+            return {
+                code: 200,
+                data: success
+            } as Response<boolean>;
+        } else {
+            return {
+                code: 400,
+                message: "领取心愿奖励失败"
+            } as Response<boolean>;
+        }
     } catch (error) {
         logger.error(`领取心愿奖励失败: ${error}`);
         return {

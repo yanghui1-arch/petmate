@@ -4,7 +4,7 @@
  * 【如何判断是否是基本操作】
  *  1. 这个基本操作需要涉及到1~2个复杂的需要因此封装的步骤
  *  2. 不存在复杂的逻辑运算
- * 
+ *
  * 目前包括但不限于以下操作，若有遗漏，请添加。
  * 商品系列：1. 购买商品 2. 使用物品
  * 卡片系列：1. 获得卡片
@@ -19,11 +19,13 @@ import { Buff } from "../../types/buff";
 import { wishHandler } from "../wish";
 import { Wish } from "../../types/wish";
 import { getMainWindow } from "../../../main";
+import { calcBuffEffect } from "../utils/calc";
+import { handleCharacterLevelAchievement, handleFiftyAffectionAchievement, handleEmotionAchievement } from "./achieve";
 
 /**
  * 购买物品
  * Buff的CashConsumesRate不会影响到商品的价格
- * 
+ *
  * @param itemId 物品id
  * @param count 购买数量
  * @returns 购买的物品
@@ -60,6 +62,7 @@ export function buyItem(itemId: number, count: number): Item {
 
 /**
  * 使用物品
+ * 物品的计算奖励方式是会根据现有的Petmate的buff进行结算的
  * @param itemId 物品id
  * @param count 使用数量
  * @param petmateId petmate的id
@@ -91,16 +94,17 @@ export function consumeItem(itemId: number, count: number = 1, petmateId: number
         throw new NotFoundError(`物品不存在: ${itemId}`);
     }
 
-    petmate.updateHungry(item.effect.hungry * count);
-    petmate.updateEmotion(item.effect.emotion * count);
-    petmate.updateEnergy(item.effect.energy * count);
-    petmate.updateHealth(item.effect.health * count);
+    petmate.updateHungry((item.effect.hungry ?? 0) * count);
+    petmate.updateEmotion((item.effect.emotion ?? 0) * count);
+    petmate.updateEnergy((item.effect.energy ?? 0) * count);
+    petmate.updateHealth((item.effect.health ?? 0) * count);
 
-    petmate.addExp(item.effect.exp ?? 0 * count);
-    petmate.addGameExp(item.effect.gameExp ?? 0 * count);
-    petmate.addSingExp(item.effect.singExp ?? 0 * count);
-    petmate.addDrawExp(item.effect.drawExp ?? 0 * count);
-    petmate.addAffectionExp(item.effect.affectionExp ?? 0 * count);
+    petmate.addExp((item.effect.exp ?? 0) * count);
+    petmate.addGameExp((item.effect.gameExp ?? 0) * count);
+    petmate.addSingExp((item.effect.singExp ?? 0) * count);
+    petmate.addDrawExp((item.effect.drawExp ?? 0) * count);
+    petmate.addAffectionExp((item.effect.affectionExp ?? 0) * count);
+    player.cash += ((item.effect.cash ?? 0) * calcBuffEffect(petmate.attrs.buffs).cashGainRate) * count;
 
     const toAddBuff: Buff | undefined = item.effect.buff;
     if (toAddBuff) {
@@ -134,4 +138,11 @@ export function consumeItem(itemId: number, count: number = 1, petmateId: number
     // 同步文件中的数据
     playerManager.updatePetmate(petmate);
     playerManager.updatePlayer(player);
+
+    // 更新等级成就
+    handleCharacterLevelAchievement(petmate.attrs.level);
+    // 更新好感度成就
+    handleFiftyAffectionAchievement(petmate.attrs.affectionExp);
+    // 更新心情成就
+    handleEmotionAchievement(petmate.attrs.emotion);
 }

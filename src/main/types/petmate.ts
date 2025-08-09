@@ -5,19 +5,19 @@ export type PetMateAttribute = {
     // 所有等级
     level: number,
     exp: number,
-    next_exp: number,
-    game_level: number,
-    game_exp: number,
-    game_next_exp: number,
-    sing_level: number,
-    sing_exp: number,
-    sing_next_exp: number,
-    draw_level: number,
-    draw_exp: number,
-    draw_next_exp: number,
-    affection_level: number,
-    affection_exp: number,
-    affection_next_exp: number,
+    nextExp: number,
+    gameLevel: number,
+    gameExp: number,
+    gameNextExp: number,
+    singLevel: number,
+    singExp: number,
+    singNextExp: number,
+    drawLevel: number,
+    drawExp: number,
+    drawNextExp: number,
+    affectionLevel: number,
+    affectionExp: number,
+    affectionNextExp: number,
 
     // 所有属性
     hungry: number,
@@ -25,13 +25,13 @@ export type PetMateAttribute = {
     energy: number,
     health: number,
 
-    max_hungry: number,
-    max_emotion: number,
-    max_energy: number,
-    max_health: number,
+    maxHungry: number,
+    maxEmotion: number,
+    maxEnergy: number,
+    maxHealth: number,
 
     buffs: ActiveBuff[],
-    max_buffs: number
+    maxBuffs: number
 }
 
 export type PetMateStatus = {

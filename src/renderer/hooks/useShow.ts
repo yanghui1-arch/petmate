@@ -137,12 +137,34 @@ export function useShow() {
         }
     }
 
+    /**
+     * 根据资源名称获取资源路径，使用new URL方法，动态引入资源文件，在打包时，会自动将资源文件打包到打包结果中
+     * @param name 资源名称，不带后缀，目前是图片，后缀为webp
+     * @param viewType 资源所属类型，如item、buff、activity
+     * @returns 资源路径
+     */
+    const getImageURL = (name: string, viewType: string) => {
+        try {
+            const imagePrefix = `../assets/image/${viewType}`
+            const pathname = new URL(`${imagePrefix}/${name}.webp`, import.meta.url).pathname
+            if(pathname.includes("undefined")) {
+                console.log("图片路径不存在", name)
+                return null
+            }
+            return pathname
+        } catch {
+            console.log("获取图片失败", name)
+            return null
+        }
+    }
+
     return {
         getPetmateCompletedWishesNum,
         getShopItems,
         getItemInfo,
         getActivities,
         getPetmateOneWish,
-        getLLMConfig
+        getLLMConfig,
+        getImageURL
     }
 }

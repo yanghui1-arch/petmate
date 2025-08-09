@@ -13,10 +13,10 @@ export interface Item {
 }
 
 export interface ItemEffect {
-    hungry: number,
-    emotion: number,
-    energy: number,
-    health: number,
+    hungry?: number,
+    emotion?: number,
+    energy?: number,
+    health?: number,
     exp?: number,
     gameExp?: number,
     singExp?: number,
@@ -58,10 +58,14 @@ export type WishRequirement = {
 export type WishReward = {
     type: "item",
     id: number,
+    name: string,
+    src: string,
     count: number,
 } | {
     type: "buff",
-    id: number
+    id: number,
+    name: string,
+    src: string,
 }
 
 /**
@@ -151,8 +155,8 @@ export interface Consume {
 
 export interface Requirement {
     level?: number,
-    sing_level?: number,
-    draw_level?: number,
-    game_level?: number,
-    affection_level?: number,
+    singLevel?: number,
+    drawLevel?: number,
+    gameLevel?: number,
+    affectionLevel?: number,
 }

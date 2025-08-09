@@ -9,6 +9,7 @@ import { notActivityPetmateStatus } from "../../types/petmate";
 import { GET_BUFF_NUM_THROUGH_ACT, GET_BUFF_PROB_THROUGH_ACT, RETRY_TIMES_GET_BUFF_THROUGH_ACT } from "../../constant";
 import { wishHandler } from "../wish";
 import { Wish } from "../../types/wish";
+import { handleEntertainmentAchievement, handleCharacterLevelAchievement, handleFiftyAffectionAchievement, handleEmotionAchievement } from "./achieve";
 import { getMainWindow } from "../../../main";
 
 /**
@@ -56,6 +57,9 @@ export function startActivity(petmateId: number, activityId: number) {
 
         // 同步文件中的数据
         playerManager.updatePetmate(petmate);
+
+        // 更新心情成就
+        handleEmotionAchievement(petmate.attrs.emotion);
     } catch (error) {
         if (error instanceof NotEnoughError) {
             throw new NotEnoughError(`${error.message}`);
@@ -136,11 +140,11 @@ export function claimActivityReward(petmateId: number): boolean {
     petmate.addSingExp(reward.singExp ?? 0);
     petmate.addDrawExp(reward.drawExp ?? 0);
     petmate.addAffectionExp(reward.affectionExp ?? 0);
-    playerManager.updateCash(reward.cash ?? 0 * buffEffect.cashGainRate);
+    playerManager.updateCash((reward.cash ?? 0) * buffEffect.cashGainRate);
 
     // 尝试获取buff
     const toPickBuffs: Buff[] = getBuffThroughAct(petmate);
-    const validToPickBuffsNum: number = petmate.attrs.max_buffs - petmate.getActiveBuffs().length;
+    const validToPickBuffsNum: number = petmate.attrs.maxBuffs - petmate.getActiveBuffs().length;
     const validToPickBuffs: Buff[] = toPickBuffs.slice(0, validToPickBuffsNum);
     const newBuffs: ActiveBuff[] | undefined = petmate.addBuffs(validToPickBuffs);
 
@@ -168,6 +172,17 @@ export function claimActivityReward(petmateId: number): boolean {
     // 同步文件中的数据
     playerManager.updatePetmate(petmate);
     playerManager.updatePlayer(player);
+
+    // 更新娱乐成就
+    if (activity.type === "entertainment") {
+        handleEntertainmentAchievement();
+    }
+    // 更新等级成就
+    handleCharacterLevelAchievement(petmate.attrs.level);
+    // 更新好感度成就
+    handleFiftyAffectionAchievement(petmate.attrs.affectionExp);
+    // 更新心情成就
+    handleEmotionAchievement(petmate.attrs.emotion);
     return true;
 }
 

@@ -3,6 +3,7 @@
  */
 
 import Store from 'electron-store'
+import axios, { AxiosResponse } from 'axios'
 import { PetMate } from './petmate/petmate'
 import { notActivityPetmateStatus } from '../types/petmate'
 import { Item } from '../types/item'
@@ -17,6 +18,8 @@ import activityFilePath from '../../../resources/data/activity.json?commonjs-ext
 import buffFilePath from '../../../resources/data/buff.json?commonjs-external&asset'
 import wishFilePath from '../../../resources/data/prefab_wish.json?commonjs-external&asset'
 import itemFilePath from '../../../resources/data/item.json?commonjs-external&asset'
+import { achieveFirstOpen } from './player/achieve';
+import logger from '../log';
 
 type PlayerStoreData = {
   playerInfo: PlayerInfo
@@ -39,6 +42,14 @@ type PrefabWishStoreData = {
 }
 
 /**
+ * 服务器返回的数据，移除了code，message的字段
+ */
+interface ServerData {
+    playerInfo: PlayerInfo;
+    inventoryValue: number;
+}
+
+/**
  * 玩家信息管理器
  * 负责玩家信息的读取、更新和持久化
  */
@@ -52,25 +63,76 @@ class PlayerManager {
         cash: 500,
         items: []
     }
+    private isInit: boolean = false;
 
     constructor() {
         this.store = new Store<PlayerStoreData>({
             name: 'player-store'
-        })
-        this.loadPlayer()
+        });
+    }
+
+
+    /**
+     * 更新Steam信息
+     * 如果Steam信息为空，保存默认值
+     * 如果Steam信息没有变化，则不保存
+     * 如果Steam信息发生了变化，则保存新值
+     * @param steamId Steam ID
+     */
+    updateSteamInfo(steamId: string): void {
+        if (this.currentPlayer.steam_id === null || this.currentPlayer.steam_id !== steamId) {
+            // 达成初见成就
+            achieveFirstOpen();
+            this.currentPlayer.steam_id = steamId;
+            this.savePlayer();
+        }
     }
 
     /**
      * 从存储中加载玩家信息
+     * @param steamId 玩家的steamId
      */
-    private loadPlayer(): void {
+    private loadPlayer(steamId:string): void {
         const stored = (this.store as any).get('playerInfo') as PlayerInfo | undefined
         if (!stored) {
             // 先发http请求获取玩家信息
-            const result = null
+            const result = axios.post('http://petmate.fun/api/user/player_info_by_steamid', {
+                steamid: steamId
+            }).then((res: AxiosResponse) => {
+                const response = res.data;
+                const code = response.code;
+                if (code === 200) {
+                    const data: ServerData = response.data;
+                    this.currentPlayer = data.playerInfo;
+                    this.currentPlayer.cash = this.currentPlayer.cash + data.inventoryValue;
+                    const reconstructedPetmates: PetMate[] = this.currentPlayer.petmates.map((petmateData: any) => {
+                        // 根据petmate的类型创建对应的实例，目前只有Dass类型
+                        return new Dass(
+                            petmateData.id,
+                            petmateData.name,
+                            petmateData.attrs,
+                            petmateData.status,
+                            petmateData.wishes,
+                            petmateData.completedWishesNum
+                        )
+                    });
+                    this.currentPlayer = {
+                        ...this.currentPlayer,
+                        petmates: reconstructedPetmates
+                    }
+                    this.savePlayer();
+                    logger.info("从服务器获取玩家信息成功");
+                } else {
+                    logger.error("服务器返回非200的code");
+                    this.savePlayer();
+                }
+            }).catch((err) => {
+                logger.error(`获取steamID为${steamId}的玩家信息失败:${err}`)
+            })
             // 如果没有获取到，使用默认值
+            // 注意：在此处不保存，在updateSteamInfo中保存默认值
             if (!result) {
-                this.savePlayer() // 保存默认值
+                // this.savePlayer(); // 保存默认值
             }
         } else {
             // 重建PetMate实例，因为从存储加载的是普通对象，没有方法
@@ -98,6 +160,12 @@ class PlayerManager {
      */
     private savePlayer(): void {
         (this.store as any).set('playerInfo', this.currentPlayer)
+    }
+
+    initPlayer(steamID): void {
+        if (this.isInit) return;
+        this.isInit = true;
+        this.loadPlayer(steamID);
     }
 
     /**
@@ -172,12 +240,18 @@ class PlayerManager {
 class ActivityManager {
     private store: Store<ActivityStoreData>
     private allActivities: ActivityInfo[] = []
+    private isInit: boolean = false;
 
     constructor() {
         this.store = new Store<ActivityStoreData>({
             name: 'activity-store'
         })
-        this.loadActivity()
+    }
+
+    initActivity(): void {
+        if (this.isInit) return;
+        this.isInit = true;
+        this.loadActivity();
     }
 
     loadActivity(): void {
@@ -213,12 +287,18 @@ class ActivityManager {
 class BuffManager {
     private store: Store<BuffStoreData>
     private buffs: Buff[] = []
+    private isInit: boolean = false;
 
     constructor() {
         this.store = new Store<BuffStoreData>({
             name: 'buff-store',
         })
-        this.loadBuff()
+    }
+
+    initBuff(): void {
+        if (this.isInit) return;
+        this.isInit = true;
+        this.loadBuff();
     }
 
     loadBuff(): void {
@@ -250,18 +330,23 @@ class BuffManager {
 class ItemManager {
     private store: Store<ItemStoreData>
     private items: Item[] = []
+    private isInit: boolean = false;
 
     constructor() {
         this.store = new Store<ItemStoreData>({
             name: 'item-store'
         })
-        this.loadItem()
+    }
+
+    initItem(): void {
+        if (this.isInit) return;
+        this.isInit = true;
+        this.loadItem();
     }
 
     loadItem(): void {
         const items = readJsonFile<Item>(itemFilePath);
         (this.store as any).set('itemInfo', items)
-        console.log(items)
         this.items = items
     }
 
@@ -286,12 +371,18 @@ class ItemManager {
 class PrefabWishManager {
     private store: Store<PrefabWishStoreData>
     private prefabWishes: PrefabWish[] = []
+    private isInit: boolean = false;
 
     constructor() {
         this.store = new Store<PrefabWishStoreData>({
             name: 'prefab-wish-store'
         })
-        this.loadPrefabWish()
+    }
+
+    initPrefabWish(): void {
+        if (this.isInit) return;
+        this.isInit = true;
+        this.loadPrefabWish();
     }
 
     loadPrefabWish(): void {

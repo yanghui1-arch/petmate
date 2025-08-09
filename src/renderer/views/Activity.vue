@@ -12,11 +12,11 @@
           />
           <span class="activity-grade-label">唱歌</span>
           <span class="activity-grade-value"
-            >LV.{{ petmateAttribute?.sing_level ?? 0 }}</span
+            >LV.{{ petmateAttribute?.singLevel ?? 0 }}</span
           >
           <AttributeBar
-            :value="petmateAttribute?.sing_exp ?? 0"
-            :max="petmateAttribute?.sing_next_exp ?? 0"
+            :value="petmateAttribute?.singExp ?? 0"
+            :max="petmateAttribute?.singNextExp ?? 0"
             width="200px"
             color="#FF7EB6"
           />
@@ -30,11 +30,11 @@
           />
           <span class="activity-grade-label">绘画</span>
           <span class="activity-grade-value"
-            >LV.{{ petmateAttribute?.draw_level ?? 0 }}</span
+            >LV.{{ petmateAttribute?.drawLevel ?? 0 }}</span
           >
           <AttributeBar
-            :value="petmateAttribute?.draw_exp ?? 0"
-            :max="petmateAttribute?.draw_next_exp ?? 0"
+            :value="petmateAttribute?.drawExp ?? 0"
+            :max="petmateAttribute?.drawNextExp ?? 0"
             width="200px"
             color="#7EBAFF"
           />
@@ -48,11 +48,11 @@
           />
           <span class="activity-grade-label">游戏</span>
           <span class="activity-grade-value"
-            >LV.{{ petmateAttribute?.game_level ?? 0 }}</span
+            >LV.{{ petmateAttribute?.gameLevel ?? 0 }}</span
           >
           <AttributeBar
-            :value="petmateAttribute?.game_exp ?? 0"
-            :max="petmateAttribute?.game_next_exp ?? 0"
+            :value="petmateAttribute?.gameExp ?? 0"
+            :max="petmateAttribute?.gameNextExp ?? 0"
             width="200px"
             color="#7EFF9E"
           />
@@ -203,6 +203,7 @@
                   ),
                 }"
                 @animationend="contentAnimationEnd"
+                @mouseenter="handleActItemPopover($event, actItem)"
                 @click="showModal(actItem)"
               >
                 <div class="activity-item-header">
@@ -211,7 +212,7 @@
                 <div class="activity-item-content">
                   <div class="activity-item-icon">
                     <n-image
-                      src="../assets/image/activity/activity-item-tmp.png"
+                      :src="getImageURL(actItem.url, 'activity', actItem.type) ?? ''"
                       width="50"
                       height="50"
                       preview-disabled
@@ -303,7 +304,7 @@ import { convertActivityText, computeActivityTime } from "../utils/activity";
 import { PetMateAttribute } from "../types/petmate";
 
 const { playerData, refreshPlayerData, claimActivityReward } = usePlayer();
-const { getActivities } = useShow();
+const { getActivities, getImageURL } = useShow();
 
 // Petmate相关
 const currentPetmateID = ref(0);
@@ -347,29 +348,29 @@ const checkActivityLocked = (requirement: ActivityInfo["requirement"]): boolean 
  * @returns 不满足的条件
  */
 const getMissingRequirements = (requirement: ActivityInfo["requirement"]) => {
-  const { level, sing_level, draw_level, game_level, affection_level } =
+  const { level, singLevel, drawLevel, gameLevel, affectionLevel } =
     petmateAttribute.value ?? {
       level: 1,
-      sing_level: 1,
-      draw_level: 1,
-      game_level: 1,
-      affection_level: 1,
+      singLevel: 1,
+      drawLevel: 1,
+      gameLevel: 1,
+      affectionLevel: 1,
     };
   const missing: string[] = [];
   if (level < (requirement.level ?? 0)) {
     missing.push(`等级 Lv.${requirement.level}`);
   }
-  if (sing_level < (requirement.sing_level ?? 0)) {
-    missing.push(`唱歌 Lv.${requirement.sing_level}`);
+  if (singLevel < (requirement.singLevel ?? 0)) {
+    missing.push(`唱歌 Lv.${requirement.singLevel}`);
   }
-  if (draw_level < (requirement.draw_level ?? 0)) {
-    missing.push(`绘画 Lv.${requirement.draw_level}`);
+  if (drawLevel < (requirement.drawLevel ?? 0)) {
+    missing.push(`绘画 Lv.${requirement.drawLevel}`);
   }
-  if (game_level < (requirement.game_level ?? 0)) {
-    missing.push(`游戏 Lv.${requirement.game_level}`);
+  if (gameLevel < (requirement.gameLevel ?? 0)) {
+    missing.push(`游戏 Lv.${requirement.gameLevel}`);
   }
-  if (affection_level < (requirement.affection_level ?? 0)) {
-    missing.push(`亲密度 Lv.${requirement.affection_level}`);
+  if (affectionLevel < (requirement.affectionLevel ?? 0)) {
+    missing.push(`亲密度 Lv.${requirement.affectionLevel}`);
   }
   return missing;
 };
