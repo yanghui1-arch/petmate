@@ -280,7 +280,6 @@ class ItemManager {
     loadItem(): void {
         const items = readJsonFile<Item>(itemFilePath);
         (this.store as any).set('itemInfo', items)
-        console.log(items)
         this.items = items
     }
 
