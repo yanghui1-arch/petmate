@@ -3,10 +3,8 @@
     <div class="settings-layout">
       <div class="settings-header">
         <div class="settings-title">
-          <span class="title-icon">⚙️</span>
-          <span class="title-text">导航菜单</span>
+          <span class="title-text">Petmate</span>
         </div>
-        <div class="settings-subtitle">探索你的世界</div>
       </div>
 
       <div class="page-navigator">
@@ -84,7 +82,7 @@
             @click="show = false"
           >
             <span class="nav-icon">⚙️</span>
-            <span class="nav-text">配置</span>
+            <span class="nav-text">模型配置</span>
             <span class="nav-arrow">→</span>
           </router-link>
 
@@ -135,7 +133,10 @@ const show = computed({
 }
 
 .settings-header {
-  padding: 20px 20px 15px 20px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(
     135deg,
     rgba($color-pink-100, 0.1),
@@ -147,7 +148,6 @@ const show = computed({
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 8px;
 
     .title-icon {
       font-size: 20px;
@@ -155,8 +155,8 @@ const show = computed({
     }
 
     .title-text {
-      font-size: 18px;
-      font-weight: 600;
+      font-family: Petmate;
+      font-size: 32px;
       color: $font-light;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
     }
