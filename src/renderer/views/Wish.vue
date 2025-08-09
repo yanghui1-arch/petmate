@@ -144,7 +144,7 @@
                     class="requirement-item"
                     :class="{ completed: progress.status === 'finished' }"
                   >
-                    <img :src="getImageURL(progress.src, 'activity') ?? ''" class="requirement-icon" />
+                    <img :src="getImageURL('activity', progress.src) ?? ''" class="requirement-icon" />
                     <span class="requirement-name">{{ progress.name }}</span>
                     <div class="requirement-status">
                       <img
@@ -172,7 +172,7 @@
                     class="requirement-item"
                     :class="{ completed: progress.status === 'finished' }"
                   >
-                    <img :src="getImageURL(progress.src, 'item') ?? ''" class="requirement-icon" />
+                    <img :src="getImageURL('item', progress.src) ?? ''" class="requirement-icon" />
                     <span class="requirement-name">
                       {{ progress.name }}
                       <span v-if="progress.type === 'item'" class="item-count">
@@ -202,7 +202,7 @@
               <div class="rewards-container">
                 <div class="reward-item">
                   <template v-if="wishReward.type === 'item'">
-                    <img :src="getImageURL(wishReward.src, 'item') ?? ''" class="reward-icon" />
+                    <img :src="getImageURL('item', wishReward.src) ?? ''" class="reward-icon" />
                     <div class="reward-info">
                       <span class="reward-name">{{ wishReward.name }}</span>
                       <span v-if="wishReward.count" class="reward-count">
@@ -211,7 +211,7 @@
                     </div>
                   </template>
                   <template v-else>
-                    <img :src="getImageURL(wishReward.src, 'buff') ?? ''" class="reward-icon" />
+                    <img :src="getImageURL('buff', wishReward.src) ?? ''" class="reward-icon" />
                     <div class="reward-info">
                       <span class="reward-name">{{ wishReward.name }}</span>
                     </div>

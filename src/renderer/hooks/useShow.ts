@@ -138,22 +138,22 @@ export function useShow() {
     }
 
     /**
-     * 根据资源名称获取资源路径，使用new URL方法，动态引入资源文件，在打包时，会自动将资源文件打包到打包结果中
-     * @param name 资源名称，不带后缀，目前是图片，后缀为webp
-     * @param viewType 资源所属类型，如item、buff、activity
+     * 动态引入资源路径
+     * @param firstDir 资源所属的一级目录，比如item, buff, activity
+     * @param imagePath 图片路径，如food/donut
      * @returns 资源路径
      */
-    const getImageURL = (name: string, viewType: string) => {
+    const getImageURL = (firstDir: string, imagePath: string) => {
         try {
-            const imagePrefix = `../assets/image/${viewType}`
-            const pathname = new URL(`${imagePrefix}/${name}.webp`, import.meta.url).pathname
-            if(pathname.includes("undefined")) {
-                console.log("图片路径不存在", name)
-                return null
-            }
+            const parsedImagePath = imagePath.split("/")
+            if (parsedImagePath.length > 2) throw new Error("图片路径不合法，请确保是food/donut这样的格式");
+            const secondDir = parsedImagePath[0]
+            const imageName = parsedImagePath[1]
+            const pathname = new URL(`../assets/image/${firstDir}/${secondDir}/${imageName}.webp`, import.meta.url).pathname
+            if(pathname.includes("undefined")) throw new Error(`图片路径../assets/image/${firstDir}/${secondDir}/${imageName}.webp不存在`);
             return pathname
-        } catch {
-            console.log("获取图片失败", name)
+        } catch (error) {
+            console.log("获取图片失败:", error)
             return null
         }
     }

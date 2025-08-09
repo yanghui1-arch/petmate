@@ -212,7 +212,7 @@
                 <div class="activity-item-content">
                   <div class="activity-item-icon">
                     <n-image
-                      :src="getImageURL(actItem.url, 'activity') ?? ''"
+                      :src="getImageURL('activity', actItem.url) ?? ''"
                       width="50"
                       height="50"
                       preview-disabled

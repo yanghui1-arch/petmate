@@ -111,7 +111,7 @@
                       <n-image
                         width="38"
                         class="item-image"
-                        :src="getImageURL(item.url, 'item') ?? ''"
+                        :src="getImageURL('item', item.url) ?? ''"
                         preview-disabled
                       />
                       <div class="item-price-wrapper">
