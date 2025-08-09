@@ -1,6 +1,6 @@
 
 // 物品
-export type ItemType = "food" | "drink" | "medicine" | "gift" | "exp" | "limit" | "others"
+export type ItemType = "food" | "drink" | "medicine" | "gift" | "limit" | "others"
 export interface Item {
     id: number,
     name: string,
@@ -8,7 +8,8 @@ export interface Item {
     type: ItemType,
     price: number,
     effect: ItemEffect,
-    description: string
+    description: string,
+    requirement: Requirement
 }
 
 export interface ItemEffect {
@@ -153,9 +154,9 @@ export interface Consume {
 }
 
 export interface Requirement {
-    level: number,
-    singLevel: number,
-    drawLevel: number,
-    gameLevel: number,
-    affectionLevel: number,
+    level?: number,
+    singLevel?: number,
+    drawLevel?: number,
+    gameLevel?: number,
+    affectionLevel?: number,
 }

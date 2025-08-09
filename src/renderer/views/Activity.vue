@@ -299,8 +299,9 @@ import { ActivityInfo } from "../types/common";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
 import { showActItemPopover, popoverX, popoverY, popoverWidth, popoverActItem, isActItemEnter } from "../hooks/useInteract";
-
+import { checkLocked } from "../utils/check";
 import { convertActivityText, computeActivityTime } from "../utils/activity";
+import { PetMateAttribute } from "../types/petmate";
 
 const { playerData, refreshPlayerData, claimActivityReward } = usePlayer();
 const { getActivities, getImageURL } = useShow();
@@ -331,27 +332,15 @@ const countDownSeconds = computed(() => {
 });
 
 /**
- * 检查活动是否解锁
- * @param requirement 活动条件
- * @returns 是否解锁
+ * 检查活动是否为不可开启
+ * @param requirement 活动的等级要求
+ * @returns 是否为不可开启，如果为不可开启，则返回true，否则返回false
  */
-const checkActivityLocked = (requirement: ActivityInfo["requirement"]) => {
-  const { level, singLevel, drawLevel, gameLevel, affectionLevel } =
-    petmateAttribute.value ?? {
-      level: 1,
-      singLevel: 1,
-      drawLevel: 1,
-      gameLevel: 1,
-      affectionLevel: 1,
-    };
-  return (
-    level < requirement.level ||
-    singLevel < requirement.singLevel ||
-    drawLevel < requirement.drawLevel ||
-    gameLevel < requirement.gameLevel ||
-    affectionLevel < requirement.affectionLevel
-  );
+const checkActivityLocked = (requirement: ActivityInfo["requirement"]): boolean => {
+    if (!petmateAttribute) return false;
+    return checkLocked(requirement, petmateAttribute as ComputedRef<PetMateAttribute>);
 };
+
 
 /**
  * 获得不满足的解锁条件
@@ -368,19 +357,19 @@ const getMissingRequirements = (requirement: ActivityInfo["requirement"]) => {
       affectionLevel: 1,
     };
   const missing: string[] = [];
-  if (level < requirement.level) {
+  if (level < (requirement.level ?? 0)) {
     missing.push(`等级 Lv.${requirement.level}`);
   }
-  if (singLevel < requirement.singLevel) {
+  if (singLevel < (requirement.singLevel ?? 0)) {
     missing.push(`唱歌 Lv.${requirement.singLevel}`);
   }
-  if (drawLevel < requirement.drawLevel) {
+  if (drawLevel < (requirement.drawLevel ?? 0)) {
     missing.push(`绘画 Lv.${requirement.drawLevel}`);
   }
-  if (gameLevel < requirement.gameLevel) {
+  if (gameLevel < (requirement.gameLevel ?? 0)) {
     missing.push(`游戏 Lv.${requirement.gameLevel}`);
   }
-  if (affectionLevel < requirement.affectionLevel) {
+  if (affectionLevel < (requirement.affectionLevel ?? 0)) {
     missing.push(`亲密度 Lv.${requirement.affectionLevel}`);
   }
   return missing;

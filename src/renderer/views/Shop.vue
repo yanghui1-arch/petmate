@@ -99,6 +99,7 @@
                   >
                     <div
                       class="shop-item"
+                      :class="{ 'shop-item-locked': !checkItemLocked(item.requirement) }"
                       @mouseenter="handleItemPopover($event, item)"
                       @click="showModal(item)"
                     >
@@ -117,6 +118,10 @@
                         <span class="price-icon">💵</span>
                         <span class="item-price">{{ item.price }}</span>
                       </div>
+                      <LockStyle v-if="!checkItemLocked(item.requirement)" 
+                      :requirement="item.requirement" 
+                      :petmateAttribute="petmateAttribute as PetMateAttribute" 
+                      borderRadius="5px" />
                     </div>
                   </n-gi>
                 </n-grid>
@@ -138,6 +143,7 @@
       :show="isItemEnter"
       :popoverWidth="popoverWidth"
       :item="popoverItem!"
+      :isLocked="isItemLocked"
     />
     <!-- 商品购买弹出框 -->
     <ItemModal
@@ -153,15 +159,30 @@
 import Pagedot from "@/components/Pagedot.vue";
 import ItemPopover from "@/components/item/ItemPopover.vue";
 import ItemModal from "@/components/item/ItemModal.vue";
+import LockStyle from "@/components/LockStyle.vue";
 import type { CarouselInst } from "naive-ui";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
 import { showItemPopover, popoverX, popoverY, popoverWidth, popoverItem, isItemEnter } from "../hooks/useInteract";
-import { ItemType, Item } from "../types/common";
+import { ItemType, Item, Requirement } from "../types/common";
+import type { PetMateAttribute } from "../types/petmate";
 import { executeItemPage } from "../utils/item";
+import { checkLocked } from "../utils/check";
 
 const { playerData } = usePlayer();
 const { getShopItems, getImageURL } = useShow();
+
+// Petmate相关
+const currentPetmateID = ref(0);
+const currentActivePetmate = computed(() => {
+  return playerData.value?.petmates.find(
+    (petmate) => petmate.id === currentPetmateID.value
+  );
+});
+
+const petmateAttribute = computed(() => {
+  return currentActivePetmate.value?.attrs;
+});
 
 const shopCurrType = ref<ItemType>("limit" as ItemType);
 const shopPageNum = ref(0);
@@ -177,6 +198,16 @@ const searchKeyword = ref<string>("");
 onMounted(async () => {
   prepareShopData();
 });
+
+/**
+ * 检查商品是否为不可开启
+ * @param requirement 活动的等级要求
+ * @returns 是否为不可开启，如果为不可开启，则返回true，否则返回false
+ */
+ const checkItemLocked = (requirement: Requirement): boolean => {
+    if (!petmateAttribute) return false;
+    return checkLocked(requirement, petmateAttribute as ComputedRef<PetMateAttribute>);
+};
 
 // 过滤和排序商品列表
 const filterAndSortItems = (items: Item[]): Item[] => {
@@ -267,9 +298,10 @@ const nextPage = () => {
   shopPageRef.value?.next();
 };
 
-
+const isItemLocked = ref(false);
 const handleItemPopover = (event: MouseEvent, item: Item) => {
   showItemPopover(event, item);
+  isItemLocked.value = !checkItemLocked(item.requirement);
 };
 
 // 物品购买弹出框相关
@@ -550,6 +582,11 @@ const showModal = (shopItem: Item) => {
     .shop-next-page-arrow {
       right: -30px;
       transform: translateY(-50%);
+    }
+    .shop-item-locked {
+      opacity: 0.5;
+      filter: grayscale(70%) brightness(0.7);
+      position: relative;
     }
     .shop-item {
       width: 95px;

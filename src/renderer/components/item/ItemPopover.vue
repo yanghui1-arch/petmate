@@ -15,14 +15,35 @@
         <div
           class="popover-wrapper"
         >
-          <div class="popover-title">{{ item.name }}</div>
+        <div class="popover-title">
+            <span v-if="isLocked">{{ itemlockedName }}</span>
+            <span v-else>{{ item.name }}</span>
+          </div>
           <div class="popover-content">
-            <div class="popover-description">{{ item.description }}</div>
+            <div class="popover-description">
+              <span v-if="isLocked">???</span>
+              <span v-else>{{ item.description }}</span>
+            </div>
             <div>
               <div class="popover-tip">使用后获得以下效果</div>
               <div class="popover-effect">
-                <span v-for="(value, key) in item.effect" :key="key"
-                  >{{ convertItemEffect(String(key)) }}+{{ value }}</span
+                <template v-if="isLocked">
+                  <span>???</span>
+                </template>
+                <template v-else>
+                  <span v-for="(value, key) in item.effect" :key="key"
+                    >{{ convertItemEffect(String(key)) }}+{{ value }}</span
+                  >
+                </template>
+              </div>
+            </div>
+            <div>
+              <div class="popover-tip">要求</div>
+              <div class="popover-requirement">
+                <span
+                  v-for="(value, key) in item.requirement"
+                  :key="'requirement-' + key"
+                  >{{ convertRequirementText(String(key)) }} {{ value }}</span
                 >
               </div>
             </div>
@@ -44,8 +65,9 @@
 import { defineProps, PropType } from "vue";
 import { convertItemEffect } from "../../utils/item";
 import { Item } from "../../types/common";
+import { convertRequirementText } from "../../utils/check";
 
-defineProps({
+const props = defineProps({
   // 悬浮矩形框的坐标，经过实践，popoverX和popoverY 表示'底部中心' 距离视口边缘的坐标
   popoverX: { type: Number, required: true },
   popoverY: { type: Number, required: true },
@@ -53,7 +75,21 @@ defineProps({
   popoverWidth: { type: Number, default: 180 }, // 悬浮矩形框的宽度
   isSourceShow: { type: Boolean, default: false }, // 是否显示获得方式
   item: { type: Object as PropType<Item>, required: true }, // 物品
+  isLocked: { type: Boolean, default: false }, // 是否锁定
 });
+
+const itemlockedName = computed(() => {
+  const name = props.item.name;
+  if(!name) {
+    return "??"
+  }
+  if(name.length === 2) {
+    return `${name[0]}?`
+  }
+  // 保留第一个字和最后一个字
+  return `${name[0]} ? ${name[name.length - 1]}`
+});
+
 </script>
 
 <style scoped lang="scss">
@@ -112,8 +148,8 @@ defineProps({
       margin-bottom: 8px;
       padding-left: 5px;
     }
-
     .popover-effect,
+    .popover-requirement,
     .popover-source {
       display: flex;
       flex-direction: row;
@@ -123,19 +159,42 @@ defineProps({
       gap: 4px;
 
       span {
-        color: #27ae60;
         font-weight: 600;
         font-size: 11px;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
         padding: 2px 6px;
         border-radius: 4px;
-        border: 1px solid rgba(39, 174, 96, 0.3);
         min-width: 70px;
         text-align: center;
         transition: all 0.2s ease;
+      }
 
+      span {
+        font-weight: 600;
+        font-size: 11px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+        padding: 2px 6px;
+        border-radius: 4px;
+        min-width: 70px;
+        text-align: center;
+        transition: all 0.2s ease;
+      }
+    }
+    .popover-effect {
+      span {
+        color: #27ae60;
+        border: 1px solid rgba(39, 174, 96, 0.3);
         &:hover {
           border-color: rgba(39, 174, 96, 0.5);
+        }
+      }
+    }
+    .popover-requirement {
+      span {
+        color: #04bbbb;
+        border: 1px solid rgba(39, 131, 174, 0.3);
+        &:hover {
+          border-color: rgba(39, 131, 174, 0.5);
         }
       }
     }
