@@ -99,7 +99,7 @@
                   >
                     <div
                       class="shop-item"
-                      :class="{ 'shop-item-locked': !checkItemLocked(item.requirement) }"
+                      :class="{ 'shop-item-locked': checkItemLocked(item.requirement) }"
                       @mouseenter="handleItemPopover($event, item)"
                       @click="showModal(item)"
                     >
@@ -118,7 +118,7 @@
                         <span class="price-icon">💵</span>
                         <span class="item-price">{{ item.price }}</span>
                       </div>
-                      <LockStyle v-if="!checkItemLocked(item.requirement)" 
+                      <LockStyle v-if="checkItemLocked(item.requirement)" 
                       :requirement="item.requirement" 
                       :petmateAttribute="petmateAttribute as PetMateAttribute" 
                       borderRadius="5px" />
@@ -301,7 +301,7 @@ const nextPage = () => {
 const isItemLocked = ref(false);
 const handleItemPopover = (event: MouseEvent, item: Item) => {
   showItemPopover(event, item);
-  isItemLocked.value = !checkItemLocked(item.requirement);
+  isItemLocked.value = checkItemLocked(item.requirement);
 };
 
 // 物品购买弹出框相关
