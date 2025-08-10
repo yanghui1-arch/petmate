@@ -24,6 +24,22 @@ export const defaultSettings: SettingConfig = {
 // 最新的设置，需要保证其一直都是最新的，因此在每一次的getSettings函数中，都要将文件中的设置赋值给他
 // 在每一次的updateSettings函数中，都要将文件中的设置赋值给他
 let currentSettings: SettingConfig | null = null;
+let isInit: boolean = false;
+
+export function initSettings(): void {
+    if (isInit) return;
+    try {
+        console.log("正在初始化设置...")
+        const settings: SettingConfig = getSettings();
+        currentSettings = settings;
+    } catch {
+        updateSettings(defaultSettings);
+        currentSettings = getSettings();
+    } finally {
+        isInit = true;
+        console.log("设置初始化完成")
+    }
+}
 
 /**
  * 更新设置
