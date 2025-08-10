@@ -50,6 +50,7 @@ contextBridge.exposeInMainWorld('api', {
     onTextChunk: (callback: (event: IpcRendererEvent, text: string) => void) => ipcRenderer.on('chat-chunk', callback),
     onAudioChunk: (callback: (event: IpcRendererEvent, audio: Buffer) => void) => ipcRenderer.on('tts-audio-chunk', callback),
     onWishGenerated: (callback: (event: IpcRendererEvent, petmateId: number) => void) => ipcRenderer.on('wish-generated', callback),
+    onResetPetmatePosition: (callback: (event: IpcRendererEvent) => void) => ipcRenderer.on('reset-petmate-position', callback),
 
     onTTSFinished: (callback: (event: IpcRendererEvent) => void) => ipcRenderer.on('tts-finished', callback),
     onWishFinished: (callback: (event: IpcRendererEvent, petmateId: number, finishedWishNames: string[]) => void) => ipcRenderer.on('wish-finished', callback),

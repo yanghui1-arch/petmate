@@ -77,6 +77,12 @@ const createWindow = (): void => {
             }
         },
         {
+            label: "重置位置",
+            click: () => {
+                mainWindow?.webContents.send('reset-petmate-position')
+            }
+        },
+        {
             label: '退出',
             click: () => {
                 app.quit()

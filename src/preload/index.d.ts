@@ -55,6 +55,7 @@ interface IElectronAPI {
   onTextChunk: (callback: (event: Event, text: string) => void) => void;
   onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => void;
   onWishGenerated: (callback: (event: Event, petmateId: number) => void) => void,
+  onResetPetmatePosition: (callback: (event: Event) => void) => void,
   onTTSFinished: (callback: (event: Event) => void) => void,
   onTTSFailed: (callback: (event: Event) => void) => void,
   onWishFinished: (callback: (event: Event, petmateId: number, finishedWishNames: string[]) => void) => void,
