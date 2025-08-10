@@ -28,19 +28,15 @@
             </div>
             <div class="home-panel-attribute">
               <div class="home-panel-view">
-                <!-- <span>Dass</span> -->
-                <div>
-                  <div class="home-panel-buff" v-for="(buffItem, index) in petmateAttribute?.buffs"
-                      :key="'buff-icon-' + buffItem.buff.id"
-                      @mouseenter="handleBuffPopover($event, buffItem, index)">
-                    <n-image
-                      :src="getImageURL('buff', buffItem.buff.icon) ?? ''"
-                      width="16"
-                      height="16"
-                      preview-disabled
-
-                    />
-                  </div>
+                <div class="home-panel-buff" v-for="(buffItem, index) in petmateAttribute?.buffs"
+                    :key="'buff-icon-' + buffItem.buff.id"
+                    @mouseenter="handleBuffPopover($event, buffItem, index)">
+                  <n-image
+                    :src="getImageURL('buff', buffItem.buff.icon) ?? ''"
+                    width="24"
+                    height="24"
+                    preview-disabled
+                  />
                 </div>
               </div>
 
@@ -406,20 +402,17 @@ const showModal = (item: PackageItemInfo) => {
       justify-content: space-around;
       row-gap: 5px;
       .home-panel-view {
-        display: flex;
-        justify-content: space-between;
-        span {
-          width: 60px;
-          text-align: center;
-          color: $font-light;
-        }
-        .home-panel-buff {
-          width: 100%;
+        width: 100%;
           display: flex;
           align-items: center;
-          justify-content: center;
           column-gap: 5px;
-        }
+          justify-content: flex-end;
+          .home-panel-buff {
+            background-color: #f5f5dc;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+          }
       }
       .attribute-item {
         display: flex;
