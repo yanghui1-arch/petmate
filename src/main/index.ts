@@ -14,9 +14,6 @@ app.commandLine.appendSwitch('--in-process-gpu')
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 
-// 游戏在 steam 中的 应用id
-const appId = 3657100
-
 const createWindow = (): void => {
     const { width, height } = screen.getPrimaryDisplay().bounds
 
@@ -96,15 +93,6 @@ app.whenReady().then(async () => {
 
     // 更新玩家信息，添加Steam数据
     try {
-        // 开发环境下，清除成就，用于测试
-        if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-            greenworksManager.clearAchievement("ACH_FIRST_OPEN", () => { }, (err) => {
-                console.log("ACH_FIRST_OPEN clear failed:", err)
-            })
-            greenworksManager.clearAchievement("ACH_FIRST_CHAT", () => { }, (err) => {
-                console.log("ACH_FIRST_CHAT clear failed:", err)
-            })
-        }
         const steamInfo = greenworksManager.getSteamInfo()
         console.log(steamInfo)
         console.log('Username:', steamInfo.screenName)
