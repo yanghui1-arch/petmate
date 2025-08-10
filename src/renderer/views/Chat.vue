@@ -15,7 +15,7 @@
             >
                 <!-- Assistant Avatar (left side) -->
                 <div v-if="message.role === 'assistant'" class="avatar">
-                    <img src="../assets/image/petmate-1.jpg" alt="Dass Avatar" />
+                    <img :src="petmateAvatar" alt="Dass Avatar" />
                     <div class="avatar-glow"></div>
                 </div>
 
@@ -42,7 +42,7 @@
 
                 <!-- User Avatar (right side) -->
                 <div v-if="message.role === 'user'" class="avatar">
-                    <img src="../assets/image/petmate-3.jpg" alt="User Avatar" />
+                    <img :src="userAvatar" alt="User Avatar" />
                     <div class="avatar-glow"></div>
                 </div>
             </div>
@@ -81,6 +81,8 @@ import { ref, nextTick, onMounted, onUnmounted } from 'vue';
 import { usePlayer } from '../hooks/usePlayer';
 import type { ChatMessage, HistoryChatMessage } from '../types/llm';
 import { useAudio } from '../hooks/useAudio';
+import petmateAvatar from "../assets/image/petmate-1.jpg";
+import userAvatar from "../assets/image/petmate-3.jpg";
 
 
 // 扩展的消息接口，包含时间戳

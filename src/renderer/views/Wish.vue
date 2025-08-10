@@ -17,7 +17,7 @@
             <n-avatar
               round
               :size="70"
-              src="../assets/image/petmate-1.jpg"
+              :src="petmateAvatar"
               object-fit="cover"
             />
             <div class="affection-glow"></div>
@@ -116,7 +116,7 @@
             </n-button>
             <div class="wish-detail-info">
               <div class="wish-icon">
-                <img src="../assets/image/wish.png" alt="wish" />
+                <img :src="wishIcon" alt="wish" />
               </div>
               <div class="wish-detail-text">
                 <div class="wish-name">{{ checkWishInfo?.name }}</div>
@@ -149,12 +149,12 @@
                     <div class="requirement-status">
                       <img
                         v-if="progress.status === 'finished'"
-                        src="../assets/image/right.png"
+                        :src="rightIcon"
                         class="status-icon"
                       />
                       <img
                         v-else
-                        src="../assets/image/wrong.png"
+                        :src="wrongIcon"
                         class="status-icon"
                       />
                     </div>
@@ -182,12 +182,12 @@
                     <div class="requirement-status">
                       <img
                         v-if="progress.status === 'finished'"
-                        src="../assets/image/right.png"
+                        :src="rightIcon"
                         class="status-icon"
                       />
                       <img
                         v-else
-                        src="../assets/image/wrong.png"
+                        :src="wrongIcon"
                         class="status-icon"
                       />
                     </div>
@@ -267,6 +267,10 @@ import { useShow } from "../hooks/useShow";
 import { Wish, WishReward } from "../types/common";
 const { playerData, claimWishReward } = usePlayer();
 const { getItemInfo, getImageURL } = useShow();
+import petmateAvatar from "../assets/image/petmate-1.jpg";
+import wishIcon from "../assets/image/wish.png";
+import rightIcon from "../assets/image/right.png";
+import wrongIcon from "../assets/image/wrong.png";
 
 const currentPetmateID = ref(0);
 const currentActivePetmate = computed(() => {
