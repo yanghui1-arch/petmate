@@ -173,6 +173,9 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
                 }
                 const modelScreenPosition = transferWorldToScreen(model.position, window.innerWidth, window.innerHeight)
                 console.log('模型初始位置', JSON.stringify(modelScreenPosition))
+                window.api.onResetPetmatePosition((_) => {
+                    setModelPosition(new THREE.Vector3(0, -1, 0))
+                })
 
                 // 辅助3D开发使用的一些工具
                 // if (camera && renderer) orbitControls = new OrbitControls(camera, renderer.domElement);

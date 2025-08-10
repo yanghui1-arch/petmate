@@ -14,11 +14,12 @@ const store: Store<SettingConfig> = new Store<SettingConfig>({
 
 /**
  * 默认的设置
+ * 默认情况下，模型处于最顶层，大小为50，专注模式关闭
  */
 export const defaultSettings: SettingConfig = {
     modelSize: 50,
     focusMode: false,
-    onTop: false
+    onTop: true
 }
 
 // 最新的设置，需要保证其一直都是最新的，因此在每一次的getSettings函数中，都要将文件中的设置赋值给他
