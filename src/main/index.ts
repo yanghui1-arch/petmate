@@ -8,6 +8,7 @@ import { join } from 'path'
 import trayIcon from '../../resources/icon.png?asset'
 import { activityManager, buffManager, itemManager, playerManager, prefabWishManager } from './modules/store'
 import { greenworksManager } from './greenworks'
+import { getOnTop, updateSettings } from './settings'
 import { initSettings } from './settings'
 
 app.commandLine.appendSwitch('--in-process-gpu')
@@ -24,7 +25,7 @@ const createWindow = (): void => {
         frame: false,
         resizable: false,
         transparent: true,
-        alwaysOnTop: true,
+        alwaysOnTop: getOnTop(),
         focusable: true,
         show: false,
         webPreferences: {
@@ -55,6 +56,7 @@ const createWindow = (): void => {
 
     mainWindow.setSkipTaskbar(true)
     const icon = nativeImage.createFromPath(trayIcon)
+    console.log("getOnTop", getOnTop())
     tray = new Tray(icon)
     // 创建托盘菜单
     const contextMenu = Menu.buildFromTemplate([
@@ -62,6 +64,16 @@ const createWindow = (): void => {
             label: '显示',
             click: () => {
                 mainWindow?.show()
+            }
+        },
+        {
+            label: "模型处于最顶层",
+            type: "checkbox",
+            checked: getOnTop(),
+            click: () => {
+                const newOnTop = !getOnTop();
+                mainWindow?.setAlwaysOnTop(newOnTop)
+                updateSettings({ onTop: newOnTop })
             }
         },
         {
