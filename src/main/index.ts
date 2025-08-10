@@ -8,6 +8,7 @@ import { join } from 'path'
 import trayIcon from '../../resources/icon.png?asset'
 import { activityManager, buffManager, itemManager, playerManager, prefabWishManager } from './modules/store'
 import { greenworksManager } from './greenworks'
+import { initSettings } from './settings'
 
 app.commandLine.appendSwitch('--in-process-gpu')
 
@@ -80,6 +81,7 @@ app.whenReady().then(async () => {
     const steamID: string = greenworksManager.getSteamInfo().steamId
 
     // init store
+    initSettings()
     playerManager.initPlayer(steamID)
     activityManager.initActivity()
     buffManager.initBuff()
