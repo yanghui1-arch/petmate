@@ -139,6 +139,7 @@
     {
       id: 'tutorial',
       title: '操作教程',
+      action: () => window.api.openOpt()
     },
     {
       id: 'quit',

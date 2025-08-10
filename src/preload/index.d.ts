@@ -69,6 +69,7 @@ interface IElectronAPI {
   // 其他
   listenTTSVoiceSample: (voice: TTSVoice, text: string) => Promise<Response<void>>;
   openNewWindow: (route: string, width?: number, height?: number) => Promise<Response<void>>;
+  openOpt: () => Promise<Response<void>>;
   closeWindow: () => void;
   quitApp: () => Promise<Response<void>>;
 }

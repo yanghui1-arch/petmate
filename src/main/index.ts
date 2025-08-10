@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, Tray } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell, Tray } from 'electron'
 import * as path from 'path'
 import './ipc'
 import { destroyScheduler, startWishGeneration } from './scheduler'
@@ -64,6 +64,14 @@ const createWindow = (): void => {
             label: '显示',
             click: () => {
                 mainWindow?.show()
+            }
+        },
+        {
+            label: '操作教程',
+            click: () => {
+                const htmlPath = path.join(__dirname, '../../resources/html/opt.html');
+                const fileUrl = "file://" + htmlPath;
+                shell.openExternal(fileUrl);
             }
         },
         {

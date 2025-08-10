@@ -3,6 +3,7 @@
  */
 
 import { ipcMain, IpcMainInvokeEvent, IpcMainEvent, screen, BrowserWindow } from 'electron';
+import { shell } from 'electron';
 import { is } from '@electron-toolkit/utils'
 import { playerManager } from './modules/store';
 import { PlayerInfo } from './types/player';
@@ -1073,3 +1074,9 @@ ipcMain.on("close-window", (event: IpcMainEvent): void => {
     const win: BrowserWindow | null = BrowserWindow.fromWebContents(event.sender);
     if (win) win.close();
 });
+
+ipcMain.handle("open-opt", (_: IpcMainInvokeEvent) => {
+    const htmlPath = path.join(__dirname, '../../resources/html/opt.html');
+    const fileUrl = "file://" + htmlPath;
+    shell.openExternal(fileUrl);
+})
