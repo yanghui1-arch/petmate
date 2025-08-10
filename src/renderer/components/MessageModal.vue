@@ -6,7 +6,7 @@
           <n-image
             width="32"
             height="32"
-            :src="type === 'success'? success : fail"
+            :src="type === 'success'? successIcon : failIcon"
             preview-disabled
           />
           <div class="message-modal-title">{{ title }}</div>
@@ -25,8 +25,8 @@
   <script setup lang="ts">
 import { defineProps } from "vue";
 import { closeMessageModal } from "../hooks/useInteract";
-import success from "../assets/image/message/success.png";
-import fail from "../assets/image/message/fail.png";
+import successIcon from "../assets/image/message/success.png";
+import failIcon from "../assets/image/message/fail.png";
 
 defineProps({
   show: { type: Boolean, required: true }, // 是否显示

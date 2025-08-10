@@ -4,7 +4,7 @@
       <div class="shop-head-layout">
         <div class="shop-head-wrapper">
           <img
-            src="../assets/image/shop-petmate.png"
+            :src="shopPetmateImage"
             alt="petmate"
             style="flex: 1; max-height: 100%; object-fit: contain"
           />
@@ -64,7 +64,7 @@
                 preview-disabled
                 width="45"
                 height="45"
-                src="../assets/image/greater-than.png"
+                :src="greaterThanIcon"
                 style="transform: rotate(180deg)"
               ></n-image>
             </div>
@@ -73,7 +73,7 @@
                 preview-disabled
                 width="45"
                 height="45"
-                src="../assets/image/greater-than.png"
+                :src="greaterThanIcon"
               ></n-image>
             </div>
             <n-carousel
@@ -168,6 +168,9 @@ import { ItemType, Item, Requirement } from "../types/common";
 import type { PetMateAttribute } from "../types/petmate";
 import { executeItemPage } from "../utils/item";
 import { checkLocked } from "../utils/check";
+import shopPetmateImage from "../assets/image/shop-petmate.png";
+import greaterThanIcon from "../assets/image/greater-than.png";
+import shopItemIcon from "../assets/image/shop-item.png";
 
 const { playerData } = usePlayer();
 const { getShopItems, getImageURL } = useShow();

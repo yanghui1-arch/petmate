@@ -5,7 +5,7 @@
       <div class="activity-grade-wrapper">
         <div class="activity-grade-item">
           <n-image
-            src="../assets/image/activity/grade-icon.png"
+            :src="gradeIcon"
             width="25"
             height="25"
             preview-disabled
@@ -23,7 +23,7 @@
         </div>
         <div class="activity-grade-item">
           <n-image
-            src="../assets/image/activity/grade-icon.png"
+            :src="gradeIcon"
             width="25"
             height="25"
             preview-disabled
@@ -41,7 +41,7 @@
         </div>
         <div class="activity-grade-item">
           <n-image
-            src="../assets/image/activity/grade-icon.png"
+            :src="gradeIcon"
             width="25"
             height="25"
             preview-disabled
@@ -72,7 +72,7 @@
             v-if="petmateStatus?.status !== 'finished'"
           >
             <n-image
-              src="../assets/image/activity/switch.png"
+              :src="actSwitchIcon"
               width="25"
               height="25"
               preview-disabled
@@ -172,7 +172,7 @@
             <div class="activity-content-header">
               <div class="activity-content-header-back">
                 <n-image
-                  src="../assets/image/activity/back-arrow.png"
+                  :src="backArrowIcon"
                   width="30"
                   height="30"
                   preview-disabled
@@ -302,6 +302,9 @@ import { showActItemPopover, popoverX, popoverY, popoverWidth, popoverActItem, i
 import { checkLocked } from "../utils/check";
 import { convertActivityText, computeActivityTime } from "../utils/activity";
 import { PetMateAttribute } from "../types/petmate";
+import gradeIcon from "../assets/image/activity/grade-icon.png";
+import actSwitchIcon from "../assets/image/activity/switch.png";
+import backArrowIcon from "../assets/image/activity/back-arrow.png";
 
 const { playerData, refreshPlayerData, claimActivityReward } = usePlayer();
 const { getActivities, getImageURL } = useShow();
