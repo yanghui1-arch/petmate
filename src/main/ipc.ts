@@ -139,37 +139,6 @@ ipcMain.handle("init-player-data", (_: IpcMainInvokeEvent): Response<PlayerInfo>
 })
 
 /**
- * 初始化设置数据
- * 将玩家自定义的设置数据加载到内存中，如果玩家没有自定义的设置数据，则初始化默认设置，并写入到自定义的设置数据中
- * @returns 玩家自定义的设置数据
- */
-ipcMain.handle("init-settings", (_: IpcMainInvokeEvent): Response<SettingConfig> => {
-    try {
-        const settings: SettingConfig = getSettings();
-        return {
-            code: 200,
-            message: "初始化设置数据成功",
-            data: settings
-        } as Response<SettingConfig>;
-    } catch (error) {
-        if (error instanceof NotFoundError) {
-            // 如果设置不存在，则初始化默认设置，然后保存到文件中
-            const officialSettings: SettingConfig = defaultSettings
-            updateSettings(officialSettings);
-            return {
-                code: 200,
-                message: "初始化设置数据成功，已初始化默认设置。",
-                data: officialSettings
-            } as Response<SettingConfig>;
-        }
-        return {
-            code: 400,
-            message: "初始化设置数据失败"
-        }
-    }
-})
-
-/**
  * 初始化llm配置
  * 玩家会有自己的llm的api_key和base_url，如果没有定义自己的api_key或者base_url, 需要给一个提醒，否则应该加载默认的配置
  */
