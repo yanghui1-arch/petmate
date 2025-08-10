@@ -1,0 +1,51 @@
+[
+    {
+        "id": 1,
+        "name": "愿望1",
+        "description": "愿望1描述",
+        "duration": 1000,
+        "affectionExp": 100,
+        "requirements": [
+            {
+                "type": "item",
+                "id": 1,
+                "name": "热狗",
+                "src": "food/hotdog",
+                "count": 1,
+                "userCount": 0,
+                "status": "doing"
+            }
+        ],
+        "reward": {
+            "type": "item",
+            "id": 1,
+            "name": "热狗",
+            "src": "food/hotdog",
+            "count": 1
+        }
+    },
+    {
+        "id": 2,
+        "name": "愿望2",
+        "description": "愿望2描述",
+        "duration": 1000,
+        "affectionExp": 100,
+        "requirements": [
+            {
+                "type": "item",
+                "id": 1,
+                "name": "热狗",
+                "src": "food/hotdog",
+                "count": 1,
+                "userCount": 0,
+                "status": "doing"
+            }
+        ],
+        "reward": {
+            "type": "buff",
+            "id": 1,
+            "name": "第一个buff",
+            "src": "buff"
+        }
+    }
+]

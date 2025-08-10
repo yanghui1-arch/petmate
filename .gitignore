@@ -30,3 +30,12 @@ npm-debug.log.*
 
 # build
 dist/
+
+# Documentation
+docs-generated/
+
+# Testing
+coverage/
+
+# out
+out/

@@ -1,0 +1,56 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: sans-serif;
+  line-height: 1.5;
+  // -webkit-user-select: none;
+  // -webkit-app-region: drag;
+}
+
+ol,
+ul,
+li {
+  list-style: none;
+}
+
+a {
+  text-decoration: none;
+  color: black;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+select:focus,
+a:focus,
+input:focus,
+textarea:focus,
+button:focus,
+div:focus {
+  outline: none; // 去除默认焦点轮廓，通常是一个橙黄色的边框
+  box-shadow: none;
+  border-color: inherit;
+}
+
+/* 鼠标样式 */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+select,
+label,
+.clickable,
+.n-button {
+}
