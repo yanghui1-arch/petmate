@@ -47,10 +47,11 @@ import {
 import { useSettings } from "./hooks/useSettings";
 import navigatorIcon from "./assets/image/navigator.png";
 
-// 根据路由的meta属性，决定是否显示关闭按钮，petmate页面不显示
+// petmate页面不显示关闭按钮和导航栏，也不加载玩家数据，否则会导致和页面窗口加载重复
 const route = useRoute();
 const showClosedButton = computed(() => !route.meta.hideClosedButton === true);
 const showNavigator = computed(() => !route.meta.hideNavigator === true);
+const isInitPlayerData = computed(() => !route.meta.isInitPlayerData === false);
 
 const active = ref(false);
 const placement = ref<DrawerPlacement>("right");
@@ -61,18 +62,16 @@ const activate = (place: DrawerPlacement) => {
 
 // 全局玩家状态 - 在这里加载数据
 const { playerData, initPlayerData } = usePlayer();
-const { initSettings } = useSettings();
 
 // 当应用挂载时加载玩家数据
 onMounted(async () => {
 
-  console.log("Petmate启动，正在加载玩家数据");
-  await initPlayerData();
-  console.log("玩家数据加载完成", playerData.value);
-
-  console.log("正在初始化设置");
-  await initSettings();
-  console.log("设置初始化完成");
+  console.log("Petmate启动");
+  if(isInitPlayerData.value === true) {
+    console.log("正在加载玩家数据");
+    await initPlayerData();
+    console.log("玩家数据加载完成", playerData.value);
+  }
 });
 
 const closeWin = () => {
