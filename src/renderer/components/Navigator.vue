@@ -86,7 +86,7 @@
             <span class="nav-arrow">→</span>
           </router-link>
 
-          <router-link
+          <!-- <router-link
             to="/settings"
             class="page-navigator-item"
             @click="show = false"
@@ -94,7 +94,7 @@
             <span class="nav-icon">🔧</span>
             <span class="nav-text">设置</span>
             <span class="nav-arrow">→</span>
-          </router-link>
+          </router-link> -->
         </div>
       </div>
     </div>
