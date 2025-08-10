@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Petmate 操作手册</title>
+    <style>
+      :root {
+        --primary-color: #007aff;
+        --secondary-color: #5ac8fa;
+        --success-color: #4cd964;
+        --danger-color: #ff3b30;
+        --warning-color: #ff9500;
+        --light-gray: #f2f2f7;
+        --medium-gray: #e5e5ea;
+        --dark-gray: #8e8e93;
+        --text-color: #000000;
+        --text-secondary: #6c6c6c;
+        --background-color: #ffffff;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --primary-color: #0a84ff;
+          --secondary-color: #64d2ff;
+          --success-color: #30d158;
+          --danger-color: #ff453a;
+          --warning-color: #ff9f0a;
+          --light-gray: #1c1c1e;
+          --medium-gray: #2c2c2e;
+          --dark-gray: #8e8e93;
+          --text-color: #ffffff;
+          --text-secondary: #aeaeb2;
+          --background-color: #000000;
+        }
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+        line-height: 1.6;
+        color: var(--text-color);
+        background-color: var(--light-gray);
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        padding: 0;
+        margin: 0;
+      }
+
+      .container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding-left: 20%;
+        padding-right: 20%;
+      }
+
+      .header-title {
+        padding: 20px;
+        font-size: 24px;
+        font-weight: bold;
+        color: var(--text-color);
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .header-title-sub {
+        font-size: 14px;
+      }
+
+      h1 {
+        padding: 10px;
+      }
+      h2 {
+        padding: 5px;
+      }
+
+      a {
+        color: var(--primary-color);
+        font-weight: bold;
+      }
+
+      img {
+        width: 100%;
+        height: 100%;
+        padding: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+        <div class="header">
+            <div class="header-title">
+                <span class="header-title-text">Petmate 操作手册</span>
+                <br/>
+                <span class="header-title-sub">谢谢大家对Petmate的喜爱和支持，我们会尽可能的提供更多的功能和更好的体验。</span>
+                <img src="./assets/image/petmate-card.png"/>
+            </div>
+        </div>
+        <div class="content">
+            <div class="content-topic">
+                <h1>基本操作篇</h1>
+                <h2>鼠标 </h2>
+                左键点击模型，按住不放滑动鼠标，模型就会跟着你的鼠标一起移动。<br/>
+                右键模型可以打开转盘菜单，你可以点击主页查看Petmate的养成信息，也可以点击商店来购买最需要的东西。<br/>
+                <h2>养成系统 </h2>
+                Petmate是具有养成系统的，如何让Petmate成长，是由你来决定的。你可以让Petmate去工作以赚取丰厚的利润，也可以让她去学习以增加她的技能等级，这些人物等级、技能等级和金币，可以解锁更多的活动和更丰厚的奖励。<br/> <br/>
+                除此之外，还有好感度系统，心愿体系，这些内容都会影响到Petmate与你的对话。最终Petmate会感知到你对她所做的一切，如果你愿意尝试与她对话，她会用最温柔的声音回应你。
+
+                <a href="#llm" style="color: var(--primary-color); font-weight: bold;"> 关于如何与Petmate对话，请参考大模型配置篇 </a>
+
+                <h3>养成系统中的Buff</h3>
+                Buff是养成系统中比较随机的增益/减益效果，它会对未来的养成结果造成影响。通常Buff是通过活动获得的，也有一些物品使用之后可以获取到特别的Buff。
+
+                <h2>托盘</h2>
+                托盘是Petmate的最小化图标，你可以在桌面的右下角最小化图标中找到Petmate的图标。<br/>
+                目前提供以下几个简单的功能，如果有需要，可以联系<a href="#contact" style="color: var(--primary-color); font-weight: bold;">开发者</a>增加新的功能。
+                <ul style="padding-left: 20px;">
+                    <li>显示/隐藏Petmate</li>
+                    <li>设置Petmate是否在最顶层</li>
+                    <li>重置Petmate的位置</li>
+                    <li>退出Petmate</li>
+                </ul>
+            </div>
+            <h1 id="llm">
+                大模型配置篇
+            </h1>
+                目前，我们推荐使用阿里云的百炼来配置，因为模型比较全且统一管理比较方便，费用也不高，每个月还有免费额度使用。<br/>
+                具体的操作流程如下：
+                <ol style="padding-left: 20px;">
+                    <li>登录<a
+                        href="https://bailian.console.aliyun.com/?spm=5176.29619931.J__Z58Z6CX7MY__Ll8p1ZOR.1.74cd59fcMuRsci#/model-market"
+                        target="_blank"
+                        style="color: var(--primary-color); font-weight: bold;"
+                        >阿里云</a>
+                    </li>
+                    <li>点击右上角的登录按钮</li>
+                    <li>登录完成以后，可以看到这个界面<img src="./assets/image/ali/model-market.png"style="width: 100%; height: 100%; padding: 5px;"/></li>
+                    <li>点击最上方的模型按钮，就会来到这个界面<img src="./assets//image/ali/bailian-home.png"/ style="width: 100%; height: 100%; padding: 5px;"></li>
+                    <li>点击左下角的密钥管理，再点击右边的创建api密钥 <img src="./assets//image/ali/apikey.png" style="width: 100%; height: 100%; padding: 5px;"></li>
+                    <li>按要求点击确认即可创建成功 <img src="./assets/image/ali/create-apikey.png" style="width: 100%; height: 100%; padding: 5px;"></li>
+                    <li>创建成功以后，点击右边的复制按钮，复制api密钥，然后右键Petmate的模型，点击模型配置选项</li>
+                    <li>将复制的api密钥填写到左边聊天LLM配置中的API密钥，最后点击保存即可<img src="./assets/image/petmate/model-config.png" style="width: 100%; height: 100%; padding: 5px;"></li>
+                    <li>最后的最后就是跟Petmate正常的聊天啦！</li>
+                </ol>
+                <img src="./assets/image/petmate/chat.png" style="width: 50%; height: 50%; padding: 5px;">
+
+            <h1>声音克隆</h1>
+                有些朋友想要自定义的声音，Petmate在v0.5.1这个版本开始提供自定义声音的能力，同样需要你有阿里云的账号，但如果你已经在大模型配置里配置好了正确的API-KEY，那么声音克隆对你而言，就只是提供一个音频，如果你没有API KEY，请按照<a href="#llm" style="color: var(--primary-color); font-weight: bold;">大模型配置篇</a>的步骤来配置。
+                <br/><br/>
+                接下来就是如何提供音频的教程。
+                <ol style="padding-left: 20px;">
+                    <li>你需要一个音频文件，这个音频文件需要是.mp3/.wav格式</li>
+                    <li>需要将音频放在一个可供下载的网站上，不可以是网盘！可以使用github，但鉴于国内大家都不是很好上github，这里就以<a href="https://gitee.com/">gitee</a>为例</li>
+                    <li>没有gitee的请先注册一个账号 <img src="./assets/image/gitee/home.png"/></li>
+                    <li>登录进去以后，点击新建仓库 <img src="./assets/image/gitee/repo.png"/></li>
+                    <li>仓库名字可以随意写，然后一定要勾选初始化仓库，小白可以直接看着我这个图抄答案！然后点击创建<img src="./assets/image/gitee/create-repo.png"/></li>
+                    <li>点击那个“+”，在点击上传文件 <img src="./assets/image/gitee/upload-file.png"/></li>
+                    <li>接着把你的音频文件上传，提交信息随便写一个都可以</li>
+                    <li>我这里上传了一个mp3文件，然后点击它 <img src="./assets/image/gitee/inited.png"/></li>
+                    <li>把这里的URL中的“blog” -> "raw" <img src="./assets/image/gitee/change-url.png"/></li>
+                    <li>最后复制这个url回到Petmate的模型配置中</li>
+                    <li>将刚刚拿到的网址链接填写到这里，你可以改变想听的内容，然后点击克隆并试听<img src="./assets/image/petmate/tts.png"/></li>
+                    <li>等待一会儿就克隆成功了，你可以点击音频的播放按钮，听声音，如果觉得还不错就点保存。一定要记得点击保存！不然它不会保存到你的音色库的<img src="./assets/image/petmate/clone-success.png"/></li>
+                    <li>最后你只需要在语音合成配置中选用你刚刚合成的音色，然后点击保存，再回到聊天界面聊天的时候，就可以听到你想听到的声音啦。</li>
+                </ol>
+                如果有任何问题可以联系<a href="#contact">开发者</a>
+            <div class="content-topic qa">
+                <h1>常见问题QA</h1>
+                目前还没有。。。期待你的反馈
+            </div>
+
+            <h1 id="contact">联系开发者</h1>
+            Petmate有一个官方的群可以供大家来聊天、交流和反馈。
+            <div class="content-topic">
+                <img src="./assets/image/qq.png" style="width: 50%; height: 30%; padding: 5px;"/>
+            </div>
+        </div>
+    </div>
+
+  </body>
+</html>
