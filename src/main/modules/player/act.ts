@@ -145,7 +145,7 @@ export function claimActivityReward(petmateId: number): boolean {
     petmate.addSingExp(reward.singExp ?? 0);
     petmate.addDrawExp(reward.drawExp ?? 0);
     petmate.addAffectionExp(reward.affectionExp ?? 0);
-    playerManager.updateCash((reward.cash ?? 0) * buffEffect.cashGainRate);
+    player.cash += ((reward.cash ?? 0) * buffEffect.cashGainRate);
 
     // 尝试获取buff
     const toPickBuffs: Buff[] = getBuffThroughAct(petmate);
