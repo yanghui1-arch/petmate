@@ -167,15 +167,15 @@ export function getMainWindow(): BrowserWindow | null {
 
 /**
  * 获取页面窗口，目前只有一个页面窗口
- * @throws 如果页面窗口数量不正确，则抛出错误
+ * @throws 如果页面窗口数量大于1，则抛出错误
  * @returns 页面窗口
  */
-export function getPageWindow(): BrowserWindow {
+export function getPageWindow(): BrowserWindow | null {
     const allWindowsExcludeMain: BrowserWindow[] = BrowserWindow.getAllWindows().filter(window => window.id !== mainWindow?.id)
-    if (allWindowsExcludeMain.length !== 1) {
-        throw new Error(`页面窗口数量不正确，应该只有一个页面窗口，但是有${allWindowsExcludeMain.length}个`)
+    if (allWindowsExcludeMain.length > 1) {
+        throw new Error(`页面窗口数量不正确，最多只有一个页面窗口，但是有${allWindowsExcludeMain.length}个`)
     }
-    return allWindowsExcludeMain[0]
+    return allWindowsExcludeMain.length === 1 ? allWindowsExcludeMain[0] : null
 }
 
 ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
