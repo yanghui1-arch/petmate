@@ -5,7 +5,7 @@ import { NotFoundError } from "./error";
 import { WISH_GENERATE_INTERVAL } from "./constant";
 import { PetMate } from "./modules/petmate/petmate";
 import { Wish } from "./types/wish";
-import { getMainWindow } from './index';
+import { getMainWindow, getPageWindow } from './index';
 
 
 // 生成愿望的定时器
@@ -58,11 +58,15 @@ export function startWishGeneration(selectedPetmateId: number): void {
 
     wishGenerationInterval = setInterval(() => {
         const generateSuccess: boolean = generateWishForSelectedPetmate(selectedPetmateId);
-        // 如果生成愿望成功，则发送消息给渲染层，触发通知
+        // 如果生成愿望成功，则发送消息给主窗口和页面窗口
         if (generateSuccess) {
             const mainWindow = getMainWindow();
+            const pageWindow = getPageWindow();
             if (mainWindow) {
                 mainWindow.webContents.send('wish-generated', selectedPetmateId);
+            }
+            if (pageWindow) {
+                pageWindow.webContents.send('wish-generated', selectedPetmateId);
             }
         }
     }, WISH_GENERATE_INTERVAL);
