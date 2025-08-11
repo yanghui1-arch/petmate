@@ -348,7 +348,7 @@ const isClaimingReward = ref(false);
 // 检查心愿是否已完成
 const isWishFinished = computed(() => {
   if (!checkWishInfo.value) return false;
-  return checkWishInfo.value?.status === "finished";
+  return checkWishInfo.value?.status === "finished" || checkWishInfo.value?.status === "claimed";
 });
 
 // 处理奖励领取
