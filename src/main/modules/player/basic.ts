@@ -18,7 +18,7 @@ import { PetMate } from "../petmate/petmate";
 import { Buff } from "../../types/buff";
 import { wishHandler } from "../wish";
 import { Wish } from "../../types/wish";
-import { getMainWindow } from "../../../main";
+import { getMainWindow, getPageWindow } from "../../../main";
 import { calcBuffEffect } from "../utils/calc";
 import { handleCharacterLevelAchievement, handleFiftyAffectionAchievement, handleEmotionAchievement } from "./achieve";
 
@@ -118,10 +118,13 @@ export function consumeItem(itemId: number, count: number = 1, petmateId: number
     if (finishedWishes.length > 0) {
         // 心愿完成，发送消息给渲染层（但不自动给奖励）
         const mainWindow = getMainWindow();
+        const pageWindow = getPageWindow();
+        const finishedWishNames: string[] = finishedWishes.map(wish => wish.name);
         if (mainWindow) {
-            const finishedWishNames: string[] = finishedWishes.map(wish => wish.name);
-            console.log("发送心愿完成消息", petmateId, finishedWishNames);
             mainWindow.webContents.send('wish-finished', petmateId, finishedWishNames);
+        }
+        if (pageWindow) {
+            pageWindow.webContents.send('wish-finished', petmateId, finishedWishNames);
         }
     }
 
