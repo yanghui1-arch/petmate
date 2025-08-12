@@ -6,7 +6,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ScreenPosition } from '../types/model'
 import { ModelStatus } from '../types/model'
 import { throttle } from 'lodash'
-import modelPath from '@/assets/models/petmate-1.glb'
+import modelPath from '@/assets/models/petmate.glb'
 
 /** 屏幕分辨率
  * 这个分辨率是一块屏幕的分辨率
