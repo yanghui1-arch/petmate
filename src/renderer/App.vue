@@ -65,11 +65,7 @@ const { initSettings } = useSettings();
 
 // 当应用挂载时加载玩家数据
 onMounted(async () => {
-
-  console.log("Petmate启动，正在加载玩家数据");
   await initPlayerData();
-  console.log("玩家数据加载完成", playerData.value);
-
   console.log("正在初始化设置");
   await initSettings();
   console.log("设置初始化完成");

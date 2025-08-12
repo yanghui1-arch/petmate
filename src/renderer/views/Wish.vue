@@ -224,7 +224,7 @@
             </div>
 
             <!-- 奖励领取区域 -->
-            <div v-if="isWishCompleted" class="reward-claim-section">
+            <div v-if="isWishFinished" class="reward-claim-section">
               <div class="claim-divider"></div>
               <div class="claim-container">
                 <div class="claim-info">
@@ -345,15 +345,10 @@ const checkWish = async (wishID: string) => {
 // 奖励领取相关
 const isClaimingReward = ref(false);
 
-// 检查心愿是否已完成（所有要求都完成）
-const isWishCompleted = computed(() => {
-  if (!checkWishInfo.value?.requirements) return false;
-
-  const allRequirements = checkWishInfo.value.requirements;
-  return (
-    allRequirements.length > 0 &&
-    allRequirements.every((req: WishRequirement) => req.status === "finished")
-  );
+// 检查心愿是否已完成
+const isWishFinished = computed(() => {
+  if (!checkWishInfo.value) return false;
+  return checkWishInfo.value?.status === "finished" || checkWishInfo.value?.status === "claimed";
 });
 
 // 处理奖励领取

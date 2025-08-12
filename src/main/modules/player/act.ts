@@ -10,7 +10,8 @@ import { GET_BUFF_NUM_THROUGH_ACT, GET_BUFF_PROB_THROUGH_ACT, RETRY_TIMES_GET_BU
 import { wishHandler } from "../wish";
 import { Wish } from "../../types/wish";
 import { handleEntertainmentAchievement, handleCharacterLevelAchievement, handleFiftyAffectionAchievement, handleEmotionAchievement } from "./achieve";
-import { getMainWindow } from "../../../main";
+import { getMainWindow, getPageWindow } from "../../../main";
+
 
 /**
  * 开始活动
@@ -92,11 +93,16 @@ export function finishActivity(petmateId: number): boolean {
         });
         playerManager.updatePetmate(petmate);
 
-        // 发送活动可领取消息给渲染层
+        // 分别发送消息给主窗口和页面窗口
         const mainWindow = getMainWindow();
+        const pageWindow = getPageWindow();
         if (mainWindow) {
-            console.log("发送活动可领取消息", petmateId);
+            console.log("发送活动可领取消息给主窗口", petmateId);
             mainWindow.webContents.send('activity-finished', petmateId);
+        }
+        if (pageWindow) {
+            console.log("发送活动可领取消息给页面窗口", petmateId);
+            pageWindow.webContents.send('activity-finished', petmateId);
         }
     }
     return true;
@@ -140,7 +146,7 @@ export function claimActivityReward(petmateId: number): boolean {
     petmate.addSingExp(reward.singExp ?? 0);
     petmate.addDrawExp(reward.drawExp ?? 0);
     petmate.addAffectionExp(reward.affectionExp ?? 0);
-    playerManager.updateCash((reward.cash ?? 0) * buffEffect.cashGainRate);
+    player.cash += ((reward.cash ?? 0) * buffEffect.cashGainRate);
 
     // 尝试获取buff
     const toPickBuffs: Buff[] = getBuffThroughAct(petmate);
@@ -162,10 +168,13 @@ export function claimActivityReward(petmateId: number): boolean {
     if (finishedWishes.length > 0) {
         // 心愿完成，发送消息给渲染层（但不自动给奖励）
         const mainWindow = getMainWindow();
+        const pageWindow = getPageWindow();
+        const finishedWishNames: string[] = finishedWishes.map(wish => wish.name);
         if (mainWindow) {
-            const finishedWishNames: string[] = finishedWishes.map(wish => wish.name);
-            console.log("发送心愿完成消息", petmateId, finishedWishNames);
             mainWindow.webContents.send('wish-finished', petmateId, finishedWishNames);
+        }
+        if (pageWindow) {
+            pageWindow.webContents.send('wish-finished', petmateId, finishedWishNames);
         }
     }
 

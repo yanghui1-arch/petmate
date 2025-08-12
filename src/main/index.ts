@@ -6,10 +6,10 @@ import { saveChatHistoryMessages } from './llm'
 import { is } from '@electron-toolkit/utils'
 import { join } from 'path'
 import trayIcon from '../../resources/icon.png?asset'
-import { activityManager, buffManager, itemManager, playerManager, prefabWishManager } from './modules/store'
+import { playerManager } from './modules/store'
 import { greenworksManager } from './greenworks'
 import { getOnTop, updateSettings } from './settings'
-import { initSettings } from './settings'
+import { appInit } from './init'
 
 app.commandLine.appendSwitch('--in-process-gpu')
 
@@ -102,22 +102,7 @@ const createWindow = (): void => {
 }
 
 app.whenReady().then(async () => {
-    // init greenworks
-    const initResult = greenworksManager.init()
-    const steamID: string = greenworksManager.getSteamInfo().steamId
-
-    // init store
-    initSettings()
-    playerManager.initPlayer(steamID)
-    activityManager.initActivity()
-    buffManager.initBuff()
-    itemManager.initItem()
-    prefabWishManager.initPrefabWish()
-
-    if (initResult === false) {
-        app.quit()
-        return
-    }
+    appInit()
 
     // 更新玩家信息，添加Steam数据
     try {
@@ -165,6 +150,18 @@ export function getMainWindow(): BrowserWindow | null {
     return mainWindow
 }
 
+/**
+ * 获取页面窗口，目前只有一个页面窗口
+ * @throws 如果页面窗口数量大于1，则抛出错误
+ * @returns 页面窗口
+ */
+export function getPageWindow(): BrowserWindow | null {
+    const allWindowsExcludeMain: BrowserWindow[] = BrowserWindow.getAllWindows().filter(window => window.id !== mainWindow?.id)
+    if (allWindowsExcludeMain.length > 1) {
+        throw new Error(`页面窗口数量不正确，最多只有一个页面窗口，但是有${allWindowsExcludeMain.length}个`)
+    }
+    return allWindowsExcludeMain.length === 1 ? allWindowsExcludeMain[0] : null
+}
 ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     win?.setIgnoreMouseEvents(ignore, { forward: true })
