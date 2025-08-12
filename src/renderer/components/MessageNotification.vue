@@ -13,7 +13,6 @@ const notificationDuration = 3000; // 通知持续时间，ms
 const route = useRoute();
 // 在petmate页面只接收通知，在其他页面刷新数据
 const recieveNotification = computed(() => route.meta.recieveNotification ?? false);
-
 onMounted(() => {
   const notification = useNotification();
   // 心愿生成监听回调

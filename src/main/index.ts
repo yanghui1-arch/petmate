@@ -162,7 +162,6 @@ export function getPageWindow(): BrowserWindow | null {
     }
     return allWindowsExcludeMain.length === 1 ? allWindowsExcludeMain[0] : null
 }
-
 ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     win?.setIgnoreMouseEvents(ignore, { forward: true })

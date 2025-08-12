@@ -12,6 +12,7 @@ import { Wish } from "../../types/wish";
 import { handleEntertainmentAchievement, handleCharacterLevelAchievement, handleFiftyAffectionAchievement, handleEmotionAchievement } from "./achieve";
 import { getMainWindow, getPageWindow } from "../../../main";
 
+
 /**
  * 开始活动
  * 会计算所有的消耗， 如果消耗不足则抛出NotEnoughError
