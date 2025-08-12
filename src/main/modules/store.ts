@@ -162,10 +162,12 @@ class PlayerManager {
         (this.store as any).set('playerInfo', this.currentPlayer)
     }
 
-    initPlayer(steamID): void {
+    initPlayer(steamID: string): void {
         if (this.isInit) return;
         this.isInit = true;
+        console.log("开始加载steamID为", steamID, "的玩家的数据...")
         this.loadPlayer(steamID);
+        console.log("加载steamID为", steamID, "的玩家的数据完成！")
     }
 
     /**
@@ -251,7 +253,9 @@ class ActivityManager {
     initActivity(): void {
         if (this.isInit) return;
         this.isInit = true;
+        console.log("开始加载活动数据...")
         this.loadActivity();
+        console.log("加载活动数据完成！")
     }
 
     loadActivity(): void {
@@ -298,7 +302,9 @@ class BuffManager {
     initBuff(): void {
         if (this.isInit) return;
         this.isInit = true;
+        console.log("开始加载buff数据...")
         this.loadBuff();
+        console.log("加载buff数据完成！")
     }
 
     loadBuff(): void {
@@ -341,7 +347,9 @@ class ItemManager {
     initItem(): void {
         if (this.isInit) return;
         this.isInit = true;
+        console.log("开始加载物品数据...")
         this.loadItem();
+        console.log("加载物品数据完成！")
     }
 
     loadItem(): void {
@@ -382,7 +390,9 @@ class PrefabWishManager {
     initPrefabWish(): void {
         if (this.isInit) return;
         this.isInit = true;
+        console.log("开始加载预设愿望数据...")
         this.loadPrefabWish();
+        console.log("加载预设愿望数据完成！")
     }
 
     loadPrefabWish(): void {

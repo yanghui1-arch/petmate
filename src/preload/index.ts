@@ -10,7 +10,6 @@ import { WindowEvent } from '../main/window-monitor'
  */
 contextBridge.exposeInMainWorld('api', {
     // init
-    initPlayerData: () => ipcRenderer.invoke('init-player-data'),
     initSettings: () => ipcRenderer.invoke('init-settings'),
     initLLM: () => ipcRenderer.invoke('init-llm'),
 
