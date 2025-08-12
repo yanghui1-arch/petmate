@@ -18,3 +18,4 @@ export const formatTime = (date: Date) => {
     const second = pad(localDate.getSeconds());
 
     return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+}
