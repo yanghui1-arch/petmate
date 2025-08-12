@@ -118,9 +118,9 @@
                         <span class="price-icon">💵</span>
                         <span class="item-price">{{ item.price }}</span>
                       </div>
-                      <LockStyle v-if="checkItemLocked(item.requirement)" 
-                      :requirement="item.requirement" 
-                      :petmateAttribute="petmateAttribute as PetMateAttribute" 
+                      <LockStyle v-if="checkItemLocked(item.requirement)"
+                      :requirement="item.requirement"
+                      :petmateAttribute="petmateAttribute as PetMateAttribute"
                       borderRadius="5px" />
                     </div>
                   </n-gi>
@@ -168,7 +168,7 @@ import { ItemType, Item, Requirement } from "../types/common";
 import type { PetMateAttribute } from "../types/petmate";
 import { executeItemPage } from "../utils/item";
 import { checkLocked } from "../utils/check";
-import shopPetmateImage from "../assets/image/shop-petmate.png";
+import shopPetmateImage from "../assets/image/shop-petmate.webp";
 import greaterThanIcon from "../assets/image/greater-than.png";
 import shopItemIcon from "../assets/image/shop-item.png";
 
