@@ -45,5 +45,8 @@ export default defineConfig({
       },
     },
     publicDir: resolve('resources'),
+    build: {
+        assetsInlineLimit: 0
+    }
   }
 })
