@@ -12,7 +12,6 @@ import { WindowEvent, WindowInfo } from "../main/window-monitor";
  */
 interface IElectronAPI {
   // 初始化
-  initPlayerData: () => Promise<Response<PlayerInfo>>;
   initSettings: () => Promise<Response<SettingConfig>>;
   initLLM: () => Promise<Response<void>>;
 

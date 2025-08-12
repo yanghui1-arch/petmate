@@ -6,10 +6,10 @@ import { saveChatHistoryMessages } from './llm'
 import { is } from '@electron-toolkit/utils'
 import { join } from 'path'
 import trayIcon from '../../resources/icon.png?asset'
-import { activityManager, buffManager, itemManager, playerManager, prefabWishManager } from './modules/store'
+import { playerManager } from './modules/store'
 import { greenworksManager } from './greenworks'
 import { getOnTop, updateSettings } from './settings'
-import { initSettings } from './settings'
+import { appInit } from './init'
 
 app.commandLine.appendSwitch('--in-process-gpu')
 
@@ -102,22 +102,7 @@ const createWindow = (): void => {
 }
 
 app.whenReady().then(async () => {
-    // init greenworks
-    const initResult = greenworksManager.init()
-    const steamID: string = greenworksManager.getSteamInfo().steamId
-
-    // init store
-    initSettings()
-    playerManager.initPlayer(steamID)
-    activityManager.initActivity()
-    buffManager.initBuff()
-    itemManager.initItem()
-    prefabWishManager.initPrefabWish()
-
-    if (initResult === false) {
-        app.quit()
-        return
-    }
+    appInit()
 
     // 更新玩家信息，添加Steam数据
     try {
