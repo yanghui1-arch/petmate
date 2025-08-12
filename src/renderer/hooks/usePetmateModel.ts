@@ -2,7 +2,6 @@ import * as THREE from 'three'
 import gsap from 'gsap'
 import { ref } from 'vue'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ScreenPosition } from '../types/model'
 import { ModelStatus } from '../types/model'
 import { throttle } from 'lodash'
@@ -26,10 +25,6 @@ let mixer: THREE.AnimationMixer | null = null;
 const clock: THREE.Clock = new THREE.Clock();
 let scene: THREE.Scene | null = null;
 let camera: THREE.PerspectiveCamera | null = null;
-let directionalLightLeft: THREE.DirectionalLight | null = null;
-let directionalLightRight: THREE.DirectionalLight | null = null;
-let directionalLightCenter: THREE.DirectionalLight | null = null;
-let ambientLight: THREE.AmbientLight | null = null;
 let renderer: THREE.WebGLRenderer | null = null;
 let raycaster: THREE.Raycaster | null = null;
 let mouse: THREE.Vector2 | null = null;
@@ -43,9 +38,6 @@ let petMateModelConfig = {
  * need it to calculate model width and height.
  */
 let modelSize: THREE.Vector3 = new THREE.Vector3();
-
-// 开发辅助用的
-let orbitControls: OrbitControls | null = null;
 
 // 优化
 let lastFrameTime = 0;
@@ -61,7 +53,6 @@ let currentAction: THREE.AnimationAction | null = null;
  */
 let modelState: ModelStatus = {
     walk: false,
-    jump: false,
     dance: false,
     sitting: false,
     standIdle: false,
@@ -72,7 +63,6 @@ let modelState: ModelStatus = {
 
 let defaultModelState: ModelStatus = {
     walk: false,
-    jump: false,
     dance: false,
     sitting: false,
     standIdle: false,
@@ -406,51 +396,6 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
      */
     const dance = () => {
 
-    };
-
-    /**
-     * 跳跃到指定位置
-     * 这个方法目前不行，因为动画还需要做调整
-     * @param target 目标位置
-     * @param duration 跳跃持续时间，如果为空，则使用动画的持续时间
-     */
-    const jumpTo = (target:THREE.Vector3, duration?:number) => {
-        if (!model || !animations) return ;
-
-        const jumpAnimationClip = animations.find(animation => animation.name.includes("jump"));
-        if (!jumpAnimationClip) return;
-        const animationDuration = duration ?? jumpAnimationClip.duration;
-        // _playAnimation("jump Bip001|Take 001|BaseLayer");
-
-        const startPos = model.position.clone();
-        const distance = startPos.distanceTo(target);
-        const jumpHeight = Math.max(1, distance * 0.5);
-
-        // 创建时间轴，精确控制动画
-        const tl = gsap.timeline();
-
-        // 水平移动（X, Z轴）
-        tl.to(model.position, {
-            x: target.x,
-            z: target.z,
-            duration: animationDuration,
-            ease: "power1.inOut"
-        }, 0); // 从0秒开始
-
-        // 垂直跳跃（Y轴）- 先上升后下降
-        tl.to(model.position, {
-            y: startPos.y + jumpHeight,
-            duration: animationDuration * 0.3, // 上升阶段占40%时间
-            ease: "power2.out"
-        }, 0)
-        .to(model.position, {
-            y: target.y,
-            duration: animationDuration * 0.7, // 下降阶段占60%时间
-            ease: "power2.in"
-        }, animationDuration * 0.3); // 在上升完成后开始下降
-
-        tl.call(() => {
-        })
     };
 
     /**
