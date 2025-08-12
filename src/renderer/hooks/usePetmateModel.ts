@@ -6,7 +6,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ScreenPosition } from '../types/model'
 import { ModelStatus } from '../types/model'
 import { throttle } from 'lodash'
-import modelPath from '@/assets/models/petmate.glb'
+import modelPath from '@/assets/models/petmate-1.glb'
 
 /** 屏幕分辨率
  * 这个分辨率是一块屏幕的分辨率
@@ -136,16 +136,6 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
             renderer.domElement.addEventListener('mousedown', onMouseDown, false);
             renderer.domElement.addEventListener('mouseup', onMouseUp, false);
 
-            ambientLight = new THREE.AmbientLight(0x404040, 1);
-            directionalLightLeft = new THREE.DirectionalLight(0xffffff, 1);
-            directionalLightLeft.position.set(-20, 50, 50);
-
-            directionalLightRight = new THREE.DirectionalLight(0xffffff, 1);
-            directionalLightRight.position.set(20, 50, 50);
-
-            directionalLightCenter = new THREE.DirectionalLight(0xffffff, 1);
-            directionalLightCenter.position.set(0, 50, 0);
-
             // 加载模型
             loader.load(modelPath, (gltf) => {
                 model = gltf.scene;
@@ -155,14 +145,29 @@ export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
 
                 camera?.position.set(0, 0, 10)
 
+                // 将物理材质转换成基础材质
+                model.traverse((child) => {
+                    if (child instanceof THREE.Mesh) {
+                        if (child.material instanceof THREE.Material)
+                            console.log(`${JSON.stringify(child.name)}: ${JSON.stringify(child.material.type)}`)
+                            const oldMaterial = child.material;
+                            const oldColor = oldMaterial.color;
+                            const oldMap = oldMaterial.map;
+                            const newMaterial = new THREE.MeshBasicMaterial({
+                                color: oldColor,
+                                map: oldMap,
+                                side: oldMaterial.side,
+                                alphaTest: oldMaterial.alphaTest,
+                                transparent: oldMaterial.transparent
+                            });
+                            child.material = newMaterial;
+                            oldMaterial.dispose();
+                    }
+                })
+
                 animations = gltf.animations;
                 console.log(animations)
                 mixer = new THREE.AnimationMixer(model);
-
-                scene?.add(ambientLight!);
-                scene?.add(directionalLightLeft!);
-                scene?.add(directionalLightRight!);
-                scene?.add(directionalLightCenter!);
 
                 renderer?.setAnimationLoop(animate);
 
