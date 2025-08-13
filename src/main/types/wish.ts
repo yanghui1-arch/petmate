@@ -12,7 +12,7 @@ export type Wish = {
 
 export type WishRequirement = {
     type: "item",
-    id: number,
+    id: number,                         // 物品id，需要严格对上item.json中的id
     name: string,
     src: string,
     count: number,
@@ -20,7 +20,7 @@ export type WishRequirement = {
     status: "doing" | "finished"
 } | {
     type: "act",
-    id: number,
+    id: number,                         // 活动id，需要严格对上activity.json中的id
     name: string,
     src: string,
     status: "doing" | "finished"
@@ -34,7 +34,7 @@ export type WishReward = {
     count: number,
 } | {
     type: "buff",
-    id: number,
+    id: number,                         // buffid，需要严格对上buff.json中的id
     name: string,
     src: string,
 }
@@ -45,5 +45,5 @@ export interface PrefabWish {
     requirements: WishRequirement[],
     affectionExp: number,
     reward?: WishReward,
-    duration: number
+    duration: number                    // 秒
 }
