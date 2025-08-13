@@ -5,7 +5,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { ScreenPosition } from '../types/model'
 import { ModelStatus } from '../types/model'
 import { throttle } from 'lodash'
-import modelPath from '@/assets/models/petmate.glb'
+// 先用旧的模型，新的模型的问题：鼠标进入上本身无法被检测到
+import modelPath from '@/assets/models/petmate-1.glb'
 
 /** 屏幕分辨率
  * 这个分辨率是一块屏幕的分辨率
