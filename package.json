@@ -1,7 +1,7 @@
 {
-  "name": "petmate",
+  "name": "Petmate",
   "version": "0.5.1",
-  "description": "An virtual desktop petmate game.",
+  "description": "Petmate",
   "main": "./out/main/index.js",
   "author": "Mate Gamer",
   "scripts": {
@@ -67,5 +67,24 @@
     "vue": "^3.5.17",
     "vue-eslint-parser": "^10.2.0",
     "vue-tsc": "^3.0.3"
+  },
+  "build": {
+    "appId": "com.mategamer.Petmate",
+    "productName": "Petmate",
+    "win": {
+      "icon": "resources/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32",
+            "arm64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-win-${arch}.${ext}",
+      "requestedExecutionLevel": "asInvoker"
+    }
   }
 }
