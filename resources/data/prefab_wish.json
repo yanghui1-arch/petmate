@@ -1,51 +1,58 @@
 [
     {
-        "id": 1,
-        "name": "愿望1",
-        "description": "愿望1描述",
-        "duration": 1000,
-        "affectionExp": 100,
+        "id": 0,
+        "name": "甜点套餐",
         "requirements": [
             {
                 "type": "item",
+                "id": 0,
+                "name": "曲奇饼",
+                "src": "food/cookie",
+                "count": 6,
+                "userCount": 0,
+                "status": "doing"
+            },
+            {
+                "type": "item",
                 "id": 1,
-                "name": "热狗",
-                "src": "food/hotdog",
-                "count": 1,
+                "name": "甜甜圈",
+                "src": "food/donut",
+                "count": 3,
                 "userCount": 0,
                 "status": "doing"
             }
         ],
-        "reward": {
-            "type": "item",
-            "id": 1,
-            "name": "热狗",
-            "src": "food/hotdog",
-            "count": 1
-        }
+        "affectionExp": 80,
+        "duration": 14400
     },
     {
-        "id": 2,
-        "name": "愿望2",
-        "description": "愿望2描述",
-        "duration": 1000,
-        "affectionExp": 100,
+        "id": 1,
+        "name": "肆意玩耍",
         "requirements": [
             {
                 "type": "item",
-                "id": 1,
-                "name": "热狗",
-                "src": "food/hotdog",
-                "count": 1,
+                "id": 3,
+                "name": "可乐",
+                "src": "drink/colacoke",
+                "count": 2,
                 "userCount": 0,
+                "status": "doing"
+            },
+            {
+                "type": "act",
+                "id": 0,
+                "name": "掌机游戏",
+                "src": "entertainment/game",
                 "status": "doing"
             }
         ],
+        "affectionExp": 80,
         "reward": {
             "type": "buff",
-            "id": 1,
-            "name": "第一个buff",
-            "src": "buff"
-        }
+            "id": 0,
+            "name": "活力充沛",
+            "src": "positive/energetic"
+        },
+        "duration": 14400
     }
 ]
