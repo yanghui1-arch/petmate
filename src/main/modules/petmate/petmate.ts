@@ -60,6 +60,7 @@ export abstract class PetMate {
     addExp(exp: number): number {
         exp = calcBuffEffect(this.attrs.buffs).expGainRate * exp;
         this.attrs.exp += exp;
+        this.attrs.exp = Math.trunc(this.attrs.exp);
         // 升级，但可能不只是生一级
         while (this.attrs.exp >= this.attrs.nextExp) {
             this.attrs.level++;
@@ -84,6 +85,7 @@ export abstract class PetMate {
     addGameExp(exp: number): number {
         exp = calcBuffEffect(this.attrs.buffs).gameExpGainRate * exp;
         this.attrs.gameExp += exp;
+        this.attrs.gameExp = Math.trunc(this.attrs.gameExp);
         while (this.attrs.gameExp >= this.attrs.gameNextExp) {
             this.attrs.gameLevel++;
             this.attrs.gameExp = this.attrs.gameExp - this.attrs.gameNextExp;
@@ -101,6 +103,7 @@ export abstract class PetMate {
     addSingExp(exp: number): number {
         exp = calcBuffEffect(this.attrs.buffs).singExpGainRate * exp;
         this.attrs.singExp += exp;
+        this.attrs.singExp = Math.trunc(this.attrs.singExp);
         while (this.attrs.singExp >= this.attrs.singNextExp) {
             this.attrs.singLevel++;
             this.attrs.singExp = this.attrs.singExp - this.attrs.singNextExp;
@@ -118,6 +121,7 @@ export abstract class PetMate {
     addDrawExp(exp: number): number {
         exp = calcBuffEffect(this.attrs.buffs).drawExpGainRate * exp;
         this.attrs.drawExp += exp;
+        this.attrs.drawExp = Math.trunc(this.attrs.drawExp);
         while (this.attrs.drawExp >= this.attrs.drawNextExp) {
             this.attrs.drawLevel++;
             this.attrs.drawExp = this.attrs.drawExp - this.attrs.drawNextExp;
@@ -135,6 +139,7 @@ export abstract class PetMate {
     addAffectionExp(exp: number): number {
         exp = calcBuffEffect(this.attrs.buffs).affectionExpGainRate * exp;
         this.attrs.affectionExp += exp;
+        this.attrs.affectionExp = Math.trunc(this.attrs.affectionExp);
         while (this.attrs.affectionExp >= this.attrs.affectionNextExp) {
             this.attrs.affectionLevel++;
             this.attrs.affectionExp = this.attrs.affectionExp - this.attrs.affectionNextExp;
@@ -159,6 +164,7 @@ export abstract class PetMate {
             throw new NotEnoughError("饱食度不足");
         }
         this.attrs.hungry = Math.min(this.attrs.hungry + hungry, this.attrs.maxHungry);
+        this.attrs.hungry = Math.trunc(this.attrs.hungry);
         return this.attrs.hungry;
     }
 
@@ -178,6 +184,7 @@ export abstract class PetMate {
             throw new NotEnoughError("心情不够");
         }
         this.attrs.emotion = Math.min(this.attrs.emotion + emotion, this.attrs.maxEmotion);
+        this.attrs.emotion = Math.trunc(this.attrs.emotion);
         return this.attrs.emotion;
     }
 
@@ -198,6 +205,7 @@ export abstract class PetMate {
             throw new NotEnoughError("精力不够");
         }
         this.attrs.energy = Math.min(this.attrs.energy + energy, this.attrs.maxEnergy);
+        this.attrs.energy = Math.trunc(this.attrs.energy);
         return this.attrs.energy;
     }
 
@@ -217,6 +225,7 @@ export abstract class PetMate {
             throw new NotEnoughError("健康度不够");
         }
         this.attrs.health = Math.min(this.attrs.health + health, this.attrs.maxHealth);
+        this.attrs.health = Math.trunc(this.attrs.health);
         return this.attrs.health;
     }
 
