@@ -234,10 +234,10 @@ const filterAndSortItems = (items: Item[]): Item[] => {
           return a.price - b.price;
         case "price-desc":
           return b.price - a.price;
-        // case "level-asc":
-        //   return (a.level || 0) - (b.level || 0);
-        // case "level-desc":
-        //   return (b.level || 0) - (a.level || 0);
+        case "level-asc":
+          return (a.requirement.level ?? 0) - (b.requirement.level ?? 0);
+        case "level-desc":
+          return (b.requirement.level ?? 0) - (a.requirement.level ?? 0);
         default:
           return 0;
       }

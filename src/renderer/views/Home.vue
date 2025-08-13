@@ -166,6 +166,7 @@
       :show="isItemEnter"
       :popoverWidth="popoverWidth"
       :isSourceShow="true"
+      :isRequirementShow="false"
       :item="popoverItem!"
     />
     <ItemModal
