@@ -82,7 +82,7 @@ export function finishActivity(petmateId: number): boolean {
 
     const status = petmate.getStatus();
     if (status.status === "idle") {
-        logger.warning(`Petmate [${petmateId}] 当前状态为idle，无法结束活动，现在有的活动是: ${status.activity?.name}`);
+        logger.error(`Petmate [${petmateId}] 当前状态为idle，无法结束活动，现在有的活动是: ${status.activity?.name}`);
         return false;
     }
     if (petmate && petmate.getStatus().status !== "idle") {
@@ -126,7 +126,7 @@ export function claimActivityReward(petmateId: number): boolean {
 
     const status = petmate.getStatus();
     if (status.status === "idle") {
-        logger.warning(`Petmate [${petmateId}] 当前状态为idle，无法结束活动，现在有的活动是: ${status.activity?.name}`);
+        logger.error(`Petmate [${petmateId}] 当前状态为idle，无法结束活动，现在有的活动是: ${status.activity?.name}`);
         return false;
     }
 
@@ -208,7 +208,7 @@ export function cancelActivity(petmateId: number): boolean {
     }
     const status = petmate.getStatus();
     if (status.status === "idle") {
-        logger.warning(`Petmate [${petmateId}] 当前状态为idle，无法取消活动，现在有的活动是: ${status.activity?.name}`);
+        logger.error(`Petmate [${petmateId}] 当前状态为idle，无法取消活动，现在有的活动是: ${status.activity?.name}`);
         return false;
     }
     const activity: ActivityInfo | undefined = status.activity;
