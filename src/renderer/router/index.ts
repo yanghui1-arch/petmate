@@ -10,6 +10,7 @@ import Log from '@/views/Log.vue'
 import Settings from '@/views/Settings.vue'
 import Chat from '@/views/Chat.vue'
 import Config from '@/views/Config.vue'
+import DataRecovery from '@/views/DataRecovery.vue'
 
 // meta属性可以为每个路由设置一些自定义属性，在.vue文件中引入useRoute()，通过route.meta.xxx就可以实现一些针对不同页面的逻辑
 const routes = [
@@ -24,6 +25,7 @@ const routes = [
   { path: '/settings', name: 'Settings', component: Settings },
   { path: '/chat', name: 'Chat', component: Chat },
   { path: '/config', name: 'Config', component: Config },
+  { path: '/data-recovery', name: 'DataRecovery', component: DataRecovery },
 ]
 
 const router = createRouter({

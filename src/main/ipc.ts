@@ -953,6 +953,7 @@ ipcMain.handle("open-new-window", (_: IpcMainInvokeEvent, route: string, width: 
         // 加载指定路由的页面
         if (is.dev) {
             newWindow.loadURL(`http://localhost:5173/#${route}`);
+            newWindow.webContents.openDevTools({ mode: 'detach' });
         } else {
             newWindow.loadFile(path.join(__dirname, '../renderer/index.html'), {
                 hash: route

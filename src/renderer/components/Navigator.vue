@@ -77,6 +77,15 @@
         <div class="navigator-section">
           <div class="section-title">系统</div>
           <router-link
+            to="/data-recovery"
+            class="page-navigator-item"
+            @click="show = false"
+          >
+            <span class="nav-icon">💾</span>
+            <span class="nav-text">恢复数据</span>
+            <span class="nav-arrow">→</span>
+          </router-link>
+          <router-link
             to="/config"
             class="page-navigator-item"
             @click="show = false"
@@ -85,7 +94,6 @@
             <span class="nav-text">模型配置</span>
             <span class="nav-arrow">→</span>
           </router-link>
-
           <!-- <router-link
             to="/settings"
             class="page-navigator-item"
