@@ -33,7 +33,7 @@ export function generateWishForSelectedPetmate(selectedPetmateId: number): boole
         }
 
         // 生成新愿望
-        if (Math.random() >= 0.5) {
+        if (Math.random() >= 0.25) {
             logger.info(`[scheduler] 该次${selectedPetmate.name}没有愿望`);
             return false;
         }
