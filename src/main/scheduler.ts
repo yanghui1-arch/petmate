@@ -32,11 +32,12 @@ export function generateWishForSelectedPetmate(selectedPetmateId: number): boole
             return false;
         }
 
-        // 生成新愿望
-        if (Math.random() >= 0.25) {
+        // 跳过这次生成
+        if (Math.random() >= 0.75) {
             logger.info(`[scheduler] 该次${selectedPetmate.name}没有愿望`);
             return false;
         }
+        // 生成新愿望
         const newWish: Wish = wishHandler.generateWish();
         selectedPetmate.addWish(newWish);
 
