@@ -37,7 +37,7 @@
                 </template>
               </div>
             </div>
-            <div>
+            <div v-if="isRequirementShow">
               <div class="popover-tip">要求</div>
               <div class="popover-requirement">
                 <span
@@ -73,6 +73,7 @@ const props = defineProps({
   popoverY: { type: Number, required: true },
   show: { type: Boolean, required: true }, // 是否显示
   popoverWidth: { type: Number, default: 180 }, // 悬浮矩形框的宽度
+  isRequirementShow: { type: Boolean, default: true }, // 是否显示要求
   isSourceShow: { type: Boolean, default: false }, // 是否显示获得方式
   item: { type: Object as PropType<Item>, required: true }, // 物品
   isLocked: { type: Boolean, default: false }, // 是否锁定
