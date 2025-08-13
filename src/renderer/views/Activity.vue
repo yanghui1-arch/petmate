@@ -443,12 +443,12 @@ const activitySectionList = [
     name: "娱乐",
     description: "休憩是为下一次伟大的远征积蓄最充沛的能量",
   },
-  {
-    id: 4,
-    type: "empty",
-    name: "empty",
-    description: "最有价值的活动，都在这里了",
-  },
+  // {
+  //   id: 4,
+  //   type: "empty",
+  //   name: "empty",
+  //   description: "最有价值的活动，都在这里了",
+  // },
 ];
 
 
