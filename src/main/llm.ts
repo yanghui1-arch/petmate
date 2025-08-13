@@ -89,8 +89,8 @@ class ChatMessageFactory {
 }
 
 const DEFAULT_CHAT_LLM_CONFIG: ChatLLMConfig = {
-    model: 'qwen2.5-7b-instruct-1m',
-    apiKey: 'sk-93ce6cc609864f199c39a479f2f50c1d',
+    model: 'deepseek-v3',
+    apiKey: '',
     baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1'
 }
 
@@ -106,7 +106,7 @@ const DEFAULT_TTS_PARAMETERS: TTSParameters = {
 
 const DEFAULT_TTS_LLM_CONFIG: TTSLLMConfig = {
     model: 'cosyvoice-v2',
-    apiKey: 'sk-93ce6cc609864f199c39a479f2f50c1d',
+    apiKey: '',
     baseUrl: 'wss://dashscope.aliyuncs.com/api-ws/v1/inference/',
     parameters: DEFAULT_TTS_PARAMETERS
 }
