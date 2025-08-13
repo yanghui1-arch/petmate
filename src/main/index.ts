@@ -10,6 +10,8 @@ import { playerManager } from './modules/store'
 import { greenworksManager } from './greenworks'
 import { getOnTop, updateSettings } from './settings'
 import { appInit } from './init'
+import * as fs from 'fs'
+import logger from './log'
 
 app.commandLine.appendSwitch('--in-process-gpu')
 
@@ -70,9 +72,25 @@ const createWindow = (): void => {
         {
             label: '操作教程',
             click: () => {
-                const htmlPath = path.join(__dirname, '../../resources/html/opt.html');
-                const fileUrl = "file://" + htmlPath;
-                shell.openExternal(fileUrl);
+                try {
+                    let htmlPath: string;
+                    if (is.dev) {
+                        // 开发环境：直接使用相对路径
+                        htmlPath = path.join(__dirname, '../../resources/html/opt.html');
+                    } else {
+                        // 打包环境：使用 extraResources，文件在 resources/html/ 目录
+                        htmlPath = path.join(process.resourcesPath, 'html/opt.html');
+                    }
+
+                    if (!fs.existsSync(htmlPath)) {
+                        logger.error(`操作手册文件不存在: ${htmlPath}, 尝试的路径: ${htmlPath}, process.resourcesPath: ${process.resourcesPath}`);
+                        return;
+                    }
+                    const fileUrl = "file://" + htmlPath;
+                    shell.openExternal(fileUrl);
+                } catch (error) {
+                    logger.error("打开操作手册失败:", error);
+                }
             }
         },
         {
