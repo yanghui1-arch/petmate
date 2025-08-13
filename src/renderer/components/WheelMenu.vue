@@ -132,9 +132,9 @@
       action: () => window.api.openNewWindow('/activity')
     },
     {
-      id: 'config',
-      title: '模型配置',
-      action: () => window.api.openNewWindow('/config', 800, 500)
+      id: 'chat',
+      title: '聊天',
+      action: () => window.api.openNewWindow('/chat')
     },
     {
       id: 'tutorial',
