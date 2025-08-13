@@ -43,11 +43,10 @@ const handleRecoverData = () => {
     flex: 1;
     background: $system-bgc;
     padding: 0 6%;
+    display: flex;
+    align-items: center;
 }
 .data-recovery-container {
-    .recover-btn-wrapper {
-        margin-top: 40px;
-    }
     .recover-doc-wrapper {
         margin-top: 20px;
     }
@@ -99,8 +98,5 @@ const handleRecoverData = () => {
     width: 100%;
     font-size: 14px;
     color: #fff;
-}
-.n-spin-container .n-spin-body {
-    width: 100% !important;
 }
 </style>
