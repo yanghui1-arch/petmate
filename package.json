@@ -71,6 +71,15 @@
   "build": {
     "appId": "com.mategamer.Petmate",
     "productName": "Petmate",
+    "extraResources": [
+      {
+        "from": "resources/html",
+        "to": "html",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
     "win": {
       "icon": "resources/icon.ico",
       "target": [
