@@ -2,7 +2,7 @@
  * 暴露ipc事件
  */
 
-import { ipcMain, IpcMainInvokeEvent, IpcMainEvent, screen, BrowserWindow } from 'electron';
+import { ipcMain, IpcMainInvokeEvent, IpcMainEvent, screen, BrowserWindow, app } from 'electron';
 import { shell } from 'electron';
 import { is } from '@electron-toolkit/utils'
 import { playerManager } from './modules/store';
@@ -45,6 +45,7 @@ import {
 import { windowMonitor, WindowInfo, WindowEvent } from './window-monitor';
 import { getMainWindow } from './index';
 import * as path from 'path';
+import * as fs from 'fs';
 
 /**
  * 初始化设置数据
@@ -984,7 +985,25 @@ ipcMain.on("close-window", (event: IpcMainEvent): void => {
 });
 
 ipcMain.handle("open-opt", (_: IpcMainInvokeEvent) => {
-    const htmlPath = path.join(__dirname, '../../resources/html/opt.html');
-    const fileUrl = "file://" + htmlPath;
-    shell.openExternal(fileUrl);
+    try {
+        let htmlPath: string;
+
+        if (is.dev) {
+            // 开发环境：直接使用相对路径
+            htmlPath = path.join(__dirname, '../../resources/html/opt.html');
+        } else {
+            // 打包环境：使用 extraResources，文件在 resources/html/ 目录
+            htmlPath = path.join(process.resourcesPath, 'html/opt.html');
+        }
+
+        // 检查文件是否存在
+        if (!fs.existsSync(htmlPath)) {
+            logger.error(`操作手册文件不存在: ${htmlPath}, 尝试的路径: ${htmlPath}, process.resourcesPath: ${process.resourcesPath}`);
+            return;
+        }
+        const fileUrl = "file://" + htmlPath;
+        shell.openExternal(fileUrl);
+    } catch (error) {
+        logger.error("打开操作手册失败:", error);
+    }
 })
