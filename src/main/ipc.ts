@@ -5,7 +5,7 @@
 import { ipcMain, IpcMainInvokeEvent, IpcMainEvent, screen, BrowserWindow, app } from 'electron';
 import { shell } from 'electron';
 import { is } from '@electron-toolkit/utils'
-import { playerManager } from './modules/store';
+import { playerManager, ServerData } from './modules/store';
 import { PlayerInfo } from './types/player';
 import { Response } from '../types/response';
 import { consumeItem } from './modules/player/basic';
@@ -46,6 +46,9 @@ import { windowMonitor, WindowInfo, WindowEvent } from './window-monitor';
 import { getMainWindow } from './index';
 import * as path from 'path';
 import * as fs from 'fs';
+import axios, { AxiosResponse } from 'axios';
+import { Dass } from './modules/petmate/dass';
+import { greenworksManager } from './greenworks';
 
 /**
  * 初始化设置数据
@@ -767,6 +770,56 @@ ipcMain.handle("update-settings", (_: IpcMainInvokeEvent, settings: Partial<Sett
         } as Response<void>;
     }
 })
+
+/**
+ * 恢复数据
+ * 会从服务器上拉数据下来，然后立即更新到文件和内存中，这意味着其实可以不需要从重新启动Petmate，但是为了保险起见，还是建议重新启动Petmate
+ */
+ipcMain.handle("recover-data", async (_: IpcMainInvokeEvent): Promise<Response<void>> => {
+    const steamId: string = greenworksManager.getSteamInfo().steamId;
+    try {
+        const res: AxiosResponse = await axios.post('http://petmate.fun/api/user/player_info_by_steamid', {
+            steamid: steamId
+        });
+
+        const response = res.data;
+        const code = response.code;
+
+        if (code === 200) {
+            const data: ServerData = response.data;
+            const player: PlayerInfo = data.playerInfo;
+            const toUpdateCash = player.cash + data.inventoryValue;
+            const petmate: PetMate = new Dass(
+                data.playerInfo.petmates[0].id,
+                data.playerInfo.petmates[0].name,
+                data.playerInfo.petmates[0].attrs,
+                data.playerInfo.petmates[0].status,
+                data.playerInfo.petmates[0].wishes,
+                data.playerInfo.petmates[0].completedWishesNum
+            );
+            player.petmates[0] = petmate;
+            player.cash = toUpdateCash;
+            playerManager.updatePlayer(player);
+            logger.info(`恢复steamID为${steamId}的数据成功！`);
+            return {
+                code: 200,
+                message: "恢复数据成功, 请重新打开主页或者是重新启动Petmate"
+            };
+        } else {
+            logger.error(`获取steamID为${steamId}的玩家信息失败, 没有这个数据。`);
+            return {
+                code: 404,
+                message: "你不是老玩家，没有你之前的数据噢，如果有疑问请联系我们，可以在操作手册中看到联系开发者的方式"
+            };
+        }
+    } catch (err) {
+        logger.error(`获取steamID为${steamId}的玩家信息失败:${err}`);
+        return {
+            code: 400,
+            message: "恢复数据失败, 请检查网络连接"
+        };
+    }
+});
 
 /* ============ 窗口相关IPC处理器 ============
  * 主要是玩家窗口监控和Electron窗口打开、关闭等。

@@ -89,11 +89,16 @@ interface IWindowMonitor {
   removeWindowListeners: () => void;
 }
 
+interface IServerAPI {
+  recoverData: () => Promise<Response<void>>;
+}
+
 // 声明全局window对象，之后渲染层直接window.api.function() 调用即可
 declare global {
   interface Window {
     api: IElectronAPI;
     windowMonitor: IWindowMonitor;
+    server: IServerAPI;
   }
 }
 

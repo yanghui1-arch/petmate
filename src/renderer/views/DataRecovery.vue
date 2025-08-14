@@ -26,15 +26,15 @@ import { openMessageModal } from '../hooks/useInteract';
 import { ref } from 'vue';
 const showSpin = ref(false);
 const handleRecoverData = () => {
-    console.log('恢复数据');
     showSpin.value = true;
-    setTimeout(() => {
+    window.server.recoverData().then((res) => {
+        if (res.code === 200) {
+            openMessageModal('success', res.message || '恢复数据成功，现在继续愉快地玩耍吧~');
+        } else {
+            openMessageModal('fail', res.message || '恢复数据失败，请稍后再试~');
+        }
         showSpin.value = false;
-        openMessageModal('success', '恢复数据成功，现在继续愉快地玩耍吧~');
-        // 有错误调这个
-        // openMessageModal('fail', '恢复数据失败，请稍后再试~');
-    }, 3000);
-
+    });
 };
 </script>
 

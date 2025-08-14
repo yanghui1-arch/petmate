@@ -44,7 +44,7 @@ type PrefabWishStoreData = {
 /**
  * 服务器返回的数据，移除了code，message的字段
  */
-interface ServerData {
+export interface ServerData {
     playerInfo: PlayerInfo;
     inventoryValue: number;
 }
