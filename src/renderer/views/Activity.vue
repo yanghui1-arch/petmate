@@ -12,7 +12,7 @@
           />
           <span class="activity-grade-label">唱歌</span>
           <span class="activity-grade-value"
-            >LV.{{ petmateAttribute?.singLevel ?? 0 }}</span
+            >Lv.{{ petmateAttribute?.singLevel ?? 0 }}</span
           >
           <AttributeBar
             :value="petmateAttribute?.singExp ?? 0"
@@ -30,7 +30,7 @@
           />
           <span class="activity-grade-label">绘画</span>
           <span class="activity-grade-value"
-            >LV.{{ petmateAttribute?.drawLevel ?? 0 }}</span
+            >Lv.{{ petmateAttribute?.drawLevel ?? 0 }}</span
           >
           <AttributeBar
             :value="petmateAttribute?.drawExp ?? 0"
@@ -48,7 +48,7 @@
           />
           <span class="activity-grade-label">游戏</span>
           <span class="activity-grade-value"
-            >LV.{{ petmateAttribute?.gameLevel ?? 0 }}</span
+            >Lv.{{ petmateAttribute?.gameLevel ?? 0 }}</span
           >
           <AttributeBar
             :value="petmateAttribute?.gameExp ?? 0"
