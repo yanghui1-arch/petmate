@@ -87,7 +87,7 @@
                     class="wish-item-wrapper"
                     @click="checkWish(wish.id)"
                   >
-                    <WishItem :wishItemName="wish.name" />
+                    <WishItem :wishItem="wish" />
                   </div>
                 </div>
                 <div v-else class="empty-wishes">
@@ -128,7 +128,26 @@
           </div>
 
           <div class="progress-section">
-            <div class="progress-title">完成进度</div>
+            <div class="progress-title">
+              <span>完成进度</span>
+              <n-button
+                  v-if="checkWishInfo && checkWishInfo?.status === 'finished'"
+                  @click="handleClaimReward"
+                  :loading="isClaimingReward"
+                  type="success"
+                  class="claim-button"
+                >
+                <span class="claim-icon">🎁</span>
+                <span class="claim-text">领取奖励</span>
+              </n-button>
+              <div
+                  v-if="checkWishInfo && checkWishInfo?.status === 'claimed'"
+                  class="claimed-status"
+                >
+                <span class="claimed-icon">✅</span>
+                <span class="claimed-text">已领取</span>
+              </div>
+            </div>
 
             <div class="requirements-container">
               <!-- 活动要求 -->
@@ -197,10 +216,20 @@
             </div>
 
             <!-- 心愿奖励展示 -->
-            <div v-if="wishReward" class="rewards-display-section">
+            <div class="rewards-display-section">
               <div class="rewards-title">心愿奖励</div>
               <div class="rewards-container">
+                <!-- 完成心愿给好感度 -->
                 <div class="reward-item">
+                  <div class="reward-info">
+                    <span class="reward-name">好感度</span>
+                    <span v-if="checkWishInfo?.affectionExp" class="reward-count">
+                      + {{ checkWishInfo?.affectionExp }}
+                    </span>
+                  </div>
+                </div>
+                <!-- 心愿物品奖励，可能没有，因此需要判断 -->
+                <div class="reward-item" v-if="wishReward" >
                   <template v-if="wishReward.type === 'item'">
                     <img :src="getImageURL('item', wishReward.src) ?? ''" class="reward-icon" />
                     <div class="reward-info">
@@ -219,33 +248,6 @@
                   <div class="reward-badge">
                     <span>🎁</span>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 奖励领取区域 -->
-            <div v-if="isWishFinished" class="reward-claim-section">
-              <div class="claim-divider"></div>
-              <div class="claim-container">
-                <div class="claim-info">
-                  <div class="claim-icon">🎁</div>
-                  <div class="claim-text">
-                    <div class="claim-title">心愿已完成！</div>
-                  </div>
-                </div>
-                <n-button
-                  v-if="checkWishInfo?.status !== 'claimed'"
-                  @click="handleClaimReward"
-                  :loading="isClaimingReward"
-                  size="large"
-                  type="success"
-                  class="claim-button"
-                >
-                  领取奖励
-                </n-button>
-                <div v-else class="claimed-status">
-                  <span class="claimed-icon">✅</span>
-                  <span class="claimed-text">已领取</span>
                 </div>
               </div>
             </div>
@@ -344,12 +346,6 @@ const checkWish = async (wishID: string) => {
 
 // 奖励领取相关
 const isClaimingReward = ref(false);
-
-// 检查心愿是否已完成
-const isWishFinished = computed(() => {
-  if (!checkWishInfo.value) return false;
-  return checkWishInfo.value?.status === "finished" || checkWishInfo.value?.status === "claimed";
-});
 
 // 处理奖励领取
 const handleClaimReward = async () => {
@@ -682,12 +678,39 @@ const handleClaimReward = async () => {
     flex: 1;
 
     .progress-title {
+      height: 42px;
       font-size: 18px;
       font-weight: 600;
       color: $font-light;
       margin-bottom: 20px;
       padding-bottom: 10px;
       border-bottom: 2px solid rgba(224, 166, 166, 0.3);
+      display: flex;
+      justify-content: space-between;
+      .claim-button {
+        font-size: 14px;
+        height: auto;
+        padding: 6px 12px;
+        .claim-icon {
+          font-size: 16px;
+          animation: bounce 2s infinite;
+          margin-bottom: 2px;
+        }
+        .claim-text {
+          padding-right: 6px;
+        }
+      }
+      .claimed-status {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        font-size: 14px;
+        font-weight: normal;
+        padding: 6px 12px;
+        background: rgba(46, 213, 115, 0.2);
+        border-radius: 3px;
+        border: 1px solid rgba(46, 213, 115, 0.3);
+      }
     }
 
     .requirements-container {
@@ -840,91 +863,6 @@ const handleClaimReward = async () => {
 }
 
 /* ==========================================
-   奖励领取区域
-   ========================================== */
-.reward-claim-section {
-  margin-top: 20px;
-
-  .claim-divider {
-    height: 2px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(224, 166, 166, 0.5),
-      transparent
-    );
-    margin-bottom: 20px;
-  }
-
-  .claim-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 15px;
-    background: linear-gradient(
-      135deg,
-      rgba(46, 213, 115, 0.1),
-      rgba(224, 166, 166, 0.1)
-    );
-    border-radius: 12px;
-    border: 2px solid rgba(46, 213, 115, 0.3);
-
-    .claim-info {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-
-      .claim-icon {
-        font-size: 28px;
-        animation: bounce 2s infinite;
-      }
-
-      .claim-text {
-        .claim-title {
-          font-size: 14px;
-          font-weight: bold;
-          color: $font-light;
-        }
-      }
-    }
-
-    .claim-button {
-      font-weight: 600;
-      padding: 0 24px;
-      height: 35px;
-      border-radius: 8px;
-      transition: all 0.3s ease;
-      font-size: 14px;
-
-      &:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(46, 213, 115, 0.4);
-      }
-    }
-
-    .claimed-status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 5px 20px;
-      background: rgba(46, 213, 115, 0.2);
-      border-radius: 8px;
-      border: 1px solid rgba(46, 213, 115, 0.5);
-
-      .claimed-icon {
-        font-size: 16px;
-      }
-
-      .claimed-text {
-        font-size: 14px;
-        font-weight: 600;
-        color: #2ed573;
-      }
-    }
-  }
-}
-
-/* ==========================================
    动画效果
    ========================================== */
 @keyframes pulse {
@@ -951,10 +889,10 @@ const handleClaimReward = async () => {
     transform: translateY(0);
   }
   40% {
-    transform: translateY(-8px);
+    transform: translateY(-5px);
   }
   60% {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
   }
 }
 </style>

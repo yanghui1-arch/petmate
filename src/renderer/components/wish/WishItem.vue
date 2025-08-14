@@ -6,7 +6,10 @@
         <span>✨</span>
       </div>
       <div class="wish-item-text">
-        <span class="wish-name">{{ wishItemName }}</span>
+        <span class="wish-name">{{ wishItem.name }}</span>
+      </div>
+      <div class="wish-item-status">
+        <span>{{ wishItemStatus }}</span>
       </div>
       <div class="wish-item-arrow">
         <span>→</span>
@@ -18,11 +21,21 @@
 
 <script lang="ts" setup>
 import { defineProps } from "vue";
+import { convertWishText } from "../../utils/wish";
+import { Wish } from "../../types/common";
 
 // 暴露wishItemName属性
-defineProps<{
-  wishItemName: string;
+const props = defineProps<{
+  wishItem: Wish;
 }>();
+
+const wishItemStatus = computed(() => {
+  // 判断是否过期，过期条件：活动结束时间小于当前时间，且状态为进行中
+  if(props.wishItem.endTime < new Date() && props.wishItem.status === "doing") {
+    return convertWishText("timeout");
+  }
+  return convertWishText(props.wishItem.status);
+});
 </script>
 
 <style lang="scss" scoped>
@@ -96,12 +109,23 @@ defineProps<{
 
       .wish-name {
         color: $font-light;
-        font-weight: 500;
         font-size: 14px;
         line-height: 1.4;
         transition: all 0.3s ease;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
       }
+    }
+
+    .wish-item-status {
+      border-radius: 5px;
+      font-size: 12px;
+      padding: 2px 10px;
+      color: #d5d5d5;
+      background: linear-gradient(
+        135deg,
+        rgba(226, 147, 147, 0.2),
+        rgba(253, 155, 110, 0.2)
+      );
     }
 
     .wish-item-arrow {
