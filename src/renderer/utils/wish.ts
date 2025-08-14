@@ -1,6 +1,6 @@
 const WISH_STATUS_MAP = {
     doing: "进行中",
-    finished: "已完成",
+    finished: "领取奖励",
     claimed: "已领取",
     failed: "已失败",
     timeout: "已过期",
