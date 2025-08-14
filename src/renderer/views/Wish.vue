@@ -87,7 +87,7 @@
                     class="wish-item-wrapper"
                     @click="checkWish(wish.id)"
                   >
-                    <WishItem :wishItemName="wish.name" />
+                    <WishItem :wishItem="wish" />
                   </div>
                 </div>
                 <div v-else class="empty-wishes">
@@ -131,7 +131,7 @@
             <div class="progress-title">
               <span>完成进度</span>
               <n-button
-                  v-if="isWishFinished"
+                  v-if="checkWishInfo && checkWishInfo?.status === 'finished'"
                   @click="handleClaimReward"
                   :loading="isClaimingReward"
                   type="success"
@@ -141,7 +141,7 @@
                 <span class="claim-text">领取奖励</span>
               </n-button>
               <div
-                  v-if="isWishFinished && checkWishInfo?.status === 'claimed'"
+                  v-if="checkWishInfo && checkWishInfo?.status === 'claimed'"
                   class="claimed-status"
                 >
                 <span class="claimed-icon">✅</span>
@@ -346,12 +346,6 @@ const checkWish = async (wishID: string) => {
 
 // 奖励领取相关
 const isClaimingReward = ref(false);
-
-// 检查心愿是否已完成
-const isWishFinished = computed(() => {
-  if (!checkWishInfo.value) return false;
-  return checkWishInfo.value?.status === "finished" || checkWishInfo.value?.status === "claimed";
-});
 
 // 处理奖励领取
 const handleClaimReward = async () => {
