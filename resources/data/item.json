@@ -199,5 +199,175 @@
         "effect": {
             "emotion": 35
         }
+    },
+    {
+        "id": 11,
+        "name": "罐装鱼",
+        "type": "food",
+        "description": "罐装鱼可以回复大量的饱食度和精力",
+        "url": "food/cannedfish",
+        "price": 230,
+        "requirement": {
+            "level": 5,
+            "singLevel": 3,
+            "drawLevel": 3,
+            "gameLevel": 3,
+            "affectionLevel": 1
+        },
+        "effect": {
+            "hungry": 140,
+            "energy": 30
+        }
+    },
+    {
+        "id": 12,
+        "name": "纸杯蛋糕",
+        "type": "food",
+        "description": "回复一定的饱食度，甜品！",
+        "url": "food/cupcake",
+        "price": 165,
+        "requirement": {
+            "level": 5,
+            "singLevel": 3,
+            "drawLevel": 3,
+            "gameLevel": 3,
+            "affectionLevel": 1
+        },
+        "effect": {
+            "hungry": 80,
+            "emotion": 15
+        }
+    },
+    {
+        "id": 13,
+        "name": "神秘药水",
+        "type": "limit",
+        "description": "第一款黑科技产品，醍醐灌顶！",
+        "url": "limit/exp-drug",
+        "price": 500,
+        "requirement": {
+            "level": 2,
+            "singLevel": 1,
+            "drawLevel": 1,
+            "gameLevel": 1,
+            "affectionLevel": 1
+        },
+        "effect": {
+            "exp": 80,
+            "gameExp": 20,
+            "singExp": 20,
+            "drawExp": 20
+        }
+    },
+    {
+        "id": 14,
+        "name": "花花",
+        "type": "gift",
+        "description": "没有人可以拒绝花花！",
+        "url": "gift/rose",
+        "price": 50,
+        "requirement": {
+            "level": 5,
+            "singLevel": 3,
+            "drawLevel": 3,
+            "gameLevel": 3,
+            "affectionLevel": 1
+        },
+        "effect": {
+            "emotion": 20
+        }
+    },
+    {
+        "id": 14,
+        "name": "功能饮料",
+        "type": "drink",
+        "description": "状态不佳？来一瓶！",
+        "url": "drink/energy-drink",
+        "price": 350,
+        "requirement": {
+            "level": 6,
+            "singLevel": 3,
+            "drawLevel": 3,
+            "gameLevel": 3,
+            "affectionLevel": 1
+        },
+        "effect": {
+            "energy": 180
+        }
+    },
+    {
+        "id": 15,
+        "name": "欧润吉",
+        "type": "food",
+        "description": "欧润吉~",
+        "url": "food/orange",
+        "price": 5,
+        "requirement": {
+            "level": 1,
+            "singLevel": 1,
+            "drawLevel": 1,
+            "gameLevel": 1,
+            "affectionLevel": 1
+        },
+        "effect": {
+            "hungry": 2
+        }
+    },
+    {
+        "id": 16,
+        "name": "寿司",
+        "type": "food",
+        "description": "寿司，Dass喜欢",
+        "url": "food/sushi",
+        "price": 432,
+        "requirement": {
+            "level": 8,
+            "singLevel": 1,
+            "drawLevel": 1,
+            "gameLevel": 1,
+            "affectionLevel": 2
+        },
+        "effect": {
+            "hungry": 188,
+            "affection": 15
+        }
+    },
+    {
+        "id": 17,
+        "name": "芒果糯米饭",
+        "type": "food",
+        "description": "来自泰国的美食",
+        "url": "food/mango-sticky-rice",
+        "price": 650,
+        "requirement": {
+            "level": 10,
+            "singLevel": 6,
+            "drawLevel": 6,
+            "gameLevel": 6,
+            "affectionLevel": 1
+        },
+        "effect": {
+            "hungry": 300,
+            "energy": 100
+        }
+    },
+    {
+        "id": 18,
+        "name": "雪碧",
+        "type": "drink",
+        "description": "Sprite",
+        "url": "drink/sprite",
+        "price": 186,
+        "requirement": {
+            "level": 8,
+            "singLevel": 1,
+            "drawLevel": 1,
+            "gameLevel": 1,
+            "affectionLevel": 1
+        },
+        "effect": {
+            "hungry": 28,
+            "emotion": 48
+        }
     }
 ]
