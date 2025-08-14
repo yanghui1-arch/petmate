@@ -96,7 +96,7 @@ class PlayerManager {
         const stored = (this.store as any).get('playerInfo') as PlayerInfo | undefined
         if (!stored) {
             // 先发http请求获取玩家信息
-            const result = axios.post('http://petmate.fun/api/user/player_info_by_steamid', {
+            axios.post('http://petmate.fun/api/user/player_info_by_steamid', {
                 steamid: steamId
             }).then((res: AxiosResponse) => {
                 const response = res.data;
@@ -127,13 +127,9 @@ class PlayerManager {
                     this.savePlayer();
                 }
             }).catch((err) => {
-                logger.error(`获取steamID为${steamId}的玩家信息失败:${err}`)
+                logger.error(`获取steamID为${steamId}的玩家信息失败, 大概率是联网问题, 先给一个默认数据，解决方案是点击恢复数据:${err}`)
+                this.savePlayer();
             })
-            // 如果没有获取到，使用默认值
-            // 注意：在此处不保存，在updateSteamInfo中保存默认值
-            if (!result) {
-                // this.savePlayer(); // 保存默认值
-            }
         } else {
             // 重建PetMate实例，因为从存储加载的是普通对象，没有方法
             const reconstructedPetmates: PetMate[] = stored.petmates.map((petmateData: any) => {
