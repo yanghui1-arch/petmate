@@ -9,7 +9,7 @@
                     说明
                 </div>
                 <div class="recover-doc-content">
-                    <p>内容：2021年7月27日 — 3D Emoji图标是一套包含了独立图形元素的资源集合，这些元素以3D的形式展现了各式各样的emoji表情，丰富了网络交流和视觉传达的方式。由于数量庞大，这 .</p>
+                    <p>数据只能恢复到v0.5.1之前的最新一个版本（不包括v0.5.1），因此请慎点这个按钮！！！在整个过程中，需要保持联网状态，点击以后重启Petmate即可。背包中没有物品/没有心愿是正常现象，因为从v0.5.1开始重新设计了物品和心愿</p>
                 </div>
             </div>
         </div>
@@ -26,15 +26,15 @@ import { openMessageModal } from '../hooks/useInteract';
 import { ref } from 'vue';
 const showSpin = ref(false);
 const handleRecoverData = () => {
-    console.log('恢复数据');
     showSpin.value = true;
-    setTimeout(() => {
+    window.server.recoverData().then((res) => {
+        if (res.code === 200) {
+            openMessageModal('success', res.message || '恢复数据成功，现在继续愉快地玩耍吧~');
+        } else {
+            openMessageModal('fail', res.message || '恢复数据失败，请稍后再试~');
+        }
         showSpin.value = false;
-        openMessageModal('success', '恢复数据成功，现在继续愉快地玩耍吧~');
-        // 有错误调这个
-        // openMessageModal('fail', '恢复数据失败，请稍后再试~');
-    }, 3000);
-    
+    });
 };
 </script>
 

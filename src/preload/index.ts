@@ -88,3 +88,7 @@ contextBridge.exposeInMainWorld('windowMonitor', {
         ipcRenderer.removeAllListeners('window-changed')
     }
 })
+
+contextBridge.exposeInMainWorld('server', {
+    recoverData: () => ipcRenderer.invoke('recover-data')
+})
