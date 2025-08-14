@@ -204,16 +204,17 @@ class WishHandler {
 
     /**
      * 清理旧愿望
-     * 删除超过指定天数的愿望（无论状态如何）
+     * 移除超过daysToKeep天时间且奖励未被领取的心愿
      * @param petmate 相关的petmate
      * @param daysToKeep 保留最近几天的愿望
      */
     cleanupOldWishes(petmate: PetMate, daysToKeep: number = 3): number {
         const now = new Date();
-        const cutoffTime = new Date(now.getTime() - (daysToKeep * 24 * 60 * 60 * 1000));
+        const timeNDaysAgo = new Date(now.getTime() - (daysToKeep * 24 * 60 * 60 * 1000));
 
         const originalCount = petmate.wishes.length;
-        petmate.wishes = petmate.wishes.filter(wish => wish.startTime >= cutoffTime);
+        // wish的开始时间 >= N天前的时间，则这个愿望还没有存在daysToKeep这么多天
+        petmate.wishes = petmate.wishes.filter(wish => wish.startTime >= timeNDaysAgo || (wish.startTime < timeNDaysAgo && wish.status === "finished"));
         const removedCount = originalCount - petmate.wishes.length;
 
         if (removedCount > 0) {

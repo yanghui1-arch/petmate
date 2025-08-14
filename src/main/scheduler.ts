@@ -6,6 +6,7 @@ import { WISH_GENERATE_INTERVAL } from "./constant";
 import { PetMate } from "./modules/petmate/petmate";
 import { Wish } from "./types/wish";
 import { getMainWindow, getPageWindow } from './index';
+import { MAX_WISHES_STORE_NUM } from "./constant";
 
 
 // 生成愿望的定时器
@@ -27,7 +28,7 @@ export function generateWishForSelectedPetmate(selectedPetmateId: number): boole
 
         // 检查是否已经达到最大愿望数量
         const currentWishCount = selectedPetmate.wishes.filter(wish => wish.status === "doing").length;
-        if (currentWishCount >= 10) {
+        if (currentWishCount >= MAX_WISHES_STORE_NUM) {
             logger.warn(`[scheduler] Petmate ${selectedPetmate.name} 的愿望数量已达到最大值`);
             return false;
         }
