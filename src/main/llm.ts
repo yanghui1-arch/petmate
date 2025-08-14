@@ -528,10 +528,12 @@ function connectTTSWebsocket(ttsLLMConfig: TTSLLMConfig, sender: WebContents): s
         // 如果是二进制，则为音频数据
         if (isBinary) {
             // 发给渲染层
-            const win = BrowserWindow.fromWebContents(sender);
-            if (win) {
-                // 发送tts转录buffer数据
-                win.webContents.send('tts-audio-chunk', data as Buffer);
+            if (!sender.isDestroyed()) {
+                const win = BrowserWindow.fromWebContents(sender);
+                if (win) {
+                    // 发送tts转录buffer数据
+                    win.webContents.send('tts-audio-chunk', data as Buffer);
+                }
             }
         } else {
             const message = JSON.parse(data.toString());
@@ -543,9 +545,11 @@ function connectTTSWebsocket(ttsLLMConfig: TTSLLMConfig, sender: WebContents): s
                 case 'task-finished':
                     console.log('tts任务已全部完成');
                     // 通知渲染进程TTS结束
-                    const finishWindow = BrowserWindow.fromWebContents(sender);
-                    if (finishWindow) {
-                        finishWindow.webContents.send('tts-finished');
+                    if (!sender.isDestroyed()) {
+                        const finishWindow = BrowserWindow.fromWebContents(sender);
+                        if (finishWindow && !finishWindow.webContents.isDestroyed()) {
+                            finishWindow.webContents.send('tts-finished');
+                        }
                     }
                     ttsWebsocket?.close();
                     ttsStarted = false;
@@ -554,9 +558,11 @@ function connectTTSWebsocket(ttsLLMConfig: TTSLLMConfig, sender: WebContents): s
                 case 'task-failed':
                     logger.error('[llm] tts任务失败');
                     // 通知渲染进程TTS失败
-                    const failWindow = BrowserWindow.fromWebContents(sender);
-                    if (failWindow) {
-                        failWindow.webContents.send('tts-failed', message);
+                    if (!sender.isDestroyed()) {
+                        const failWindow = BrowserWindow.fromWebContents(sender);
+                        if (failWindow && !failWindow.webContents.isDestroyed()) {
+                            failWindow.webContents.send('tts-failed', message);
+                        }
                     }
                     ttsWebsocket?.close();
                     ttsStarted = false;
