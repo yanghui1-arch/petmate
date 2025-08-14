@@ -9,7 +9,7 @@ const ACTIVITY_MAP = {
     singExp: "唱歌经验",
     drawExp: "绘画经验",
     affectionExp: "亲密度经验",
-    level: "Lv.",
+    level: "Petmate Lv.",
     singLevel: "唱歌Lv.",
     drawLevel: "绘画Lv.",
     gameLevel: "游戏Lv.",

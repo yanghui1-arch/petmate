@@ -2,7 +2,7 @@ import { Requirement } from "@/types/common";
 import { PetMateAttribute } from "@/types/petmate";
 
 const REQUIREMENT_MAP = {
-    level: "Lv.",
+    level: "Petmate Lv.",
     singLevel: "唱歌Lv.",
     drawLevel: "绘画Lv.",
     gameLevel: "游戏Lv.",
