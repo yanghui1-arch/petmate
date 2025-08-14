@@ -125,6 +125,16 @@
               </div>
               <div class="config-form">
                 <div class="form-group">
+                  <label>API密钥，与聊天模型的API密钥一致即可</label>
+                  <n-input
+                    v-model:value="ttsConfig.apiKey"
+                    type="password"
+                    placeholder="输入你的API密钥"
+                    class="config-input"
+                    show-password-on="click"
+                  />
+                </div>
+                <div class="form-group">
                   <label>Rate (语速)</label>
                   <n-slider
                     v-model:value="ttsConfig.parameters.rate"

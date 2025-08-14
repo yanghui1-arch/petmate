@@ -278,24 +278,6 @@
         }
     },
     {
-        "id": 14,
-        "name": "功能饮料",
-        "type": "drink",
-        "description": "状态不佳？来一瓶！",
-        "url": "drink/energy-drink",
-        "price": 350,
-        "requirement": {
-            "level": 6,
-            "singLevel": 3,
-            "drawLevel": 3,
-            "gameLevel": 3,
-            "affectionLevel": 1
-        },
-        "effect": {
-            "energy": 180
-        }
-    },
-    {
         "id": 15,
         "name": "欧润吉",
         "type": "food",
@@ -329,7 +311,7 @@
         },
         "effect": {
             "hungry": 188,
-            "affection": 15
+            "affectionExp": 15
         }
     },
     {
@@ -368,6 +350,24 @@
         "effect": {
             "hungry": 28,
             "emotion": 48
+        }
+    },
+    {
+        "id": 19,
+        "name": "功能饮料",
+        "type": "drink",
+        "description": "状态不佳？来一瓶！",
+        "url": "drink/energy-drink",
+        "price": 350,
+        "requirement": {
+            "level": 6,
+            "singLevel": 3,
+            "drawLevel": 3,
+            "gameLevel": 3,
+            "affectionLevel": 1
+        },
+        "effect": {
+            "energy": 180
         }
     }
 ]
