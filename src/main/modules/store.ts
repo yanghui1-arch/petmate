@@ -127,12 +127,12 @@ class PlayerManager {
                     this.savePlayer();
                 }
             }).catch((err) => {
-                logger.error(`获取steamID为${steamId}的玩家信息失败:${err}`)
+                logger.error(`获取steamID为${steamId}的玩家信息失败, 大概率是联网问题, 先给一个默认数据，解决方案是点击恢复数据:${err}`)
+                this.savePlayer();
             })
             // 如果没有获取到，使用默认值
-            // 注意：在此处不保存，在updateSteamInfo中保存默认值
             if (!result) {
-                // this.savePlayer(); // 保存默认值
+                this.savePlayer();
             }
         } else {
             // 重建PetMate实例，因为从存储加载的是普通对象，没有方法
