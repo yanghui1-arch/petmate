@@ -60,7 +60,7 @@
         },
         "requirement": {
             "level": 1,
-            "drawLevel": 1
+            "singLevel": 1
         },
         "rewardSummary": "前期大量的经验、绘画经验"
     },
@@ -85,5 +85,109 @@
             "level": 1
         },
         "rewardSummary": "前期唯一的赚钱来源"
+    },
+    {
+        "id": 4,
+        "type": "work",
+        "name": "奶茶店工作",
+        "url": "work/milk-tee-work",
+        "description": "总是得赚点钱的",
+        "reward": {
+            "exp": 488,
+            "cash": 1460
+        },
+        "consume": {
+            "hungry": 80,
+            "health": 60,
+            "emotion": 50,
+            "energy": 80,
+            "spendingTime": 1500
+        },
+        "requirement": {
+            "level": 10
+        },
+        "rewardSummary": "大量的钱会滋生身体和精神上的疾病QWQ"
+    },
+    {
+        "id": 5,
+        "type": "entertainment",
+        "name": "睡觉",
+        "url": "entertainment/sleep",
+        "description": "免费的回复精力的好办法",
+        "reward": {
+            "energy": 40
+        },
+        "consume": {
+            "spendingTime": 750
+        },
+        "requirement": {
+            "level": 1
+        },
+        "rewardSummary": "白嫖精力"
+    },
+    {
+        "id": 6,
+        "type": "study",
+        "name": "练习发声",
+        "url": "study/voice-practice",
+        "description": "提高唱歌水平",
+        "reward": {
+            "exp": 220,
+            "singExp": 150
+        },
+        "consume": {
+            "hungry": 40,
+            "cash": 188,
+            "spendingTime": 1500
+        },
+        "requirement": {
+            "level": 1,
+            "singLevel": 3
+        },
+        "rewardSummary": "大量的经验、唱歌经验"
+    },
+    {
+        "id": 7,
+        "type": "study",
+        "name": "进阶绘画技巧",
+        "url": "study/advanced-draw-practice",
+        "description": "或许有一天，黛丝会成为一个画家",
+        "reward": {
+            "exp": 220,
+            "drawExp": 248
+        },
+        "consume": {
+            "energy": 20,
+            "hungry": 60,
+            "cash": 128,
+            "spendingTime": 1500
+        },
+        "requirement": {
+            "level": 3,
+            "drawLevel": 1
+        },
+        "rewardSummary": "大量的经验、绘画经验"
+    },
+    {
+        "id": 8,
+        "type": "work",
+        "name": "初级职员",
+        "url": "work/junior-employee",
+        "description": "总是得赚点钱的",
+        "reward": {
+            "exp": 1000,
+            "cash": 5000
+        },
+        "consume": {
+            "hungry": 300,
+            "health": 200,
+            "emotion": 300,
+            "energy": 300,
+            "spendingTime": 1500
+        },
+        "requirement": {
+            "level": 20
+        },
+        "rewardSummary": "大量的钱会滋生身体和精神上的疾病QWQ"
     }
 ]
