@@ -1,15 +1,14 @@
 import { ActiveBuff } from "./types/buff";
 import { PlayerInfo } from "./types/player";
-import { Wish } from "./types/wish";
 import logger from "./log";
 import { PetMate } from "./modules/petmate/petmate";
 import { finishActivity } from "./modules/player/act";
 import { wishHandler } from "./modules/wish";
-import { MAX_WISHES_STORE_NUM } from "./constant";
 import { activityManager, buffManager, itemManager, playerManager, prefabWishManager } from './modules/store'
 import { greenworksManager } from './greenworks'
 import { initSettings } from "./settings";
 import { app } from "electron";
+import { DAYS_TO_KEEP_WISH } from "./constant";
 
 export function appInit(): void {
     console.log("开始初始化app")
@@ -95,18 +94,8 @@ function initPlayerDataStatus(): void {
 
         // 检查petmate的心愿信息的数量是否超过了支持的最大心愿数量
         petmates.forEach(petmate => {
-            // 首先清理超过3天的旧愿望
-            wishHandler.cleanupOldWishes(petmate, 3);
-
-            // 如果超过了，则按照心愿的开始时间，将之前的心愿删除
-            if (petmate.wishes.length > MAX_WISHES_STORE_NUM) {
-                const toDeleteWishesNum: number = petmate.wishes.length - MAX_WISHES_STORE_NUM;
-                const sortedWishes: Wish[] = petmate.wishes.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
-                const toDeleteWishes: Wish[] = sortedWishes.slice(0, toDeleteWishesNum);
-                toDeleteWishes.forEach(wish => {
-                    petmate.removeWish(wish.id);
-                })
-            }
+            // 首先清理超过DAYS_TO_KEEP_WISH天的旧愿望
+            wishHandler.cleanupOldWishes(petmate, DAYS_TO_KEEP_WISH);
         })
 
         // 同步文件操作
