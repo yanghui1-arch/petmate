@@ -94,7 +94,7 @@ onMounted(async () => {
     */
     const animTimer = setInterval(() => {
         selectAnimationAndPlay();
-    }, 5 * 60 * 1000);
+    }, 2 * 60 * 1000);
 
 })
 
@@ -115,7 +115,8 @@ const allWindows = ref<WindowInfo[]>([]);
 const animSelections: Map<string, () => void> = new Map([
     // ["walkToBottomAndSit", walkToBottomAndSit],
     ["selectOneWindowAndSit", selectOneWindowAndSit],
-    // ["spyBesides", spyBesides]
+    // ["spyBesides", spyBesides],
+    ["walkRandomlyAndSitDown", walkRandomlyAndSitDown]
 ]);
 
 function walkToBottomAndSit() {
@@ -142,6 +143,18 @@ function selectOneWindowAndSit() {
     walkTo({x: window.bounds.x + window.bounds.width / 2, y: window.bounds.y}, () => {
         sit();
         setSittedWindowTitle(window.title);
+    });
+}
+
+/**
+ * 随意的走，然后坐下
+ */
+function walkRandomlyAndSitDown() {
+    // targetX and targetY 1/4 -> 3/4
+    const targetX = Math.floor(Math.random() * (screenResolution.value.width / 2)) + screenResolution.value.width / 4;
+    const targetY = Math.floor(Math.random() * (screenResolution.value.height / 2)) + screenResolution.value.height / 4;
+    walkTo({x: targetX, y: targetY}, () => {
+        sit();
     });
 }
 
