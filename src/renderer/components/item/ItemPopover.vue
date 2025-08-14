@@ -31,9 +31,9 @@
                   <span>???</span>
                 </template>
                 <template v-else>
-                  <span v-for="(value, key) in item.effect" :key="key"
-                    >{{ convertItemEffect(String(key)) }}+{{ value }}</span
-                  >
+                  <span v-for="effect in itemEffectList" :key="effect">
+                    {{ effect }}
+                  </span>
                 </template>
               </div>
             </div>
@@ -64,7 +64,7 @@
 <script setup lang="ts">
 import { defineProps, PropType } from "vue";
 import { convertItemEffect } from "../../utils/item";
-import { Item } from "../../types/common";
+import { Item, Buff } from "../../types/common";
 import { convertRequirementText } from "../../utils/check";
 
 const props = defineProps({
@@ -89,6 +89,25 @@ const itemlockedName = computed(() => {
   }
   // 保留第一个字和最后一个字
   return `${name[0]} ? ${name[name.length - 1]}`
+});
+
+const itemEffectList = computed(() => {
+  const effectList: string[] = [];
+  const effect = props.item.effect;
+  for(const key in effect) {
+    // 数值型属性
+    if(effect[key] && typeof effect[key] === 'number') {
+      effectList.push(effect[key] > 0 ? `${convertItemEffect(String(key))} + ${effect[key]}` : `${convertItemEffect(String(key))} - ${-effect[key]}`);
+      continue;
+    }
+    // buff类型
+    if(effect[key] && typeof effect[key] === 'object' && 'name' in effect[key]) {
+      const buff = effect[key] as Buff;
+      effectList.push(`${buff.name} buff`);
+      continue;
+    }
+  }
+  return effectList;
 });
 
 </script>
