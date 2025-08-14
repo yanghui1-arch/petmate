@@ -16,13 +16,23 @@ export function calcNextExp(currentLevel: number): number {
 }
 
 /**
- * 计算当前等级对应的属性值上限, 这个属性值上限的计算公式需要更改，还没完全确定下来的！！
+ * 计算当前等级对应的属性值上限
+ * 在50级之前，scaling=2，之后scaling=0.2，目前属性的计算只定到了300级，即300级以后的属性都是300级此时的属性
  * @param level 当前等级
+ * @param base 基础值, 默认100
+ * @param growth 线性增长
+ * @param scaling 二次增长
  * @returns 属性值上限
  */
-export function calcMaxAttribute(level: number): number {
-    const value = 100 * level;
-    return Math.floor(value);
+export function calcMaxAttribute(level: number, base:number=100, growth:number=3, scaling:number=0.2): number {
+    const linearPart:number = level * growth;
+    let quadraticPart:number = 0;
+    if (level <= 50) {
+        quadraticPart = Math.floor(Math.min(level, 50) * Math.min(level, 50) * 2)
+    } else {
+        quadraticPart = Math.floor(50 * 50 * 2) + Math.floor(Math.min(level, 300) * Math.min(level, 300) * scaling)
+    }
+    return base + linearPart + quadraticPart;
 }
 
 /**
