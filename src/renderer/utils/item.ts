@@ -6,6 +6,12 @@ const EFFECT_MAP = {
     energy: "精力",
     emotion: "心情",
     health: "健康",
+    exp: "经验",
+    gameExp: "游戏经验",
+    singExp: "唱歌经验",
+    drawExp: "绘画经验",
+    affectionExp: "亲密度经验",
+    cash: "现金",
 }
 
 /**

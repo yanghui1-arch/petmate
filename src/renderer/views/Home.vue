@@ -73,7 +73,7 @@
           </div>
           <div class="home-grade-detail">
             <AttributeBar
-              :value="exp"
+              :value="petmateAttribute?.exp ?? 0"
               color="#e28fac"
               :width="'100%'"
               :max="petmateAttribute?.nextExp ?? 100"
@@ -242,7 +242,6 @@ const currentActivePetmate = computed(() => {
 const petmateAttribute = computed(() => {
   return currentActivePetmate.value?.attrs;
 });
-const exp: Ref<number> = ref(petmateAttribute.value?.exp ?? 0);
 
 // 背包相关
 const packageCurrType = ref("food");

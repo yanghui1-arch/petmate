@@ -39,7 +39,7 @@
                 v-model="sortType"
                 @change="handleSortChange"
               >
-                <option value="">默认排序</option>
+                <option value="default">默认排序</option>
                 <option value="level-asc">按等级升序</option>
                 <option value="level-desc">按等级降序</option>
                 <option value="price-asc">按价格升序</option>
@@ -194,7 +194,7 @@ const shopPageSize = ref(6);
 const shopPageList = ref<Item[][]>([]);
 
 // 新增：排序和搜索相关的响应式变量
-const sortType = ref<string>("");
+const sortType = ref<string>("default");
 const searchKeyword = ref<string>("");
 
 // 初始化商品类型和显示默认的商品类型的商品列表
@@ -226,10 +226,12 @@ const filterAndSortItems = (items: Item[]): Item[] => {
     );
   }
 
-  // 排序
+  // 排序，默认按等级升序
   if (sortType.value) {
     filteredItems.sort((a, b) => {
       switch (sortType.value) {
+        case "default":
+          return (a.requirement.level ?? 0) - (b.requirement.level ?? 0);
         case "price-asc":
           return a.price - b.price;
         case "price-desc":
