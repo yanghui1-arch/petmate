@@ -54,5 +54,56 @@
             "src": "positive/energetic"
         },
         "duration": 14400
+    },
+    {
+        "id": 2,
+        "name": "睡觉，睡觉，还是睡觉！",
+        "requirements": [
+            {
+                "type": "act",
+                "id": 5,
+                "name": "睡觉",
+                "src": "entertainment/sleep",
+                "status": "doing"
+            }
+        ],
+        "affectionExp": 15,
+        "reward": {
+            "type": "buff",
+            "id": 0,
+            "name": "活力充沛",
+            "src": "positive/energetic"
+        },
+        "duration": 14400
+    },
+    {
+        "id": 3,
+        "name": "工作狂",
+        "requirements": [
+            {
+                "type": "item",
+                "id": 15,
+                "name": "欧润吉",
+                "src": "food/orange",
+                "count": 30,
+                "userCount": 0,
+                "status": "doing"
+            },
+            {
+                "type": "act",
+                "id": 3,
+                "name": "兼职",
+                "src": "work/part-time",
+                "status": "doing"
+            }
+        ],
+        "affectionExp": 50,
+        "reward": {
+            "type": "buff",
+            "id": 1,
+            "name": "爱财之道",
+            "src": "positive/effective-money"
+        },
+        "duration": 14400
     }
 ]
