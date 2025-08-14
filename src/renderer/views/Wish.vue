@@ -87,7 +87,7 @@
                     class="wish-item-wrapper"
                     @click="checkWish(wish.id)"
                   >
-                    <WishItem :wishItem="wish" />
+                    <WishItem :wishItem="wish as Wish" />
                   </div>
                 </div>
                 <div v-else class="empty-wishes">
