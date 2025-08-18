@@ -669,6 +669,7 @@ async function chat(message: ChatMessage, sender: WebContents): Promise<void> {
             chatMessage: ChatMessageFactory.asAssistant(response),
             createdAt: new Date()
         });
+        saveChatHistoryMessages()
 
         // 发送一个finished task事件
         if (!ttsTaskId) throw new TTSProcessError('无法正确获取tts任务id，导致无法发送finished task事件');
