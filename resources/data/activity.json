@@ -189,5 +189,27 @@
             "level": 20
         },
         "rewardSummary": "大量的钱会滋生身体和精神上的疾病QWQ"
+    },
+    {
+        "id": 9,
+        "type": "work",
+        "name": "初级助理",
+        "url": "work/junior-assistant",
+        "description": "初入正式工作环境的第一步",
+        "reward": {
+            "exp": 220,
+            "cash": 760
+        },
+        "consume": {
+            "hungry": 60,
+            "health": 30,
+            "emotion": 30,
+            "energy": 40,
+            "spendingTime": 1500
+        },
+        "requirement": {
+            "level": 5
+        },
+        "rewardSummary": "大量的钱会滋生身体和精神上的疾病QWQ"
     }
 ]
