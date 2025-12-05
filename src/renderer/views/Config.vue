@@ -477,6 +477,8 @@ const showNotification = (type: 'success' | 'error' | 'warning' | 'info', messag
 // 可选择的模型
 const modelOptions = [
   { label: 'deepseek-r1-0528', value: 'deepseek-r1' },
+  { label: 'deepseek-v3.2', value: 'deepseek-v3.2'},
+  { label: 'qwen3-max', value: 'qwen3-max'},
   { label: 'qwen-max', value: 'qwen-max' },
   { label: 'qwen3-235b', value: 'qwen3-235b-a22b-instruct-2507' },
   { label: 'deepseek-v3', value: 'deepseek-v3' },
