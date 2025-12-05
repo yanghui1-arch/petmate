@@ -11,7 +11,8 @@ export type Item = {
     type: ItemType,
     price: number,
     effect: ItemEffect,
-    description: string
+    description: string,
+    expired?: boolean,
 }
 
 export type ItemEffect = {

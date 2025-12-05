@@ -197,7 +197,7 @@ import { ItemType, Item, ActiveBuff } from "../types/common";
 import avator from "../assets/image/petmate-1.jpg";
 
 const { playerData, consumeItem } = usePlayer();
-const { getShopItems, getImageURL } = useShow();
+const { getAllItems, getImageURL } = useShow();
 
 // 物品id -> 物品信息，用于物品信息悬浮框和使用弹出框
 const completeItemsMap = ref<Map<number, Item>>(new Map());
@@ -217,7 +217,7 @@ const loadCompleteItemsData = async () => {
     ];
 
     for (const type of itemTypes) {
-      const items = await getShopItems(type);
+      const items = await getAllItems(type);
       items.forEach((item) => {
         completeItemsMap.value.set(item.id, item);
       });

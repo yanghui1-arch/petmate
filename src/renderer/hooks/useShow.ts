@@ -35,9 +35,28 @@ export function useShow() {
         try {
             if (res.code === 200) {
                 if (res.data) {
-                    return res.data
+                    const itemList: Item[] = res.data;
+                    return itemList.filter(item => item.expired === undefined)
                 } else {
                     throw new Error("请求获取黑市的物品成功了，但是返回的物品为空")
+                }
+            } else {
+                throw new Error(res.message)
+            }
+        } catch (error) {
+            console.error(error)
+            return []
+        }
+    }
+
+    const getAllItems = async (type: ItemType): Promise<Array<Item>> => {
+        const res = await window.api.showItems(type)
+        try {
+            if (res.code === 200) {
+                if (res.data) {
+                    return res.data;
+                } else {
+                    throw new Error("请求获取所有物品成功了，但是返回的物品为空")
                 }
             } else {
                 throw new Error(res.message)
@@ -161,6 +180,7 @@ export function useShow() {
     return {
         getPetmateCompletedWishesNum,
         getShopItems,
+        getAllItems,
         getItemInfo,
         getActivities,
         getPetmateOneWish,

@@ -10,6 +10,7 @@ export interface Item {
     effect: ItemEffect,
     description: string,
     requirement: Requirement
+    expired?: boolean
 }
 
 export interface ItemEffect {

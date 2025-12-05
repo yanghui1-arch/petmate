@@ -257,7 +257,8 @@
             "gameExp": 20,
             "singExp": 20,
             "drawExp": 20
-        }
+        },
+        "expired": true
     },
     {
         "id": 14,
