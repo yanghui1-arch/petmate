@@ -369,5 +369,25 @@
         "effect": {
             "energy": 180
         }
+    },
+    {
+        "id": 20,
+        "name": "圣诞节的预热",
+        "type": "limit",
+        "description": "圣诞节就要开始了，为你的petmate购置一份预热礼物吧",
+        "url": "limit/Christmas-gift",
+        "price": 1200,
+        "requirement": {
+            "level": 1,
+            "singLevel": 1,
+            "drawLevel": 1,
+            "gameLevel": 1,
+            "affectionLevel": 1
+        },
+        "effect": {
+            "emotion": 210,
+            "affectionExp": 60,
+            "exp": 200
+        }
     }
 ]
