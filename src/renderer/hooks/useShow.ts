@@ -77,6 +77,7 @@ export function useShow() {
         try {
             if (res.code === 200) {
                 if (res.data) {
+                    console.log(res.data)
                     return res.data
                 } else {
                     throw new Error("请求获取黑市的物品成功了，但是返回的物品为空")
@@ -95,7 +96,8 @@ export function useShow() {
         try {
             if (res.code === 200) {
                 if (res.data) {
-                    return res.data
+                    const activities: ActivityInfo[] = res.data;
+                    return activities.sort((a, b) => (a.requirement.level ?? 0) - (b.requirement.level ?? 0) )
                 } else {
                     throw new Error("请求获取活动成功了，但是返回的活动为空")
                 }
