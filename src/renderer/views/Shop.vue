@@ -168,7 +168,7 @@ import { ItemType, Item, Requirement } from "../types/common";
 import type { PetMateAttribute } from "../types/petmate";
 import { executeItemPage } from "../utils/item";
 import { checkLocked } from "../utils/check";
-import shopPetmateImage from "../assets/image/shop-petmate.webp";
+import shopPetmateImage from "../assets/image/shop-petmate-christmas.png";
 import greaterThanIcon from "../assets/image/greater-than.png";
 import shopItemIcon from "../assets/image/shop-item.png";
 
@@ -331,7 +331,8 @@ const showModal = (shopItem: Item) => {
     .shop-head-layout {
       height: 32vh;
       border-radius: 20px;
-      margin-bottom: -10px;
+      // 黑市老板常态的话这里得改为-10px
+      margin-bottom: -20px;
       border: none;
       position: relative;
     }
