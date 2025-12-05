@@ -6,7 +6,6 @@ import { OpenAI } from 'openai';
 import { ChatCompletionStream } from 'openai/resources/chat/completions';
 import { v4 as uuidv4 } from 'uuid';
 import { WebSocket } from 'ws';
-import { getMainWindow } from './index';
 import { handleChatAchievement } from './modules/player/achieve';
 
 export interface ChatLLMConfig {
