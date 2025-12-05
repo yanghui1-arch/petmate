@@ -14,11 +14,11 @@ export function appInit(): void {
     console.log("开始初始化app")
     console.log("开始初始化greenworks...")
     const initResult = greenworksManager.init()
-    console.log(`初始化greenworks成功！`)
     if (initResult === false) {
         app.quit()
         return
     }
+    console.log(`初始化greenworks成功！`)
     const steamID: string = greenworksManager.getSteamInfo().steamId
 
     // init store
