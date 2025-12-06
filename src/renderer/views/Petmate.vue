@@ -18,8 +18,10 @@ import { sittedWindowTitle } from '../hooks/usePetmateModel';
 import { ScreenPosition } from '../types/model';
 import WheelMenu from '../components/WheelMenu.vue';
 import { isShowContextMenu } from '../hooks/usePetmateModel';
+import { useSnowfall } from 'vue-snowfall'
 
 const threeContainer = ref();
+let stopSnow;
 
 const screenResolution = ref({width: 0, height: 0});
 const scaleFator = ref<number>(1);
@@ -27,6 +29,12 @@ const { init3D, standIdle, walkTo, sit, spyBesideWindow, standFromSit, sitted, m
 
 
 onMounted(async () => {
+    /* 下雪 */
+    const { startSnowflakes, stopSnowflakes } = useSnowfall({
+        container: threeContainer.value
+    })
+    stopSnow = stopSnowflakes
+    startSnowflakes()
 
     /* 获取分辨率并加载模型 */
     window.windowMonitor.getScreenResolution().then((res: Response<{width: number, height: number, scaleFactor: number}>) => {
@@ -101,6 +109,8 @@ onMounted(async () => {
 onUnmounted(() => {
     window.windowMonitor.stop();
     window.windowMonitor.removeWindowListeners();
+    /* 停止下雪 */
+    if(stopSnow) stopSnow('all')
 });
 
 const allWindows = ref<WindowInfo[]>([]);
