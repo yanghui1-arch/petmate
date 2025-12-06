@@ -19,8 +19,10 @@ import { ScreenPosition } from '../types/model';
 import WheelMenu from '../components/WheelMenu.vue';
 import { isShowContextMenu } from '../hooks/usePetmateModel';
 import { useSnowfall } from 'vue-snowfall'
+import { useSettings } from '@/hooks/useSettings';
 
 const threeContainer = ref();
+const christmasEffect = ref<boolean>(false);
 let stopSnow;
 
 const screenResolution = ref({width: 0, height: 0});
@@ -29,13 +31,29 @@ const { init3D, standIdle, walkTo, sit, spyBesideWindow, standFromSit, sitted, m
 
 
 onMounted(async () => {
-    /* 下雪 */
-    const { startSnowflakes, stopSnowflakes } = useSnowfall({
-        container: threeContainer.value
+    const { settings } = useSettings();
+    christmasEffect.value = settings.value!.christmasEffect;
+    if (christmasEffect.value === true) {
+        /* 下雪 */
+        const { startSnowflakes, stopSnowflakes } = useSnowfall({
+            container: threeContainer.value
+        })
+        stopSnow = stopSnowflakes
+        startSnowflakes()
+    }
+    window.api.onChristmasEffect((_, newChristmasEffect) => {
+        christmasEffect.value = newChristmasEffect
+        if (christmasEffect.value === true) {
+            /* 下雪 */
+            const { startSnowflakes, stopSnowflakes } = useSnowfall({
+                container: threeContainer.value
+            })
+            stopSnow = stopSnowflakes
+            startSnowflakes()
+        } else {
+            stopSnow('all')
+        }
     })
-    stopSnow = stopSnowflakes
-    startSnowflakes()
-
     /* 获取分辨率并加载模型 */
     window.windowMonitor.getScreenResolution().then((res: Response<{width: number, height: number, scaleFactor: number}>) => {
         screenResolution.value = res.code === 200 ? res.data! : {width: 1920, height: 1080};

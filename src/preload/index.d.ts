@@ -64,6 +64,7 @@ interface IElectronAPI {
   removeAllTTSFinishedListeners: () => void;
   removeAllTTSFailedListeners: () => void;
   setIgnoreMouseEvents: (ignore: boolean) => void;
+  onChristmasEffect: (callback: (event: Event, christmasEffect: boolean) => void) => void,
 
   // 其他
   listenTTSVoiceSample: (voice: TTSVoice, text: string) => Promise<Response<void>>;

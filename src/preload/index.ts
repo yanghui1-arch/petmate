@@ -57,6 +57,8 @@ contextBridge.exposeInMainWorld('api', {
 
     onTTSFailed: (callback: (event: IpcRendererEvent) => void) => ipcRenderer.on('tts-failed', callback),
 
+    onChristmasEffect: (callback: (event: IpcRendererEvent, christmasEffect: boolean) => void) => ipcRenderer.on('christmas-effect', callback),
+
     // 移除监听器
     removeAllAudioChunkListeners: () => ipcRenderer.removeAllListeners('tts-audio-chunk'),
     removeAllTTSFinishedListeners: () => ipcRenderer.removeAllListeners('tts-finished'),

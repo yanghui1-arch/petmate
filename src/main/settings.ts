@@ -5,6 +5,7 @@ export type SettingConfig = {
     modelSize: number;
     focusMode: boolean;
     onTop: boolean;
+    christmasEffect: boolean;
 }
 
 
@@ -19,7 +20,8 @@ const store: Store<SettingConfig> = new Store<SettingConfig>({
 export const defaultSettings: SettingConfig = {
     modelSize: 50,
     focusMode: false,
-    onTop: true
+    onTop: true,
+    christmasEffect: true,
 }
 
 // 最新的设置，需要保证其一直都是最新的，因此在每一次的getSettings函数中，都要将文件中的设置赋值给他
@@ -103,4 +105,12 @@ export function getFocusMode(): boolean {
  */
 export function getOnTop(): boolean {
     return currentSettings?.onTop ?? false;
+}
+
+/**
+ * 获取玩家是否打开了圣诞特效
+ * @returns 是否打开圣诞特效, true为打开, false为关闭
+ */
+export function getChristmasEffect(): boolean {
+    return currentSettings?.christmasEffect ?? false;
 }
