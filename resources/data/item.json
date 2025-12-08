@@ -390,5 +390,24 @@
             "affectionExp": 60,
             "exp": 200
         }
+    },
+    {
+        "id": 21,
+        "name": "圣诞树",
+        "type": "limit",
+        "description": "圣诞树是圣诞节期间最有名的摆设，象征庆祝生命和复苏",
+        "url": "limit/Christmas-tree",
+        "price": 3000,
+        "requirement": {
+            "level": 1,
+            "singLevel": 1,
+            "drawLevel": 1,
+            "gameLevel": 1,
+            "affectionLevel": 1
+        },
+        "effect": {
+            "affectionExp": 500,
+            "exp": 1000
+        }
     }
 ]
