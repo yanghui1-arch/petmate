@@ -5,7 +5,7 @@ export type SettingConfig = {
     modelSize: number;
     focusMode: boolean;
     onTop: boolean;
-    christmasEffect: boolean;
+    christmasEffect?: boolean;
 }
 
 
@@ -78,6 +78,10 @@ export function getSettings(): SettingConfig {
     let settings: SettingConfig | undefined = (store as any).get('settings') as SettingConfig | undefined;
     if (!settings) {
         throw new NotFoundError('设置不存在，请初始化设置');
+    }
+    // 如果是没设置圣诞特效的那就应该一开始设置为true用于体验
+    if (settings.christmasEffect === undefined) {
+        settings.christmasEffect = true;
     }
     currentSettings = settings;
     return settings;
