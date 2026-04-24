@@ -1,7 +1,7 @@
 <template>
     <div class="chat-container">
         <div class="chat-header">
-            <span style="font-family: Petmate; font-size: 30px">Dass Chat</span>
+            <span style="font-family: Petmate; font-size: 30px">尤美 Chat</span>
             <n-switch :value="isMuted" @update:value="changeMuted"/>
         </div>
 
@@ -15,7 +15,7 @@
             >
                 <!-- Assistant Avatar (left side) -->
                 <div v-if="message.role === 'assistant'" class="avatar">
-                    <img :src="petmateAvatar" alt="Dass Avatar" />
+                    <img :src="petmateAvatar" alt="尤美 Avatar" />
                     <div class="avatar-glow"></div>
                 </div>
 
@@ -53,7 +53,7 @@
             <n-input
                 v-model:value="inputMessage"
                 size="small"
-                placeholder="和 Dass 聊聊吧ヾ(≧▽≦*)o"
+                placeholder="和尤美聊聊吧ヾ(≧▽≦*)o"
                 type="textarea"
                 :autosize="{ minRows: 1, maxRows: 3 }"
                 @keydown="handleEnter"
@@ -81,7 +81,7 @@ import { ref, nextTick, onMounted, onUnmounted } from 'vue';
 import { usePlayer } from '../hooks/usePlayer';
 import type { ChatMessage, HistoryChatMessage } from '../types/llm';
 import { useAudio } from '../hooks/useAudio';
-import petmateAvatar from "../assets/image/petmate-1.jpg";
+import petmateAvatar from "../assets/image/youmei-avatar.png";
 import userAvatar from "../assets/image/petmate-3.jpg";
 
 

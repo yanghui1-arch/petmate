@@ -64,7 +64,10 @@ contextBridge.exposeInMainWorld('api', {
     removeAllTTSFinishedListeners: () => ipcRenderer.removeAllListeners('tts-finished'),
     removeAllTTSFailedListeners: () => ipcRenderer.removeAllListeners('tts-failed'),
     onShowContextMenu: (callback: (event: IpcRendererEvent) => void) => ipcRenderer.on('show-context-menu', callback),
-    setIgnoreMouseEvents: (ignore: boolean) => ipcRenderer.send('set-ignore-mouse-events', ignore),
+    getPetmateWindowPosition: () => ipcRenderer.invoke('get-petmate-window-position'),
+    movePetmateWindow: (x: number, y: number) => ipcRenderer.send('move-petmate-window', x, y),
+    startPetmateWindowDrag: () => ipcRenderer.send('start-petmate-window-drag'),
+    stopPetmateWindowDrag: () => ipcRenderer.send('stop-petmate-window-drag'),
     // 其他方法
     listenTTSVoiceSample: (voice: TTSVoice, text: string = '你好，主人，欢迎试听我的音色呢') => ipcRenderer.invoke('listen-tts-voice-sample', voice, text),
     openNewWindow: (route: string, width?: number, height?: number) => ipcRenderer.invoke('open-new-window', route, width, height),

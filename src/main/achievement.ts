@@ -11,7 +11,7 @@ const ACH_FIFTY_LEVEL = "ACH_FIFTY_LEVEL"                                // 一�
 const ACH_TEN_ENTERTAINMENT = "ACH_TEN_ENTERTAINMENT"                    // 我们的第十次约会 第十次娱乐
 const ACH_TWENTY_ENTERTAINMENT = "ACH_TWENTY_ENTERTAINMENT"              // 老朋友的日常 第二十次娱乐
 const ACH_FIFTY_ENTERTAINMENT = "ACH_FIFTY_ENTERTAINMENT"                // 玩着玩着就五十次了 第五十次娱乐
-const ACH_ONE_HUNDRED_ENTERTAINMENT = "ACH_ONE_HUNDRED_ENTERTAINMENT"    // 快乐的黛丝 黛丝的第一百次娱乐
+const ACH_ONE_HUNDRED_ENTERTAINMENT = "ACH_ONE_HUNDRED_ENTERTAINMENT"    // 快乐的尤美 尤美的第一百次娱乐
 const ACH_LITTLE_SAD = "ACH_LITTLE_SAD"                                  // 有点丧 心情掉到50点以下
 const ACH_FIFTY_AFFECTION = "ACH_FIFTY_AFFECTION"                        // 温度升温 好感度到50
 

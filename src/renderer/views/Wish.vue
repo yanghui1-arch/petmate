@@ -5,7 +5,7 @@
       <div class="wish-header">
         <div class="wish-title">
           <span style="font-family: Petmate; font-size: 30px"
-            >{{ currentActivePetmate?.name ?? "Dass" }} Wish</span
+            >{{ currentActivePetmate?.name ?? "尤美" }} Wish</span
           >
         </div>
       </div>
@@ -24,7 +24,7 @@
           </div>
           <div class="affection-info">
             <div class="petmate-name">
-              {{ currentActivePetmate?.name ?? "Dass" }}
+              {{ currentActivePetmate?.name ?? "尤美" }}
             </div>
             <div class="affection-level">
               好感 LV. {{ petmateAttribute?.affectionLevel ?? -1 }}
@@ -269,7 +269,7 @@ import { useShow } from "../hooks/useShow";
 import { Wish, WishReward } from "../types/common";
 const { playerData, claimWishReward } = usePlayer();
 const { getItemInfo, getImageURL } = useShow();
-import petmateAvatar from "../assets/image/petmate-1.jpg";
+import petmateAvatar from "../assets/image/youmei-avatar.png";
 import wishIcon from "../assets/image/wish.png";
 import rightIcon from "../assets/image/right.png";
 import wrongIcon from "../assets/image/wrong.png";

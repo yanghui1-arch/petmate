@@ -9,7 +9,7 @@ import { notActivityPetmateStatus } from '../types/petmate'
 import { Item } from '../types/item'
 import { PlayerInfo } from '../types/player'
 import { ActivityInfo } from '../types/activity'
-import { Dass, DEFAULT_DASS_ATTRIBUTE } from './petmate/dass'
+import { DEFAULT_YOUMEI_ATTRIBUTE, Youmei } from './petmate/youmei'
 import { readJsonFile } from './utils/file'
 import { NotEnoughError, NotFoundError } from '../error'
 import { Buff } from '../types/buff'
@@ -57,7 +57,7 @@ class PlayerManager {
     private store: Store<PlayerStoreData>
     private currentPlayer: PlayerInfo = {
         name: '主人',
-        petmates: [new Dass(0, 'Dass', DEFAULT_DASS_ATTRIBUTE, notActivityPetmateStatus, [], 0)],
+        petmates: [new Youmei(0, '尤美', DEFAULT_YOUMEI_ATTRIBUTE, notActivityPetmateStatus, [], 0)],
         steamId: null,
         qq: null,
         cash: 500,
@@ -106,10 +106,10 @@ class PlayerManager {
                     this.currentPlayer = data.playerInfo;
                     this.currentPlayer.cash = this.currentPlayer.cash + data.inventoryValue;
                     const reconstructedPetmates: PetMate[] = this.currentPlayer.petmates.map((petmateData: any) => {
-                        // 根据petmate的类型创建对应的实例，目前只有Dass类型
-                        return new Dass(
+                        // 旧存档/服务器数据中的黛丝数值直接传承到尤美
+                        return new Youmei(
                             petmateData.id,
-                            petmateData.name,
+                            '尤美',
                             petmateData.attrs,
                             petmateData.status,
                             petmateData.wishes,
@@ -133,10 +133,10 @@ class PlayerManager {
         } else {
             // 重建PetMate实例，因为从存储加载的是普通对象，没有方法
             const reconstructedPetmates: PetMate[] = stored.petmates.map((petmateData: any) => {
-                // 根据petmate的类型创建对应的实例，目前只有Dass类型
-                return new Dass(
+                // 旧存档中的黛丝数值直接传承到尤美
+                return new Youmei(
                     petmateData.id,
-                    petmateData.name,
+                    '尤美',
                     petmateData.attrs,
                     petmateData.status,
                     petmateData.wishes,

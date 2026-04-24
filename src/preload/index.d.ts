@@ -63,7 +63,10 @@ interface IElectronAPI {
   removeAllAudioChunkListeners: () => void;
   removeAllTTSFinishedListeners: () => void;
   removeAllTTSFailedListeners: () => void;
-  setIgnoreMouseEvents: (ignore: boolean) => void;
+  getPetmateWindowPosition: () => Promise<{x: number, y: number}>;
+  movePetmateWindow: (x: number, y: number) => void;
+  startPetmateWindowDrag: () => void;
+  stopPetmateWindowDrag: () => void;
   onChristmasEffect: (callback: (event: Event, christmasEffect: boolean) => void) => void,
 
   // 其他

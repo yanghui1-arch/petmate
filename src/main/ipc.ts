@@ -47,7 +47,7 @@ import { getMainWindow } from './index';
 import * as path from 'path';
 import * as fs from 'fs';
 import axios, { AxiosResponse } from 'axios';
-import { Dass } from './modules/petmate/dass';
+import { Youmei } from './modules/petmate/youmei';
 import { greenworksManager } from './greenworks';
 
 /**
@@ -789,9 +789,9 @@ ipcMain.handle("recover-data", async (_: IpcMainInvokeEvent): Promise<Response<v
             const data: ServerData = response.data;
             const player: PlayerInfo = data.playerInfo;
             const toUpdateCash = player.cash + data.inventoryValue;
-            const petmate: PetMate = new Dass(
+            const petmate: PetMate = new Youmei(
                 data.playerInfo.petmates[0].id,
-                data.playerInfo.petmates[0].name,
+                '尤美',
                 data.playerInfo.petmates[0].attrs,
                 data.playerInfo.petmates[0].status,
                 data.playerInfo.petmates[0].wishes,

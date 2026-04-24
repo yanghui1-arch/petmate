@@ -17,16 +17,106 @@ app.commandLine.appendSwitch('--in-process-gpu')
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+const PETMATE_WINDOW_WIDTH = 200
+const PETMATE_WINDOW_HEIGHT = 200
+const PETMATE_DRAG_FRAME_MS = 1000 / 60
+
+type PetmateWindowDragSession = {
+    win: BrowserWindow
+    timer: ReturnType<typeof setInterval>
+    cursorStartX: number
+    cursorStartY: number
+    windowStartX: number
+    windowStartY: number
+}
+
+let petmateWindowDragSession: PetmateWindowDragSession | null = null
+
+function getDefaultPetmateWindowBounds() {
+    const { workArea } = screen.getPrimaryDisplay()
+    return {
+        width: PETMATE_WINDOW_WIDTH,
+        height: PETMATE_WINDOW_HEIGHT,
+        x: workArea.x + workArea.width - PETMATE_WINDOW_WIDTH - 24,
+        y: workArea.y + workArea.height - PETMATE_WINDOW_HEIGHT - 24
+    }
+}
+
+function enforcePetmateWindowSize(win: BrowserWindow) {
+    if (win.isDestroyed()) return
+
+    const { x, y } = win.getBounds()
+    win.setResizable(false)
+    win.setMinimumSize(PETMATE_WINDOW_WIDTH, PETMATE_WINDOW_HEIGHT)
+    win.setMaximumSize(PETMATE_WINDOW_WIDTH, PETMATE_WINDOW_HEIGHT)
+    win.setBounds({
+        x,
+        y,
+        width: PETMATE_WINDOW_WIDTH,
+        height: PETMATE_WINDOW_HEIGHT
+    }, false)
+}
+
+function stopPetmateWindowDrag() {
+    if (!petmateWindowDragSession) return
+
+    clearInterval(petmateWindowDragSession.timer)
+    petmateWindowDragSession = null
+}
+
+function updatePetmateWindowDragPosition() {
+    if (!petmateWindowDragSession) return
+
+    const { win, cursorStartX, cursorStartY, windowStartX, windowStartY } = petmateWindowDragSession
+    if (win.isDestroyed()) {
+        stopPetmateWindowDrag()
+        return
+    }
+
+    const cursor = screen.getCursorScreenPoint()
+    win.setBounds({
+        x: Math.round(windowStartX + cursor.x - cursorStartX),
+        y: Math.round(windowStartY + cursor.y - cursorStartY),
+        width: PETMATE_WINDOW_WIDTH,
+        height: PETMATE_WINDOW_HEIGHT
+    }, false)
+}
+
+function startPetmateWindowDrag(win: BrowserWindow) {
+    stopPetmateWindowDrag()
+    enforcePetmateWindowSize(win)
+
+    const cursor = screen.getCursorScreenPoint()
+    const [windowStartX, windowStartY] = win.getPosition()
+    petmateWindowDragSession = {
+        win,
+        timer: setInterval(updatePetmateWindowDragPosition, PETMATE_DRAG_FRAME_MS),
+        cursorStartX: cursor.x,
+        cursorStartY: cursor.y,
+        windowStartX,
+        windowStartY
+    }
+    updatePetmateWindowDragPosition()
+}
 
 const createWindow = (): void => {
-    const { width, height } = screen.getPrimaryDisplay().bounds
+    const bounds = getDefaultPetmateWindowBounds()
 
     const win = new BrowserWindow({
-        width: width,
-        height: height,
+        width: bounds.width,
+        height: bounds.height,
+        x: bounds.x,
+        y: bounds.y,
+        minWidth: PETMATE_WINDOW_WIDTH,
+        minHeight: PETMATE_WINDOW_HEIGHT,
+        maxWidth: PETMATE_WINDOW_WIDTH,
+        maxHeight: PETMATE_WINDOW_HEIGHT,
         frame: false,
         resizable: false,
+        maximizable: false,
+        fullscreenable: false,
         transparent: true,
+        hasShadow: false,
         alwaysOnTop: getOnTop(),
         focusable: true,
         show: false,
@@ -34,12 +124,22 @@ const createWindow = (): void => {
             preload: path.join(__dirname, '../preload/index.js'),
             contextIsolation: true,
             nodeIntegration: true,
-            webgl: true
+            webgl: true,
+            backgroundThrottling: false
         }
     })
 
+    enforcePetmateWindowSize(win)
     win.once('ready-to-show', () => {
+        enforcePetmateWindowSize(win)
         win.show()
+    })
+    win.webContents.on('did-finish-load', () => {
+        enforcePetmateWindowSize(win)
+    })
+    win.on('closed', () => {
+        if (petmateWindowDragSession?.win === win) stopPetmateWindowDrag()
+        if (mainWindow === win) mainWindow = null
     })
 
     mainWindow = win
@@ -116,7 +216,8 @@ const createWindow = (): void => {
         {
             label: "重置位置",
             click: () => {
-                mainWindow?.webContents.send('reset-petmate-position')
+                mainWindow?.setBounds(getDefaultPetmateWindowBounds())
+                if (mainWindow) enforcePetmateWindowSize(mainWindow)
             }
         },
         {
@@ -164,6 +265,7 @@ ipcMain.on('quit-app', () => {
 })
 
 app.on('before-quit', () => {
+    stopPetmateWindowDrag()
     // 清理定时任务
     destroyScheduler()
     // 保存聊天记录
@@ -191,7 +293,24 @@ export function getPageWindow(): BrowserWindow | null {
     }
     return allWindowsExcludeMain.length === 1 ? allWindowsExcludeMain[0] : null
 }
-ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
+ipcMain.handle('get-petmate-window-position', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)
-    win?.setIgnoreMouseEvents(ignore, { forward: true })
+    const [x, y] = win?.getPosition() ?? [0, 0]
+    return { x, y }
+})
+
+ipcMain.on('move-petmate-window', (event, x: number, y: number) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    win?.setPosition(Math.round(x), Math.round(y))
+})
+
+ipcMain.on('start-petmate-window-drag', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return
+
+    startPetmateWindowDrag(win)
+})
+
+ipcMain.on('stop-petmate-window-drag', () => {
+    stopPetmateWindowDrag()
 })

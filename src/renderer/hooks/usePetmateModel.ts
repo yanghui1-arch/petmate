@@ -1,58 +1,112 @@
-import * as THREE from 'three'
-import gsap from 'gsap'
-import { ref } from 'vue'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { ScreenPosition } from '../types/model'
+import { readonly, ref, type Ref } from 'vue'
 import { ModelStatus } from '../types/model'
-import { throttle } from 'lodash'
-// 先用旧的模型，新的模型的问题：鼠标进入上本身无法被检测到
-import modelPath from '@/assets/models/petmate-1.glb'
+import youmeiAnger from '@/assets/models/youmei/youmei-anger.png'
+import youmeiHello from '@/assets/models/youmei/youmei-hello-1.png'
+import youmeiIdle from '@/assets/models/youmei/youmei-idle.png'
+import youmeiStruggle from '@/assets/models/youmei/youmei-zhengzha.png'
 
-/** 屏幕分辨率
- * 这个分辨率是一块屏幕的分辨率
- */
-let resolution: {width: number, height: number} = {width: 1920, height: 1080};
+type ActionName = 'idle' | 'hello' | 'anger' | 'struggle'
 
+type SpriteFrame = {
+    image: HTMLImageElement
+    sourceX: number
+    sourceY: number
+    sourceWidth: number
+    sourceHeight: number
+}
 
-/**
- * Electron视口缩放比例
- */
-let scaleFactor: number = 1;
+type SpriteActionSpec = {
+    imageSrc: string
+    frameWidth: number
+    frameHeight: number
+    columns: number
+    rows: number
+    fps: number
+    renderScale: number
+    loopCount: number
+    skipBlankFrames: boolean
+}
 
-// three.js 密切相关
-let model: THREE.Group | null = null;
-let animations: THREE.AnimationClip[] | null = null;
-let mixer: THREE.AnimationMixer | null = null;
-const clock: THREE.Clock = new THREE.Clock();
-let scene: THREE.Scene | null = null;
-let camera: THREE.PerspectiveCamera | null = null;
-let renderer: THREE.WebGLRenderer | null = null;
-let raycaster: THREE.Raycaster | null = null;
-let mouse: THREE.Vector2 | null = null;
+const CANVAS_WIDTH = 200
+const CANVAS_HEIGHT = 200
+const SPRITE_RENDER_SIZE = 200
+const BASE_RENDER_FRAME_SIZE = 600
+const DRAG_START_DISTANCE = 4
+const IDLE_HELLO_CYCLE_RANGE = { min: 12, max: 26 }
+const BLANK_FRAME_ALPHA_THRESHOLD = 8
+const BLANK_FRAME_VISIBLE_PIXEL_THRESHOLD = 16
 
-/** 模型缩放大小 */
+const actionSpecs: Record<ActionName, SpriteActionSpec> = {
+    idle: {
+        imageSrc: youmeiIdle,
+        frameWidth: 600,
+        frameHeight: 600,
+        columns: 4,
+        rows: 2,
+        fps: 5,
+        renderScale: 1,
+        loopCount: 1,
+        skipBlankFrames: true
+    },
+    hello: {
+        imageSrc: youmeiHello,
+        frameWidth: 600,
+        frameHeight: 600,
+        columns: 2,
+        rows: 2,
+        fps: 8,
+        renderScale: 0.72,
+        loopCount: 3,
+        skipBlankFrames: true
+    },
+    anger: {
+        imageSrc: youmeiAnger,
+        frameWidth: 400,
+        frameHeight: 400,
+        columns: 4,
+        rows: 4,
+        fps: 6,
+        renderScale: 1,
+        loopCount: 1,
+        skipBlankFrames: true
+    },
+    struggle: {
+        imageSrc: youmeiStruggle,
+        frameWidth: 500,
+        frameHeight: 500,
+        columns: 4,
+        rows: 4,
+        fps: 8,
+        renderScale: 1,
+        loopCount: 1,
+        skipBlankFrames: true
+    }
+}
+
 let petMateModelConfig = {
-    scale: 1,
+    scale: SPRITE_RENDER_SIZE / actionSpecs.idle.frameWidth
 }
-/**
- * model size
- * need it to calculate model width and height.
- */
-let modelSize: THREE.Vector3 = new THREE.Vector3();
 
-// 优化
-let lastFrameTime = 0;
-let fps = 60;
+let spriteCanvas: HTMLCanvasElement | null = null
+let spriteCanvasContext: CanvasRenderingContext2D | null = null
+let spriteContainer: HTMLDivElement | null = null
+let animationToken = 0
+let activeTimer: number | null = null
+let activeTimerResolve: ((isActive: boolean) => void) | null = null
+let activePointerId: number | null = null
+let pointerStartScreenX = 0
+let pointerStartScreenY = 0
+let isDragging = false
+let isAngry = false
 
-/**
- * 模型当前状态
- */
-let currentAction: THREE.AnimationAction | null = null;
+const actionFrames: Record<ActionName, SpriteFrame[]> = {
+    idle: [],
+    hello: [],
+    anger: [],
+    struggle: []
+}
 
-/**
- * 模型的动作状态，如果需要组合播放动画，请将这组合动画导致的状态同时设置为true
- */
-let modelState: ModelStatus = {
+const modelState: ModelStatus = {
     walk: false,
     dance: false,
     sitting: false,
@@ -62,7 +116,7 @@ let modelState: ModelStatus = {
     dragging: false
 }
 
-let defaultModelState: ModelStatus = {
+const defaultModelState: ModelStatus = {
     walk: false,
     dance: false,
     sitting: false,
@@ -72,551 +126,439 @@ let defaultModelState: ModelStatus = {
     dragging: false
 }
 
-// 正在坐的窗口名字
-// 这个就是由Petmate.vue进行修改的
-export let sittedWindowTitle: string = "";
+/** 是否显示轮盘菜单栏的 flag */
+export const isShowContextMenu = ref(false)
 
-/** 是否显示轮盘菜单栏的flag */
-export const isShowContextMenu = ref(false);
+export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
+    const init2D = async (): Promise<void> => {
+        await loadSpriteAssets()
+        initSpriteContainer(petmateContainer.value)
+        initSpriteCanvas()
+        startIdleLoop()
 
-/**
- * 模型的走路速度
- */
-const walkSpeed: number = 2;
-
-export const usePetmateModel = (threeContainer: Ref<HTMLDivElement>) => {
-
-    const loader = new GLTFLoader();
-
-    /**
-     * 初始化模型显示
-     * @param screenResolution 模型所在屏幕的分辨率
-     * @param screenScaleFactor 屏幕分辨率缩放因子
-     * @returns
-     */
-    const init3D = (screenResolution: {width: number, height: number}, screenScaleFactor: number): Promise<void> => {
-        return new Promise((resolve, reject) => {
-            resolution = screenResolution;
-            scaleFactor = screenScaleFactor;
-
-            scene = new THREE.Scene();
-            // 使用实际窗口大小的宽高比，保持与renderer一致
-            camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 1000);
-
-            renderer = new THREE.WebGLRenderer({
-                antialias: true,
-                alpha: true,
-                premultipliedAlpha: false,
-                // powerPreference: "low-power" // 优先使用低功耗GPU
-            });
-
-            console.log(`window的inner (${window.innerWidth}, ${window.innerHeight})`)
-            console.log(`screenResolution (${screenResolution.width}, ${screenResolution.height})`)
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            // 要完全透明
-            renderer.setClearColor(0xffffff, 0);
-            threeContainer.value.appendChild(renderer.domElement);
-            raycaster = new THREE.Raycaster();
-            mouse = new THREE.Vector2();
-
-            // 鼠标移动/按下/松开
-            renderer.domElement.addEventListener('mousemove', throttle(onMouseMove, 20), false);
-            /**
-             * 不要使用contextmenu来触发右键事件，这会导致鼠标按住右键+移动的时候直接卡死
-             */
-            renderer.domElement.addEventListener('mousedown', onMouseDown, false);
-            renderer.domElement.addEventListener('mouseup', onMouseUp, false);
-
-            // 加载模型
-            loader.load(modelPath, (gltf) => {
-                model = gltf.scene;
-                model.position.set(0, -1, 0);
-                model.scale.set(petMateModelConfig.scale, petMateModelConfig.scale, petMateModelConfig.scale);
-                scene?.add(model);
-
-                camera?.position.set(0, 0, 10)
-
-                // 将物理材质转换成基础材质
-                model.traverse((child) => {
-                    if (child instanceof THREE.Mesh) {
-                        if (child.material instanceof THREE.Material)
-                            console.log(`${JSON.stringify(child.name)}: ${JSON.stringify(child.material.type)}`)
-                            const oldMaterial = child.material;
-                            const oldColor = oldMaterial.color;
-                            const oldMap = oldMaterial.map;
-                            const newMaterial = new THREE.MeshBasicMaterial({
-                                color: oldColor,
-                                map: oldMap,
-                                side: oldMaterial.side,
-                                alphaTest: oldMaterial.alphaTest,
-                                transparent: oldMaterial.transparent
-                            });
-                            child.material = newMaterial;
-                            oldMaterial.dispose();
-                    }
-                })
-
-                animations = gltf.animations;
-                console.log(animations)
-                mixer = new THREE.AnimationMixer(model);
-
-                renderer?.setAnimationLoop(animate);
-
-                // 更新相机矩阵，确保投影计算正确
-                if (camera) {
-                    camera.updateMatrixWorld();
-                    camera.updateProjectionMatrix();
-                }
-                const modelScreenPosition = transferWorldToScreen(model.position, window.innerWidth, window.innerHeight)
-                console.log('模型初始位置', JSON.stringify(modelScreenPosition))
-                window.api.onResetPetmatePosition((_) => {
-                    setModelPosition(new THREE.Vector3(0, -1, 0))
-                })
-
-                // 辅助3D开发使用的一些工具
-                // if (camera && renderer) orbitControls = new OrbitControls(camera, renderer.domElement);
-                // const axesHelper = new THREE.AxesHelper(10);
-                // scene?.add(axesHelper);
-                // let box = new THREE.Box3().setFromObject(model);
-                // let helper = new THREE.Box3Helper(box, new THREE.Color(0, 255, 0));
-                // scene?.add(helper)
-                resolve();
-
-            }, (event) => {
-                console.log(`模型加载${event.loaded / event.total * 100}%`)
-            }, (error) => {
-                console.log(`加载模型出错${error}`)
-                reject(error);
-            })
+        window.api.onShowContextMenu(() => {
+            isShowContextMenu.value = true
         })
     }
 
-    /**
-     * 渲染播放动画
-     */
-    const animate = () => {
-        if (!scene || !camera || !renderer || !model) return;
-        if (mixer) mixer.update(clock.getDelta());
-        const now = performance.now();
-        // 渲染60帧
-        const delta = now - lastFrameTime;
-        if (delta > 1000 / fps) {
-            lastFrameTime = now;
-            renderer.render(scene, camera);
-        }
-    };
-
-    /**
-     * 播放动画动作
-     * @param action 动画动作
-     * @param loop 是否循环播放
-     * @param clampWhenFinished 是否停在最后一帧
-     */
-    const _playAction = (action: THREE.AnimationAction, loop: boolean = true, clampWhenFinished: boolean = true) => {
-        if (currentAction && currentAction !== action) {
-            currentAction.fadeOut(0.1);
-        }
-        action
-            .reset()
-            .setEffectiveTimeScale( 1 )
-            .setEffectiveWeight( 1 )
-            .fadeIn(0.1)
-            .play();
-        currentAction = action;
-        action.loop = loop ? THREE.LoopRepeat : THREE.LoopOnce;
-        action.clampWhenFinished = clampWhenFinished;
-    };
-
-    /**
-     * 获取动画动作
-     * 如果没找到动画动作就会返回一个undefined
-     * @param animationName 动画名字
-     * @returns 动画动作 | undefined
-     */
-    const getAnimationAction = (animationName: string): THREE.AnimationAction | undefined => {
-        if (!animations || !mixer || !model) return undefined;
-        const animationClip: THREE.AnimationClip | undefined = animations?.find(animation => animation.name.includes(animationName));
-        if (!animationClip) return undefined;
-        const action = mixer.clipAction(animationClip);
-        return action;
+    const playIdle = () => {
+        if (isDragging || isAngry) return
+        startIdleLoop()
     }
 
-    /**
-     * 走到指定位置
-     * 这个指令逻辑是要走到目标位置，但是可能由于模型可能面向正面，可能面向左面/右面，所以必须得先根据目标位置先让模型面向转到正确的方向，然后再走过去，最后再转回来
-     * 重置了模型状态和模型所处的窗口
-     * @param target 目标位置
-     * @param onComplete 完成后的回调函数
-     */
-    const walkTo = (position: ScreenPosition, onCompleted?: () => void) => {
-        if (!model) return ;
-        const target: THREE.Vector3 = transferScreenToWorld(position, window.innerWidth, window.innerHeight);
-        const distance:number = target.distanceTo(model.position);
-        console.log('target screen pos', transferWorldToScreen(target, window.innerWidth, window.innerHeight))
-        if (distance < 0.1) return ;
-
-        // 杀死可能存在的位置和旋转动画，避免冲突
-        gsap.killTweensOf(model.position);
-        gsap.killTweensOf(model.rotation);
-
-        // 先让模型转向
-        gsap.to(model.rotation, {
-            y: Math.atan2(target.x - model.position.x, target.z - model.position.z),
-            duration: 0.1
-        });
-        let walkAction = getAnimationAction("walk");
-        if (!walkAction) walkAction = getAnimationAction("run");
-        if (!walkAction) return ;
-
-        // 播放走路动画
-        _playAction(walkAction);
-        updateModelState({walk: true});
-        // 重置一下坐着的窗口
-        setSittedWindowTitle("");
-
-        // 计算动画播放时间
-        const duration = distance / walkSpeed;
-
-        gsap.to(model.position, {
-            x: target.x,
-            y: target.y,
-            z: target.z,
-            duration: duration,
-            onComplete: () => {
-                if (onCompleted) {
-                    onCompleted();
-                }
-            }
-        });
-    };
-
-    /**
-     * 坐姿
-     * 这个是晃腿的
-     */
-    const sitted = () => {
-        let sit2 = getAnimationAction("sit_2");
-        if (!sit2 || !model) return ;
-        _playAction(sit2, true);
-
-        updateModelState({sittedIdle: true});
-    };
-
-    /**
-     * 被拖拽的动画
-     */
-    const drag = () => {
-        let pick1 = getAnimationAction("pick_up_1");
-        if (!pick1 || !model) return ;
-        _playAction(pick1, true)
-        updateModelState({dragging: true});
-        setSittedWindowTitle("");
+    const playHello = () => {
+        if (isDragging || isAngry || isShowContextMenu.value) return
+        startOneShotAction('hello', { dance: true })
     }
 
-    /**
-     * 坐下
-     * 这是一整个完整的坐下的动画，因为petmate坐下的动画分成了三段，所以这里需要分段播放，站起来是第三段，这里不需要
-     */
-    const sit = () => {
-        let sit1 = getAnimationAction("sit_1");
-        let sit2 = getAnimationAction("sit_2");
+    const setAngry = (active: boolean) => {
+        isAngry = active
+        if (isDragging) return
 
-        if (!sit1 || !sit2  || !mixer || !model) return;
-        updateModelState({sitting: true});
-
-        // 杀死可能存在的位置动画，避免冲突
-        gsap.killTweensOf(model.position);
-
-        _playAction(sit1, false);
-        gsap.to(model.rotation, {
-            y: 0,
-            duration: 0.2
-        })
-
-        const onSit1Finished = () => {
-            mixer!.removeEventListener('finished', onSit1Finished);
-            sitted();
-        };
-
-        mixer.addEventListener('finished', onSit1Finished);
-    };
-
-    /**
-     * 从坐姿站起来
-     * 这个方法只能在modelStatus.sittedIdle为true的时候调用，因此调用这个方法的时候，最好先检查一下modelStatus
-     * 重置了模型状态和模型所处的窗口
-     */
-    const standFromSit = () => {
-        if (!modelState.sittedIdle) return ;
-        let sit3 = getAnimationAction("sit_3");
-        if (!sit3) return ;
-        _playAction(sit3, false);
-        updateModelState({standIdle: true});
-        setSittedWindowTitle("");
-        const onSit3Finished = () => {
-            mixer!.removeEventListener('finished', onSit3Finished);
-            standIdle();
-        };
-        mixer!.addEventListener('finished', onSit3Finished);
-    }
-
-    /**
-     * 待机动作
-     * 重置模型所处窗口
-     */
-    const standIdle = () => {
-        let idleAction = getAnimationAction("idle");
-        if (!idleAction || !model) return ;
-        _playAction(idleAction, true);
-        updateModelState({standIdle: true});
-        setSittedWindowTitle("");
-        gsap.to(model.rotation, {
-            y: 0,
-            duration: 0.3
-        });
-    };
-
-    /**
-     * 扶墙偷看
-     * 这个先不能用，因为动画还有点问题
-     * 调用这个方法之前必须要先检查一下Petmate的模型是否在屏幕最边上，否则可能出问题
-     */
-    const spyBesideWindow = () => {
-        let spyBesideWindow = getAnimationAction("see");
-        if (!spyBesideWindow || !model) return ;
-        _playAction(spyBesideWindow, false, true);
-        gsap.to(model.rotation, {
-            y: 0,
-            duration: 0.3
-        });
-        updateModelState({spyBesideWindow: true});
-    };
-
-    /**
-     * 跳舞
-     */
-    const dance = () => {
-
-    };
-
-    /**
-     * 更新Petmate模型的动作状态
-     * 传入的state如果没有指明其他的状态的话，其他状态就会变成false
-     * @param state 新的状态
-     * @returns 更新后的状态
-     */
-    const updateModelState = (state: Partial<ModelStatus>): ModelStatus => {
-        modelState = { ...defaultModelState, ...state };
-        return modelState;
-    }
-
-    /**
-     * 获取Petmate模型当前在屏幕上的坐标
-     * @returns 模型的屏幕坐标
-     */
-    const getModelScreenPosition = (): ScreenPosition => {
-        if (!model) return {x: 0, y: 0};
-        return transferWorldToScreen(model.position, window.innerWidth, window.innerHeight);
-    }
-
-    // const getModelScreenSize = (): { width: number, height: number } => {
-    //     if (!modelSize || !model) throw new Error("请init3D初始化完成了以后再调用该方法");
-
-    //     const modelPosition: THREE.Vector3 = model?.position;
-
-
-    // }
-
-    /**
-     * 设置模型坐的窗口名字
-     * @param title 窗口名字
-     */
-    const setSittedWindowTitle = (title: string) => {
-        sittedWindowTitle = title;
-    }
-
-    /**
-     * 设置模型的世界位置
-     * @param position 目标世界位置
-     * @returns
-     */
-    const setModelPosition = (position: THREE.Vector3) => {
-        if (!model) return ;
-        gsap.killTweensOf(model.position);
-        gsap.to(model.position, {
-            x: position.x,
-            y: position.y,
-            z: position.z,
-            duration: 0.1
-        });
-    }
-
-    /**
-     * 鼠标按下
-     * 如果鼠标按下的地方是模型的话，需要设置模型的拖拽状态并播放拖拽动画，这会导致原来的动画被强制打断的。
-     * 这里会判断一下是鼠标左键按下的还是鼠标右键按下的，如果是左键按下的话，则判断有没有按到模型，如果是右键按下的话，就直接显示菜单
-     * @param event 鼠标事件
-     * @returns
-     */
-    function onMouseDown(event: MouseEvent) {
-        if (!mouse || !camera || !scene) return ;
-        if (event.button !== 0) {
-            isShowContextMenu.value = true;
-            return ;
-        }
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(scene.children, true);
-        const hasIntersection = intersects.length > 0;
-        // 模型状态变为dragging
-        updateModelState({dragging: hasIntersection});
-        drag();
-    }
-
-    /**
-     * 鼠标松开，模型就会待机
-     */
-    function onMouseUp(event: MouseEvent) {
-        if (event.button !== 0) return ;
-        updateModelState({dragging: false});
-        standIdle();
-    }
-
-    /**
-     * 鼠标移动事件监听
-     * 判断鼠标是否在建模上或者WheelMenu这个组件上，如果鼠标在这两个地方的话，就需要监听鼠标事件，否则不需要监听
-     * 目前是利用鼠标射线来判断是否在模型和WheelMenu上
-     * @param event 鼠标事件
-     */
-    function onMouseMove(event: MouseEvent) {
-        if (!mouse || !camera || !scene || !model) return ;
-        // 将鼠标位置归一化为设备坐标 (-1 to +1)
-        mouse.x = (event.offsetX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.offsetY / window.innerHeight) * 2 + 1;
-        // console.log("鼠标移动")
-
-        // 先检测有没有按到菜单UI
-        const element = document.elementFromPoint(event.clientX, event.clientY);
-
-        // 这个可能没有用，因为只能检测到画布目前，因为菜单的z轴是1000
-        const inUI = checkOnUI(element);
-        if (inUI) {
-            // window.api.setIgnoreMouseEvents(false);
-            // 如果鼠标移动到了UI上的话，需要响应鼠标事件的
-            window.api.setIgnoreMouseEvents(false);
-            return ;
+        if (isAngry) {
+            startLoopAction('anger', { spyBesideWindow: true })
+            return
         }
 
-        // 检测是否与3D对象相交
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(scene.children, true);
-        const hasIntersection = intersects.length > 0;
+        startIdleLoop()
+    }
 
-        // console.log(`点到3D对象了么？: ${hasIntersection} 鼠标位置: ${mouse.x}, ${mouse.y}`)
-        // console.log(`模型位置: ${model?.position.x}, ${model?.position.y}`)
-        // console.log(`${event.clientX * scaleFactor}, ${event.clientY * scaleFactor}`)
+    const destroy = () => {
+        cancelCurrentAnimation()
+        window.api.stopPetmateWindowDrag()
 
-        // 通知主进程是否忽略鼠标事件
-        window.api.setIgnoreMouseEvents(!hasIntersection);
-        if (modelState.dragging) {
-            // 说明被拖拽了，需要 * scaleFactor才可以拿到绝对位置
-            model.position.copy(transferScreenToWorld({x: event.clientX * scaleFactor, y: event.clientY * scaleFactor}, window.innerWidth, window.innerHeight));
+        if (spriteContainer) {
+            spriteContainer.removeEventListener('pointerdown', onPointerDown)
+            spriteContainer.removeEventListener('pointermove', onPointerMove)
+            spriteContainer.removeEventListener('pointerup', onPointerUp)
+            spriteContainer.removeEventListener('pointercancel', onPointerCancel)
+            spriteContainer.removeEventListener('contextmenu', onContextMenu)
         }
+
+        spriteCanvas?.remove()
+        spriteCanvas = null
+        spriteCanvasContext = null
+        spriteContainer = null
+        activePointerId = null
+        isDragging = false
     }
 
     return {
-        init3D,
+        init2D,
         modelConfig: readonly(petMateModelConfig),
         modelState: readonly(modelState),
-
-        // 动作
-        walkTo,
-        standIdle,
-        sit,
-        sitted,
-        standFromSit,
-        spyBesideWindow,
-
-        // get
-        getModelScreenPosition,
-
-        // set
-        setSittedWindowTitle,
-        setModelPosition
+        playIdle,
+        playHello,
+        setAngry,
+        destroy
     }
 }
 
-/**
- * 将屏幕坐标转换为世界坐标
- * @param screenPosition 待转换的屏幕坐标 （基于分辨率的坐标）
- * @param width 分辨率 x
- * @param height 分辨率 y
- * @returns 世界坐标
- */
-export function transferScreenToWorld(screenPosition: ScreenPosition, width: number, height: number): THREE.Vector3 {
-    if (!renderer || !camera || !model) {
-        console.warn('Renderer or camera not initialized');
-        return new THREE.Vector3(0, 0, 0);
+function onPointerDown(event: PointerEvent) {
+    if (event.button !== 0 || isShowContextMenu.value) return
+
+    event.preventDefault()
+    activePointerId = event.pointerId
+    pointerStartScreenX = event.screenX
+    pointerStartScreenY = event.screenY
+
+    if (event.currentTarget instanceof HTMLElement) {
+        event.currentTarget.setPointerCapture(event.pointerId)
     }
+}
 
-    // 先转换成画布坐标
-    const screenX = screenPosition.x / scaleFactor;
-    const screenY = screenPosition.y / scaleFactor;
+function onPointerMove(event: PointerEvent) {
+    if (activePointerId !== event.pointerId || isDragging) return
 
-    const coords = new THREE.Vector2(
-        (screenX / width) * 2 - 1,
-        -(screenY / height) * 2 + 1,
+    const distance = Math.hypot(
+        event.screenX - pointerStartScreenX,
+        event.screenY - pointerStartScreenY
     )
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(coords, camera);
+    if (distance < DRAG_START_DISTANCE) return
 
-    const rayOrigin = raycaster.ray.origin;
-    const rayDirection = raycaster.ray.direction;
-
-    // Ray equation: point = origin + t * direction
-    // For z=0 plane: rayOrigin.z + t * rayDirection.z = 0
-    // Solve for t: t = -rayOrigin.z / rayDirection.z
-    const t = -(rayOrigin.z) / rayDirection.z;
-
-    // Calculate intersection point
-    const worldX = rayOrigin.x + t * rayDirection.x;
-    const worldY = rayOrigin.y + t * rayDirection.y;
-
-    return new THREE.Vector3(worldX, worldY, model.position.z);
+    event.preventDefault()
+    beginDragging()
 }
 
-/**
- * 将世界坐标转换为屏幕坐标
- * @param worldPosition 待转换的世界坐标
- * @param width 画布的宽window.innerWidth
- * @param height 画布的高window.innerHeight
- * @returns
- */
-export function transferWorldToScreen(worldPosition: THREE.Vector3, width: number, height: number): ScreenPosition {
-    if (!camera) return {x: width / 2, y: height / 2};
-    const vector: THREE.Vector3 = worldPosition.clone();
-    vector.project(camera);
-    const screenX = (vector.x + 1) * width / 2;
-    const screenY = (1 - vector.y) * height / 2;
-    return {x: screenX * scaleFactor, y: screenY * scaleFactor};
-}
+function onPointerUp(event: PointerEvent) {
+    if (activePointerId !== event.pointerId) return
 
-/**
- * 判断element元素是否是可以穿透的UI element
- * 目前可以穿透的UI是radial-menu-overlay（WheelMenu的class名字）
- * @param element html元素
- * @returns 是否在UI上
- */
-function checkOnUI(element: Element | null): boolean {
-    if (!element) return false;
-    const className = element.className || '';
-    if (className.includes('context-menu') ||
-        element.closest('.context-menu')) {
-        return true;
+    event.preventDefault()
+    releasePointerCapture(event)
+
+    if (isDragging) {
+        stopDragging()
     }
-    return false
+
+    activePointerId = null
+}
+
+function onPointerCancel(event: PointerEvent) {
+    if (activePointerId !== event.pointerId) return
+
+    releasePointerCapture(event)
+    if (isDragging) stopDragging()
+    activePointerId = null
+}
+
+function onContextMenu(event: MouseEvent) {
+    event.preventDefault()
+    isShowContextMenu.value = true
+}
+
+function beginDragging() {
+    if (isDragging) return
+
+    isDragging = true
+    window.api.startPetmateWindowDrag()
+    startLoopAction('struggle', { dragging: true })
+}
+
+function stopDragging() {
+    window.api.stopPetmateWindowDrag()
+    isDragging = false
+
+    if (isAngry) {
+        startLoopAction('anger', { spyBesideWindow: true })
+        return
+    }
+
+    startIdleLoop()
+}
+
+function startIdleLoop() {
+    if (isDragging || isAngry) return
+
+    const token = startNewAnimation()
+    updateModelState({ standIdle: true })
+    void runIdleLoop(token)
+}
+
+async function runIdleLoop(token: number) {
+    let cyclesBeforeHello = randomBetween(IDLE_HELLO_CYCLE_RANGE.min, IDLE_HELLO_CYCLE_RANGE.max)
+
+    while (token === animationToken && !isDragging && !isAngry) {
+        updateModelState({ standIdle: true })
+        if (!await playActionFrames('idle', token)) return
+
+        cyclesBeforeHello--
+        if (cyclesBeforeHello > 0 || isShowContextMenu.value) continue
+
+        updateModelState({ dance: true })
+        if (!await playActionFrames('hello', token)) return
+        cyclesBeforeHello = randomBetween(IDLE_HELLO_CYCLE_RANGE.min, IDLE_HELLO_CYCLE_RANGE.max)
+    }
+}
+
+function startOneShotAction(action: ActionName, state: Partial<ModelStatus>) {
+    const token = startNewAnimation()
+    updateModelState(state)
+
+    void (async () => {
+        await playActionFrames(action, token)
+        if (token === animationToken && !isDragging && !isAngry) {
+            startIdleLoop()
+        }
+    })()
+}
+
+function startLoopAction(action: ActionName, state: Partial<ModelStatus>) {
+    const token = startNewAnimation()
+    updateModelState(state)
+    void runLoopAction(action, token)
+}
+
+async function runLoopAction(action: ActionName, token: number) {
+    while (token === animationToken) {
+        if (!await playActionFrames(action, token)) return
+    }
+}
+
+function playActionFrames(action: ActionName, token: number): Promise<boolean> {
+    const spec = actionSpecs[action]
+    return playFrames(
+        actionFrames[action],
+        getFrameDuration(spec.fps),
+        spec.renderScale,
+        spec.loopCount,
+        token
+    )
+}
+
+async function playFrames(
+    frames: SpriteFrame[],
+    frameDuration: number,
+    renderScaleMultiplier: number,
+    loopCount: number,
+    token: number
+): Promise<boolean> {
+    if (frames.length === 0) {
+        showFirstIdleFrame()
+        return sleep(frameDuration, token)
+    }
+
+    for (let loopIndex = 0; loopIndex < loopCount; loopIndex++) {
+        for (const frame of frames) {
+            if (token !== animationToken) return false
+            drawSpriteFrame(frame, renderScaleMultiplier)
+            if (!await sleep(frameDuration, token)) return false
+        }
+    }
+
+    return token === animationToken
+}
+
+function getFrameDuration(fps: number): number {
+    return Math.round(1000 / fps)
+}
+
+function startNewAnimation(): number {
+    animationToken++
+    clearActiveTimer()
+    return animationToken
+}
+
+function cancelCurrentAnimation() {
+    animationToken++
+    clearActiveTimer()
+}
+
+function sleep(ms: number, token: number): Promise<boolean> {
+    clearActiveTimer()
+
+    return new Promise((resolve) => {
+        if (token !== animationToken) {
+            resolve(false)
+            return
+        }
+
+        activeTimerResolve = resolve
+        activeTimer = window.setTimeout(() => {
+            activeTimer = null
+            activeTimerResolve = null
+            resolve(token === animationToken)
+        }, ms)
+    })
+}
+
+function clearActiveTimer() {
+    if (activeTimer !== null) {
+        window.clearTimeout(activeTimer)
+        activeTimer = null
+    }
+
+    activeTimerResolve?.(false)
+    activeTimerResolve = null
+}
+
+async function loadSpriteAssets(): Promise<void> {
+    const [idleImage, helloImage, angerImage, struggleImage] = await Promise.all([
+        loadImage(actionSpecs.idle.imageSrc),
+        loadImage(actionSpecs.hello.imageSrc),
+        loadImage(actionSpecs.anger.imageSrc),
+        loadImage(actionSpecs.struggle.imageSrc)
+    ])
+
+    actionFrames.idle = extractFixedGridFrames(idleImage, actionSpecs.idle)
+    actionFrames.hello = extractFixedGridFrames(helloImage, actionSpecs.hello)
+    actionFrames.anger = extractFixedGridFrames(angerImage, actionSpecs.anger)
+    actionFrames.struggle = extractFixedGridFrames(struggleImage, actionSpecs.struggle)
+
+    const firstIdleFrame = actionFrames.idle[0]
+    if (firstIdleFrame) {
+        petMateModelConfig.scale = SPRITE_RENDER_SIZE / Math.max(firstIdleFrame.sourceWidth, firstIdleFrame.sourceHeight)
+    }
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+        const image = new Image()
+        image.onload = () => resolve(image)
+        image.onerror = () => reject(new Error(`加载尤美帧动画失败: ${src}`))
+        image.src = src
+    })
+}
+
+function extractFixedGridFrames(image: HTMLImageElement, spec: SpriteActionSpec): SpriteFrame[] {
+    const frames: SpriteFrame[] = []
+
+    for (let row = 0; row < spec.rows; row++) {
+        for (let column = 0; column < spec.columns; column++) {
+            const sourceX = column * spec.frameWidth
+            const sourceY = row * spec.frameHeight
+            if (sourceX + spec.frameWidth > image.naturalWidth || sourceY + spec.frameHeight > image.naturalHeight) continue
+
+            const frame: SpriteFrame = {
+                image,
+                sourceX,
+                sourceY,
+                sourceWidth: spec.frameWidth,
+                sourceHeight: spec.frameHeight
+            }
+
+            if (spec.skipBlankFrames && isBlankFrame(frame)) continue
+            frames.push(frame)
+        }
+    }
+
+    if (frames.length > 0) return frames
+
+    return [{
+        image,
+        sourceX: 0,
+        sourceY: 0,
+        sourceWidth: image.naturalWidth,
+        sourceHeight: image.naturalHeight
+    }]
+}
+
+function isBlankFrame(frame: SpriteFrame): boolean {
+    const canvas = document.createElement('canvas')
+    canvas.width = frame.sourceWidth
+    canvas.height = frame.sourceHeight
+    const context = canvas.getContext('2d', { willReadFrequently: true })
+    if (!context) return false
+
+    context.clearRect(0, 0, frame.sourceWidth, frame.sourceHeight)
+    context.drawImage(
+        frame.image,
+        frame.sourceX,
+        frame.sourceY,
+        frame.sourceWidth,
+        frame.sourceHeight,
+        0,
+        0,
+        frame.sourceWidth,
+        frame.sourceHeight
+    )
+
+    const imageData = context.getImageData(0, 0, frame.sourceWidth, frame.sourceHeight)
+    let visiblePixels = 0
+    for (let index = 3; index < imageData.data.length; index += 4) {
+        if (imageData.data[index] > BLANK_FRAME_ALPHA_THRESHOLD) {
+            visiblePixels++
+            if (visiblePixels > BLANK_FRAME_VISIBLE_PIXEL_THRESHOLD) return false
+        }
+    }
+
+    return true
+}
+
+function initSpriteContainer(container: HTMLDivElement) {
+    spriteContainer = container
+    spriteContainer.style.position = 'fixed'
+    spriteContainer.style.inset = '0'
+    spriteContainer.style.width = `${CANVAS_WIDTH}px`
+    spriteContainer.style.height = `${CANVAS_HEIGHT}px`
+    spriteContainer.style.overflow = 'hidden'
+    spriteContainer.style.touchAction = 'none'
+    spriteContainer.addEventListener('pointerdown', onPointerDown)
+    spriteContainer.addEventListener('pointermove', onPointerMove)
+    spriteContainer.addEventListener('pointerup', onPointerUp)
+    spriteContainer.addEventListener('pointercancel', onPointerCancel)
+    spriteContainer.addEventListener('contextmenu', onContextMenu)
+}
+
+function initSpriteCanvas() {
+    if (!spriteContainer) return
+
+    spriteCanvas?.remove()
+    spriteCanvas = document.createElement('canvas')
+    spriteCanvas.className = 'youmei-sprite-canvas'
+    spriteCanvas.width = CANVAS_WIDTH
+    spriteCanvas.height = CANVAS_HEIGHT
+    spriteCanvas.style.position = 'absolute'
+    spriteCanvas.style.left = '0'
+    spriteCanvas.style.top = '0'
+    spriteCanvas.style.width = `${CANVAS_WIDTH}px`
+    spriteCanvas.style.height = `${CANVAS_HEIGHT}px`
+    spriteCanvas.style.pointerEvents = 'none'
+    spriteCanvas.style.userSelect = 'none'
+    spriteContainer.appendChild(spriteCanvas)
+    spriteCanvasContext = spriteCanvas.getContext('2d')
+    spriteCanvasContext?.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+    showFirstIdleFrame()
+}
+
+function showFirstIdleFrame() {
+    const firstFrame = actionFrames.idle[0]
+    if (firstFrame) drawSpriteFrame(firstFrame, actionSpecs.idle.renderScale)
+}
+
+function drawSpriteFrame(frame: SpriteFrame, renderScaleMultiplier: number) {
+    if (!spriteCanvasContext) return
+
+    const renderScale = SPRITE_RENDER_SIZE / BASE_RENDER_FRAME_SIZE * renderScaleMultiplier
+    const targetWidth = frame.sourceWidth * renderScale
+    const targetHeight = frame.sourceHeight * renderScale
+    const targetX = (CANVAS_WIDTH - targetWidth) / 2
+    const targetY = (CANVAS_HEIGHT - targetHeight) / 2
+
+    spriteCanvasContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+    spriteCanvasContext.drawImage(
+        frame.image,
+        frame.sourceX,
+        frame.sourceY,
+        frame.sourceWidth,
+        frame.sourceHeight,
+        targetX,
+        targetY,
+        targetWidth,
+        targetHeight
+    )
+}
+
+function releasePointerCapture(event: PointerEvent) {
+    if (event.currentTarget instanceof HTMLElement && event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+}
+
+function updateModelState(state: Partial<ModelStatus>): ModelStatus {
+    Object.assign(modelState, defaultModelState, state)
+    return modelState
+}
+
+function randomBetween(min: number, max: number) {
+    return Math.floor(min + Math.random() * (max - min + 1))
 }

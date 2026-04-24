@@ -194,7 +194,7 @@ import { useShow } from "../hooks/useShow";
 import { showItemPopover, showBuffPopover, popoverX, popoverY, popoverWidth, popoverItem, isItemEnter, popoverBuff, isBuffEnter } from "../hooks/useInteract";
 import { PackageItemInfo } from "../types/player";
 import { ItemType, Item, ActiveBuff } from "../types/common";
-import avator from "../assets/image/petmate-1.jpg";
+import avator from "../assets/image/youmei-avatar.png";
 
 const { playerData, consumeItem } = usePlayer();
 const { getAllItems, getImageURL } = useShow();
