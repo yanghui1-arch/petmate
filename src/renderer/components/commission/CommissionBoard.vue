@@ -16,10 +16,11 @@
         :class="[`commission-row-${commission.status}`]"
         @click="openCommission(commission)"
       >
-        <span
+        <img
           class="commission-row-bg"
-          :style="getRowBackgroundStyle(commission.imageUrl)"
-        ></span>
+          :src="commission.imageUrl"
+          :alt="commission.name"
+        />
         <span class="commission-row-overlay"></span>
         <span class="commission-status">{{ formatDeadline(commission.deadline) }}</span>
 
@@ -109,10 +110,6 @@ const handleCompleted = (
 ) => {
   emit("completed", commission, result);
 };
-
-const getRowBackgroundStyle = (imageUrl: string) => ({
-  backgroundImage: `url(${imageUrl})`,
-});
 
 const getOwnedCount = (itemId: number) => playerItemCounts.value[itemId] ?? 0;
 
@@ -210,9 +207,10 @@ const formatDeadline = (date: Date) => {
 }
 
 .commission-row-bg {
-  z-index: -2;
-  background-position: center;
-  background-size: cover;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   transform: scale(1.01);
   transition:
     transform 0.32s ease,
@@ -220,7 +218,7 @@ const formatDeadline = (date: Date) => {
 }
 
 .commission-row-overlay {
-  z-index: -1;
+  z-index: 1;
   background:
     linear-gradient(90deg, rgba(35, 30, 31, 0.9) 0%, rgba(35, 30, 31, 0.76) 52%, rgba(35, 30, 31, 0.38) 100%),
     linear-gradient(0deg, rgba(35, 30, 31, 0.72), rgba(35, 30, 31, 0.14));
@@ -242,7 +240,7 @@ const formatDeadline = (date: Date) => {
   position: absolute;
   top: 12px;
   right: 12px;
-  z-index: 2;
+  z-index: 3;
   max-width: calc(100% - 24px);
   padding: 3px 10px;
   color: #8b4513;
@@ -263,7 +261,7 @@ const formatDeadline = (date: Date) => {
   justify-content: space-between;
   row-gap: 10px;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .commission-row-head {
