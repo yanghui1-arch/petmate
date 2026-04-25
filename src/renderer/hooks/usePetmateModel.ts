@@ -143,6 +143,8 @@ let pointerStartScreenX = 0
 let pointerStartScreenY = 0
 let isDragging = false
 let isAngry = false
+let isSystemAudioActive = false
+let activeAction: ActionName | null = null
 
 const actionFrames: Record<ActionName, SpriteFrame[]> = {
     idle: [],
@@ -181,7 +183,8 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         await loadAnimationAssets()
         initSpriteContainer(petmateContainer.value)
         initSpriteCanvas()
-        startIdleLoop()
+        await initSystemAudioActivity()
+        startAmbientAction()
 
         window.api.onShowContextMenu(() => {
             isShowContextMenu.value = true
@@ -190,7 +193,7 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
 
     const playIdle = () => {
         if (isDragging || isAngry) return
-        startIdleLoop()
+        startAmbientAction()
     }
 
     const playHello = () => {
@@ -207,7 +210,7 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
             return
         }
 
-        startIdleLoop()
+        startAmbientAction()
     }
 
     const destroy = () => {
@@ -228,6 +231,9 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         spriteContainer = null
         activePointerId = null
         isDragging = false
+        isSystemAudioActive = false
+        activeAction = null
+        window.api.removeAllSystemAudioActiveListeners()
     }
 
     return {
@@ -310,15 +316,28 @@ function stopDragging() {
         return
     }
 
-    startIdleLoop()
+    startAmbientAction()
 }
 
 function startIdleLoop() {
     if (isDragging || isAngry) return
+    if (activeAction === 'idle') return
 
     const token = startNewAnimation()
+    activeAction = 'idle'
     updateModelState({ standIdle: true })
     void runIdleLoop(token)
+}
+
+function startAmbientAction() {
+    if (isDragging || isAngry) return
+
+    if (isSystemAudioActive) {
+        startLoopAction('dance', { dance: true })
+        return
+    }
+
+    startIdleLoop()
 }
 
 async function runIdleLoop(token: number) {
@@ -329,19 +348,26 @@ async function runIdleLoop(token: number) {
 }
 
 function startOneShotAction(action: ActionName, state: Partial<ModelStatus>) {
+    if (activeAction === action) return
+
     const token = startNewAnimation()
+    activeAction = action
     updateModelState(state)
 
     void (async () => {
         await playActionFrames(action, token)
         if (token === animationToken && !isDragging && !isAngry) {
-            startIdleLoop()
+            activeAction = null
+            startAmbientAction()
         }
     })()
 }
 
 function startLoopAction(action: ActionName, state: Partial<ModelStatus>) {
+    if (activeAction === action) return
+
     const token = startNewAnimation()
+    activeAction = action
     updateModelState(state)
     void runLoopAction(action, token)
 }
@@ -400,7 +426,23 @@ function startNewAnimation(): number {
 
 function cancelCurrentAnimation() {
     animationToken++
+    activeAction = null
     clearActiveTimer()
+}
+
+async function initSystemAudioActivity() {
+    window.api.onSystemAudioActive((_, active) => {
+        setSystemAudioActive(active)
+    })
+
+    isSystemAudioActive = await window.api.getSystemAudioActive()
+}
+
+function setSystemAudioActive(active: boolean) {
+    if (isSystemAudioActive === active) return
+
+    isSystemAudioActive = active
+    startAmbientAction()
 }
 
 function sleep(ms: number, token: number): Promise<boolean> {

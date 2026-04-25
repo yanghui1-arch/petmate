@@ -12,11 +12,13 @@ import { getChristmasEffect, getOnTop, updateSettings } from './settings'
 import { appInit } from './init'
 import * as fs from 'fs'
 import logger from './log'
+import { SystemAudioActivityMonitor } from './packages/system-audio-activity'
 
 app.commandLine.appendSwitch('--in-process-gpu')
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+let systemAudioActivityMonitor: SystemAudioActivityMonitor | null = null
 const PETMATE_WINDOW_WIDTH = 300
 const PETMATE_WINDOW_HEIGHT = 300
 const PETMATE_DRAG_FRAME_MS = 1000 / 60
@@ -97,6 +99,15 @@ function startPetmateWindowDrag(win: BrowserWindow) {
         windowStartY
     }
     updatePetmateWindowDragPosition()
+}
+
+function startSystemAudioActivityMonitor() {
+    if (process.platform !== 'win32' || systemAudioActivityMonitor) return
+
+    systemAudioActivityMonitor = new SystemAudioActivityMonitor()
+    systemAudioActivityMonitor.start((active) => {
+        mainWindow?.webContents.send('system-audio-active', active)
+    })
 }
 
 const createWindow = (): void => {
@@ -250,6 +261,7 @@ app.whenReady().then(async () => {
 
     // 创建窗口
     createWindow()
+    startSystemAudioActivityMonitor()
     startWishGeneration(0)
 
     app.on('activate', () => {
@@ -266,6 +278,7 @@ ipcMain.on('quit-app', () => {
 
 app.on('before-quit', () => {
     stopPetmateWindowDrag()
+    systemAudioActivityMonitor?.stop()
     // 清理定时任务
     destroyScheduler()
     // 保存聊天记录
@@ -313,4 +326,8 @@ ipcMain.on('start-petmate-window-drag', (event) => {
 
 ipcMain.on('stop-petmate-window-drag', () => {
     stopPetmateWindowDrag()
+})
+
+ipcMain.handle('get-system-audio-active', () => {
+    return systemAudioActivityMonitor?.isActive() ?? false
 })

@@ -60,9 +60,12 @@ interface IElectronAPI {
   onWishFinished: (callback: (event: Event, petmateId: number, finishedWishNames: string[]) => void) => void,
   onActivityFinished: (callback: (event: Event, petmateId: number) => void) => void,
   onShowContextMenu: (callback: (event: Event) => void) => void,
+  onSystemAudioActive: (callback: (event: Event, active: boolean) => void) => void,
   removeAllAudioChunkListeners: () => void;
   removeAllTTSFinishedListeners: () => void;
   removeAllTTSFailedListeners: () => void;
+  removeAllSystemAudioActiveListeners: () => void;
+  getSystemAudioActive: () => Promise<boolean>;
   getPetmateWindowPosition: () => Promise<{x: number, y: number}>;
   movePetmateWindow: (x: number, y: number) => void;
   startPetmateWindowDrag: () => void;

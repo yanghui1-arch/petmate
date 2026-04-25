@@ -58,12 +58,15 @@ contextBridge.exposeInMainWorld('api', {
     onTTSFailed: (callback: (event: IpcRendererEvent) => void) => ipcRenderer.on('tts-failed', callback),
 
     onChristmasEffect: (callback: (event: IpcRendererEvent, christmasEffect: boolean) => void) => ipcRenderer.on('christmas-effect', callback),
+    onSystemAudioActive: (callback: (event: IpcRendererEvent, active: boolean) => void) => ipcRenderer.on('system-audio-active', callback),
 
     // 移除监听器
     removeAllAudioChunkListeners: () => ipcRenderer.removeAllListeners('tts-audio-chunk'),
     removeAllTTSFinishedListeners: () => ipcRenderer.removeAllListeners('tts-finished'),
     removeAllTTSFailedListeners: () => ipcRenderer.removeAllListeners('tts-failed'),
+    removeAllSystemAudioActiveListeners: () => ipcRenderer.removeAllListeners('system-audio-active'),
     onShowContextMenu: (callback: (event: IpcRendererEvent) => void) => ipcRenderer.on('show-context-menu', callback),
+    getSystemAudioActive: () => ipcRenderer.invoke('get-system-audio-active'),
     getPetmateWindowPosition: () => ipcRenderer.invoke('get-petmate-window-position'),
     movePetmateWindow: (x: number, y: number) => ipcRenderer.send('move-petmate-window', x, y),
     startPetmateWindowDrag: () => ipcRenderer.send('start-petmate-window-drag'),
