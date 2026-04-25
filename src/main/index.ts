@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell, Tray } from 'electron'
 import * as path from 'path'
 import './ipc'
-import { destroyScheduler, startWishGeneration } from './scheduler'
+import { destroyScheduler, startOnlineAttributeDecay, startWishGeneration } from './scheduler'
 import { saveChatHistoryMessages } from './llm'
 import { is } from '@electron-toolkit/utils'
 import { join } from 'path'
@@ -263,6 +263,7 @@ app.whenReady().then(async () => {
     createWindow()
     startSystemAudioActivityMonitor()
     startWishGeneration(0)
+    startOnlineAttributeDecay()
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow()

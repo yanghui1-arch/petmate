@@ -2,7 +2,7 @@ import { playerManager } from "./modules/store";
 import { wishHandler } from "./modules/wish";
 import logger from "./log";
 import { NotFoundError } from "./error";
-import { WISH_GENERATE_INTERVAL } from "./constant";
+import { PETMATE_ONLINE_DECAY_INTERVAL, PETMATE_ONLINE_DECAY_VALUE, WISH_GENERATE_INTERVAL } from "./constant";
 import { PetMate } from "./modules/petmate/petmate";
 import { Wish } from "./types/wish";
 import { getMainWindow, getPageWindow } from './index';
@@ -11,6 +11,7 @@ import { MAX_WISHES_STORE_NUM } from "./constant";
 
 // 生成愿望的定时器
 let wishGenerationInterval: NodeJS.Timeout | null = null;
+let onlineAttributeDecayInterval: NodeJS.Timeout | null = null;
 
 /**
  * 为选中的petmate生成愿望
@@ -93,11 +94,66 @@ export function triggerWishGeneration(selectedPetmateId: number): boolean {
     return generateWishForSelectedPetmate(selectedPetmateId);
 }
 
+/**
+ * 尤美在线时每分钟衰减基础属性。
+ */
+export function decayOnlineAttributesForPetmates(): boolean {
+    try {
+        const player = playerManager.getPlayer();
+        let hasChanged = false;
+
+        player.petmates.forEach(petmate => {
+            const changed = petmate.decayOnlineAttributes(PETMATE_ONLINE_DECAY_VALUE);
+            if (!changed) return;
+
+            hasChanged = true;
+            playerManager.updatePetmate(petmate);
+
+            const mainWindow = getMainWindow();
+            const pageWindow = getPageWindow();
+            if (mainWindow) {
+                mainWindow.webContents.send('petmate-attribute-decayed', petmate.id);
+            }
+            if (pageWindow) {
+                pageWindow.webContents.send('petmate-attribute-decayed', petmate.id);
+            }
+        });
+
+        return hasChanged;
+    } catch (error) {
+        logger.error(`[scheduler] 在线属性衰减失败: ${error}`);
+        return false;
+    }
+}
+
+/**
+ * 启动在线属性衰减定时任务
+ */
+export function startOnlineAttributeDecay(): void {
+    if (onlineAttributeDecayInterval) return;
+
+    logger.info(`[scheduler] 启动在线属性衰减定时任务，间隔: ${PETMATE_ONLINE_DECAY_INTERVAL / 1000} 秒`);
+    onlineAttributeDecayInterval = setInterval(() => {
+        decayOnlineAttributesForPetmates();
+    }, PETMATE_ONLINE_DECAY_INTERVAL);
+}
+
+/**
+ * 停止在线属性衰减定时任务
+ */
+export function stopOnlineAttributeDecay(): void {
+    if (onlineAttributeDecayInterval) {
+        clearInterval(onlineAttributeDecayInterval);
+        onlineAttributeDecayInterval = null;
+        logger.info(`[scheduler] 在线属性衰减定时任务已停止`);
+    }
+}
 
 /**
  * 销毁调度器
  */
 export function destroyScheduler(): void {
     stopWishGeneration();
+    stopOnlineAttributeDecay();
     logger.info(`[scheduler] 任务调度器已销毁`);
 }

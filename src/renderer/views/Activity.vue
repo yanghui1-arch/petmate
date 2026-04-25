@@ -119,6 +119,7 @@
           {{ currentActivePetmate?.name }}当前未进行任何活动
         </div>
       </div>
+      <CommissionBoard />
       <div class="activity-wrapper">
         <!-- 四个活动版块-->
         <n-grid x-gap="12" y-gap="10" :cols="2" v-show="!showActivity">
@@ -294,6 +295,7 @@ import { ref, computed } from "vue";
 import AttributeBar from "../components/AttributeBar.vue";
 import ActivityPopover from "@/components/activity/ActivityPopover.vue";
 import ActivityModal from "@/components/activity/ActivityModal.vue";
+import CommissionBoard from "@/components/commission/CommissionBoard.vue";
 import { openMessageModal } from "../hooks/useInteract";
 import { ActivityInfo } from "../types/common";
 import { usePlayer } from "../hooks/usePlayer";
@@ -306,8 +308,15 @@ import gradeIcon from "../assets/image/activity/grade-icon.png";
 import actSwitchIcon from "../assets/image/activity/switch.png";
 import backArrowIcon from "../assets/image/activity/back-arrow.png";
 
-const { playerData, refreshPlayerData, claimActivityReward } = usePlayer();
+const { playerData, claimActivityReward } = usePlayer();
 const { getActivities, getImageURL } = useShow();
+
+type ActivitySection = {
+  id: number;
+  type: ActivityInfo["type"];
+  name: string;
+  description: string;
+};
 
 // Petmate相关
 const currentPetmateID = ref(0);
@@ -340,7 +349,7 @@ const countDownSeconds = computed(() => {
  * @returns 是否为不可开启，如果为不可开启，则返回true，否则返回false
  */
 const checkActivityLocked = (requirement: ActivityInfo["requirement"]): boolean => {
-    if (!petmateAttribute) return false;
+    if (!petmateAttribute.value) return false;
     return checkLocked(requirement, petmateAttribute as ComputedRef<PetMateAttribute>);
 };
 
@@ -424,7 +433,7 @@ const handleClaimReward = async () => {
   }
 };
 
-const activitySectionList = [
+const activitySectionList: ActivitySection[] = [
   {
     id: 1,
     type: "study",
@@ -463,9 +472,7 @@ const activityContentRef = ref<HTMLElement>();
 const showActivity = ref(false);
 const activityInfoList = ref<ActivityInfo[]>([]);
 // currentActivitySection是activitySectionList的元素，用于记录当前活动板块
-const currentActivitySection = ref<(typeof activitySectionList)[number] | null>(
-  null
-);
+const currentActivitySection = ref<ActivitySection | null>(null);
 
 /**
  * 选择活动
@@ -473,7 +480,7 @@ const currentActivitySection = ref<(typeof activitySectionList)[number] | null>(
  * @param id 活动id
  */
 const selectActivitySection = (
-  activitySection: (typeof activitySectionList)[number]
+  activitySection: ActivitySection
 ) => {
   currentActivitySection.value = activitySection;
   console.log("selectActivitySection", activityItemRefs.value);
@@ -586,6 +593,7 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
   display: flex;
   flex-direction: column;
   gap: 0;
+  overflow-y: auto;
   .activity-grade-layout {
     height: 18vh;
     margin-top: 20px;

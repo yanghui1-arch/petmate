@@ -24,6 +24,11 @@ import { handleCharacterLevelAchievement, handleFiftyAffectionAchievement, handl
 
 const UNUSABLE_PACKAGE_ITEM_TYPES = ["ticket"];
 
+export type PackageItemConsumeRequirement = {
+    itemId: number;
+    count: number;
+}
+
 /**
  * 购买物品
  * Buff的CashConsumesRate不会影响到商品的价格
@@ -60,6 +65,52 @@ export function buyItem(itemId: number, count: number): Item {
     }
     playerManager.updatePlayer(player);
     return item;
+}
+
+/**
+ * 扣除背包物品，不触发物品本身效果。
+ * 用于委托、兑换等“交付材料”场景，避免把 ticket 当成普通背包物品使用。
+ * @param requirements 需要扣除的物品和数量
+ * @throws 如果物品不存在或数量不足则抛出错误
+ */
+export function consumePackageItems(requirements: PackageItemConsumeRequirement[]): void {
+    if (!requirements.length) {
+        throw new Error("扣除背包物品失败: requirements为空");
+    }
+
+    const player: PlayerInfo = playerManager.getPlayer();
+
+    for (const requirement of requirements) {
+        if (!Number.isInteger(requirement.itemId) || !Number.isInteger(requirement.count) || requirement.count <= 0) {
+            throw new Error(`扣除背包物品失败，参数不合法: ${JSON.stringify(requirement)}`);
+        }
+
+        const item: Item | undefined = itemManager.getItem(requirement.itemId);
+        if (!item) {
+            throw new NotFoundError(`扣除背包物品失败，物品不存在: ${requirement.itemId}`);
+        }
+
+        const packageItem: PackageItemInfo | undefined = player.items.find(item => item.id === requirement.itemId);
+        if (!packageItem) {
+            throw new NotFoundError(`扣除背包物品失败，背包中不存在物品: ${requirement.itemId}`);
+        }
+
+        if (packageItem.count < requirement.count) {
+            throw new NotEnoughError(`扣除背包物品失败，物品数量不足: 物品id[${requirement.itemId}]，需要${requirement.count}个，但是只有${packageItem.count}个`);
+        }
+    }
+
+    for (const requirement of requirements) {
+        const index = player.items.findIndex(item => item.id === requirement.itemId);
+        if (index === -1) continue;
+
+        player.items[index].count -= requirement.count;
+        if (player.items[index].count <= 0) {
+            player.items.splice(index, 1);
+        }
+    }
+
+    playerManager.updatePlayer(player);
 }
 
 /**

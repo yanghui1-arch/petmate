@@ -1,6 +1,5 @@
 import { readonly, ref, type Ref } from 'vue'
 import { ModelStatus } from '../types/model'
-import youmeiAnger from '@/assets/models/youmei/youmei-anger.png'
 import youmeiDance from '@/assets/models/youmei/youmei-dance.png'
 import youmeiHello from '@/assets/models/youmei/youmei-hello-1.png'
 import youmeiStruggle from '@/assets/models/youmei/youmei-zhengzha.png'
@@ -47,10 +46,14 @@ const TALL_FRAME_RENDER_BASE_SIZE = 1536
 const DRAG_START_DISTANCE = 4
 const BLANK_FRAME_ALPHA_THRESHOLD = 8
 const BLANK_FRAME_VISIBLE_PIXEL_THRESHOLD = 16
-const ANGRY_KICK_REPEAT_COUNT = 2
+const ANGRY_KICK_REPEAT_COUNT = 1
 
 const idleFrameSources = resolveFrameSources(import.meta.glob<string>(
     '../assets/models/youmei/animations/idle/*.png',
+    { eager: true, import: 'default' }
+))
+const angryFrameSources = resolveFrameSources(import.meta.glob<string>(
+    '../assets/models/youmei/animations/angry/*.png',
     { eager: true, import: 'default' }
 ))
 const angryKickFrameSources = resolveFrameSources(import.meta.glob<string>(
@@ -93,16 +96,13 @@ const actionSpecs: Record<ActionName, ActionSpec> = {
         skipBlankFrames: true
     },
     anger: {
-        type: 'sprite',
-        imageSrc: youmeiAnger,
-        frameWidth: 500,
-        frameHeight: 500,
-        columns: 4,
-        rows: 4,
-        fps: 6,
+        type: 'sequence',
+        frameSources: angryFrameSources,
+        fps: 4,
         renderScale: 1,
+        renderBaseSize: TALL_FRAME_RENDER_BASE_SIZE,
         loopCount: 1,
-        skipBlankFrames: true
+        skipBlankFrames: false
     },
     angryKick: {
         type: 'sequence',

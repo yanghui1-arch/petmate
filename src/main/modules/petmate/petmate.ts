@@ -230,6 +230,31 @@ export abstract class PetMate {
     }
 
     /**
+     * 在线时定时衰减基础属性，不受Buff影响，最低降到0。
+     * @param amount 每次衰减的数值
+     * @returns 属性是否发生变化
+     */
+    decayOnlineAttributes(amount: number): boolean {
+        const decayAmount = Math.max(0, Math.trunc(amount));
+        const previousAttrs = {
+            hungry: this.attrs.hungry,
+            energy: this.attrs.energy,
+            emotion: this.attrs.emotion,
+            health: this.attrs.health
+        };
+
+        this.attrs.hungry = Math.max(0, Math.trunc(this.attrs.hungry - decayAmount));
+        this.attrs.energy = Math.max(0, Math.trunc(this.attrs.energy - decayAmount));
+        this.attrs.emotion = Math.max(0, Math.trunc(this.attrs.emotion - decayAmount));
+        this.attrs.health = Math.max(0, Math.trunc(this.attrs.health - decayAmount));
+
+        return this.attrs.hungry !== previousAttrs.hungry
+            || this.attrs.energy !== previousAttrs.energy
+            || this.attrs.emotion !== previousAttrs.emotion
+            || this.attrs.health !== previousAttrs.health;
+    }
+
+    /**
      * 增加一个Buff
      * @param buff 需要增加的Buff
      * @returns 增加的Buff，如果Buff数量超过上限则返回undefined

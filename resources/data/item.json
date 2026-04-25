@@ -409,5 +409,62 @@
             "affectionExp": 500,
             "exp": 1000
         }
+    },
+    {
+        "id": 22,
+        "name": "兔尾耳机",
+        "type": [
+            "limit",
+            "ticket"
+        ],
+        "description": "五一活动凭证，可用于指定活动或抽奖入口，不能在背包中直接使用。",
+        "url": "limit/mayday-bunny-headphones",
+        "price": 2500,
+        "requirement": {
+            "level": 1,
+            "singLevel": 1,
+            "drawLevel": 1,
+            "gameLevel": 1,
+            "affectionLevel": 1
+        },
+        "effect": {}
+    },
+    {
+        "id": 23,
+        "name": "蕾丝遮阳伞",
+        "type": [
+            "limit",
+            "ticket"
+        ],
+        "description": "五一活动凭证，可用于指定活动或抽奖入口，不能在背包中直接使用。",
+        "url": "limit/mayday-lace-parasol",
+        "price": 3344,
+        "requirement": {
+            "level": 1,
+            "singLevel": 1,
+            "drawLevel": 1,
+            "gameLevel": 1,
+            "affectionLevel": 1
+        },
+        "effect": {}
+    },
+    {
+        "id": 24,
+        "name": "豪华工具箱",
+        "type": [
+            "limit",
+            "ticket"
+        ],
+        "description": "五一活动凭证，可用于指定活动或抽奖入口，不能在背包中直接使用。",
+        "url": "limit/mayday-luxury-toolbox",
+        "price": 3888,
+        "requirement": {
+            "level": 1,
+            "singLevel": 1,
+            "drawLevel": 1,
+            "gameLevel": 1,
+            "affectionLevel": 1
+        },
+        "effect": {}
     }
 ]

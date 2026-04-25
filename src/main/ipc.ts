@@ -8,7 +8,7 @@ import { is } from '@electron-toolkit/utils'
 import { playerManager, ServerData } from './modules/store';
 import { PlayerInfo } from './types/player';
 import { Response } from '../types/response';
-import { consumeItem } from './modules/player/basic';
+import { consumeItem, consumePackageItems, PackageItemConsumeRequirement } from './modules/player/basic';
 import logger from './log';
 import { PetMate } from './modules/petmate/petmate';
 import { startActivity, finishActivity, cancelActivity, claimActivityReward } from './modules/player/act';
@@ -19,7 +19,7 @@ import { Item, ItemType } from './types/item';
 import { buyItem } from './modules/player/basic';
 import { ActivityInfo } from './types/activity';
 import { getCompletedWishesNum, showActivities, showItems, getItemInfo } from './modules/show';
-import { ChatLLMConfigError, LLMConfigError, NotFoundError, TTSProcessError } from './error';
+import { ChatLLMConfigError, LLMConfigError, NotEnoughError, NotFoundError, TTSProcessError } from './error';
 import { wishHandler } from './modules/wish';
 import { getModelSize, getSettings, SettingConfig, updateSettings, defaultSettings } from './settings';
 import {
@@ -127,6 +127,28 @@ ipcMain.handle("consume-item", (_: IpcMainInvokeEvent, itemId: number, count: nu
         return {
             code: 400,
             message: "消耗物品失败"
+        } as Response<void>;
+    }
+})
+
+/**
+ * 提交委托材料。
+ * 只扣除背包物品，不触发物品效果；用于 ticket 等不可直接使用的活动凭证。
+ * @param requirements 需要交付的物品和数量
+ * @returns 提交成功或失败
+ */
+ipcMain.handle("submit-commission-requirements", (_: IpcMainInvokeEvent, requirements: PackageItemConsumeRequirement[]): Response<void> => {
+    try {
+        consumePackageItems(requirements);
+        return {
+            code: 200,
+            message: "提交委托材料成功"
+        } as Response<void>;
+    } catch (error) {
+        logger.error(`提交委托材料失败: ${error}`);
+        return {
+            code: 400,
+            message: error instanceof Error ? error.message : "提交委托材料失败"
         } as Response<void>;
     }
 })
@@ -298,6 +320,12 @@ ipcMain.handle("start-activity", (_: IpcMainInvokeEvent, petmateId: number, acti
         } as Response<void>;
     } catch (error) {
         logger.error(`开启活动失败: ${error}`);
+        if (error instanceof NotEnoughError) {
+            return {
+                code: 400,
+                message: error.message
+            } as Response<void>;
+        }
         return {
             code: 400,
             message: "开启活动失败"

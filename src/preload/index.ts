@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('api', {
     saveChatMessages: () => ipcRenderer.invoke('save-chat-messages'),
     // 玩家的操作
     consumeItem: (itemId: number, count: number, petmateId: number) => ipcRenderer.invoke('consume-item', itemId, count, petmateId),
+    submitCommissionRequirements: (requirements: { itemId: number, count: number }[]) => ipcRenderer.invoke('submit-commission-requirements', requirements),
     buyItem: (itemId: number, count: number) => ipcRenderer.invoke('buy-item', itemId, count),
     chat: (message: ChatMessage) => ipcRenderer.invoke('chat', message),
     startActivity: (petmateId: number, activityId: number) => ipcRenderer.invoke('start-activity', petmateId, activityId),
@@ -54,6 +55,7 @@ contextBridge.exposeInMainWorld('api', {
     onTTSFinished: (callback: (event: IpcRendererEvent) => void) => ipcRenderer.on('tts-finished', callback),
     onWishFinished: (callback: (event: IpcRendererEvent, petmateId: number, finishedWishNames: string[]) => void) => ipcRenderer.on('wish-finished', callback),
     onActivityFinished: (callback: (event: IpcRendererEvent, petmateId: number) => void) => ipcRenderer.on('activity-finished', callback),
+    onPetmateAttributeDecayed: (callback: (event: IpcRendererEvent, petmateId: number) => void) => ipcRenderer.on('petmate-attribute-decayed', callback),
 
     onTTSFailed: (callback: (event: IpcRendererEvent) => void) => ipcRenderer.on('tts-failed', callback),
 

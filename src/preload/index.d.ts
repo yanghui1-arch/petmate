@@ -40,6 +40,7 @@ interface IElectronAPI {
 
   // 玩家操作
   consumeItem: (itemId: number, count: number, petmateId: number) => Promise<Response<void>>;
+  submitCommissionRequirements: (requirements: { itemId: number, count: number }[]) => Promise<Response<void>>;
   buyItem: (itemId: number, count: number) => Promise<Response<Item>>;
   chat: (message: ChatMessage) => Promise<Response<void>>;
   startActivity: (petmateId: number, activityId: number) => Promise<Response<void>>;
@@ -59,6 +60,7 @@ interface IElectronAPI {
   onTTSFailed: (callback: (event: Event) => void) => void,
   onWishFinished: (callback: (event: Event, petmateId: number, finishedWishNames: string[]) => void) => void,
   onActivityFinished: (callback: (event: Event, petmateId: number) => void) => void,
+  onPetmateAttributeDecayed: (callback: (event: Event, petmateId: number) => void) => void,
   onShowContextMenu: (callback: (event: Event) => void) => void,
   onSystemAudioActive: (callback: (event: Event, active: boolean) => void) => void,
   removeAllAudioChunkListeners: () => void;

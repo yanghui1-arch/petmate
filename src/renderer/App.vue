@@ -60,11 +60,14 @@ const activate = (place: DrawerPlacement) => {
 };
 
 // 全局玩家状态 - 在这里加载数据
-const { playerData, initPlayerData } = usePlayer();
+const { playerData, initPlayerData, refreshPlayerData } = usePlayer();
 const { initSettings } = useSettings();
 
 // 当应用挂载时加载玩家数据
 onMounted(async () => {
+  window.api.onPetmateAttributeDecayed(() => {
+    refreshPlayerData();
+  });
   await initPlayerData();
   console.log("正在初始化设置");
   await initSettings();
