@@ -31,6 +31,7 @@ export type PlayerResourceState = {
     skins: PlayerSkinResource[];
     equippedSkinId: string;
     titles: PlayerTitleResource[];
+    equippedTitleId: string | null;
     commissionCompletionCounts: Record<string, number>;
     /**
      * 旧版本曾用这个字段限制委托只能完成一次。
@@ -76,5 +77,6 @@ export type CommissionGrantedReward = {
 export type CommissionCompletionResult = {
     resources: PlayerResourceState;
     rewardTier: CommissionRewardTier;
+    completionCount: number;
     rewards: CommissionGrantedReward[];
 }

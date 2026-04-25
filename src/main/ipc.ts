@@ -9,7 +9,7 @@ import { playerManager, ServerData } from './modules/store';
 import { PlayerInfo } from './types/player';
 import { Response } from '../types/response';
 import { consumeItem, consumePackageItems, PackageItemConsumeRequirement } from './modules/player/basic';
-import { LABOR_SKIRT_SKIN_ID, playerResourceManager } from './modules/player/resource';
+import { LABOR_SKIRT_SKIN_ID, playerResourceManager, SkinAlreadyOwnedError } from './modules/player/resource';
 import logger from './log';
 import { PetMate } from './modules/petmate/petmate';
 import { startActivity, finishActivity, cancelActivity, claimActivityReward } from './modules/player/act';
@@ -169,6 +169,14 @@ ipcMain.handle("claim-labor-skin", (_: IpcMainInvokeEvent): Response<PlayerResou
         } as Response<PlayerResourceState>;
     } catch (error) {
         logger.error(`领取五一短裙套装失败: ${error}`);
+        if (error instanceof SkinAlreadyOwnedError) {
+            return {
+                code: 409,
+                message: error.message,
+                data: playerResourceManager.getResources()
+            } as Response<PlayerResourceState>;
+        }
+
         return {
             code: 400,
             message: error instanceof Error ? error.message : "领取失败"
@@ -195,11 +203,30 @@ ipcMain.handle("equip-player-skin", (_: IpcMainInvokeEvent, skinId: string): Res
     }
 })
 
+ipcMain.handle("equip-player-title", (_: IpcMainInvokeEvent, titleId: string): Response<PlayerResourceState> => {
+    try {
+        const resources = playerResourceManager.equipTitle(titleId);
+        notifyPlayerResourcesUpdated(resources);
+
+        return {
+            code: 200,
+            message: "称谓设置成功",
+            data: resources
+        } as Response<PlayerResourceState>;
+    } catch (error) {
+        logger.error(`设置称谓失败: ${error}`);
+        return {
+            code: 400,
+            message: error instanceof Error ? error.message : "设置称谓失败"
+        } as Response<PlayerResourceState>;
+    }
+})
+
 /**
  * 完成委托。
  * 先扣除交付材料，再发放本次随机奖励。
  */
-ipcMain.handle("complete-commission", (_: IpcMainInvokeEvent, commissionId: string, requirements: PackageItemConsumeRequirement[]): Response<CommissionCompletionResult> => {
+ipcMain.handle("complete-commission", (_: IpcMainInvokeEvent, commissionId: string, requirements: PackageItemConsumeRequirement[], completionCount: number = 1): Response<CommissionCompletionResult> => {
     try {
         if (!playerResourceManager.getCommissionRewardBundle(commissionId)) {
             return {
@@ -208,8 +235,19 @@ ipcMain.handle("complete-commission", (_: IpcMainInvokeEvent, commissionId: stri
             } as Response<CommissionCompletionResult>;
         }
 
-        consumePackageItems(requirements);
-        const result = playerResourceManager.completeCommission(commissionId, requirements);
+        if (!Number.isInteger(completionCount) || completionCount <= 0) {
+            return {
+                code: 400,
+                message: "交付次数不合法"
+            } as Response<CommissionCompletionResult>;
+        }
+
+        const totalRequirements = requirements.map(requirement => ({
+            itemId: requirement.itemId,
+            count: requirement.count * completionCount
+        }));
+        consumePackageItems(totalRequirements);
+        const result = playerResourceManager.completeCommission(commissionId, requirements, completionCount);
         notifyPlayerResourcesUpdated(result.resources);
 
         return {

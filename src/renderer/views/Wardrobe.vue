@@ -1,14 +1,6 @@
 <template>
   <div class="wardrobe-page">
     <div class="wardrobe-layout">
-      <div class="wardrobe-header">
-        <div>
-          <div class="wardrobe-title">衣橱</div>
-          <div class="wardrobe-subtitle">{{ ownedSkins.length }} 件套装</div>
-        </div>
-        <div class="equipped-chip">{{ equippedSkin?.name ?? "未实装" }}</div>
-      </div>
-
       <div class="wardrobe-content">
         <div class="skin-list">
           <button
@@ -116,10 +108,6 @@ const selectedSkin = computed(
   () => ownedSkins.value.find((skin) => skin.id === selectedSkinId.value) ?? ownedSkins.value[0]
 );
 
-const equippedSkin = computed(
-  () => SKIN_CATALOG.find((skin) => skin.id === equippedSkinId.value)
-);
-
 const syncSelection = () => {
   if (ownedSkins.value.some((skin) => skin.id === selectedSkinId.value)) return;
   selectedSkinId.value = equippedSkinId.value || ownedSkins.value[0]?.id || CLASSIC_SKIN_ID;
@@ -167,57 +155,19 @@ onMounted(() => {
 <style scoped lang="scss">
 .wardrobe-page {
   flex: 1;
-  min-height: 100%;
-  padding: 18px 5%;
+  min-height: 0;
+  height: 100%;
+  padding: 50px 5% 22px;
   background: $system-bgc;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .wardrobe-layout {
   width: 100%;
   height: 100%;
+  min-height: 320px;
   display: flex;
   flex-direction: column;
-  row-gap: 14px;
-}
-
-.wardrobe-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 8px;
-  border: 1px solid rgba(253, 203, 110, 0.22);
-  background: linear-gradient(135deg, rgba(255, 248, 225, 0.12), rgba(238, 151, 173, 0.12)),
-    $content-bgc;
-  box-shadow: 0 8px 24px rgba(35, 30, 31, 0.28);
-}
-
-.wardrobe-title {
-  color: #ffffff;
-  font-size: 26px;
-  font-weight: 900;
-  letter-spacing: 0;
-}
-
-.wardrobe-subtitle {
-  margin-top: 2px;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 12px;
-}
-
-.equipped-chip {
-  max-width: 46%;
-  padding: 6px 10px;
-  border-radius: 999px;
-  color: #8b4513;
-  font-size: 12px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #fff8e1, #ffd6e7);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .wardrobe-content {
@@ -312,7 +262,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #cfcfcf;
+  background: transparent;
 }
 
 .skin-preview-image {

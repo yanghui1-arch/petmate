@@ -5,10 +5,6 @@
         <span class="commission-kicker">五一劳动节</span>
         <span class="commission-title">节日委托</span>
       </div>
-      <div class="commission-summary">
-        <span>已交付 {{ totalCompletionCount }} 次</span>
-        <span>{{ deadlineText }}</span>
-      </div>
     </div>
 
     <div class="commission-list">
@@ -25,7 +21,7 @@
           :style="getRowBackgroundStyle(commission.imageUrl)"
         ></span>
         <span class="commission-row-overlay"></span>
-        <span class="commission-status">{{ getStatusText(commission) }}</span>
+        <span class="commission-status">{{ formatDeadline(commission.deadline) }}</span>
 
         <div class="commission-main">
           <div class="commission-row-head">
@@ -33,7 +29,6 @@
               <div class="commission-name">{{ commission.name }}</div>
               <div class="commission-description">{{ commission.description }}</div>
             </div>
-            <span class="commission-deadline">{{ formatDeadline(commission.deadline) }}</span>
           </div>
 
           <div class="commission-row-detail">
@@ -81,7 +76,7 @@ import CommissionModal from "./CommissionModal.vue";
 import { useCommission } from "@/hooks/useCommission";
 import { usePlayer } from "@/hooks/usePlayer";
 
-const { holidayCommissions, playerResources, refreshPlayerResources } = useCommission();
+const { holidayCommissions, refreshPlayerResources } = useCommission();
 const { playerData } = usePlayer();
 
 const emit = defineEmits<{
@@ -103,18 +98,6 @@ const playerItemCounts = computed<Record<number, number>>(() => {
   return counts;
 });
 
-const totalCompletionCount = computed(() => {
-  return Object.values(playerResources.value.commissionCompletionCounts).reduce(
-    (total, count) => total + count,
-    0
-  );
-});
-
-const deadlineText = computed(() => {
-  const deadline = holidayCommissions.value[0]?.deadline;
-  return deadline ? `截止 ${formatDeadline(deadline)}` : "";
-});
-
 const openCommission = (commission: Commission) => {
   selectedCommission.value = commission;
   isCommissionModalShow.value = true;
@@ -133,16 +116,11 @@ const getRowBackgroundStyle = (imageUrl: string) => ({
 
 const getOwnedCount = (itemId: number) => playerItemCounts.value[itemId] ?? 0;
 
-const getStatusText = (commission: Commission) => {
-  if (commission.status === "expired") return "已截止";
-  const count = playerResources.value.commissionCompletionCounts[commission.id] ?? 0;
-  return count > 0 ? `已交付 ${count}` : "可交付";
-};
-
 const formatDeadline = (date: Date) => {
-  return `${date.getMonth() + 1}月${date.getDate()}日 ${String(
+  const deadline = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${String(
     date.getHours()
   ).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  return `截止时间 ${deadline}`;
 };
 </script>
 
@@ -184,16 +162,6 @@ const formatDeadline = (date: Date) => {
   font-weight: 800;
 }
 
-.commission-summary {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 12px;
-  line-height: 1.4;
-}
-
 .commission-list {
   display: flex;
   flex-direction: column;
@@ -204,7 +172,7 @@ const formatDeadline = (date: Date) => {
   width: 100%;
   min-height: 146px;
   display: flex;
-  padding: 16px;
+  padding: 42px 16px 16px;
   border-radius: 14px;
   border: 1px solid rgba(253, 203, 110, 0.24);
   background: $content-bgc;
@@ -275,10 +243,13 @@ const formatDeadline = (date: Date) => {
   top: 12px;
   right: 12px;
   z-index: 2;
+  max-width: calc(100% - 24px);
   padding: 3px 10px;
   color: #8b4513;
   font-size: 11px;
   font-weight: 800;
+  line-height: 1.35;
+  white-space: nowrap;
   border-radius: 999px;
   background: rgba(255, 248, 225, 0.94);
   box-shadow: 0 2px 8px rgba(35, 30, 31, 0.2);
@@ -299,12 +270,17 @@ const formatDeadline = (date: Date) => {
   display: flex;
   justify-content: space-between;
   gap: 12px;
+
+  > div {
+    min-width: 0;
+  }
 }
 
 .commission-name {
   color: #ffffff;
   font-size: 17px;
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .commission-description {
@@ -312,17 +288,7 @@ const formatDeadline = (date: Date) => {
   color: #f0c3c3;
   font-size: 12px;
   line-height: 1.45;
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.commission-deadline {
-  flex: 0 0 auto;
-  color: rgba(255, 248, 225, 0.78);
-  font-size: 11px;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .commission-row-detail {
@@ -345,11 +311,14 @@ const formatDeadline = (date: Date) => {
 }
 
 .detail-pill {
+  min-width: 0;
   padding: 2px 7px;
   border-radius: 999px;
   color: #9ef1c4;
   font-size: 11px;
   font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
   border: 1px solid rgba(158, 241, 196, 0.32);
   background: rgba(158, 241, 196, 0.08);
 

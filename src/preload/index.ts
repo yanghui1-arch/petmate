@@ -39,7 +39,7 @@ contextBridge.exposeInMainWorld('api', {
     saveChatMessages: () => ipcRenderer.invoke('save-chat-messages'),
     // 玩家的操作
     consumeItem: (itemId: number, count: number, petmateId: number) => ipcRenderer.invoke('consume-item', itemId, count, petmateId),
-    completeCommission: (commissionId: string, requirements: { itemId: number, count: number }[]) => ipcRenderer.invoke('complete-commission', commissionId, requirements),
+    completeCommission: (commissionId: string, requirements: { itemId: number, count: number }[], completionCount?: number) => ipcRenderer.invoke('complete-commission', commissionId, requirements, completionCount),
     buyItem: (itemId: number, count: number) => ipcRenderer.invoke('buy-item', itemId, count),
     chat: (message: ChatMessage) => ipcRenderer.invoke('chat', message),
     startActivity: (petmateId: number, activityId: number) => ipcRenderer.invoke('start-activity', petmateId, activityId),
@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld('api', {
     claimWishReward: (petmateId: number, wishId: string) => ipcRenderer.invoke('claim-wish-reward', petmateId, wishId),
     claimLaborSkin: () => ipcRenderer.invoke('claim-labor-skin'),
     equipPlayerSkin: (skinId: string) => ipcRenderer.invoke('equip-player-skin', skinId),
+    equipPlayerTitle: (titleId: string) => ipcRenderer.invoke('equip-player-title', titleId),
     // 克隆音色
     cloneVoice: (url: string) => ipcRenderer.invoke('clone-voice', url),
     // 监听

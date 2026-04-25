@@ -64,6 +64,10 @@ const angryFrameSources = resolveFrameSources(import.meta.glob<string>(
     '../assets/models/youmei/animations/angry/*.png',
     { eager: true, import: 'default' }
 ))
+const laborAngryFrameSources = resolveFrameSources(import.meta.glob<string>(
+    '../assets/models/youmei/animations/angry/labor-skin/*.png',
+    { eager: true, import: 'default' }
+))
 const angryKickFrameSources = resolveFrameSources(import.meta.glob<string>(
     '../assets/models/youmei/animations/angry_kick/*.png',
     { eager: true, import: 'default' }
@@ -566,6 +570,11 @@ function applyUnlockedAnimationSources(): void {
             : idleFrameSources
     }
 
+    const angrySpec = actionSpecs.anger
+    if (angrySpec.type === 'sequence') {
+        angrySpec.frameSources = getCurrentSkinAngryFrameSources()
+    }
+
     const angryKickSpec = actionSpecs.angryKick
     if (angryKickSpec.type !== 'sequence') return
 
@@ -577,18 +586,32 @@ function applyUnlockedAnimationSources(): void {
         : angryKickFrameSources
 }
 
+function getCurrentSkinAngryFrameSources(): string[] {
+    if (equippedSkinId !== LABOR_SKIRT_SKIN_ID) return angryFrameSources
+    if (laborAngryFrameSources.length > 0) return laborAngryFrameSources
+    if (laborIdleFrameSources.length > 0) return laborIdleFrameSources
+    return angryFrameSources
+}
+
 async function reloadUnlockableAnimationFrames(): Promise<void> {
     applyUnlockedAnimationSources()
-    const [idleFrames, angryKickFrames] = await Promise.all([
+    const [idleFrames, angryFrames, angryKickFrames] = await Promise.all([
         loadActionFrames('idle', actionSpecs.idle),
+        loadActionFrames('anger', actionSpecs.anger),
         loadActionFrames('angryKick', actionSpecs.angryKick)
     ])
     actionFrames.idle = idleFrames
+    actionFrames.anger = angryFrames
     actionFrames.angryKick = angryKickFrames
 
     const firstIdleFrame = actionFrames.idle[0]
     if (firstIdleFrame) {
         petMateModelConfig.scale = SPRITE_RENDER_SIZE / Math.max(firstIdleFrame.sourceWidth, firstIdleFrame.sourceHeight)
+    }
+
+    if (!isDragging && isAngry) {
+        startAngrySequence()
+        return
     }
 
     if (!isDragging && !isAngry && activeAction === 'idle') {

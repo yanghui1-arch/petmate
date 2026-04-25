@@ -6,7 +6,7 @@ import parasolImage from '../assets/image/special_activity/labor-2026/洋伞赠�
 import gamingImage from '../assets/image/special_activity/labor-2026/电竞赠礼.png'
 import laborKickPreviewImage from '../assets/models/youmei/animations/angry_kick/labor-skin/10.png'
 
-const LABOR_DAY_DEADLINE = new Date('2026-05-05T23:59:59+08:00')
+const LABOR_DAY_DEADLINE = new Date('2026-05-15T23:59:59+08:00')
 const LABOR_KICK_REWARD = {
     id: 'youmei-angry-kick-labor-2026',
     type: 'animation' as const,
@@ -24,6 +24,7 @@ const defaultPlayerResources: PlayerResourceState = {
     skins: [],
     equippedSkinId: '',
     titles: [],
+    equippedTitleId: null,
     commissionCompletionCounts: {},
     completedCommissionIds: [],
 }
@@ -90,7 +91,7 @@ const HOLIDAY_COMMISSION_DEFS: Omit<Commission, 'status'>[] = [
             {
                 id: 'labor-2026-sunny-guardian',
                 type: 'title',
-                name: '晴光守护者',
+                name: '曙光守护者',
                 description: '替尤美撑起晴天小伞的人。',
             },
         ],
@@ -165,16 +166,20 @@ export function useCommission() {
         }))
     })
 
-    const submitCommission = async (commission: Commission): Promise<{ success: boolean, message: string, result?: CommissionCompletionResult }> => {
+    const submitCommission = async (commission: Commission, completionCount: number = 1): Promise<{ success: boolean, message: string, result?: CommissionCompletionResult }> => {
         if (commission.status === 'expired') {
             return { success: false, message: '这个委托已经截止啦' }
+        }
+
+        if (!Number.isInteger(completionCount) || completionCount <= 0) {
+            return { success: false, message: '交付次数不合法' }
         }
 
         const requirements = commission.requirements.map(requirement => ({
             itemId: requirement.itemId,
             count: requirement.count,
         }))
-        const response = await window.api.completeCommission(commission.id, requirements)
+        const response = await window.api.completeCommission(commission.id, requirements, completionCount)
         if (response.code === 200 && response.data) {
             playerResources.value = response.data.resources
             isPlayerResourcesLoaded.value = true

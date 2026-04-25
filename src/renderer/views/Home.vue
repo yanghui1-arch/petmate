@@ -12,6 +12,20 @@
           <div class="home-panel-content">
             <div class="home-panel-info">
               <div class="home-panel-image">
+                <button
+                  v-if="equippedTitle || ownedTitles.length > 0"
+                  type="button"
+                  class="home-player-title-slot"
+                  :class="{ 'home-player-title-slot-empty': !equippedTitle }"
+                  @click="openTitleSelector"
+                >
+                  <img
+                    v-if="equippedTitle"
+                    class="home-player-title-image"
+                    :src="equippedTitle.image"
+                    :alt="equippedTitle.name"
+                  />
+                </button>
                 <n-avatar
                   round
                   :size="70"
@@ -178,17 +192,33 @@
       :petmateId="currentPetmateID"
       type="use"
     />
+    <n-modal v-model:show="isTitleModalShow" transform-origin="center">
+      <div class="title-select-modal">
+        <button
+          v-for="title in ownedTitles"
+          :key="title.id"
+          type="button"
+          class="title-select-option"
+          :class="{ 'title-select-option-active': title.id === equippedTitleId }"
+          :disabled="isEquippingTitle"
+          @click="equipTitle(title.id)"
+        >
+          <img class="title-select-image" :src="title.image" :alt="title.name" />
+        </button>
+      </div>
+    </n-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import AttributeBar from "@/components/AttributeBar.vue";
 import Pagedot from "@/components/Pagedot.vue";
 import BuffPopover from "@/components/buff/BuffPopover.vue";
 import ItemPopover from "@/components/item/ItemPopover.vue";
 import ItemModal from "@/components/item/ItemModal.vue";
 import type { CarouselInst } from "naive-ui";
+import type { PlayerResourceState } from "@main/types/player-resource";
 import { canUseItemFromPackage, executePackageItemPage } from "../utils/item";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
@@ -196,12 +226,40 @@ import { showItemPopover, showBuffPopover, popoverX, popoverY, popoverWidth, pop
 import { PackageItemInfo } from "../types/player";
 import { getPrimaryItemType, ItemType, Item, ActiveBuff } from "../types/common";
 import avator from "../assets/image/youmei-avatar.png";
+import holidayCraftspersonTitleImage from "../assets/title/假日小工匠.png";
+import winningDuoTitleImage from "../assets/title/假期连胜搭子.png";
+import dawnGuardianTitleImage from "../assets/title/曙光守护者.png";
+
+type TitleViewModel = {
+  id: string;
+  name: string;
+  image: string;
+};
+
+const TITLE_CATALOG: TitleViewModel[] = [
+  {
+    id: "labor-2026-holiday-craftsperson",
+    name: "假日小工匠",
+    image: holidayCraftspersonTitleImage,
+  },
+  {
+    id: "labor-2026-sunny-guardian",
+    name: "曙光守护者",
+    image: dawnGuardianTitleImage,
+  },
+  {
+    id: "labor-2026-winning-duo",
+    name: "假期连胜搭子",
+    image: winningDuoTitleImage,
+  },
+];
 
 const { playerData, consumeItem } = usePlayer();
 const { getAllItems, getImageURL } = useShow();
 
 // 物品id -> 物品信息，用于物品信息悬浮框和使用弹出框
 const completeItemsMap = ref<Map<number, Item>>(new Map());
+const playerResources = ref<PlayerResourceState | null>(null);
 
 /**
  * 加载所有物品数据
@@ -229,7 +287,10 @@ const loadCompleteItemsData = async () => {
 };
 
 onMounted(async () => {
-  await loadCompleteItemsData();
+  await Promise.all([loadCompleteItemsData(), refreshPlayerResources()]);
+  window.api.onPlayerResourcesUpdated((_, resources) => {
+    playerResources.value = resources;
+  });
 });
 
 // Petmate相关
@@ -243,6 +304,58 @@ const currentActivePetmate = computed(() => {
 const petmateAttribute = computed(() => {
   return currentActivePetmate.value?.attrs;
 });
+
+// 称谓相关
+const isTitleModalShow = ref(false);
+const isEquippingTitle = ref(false);
+
+const ownedTitleIds = computed(() => {
+  return new Set(playerResources.value?.titles.map((title) => title.id) ?? []);
+});
+
+const ownedTitles = computed(() =>
+  TITLE_CATALOG.filter((title) => ownedTitleIds.value.has(title.id))
+);
+
+const equippedTitleId = computed(() => playerResources.value?.equippedTitleId ?? null);
+
+const equippedTitle = computed(() => {
+  if (!equippedTitleId.value) return null;
+  return ownedTitles.value.find((title) => title.id === equippedTitleId.value) ?? null;
+});
+
+const refreshPlayerResources = async () => {
+  const response = await window.api.getPlayerResources();
+  if (response.code === 200 && response.data) {
+    playerResources.value = response.data;
+  }
+};
+
+const openTitleSelector = () => {
+  if (ownedTitles.value.length === 0) return;
+  isTitleModalShow.value = true;
+};
+
+const equipTitle = async (titleId: string) => {
+  if (isEquippingTitle.value) return;
+  if (titleId === equippedTitleId.value) {
+    isTitleModalShow.value = false;
+    return;
+  }
+
+  isEquippingTitle.value = true;
+  try {
+    const response = await window.api.equipPlayerTitle(titleId);
+    if (response.code === 200 && response.data) {
+      playerResources.value = response.data;
+      isTitleModalShow.value = false;
+    }
+  } catch (error) {
+    console.error("设置称谓失败:", error);
+  } finally {
+    isEquippingTitle.value = false;
+  }
+};
 
 // 背包相关
 const packageCurrType = ref("food");
@@ -392,7 +505,11 @@ const showModal = (item: PackageItemInfo) => {
       align-items: center;
       height: 100%;
       .home-panel-image {
-        margin-top: 10px;
+        margin-top: 4px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        row-gap: 4px;
       }
       .home-panel-grade {
         display: flex;
@@ -404,6 +521,26 @@ const showModal = (item: PackageItemInfo) => {
         font-size: 16px;
         font-weight: bold;
         color: $color-pink-100;
+      }
+      .home-player-title-slot {
+        width: 152px;
+        height: 54px;
+        padding: 0;
+        border: none;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .home-player-title-slot-empty {
+        opacity: 0;
+      }
+      .home-player-title-image {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: contain;
       }
     }
     .home-panel-attribute {
@@ -546,5 +683,48 @@ const showModal = (item: PackageItemInfo) => {
       }
     }
   }
+}
+
+.title-select-modal {
+  width: min(360px, calc(100vw - 40px));
+  padding: 16px;
+  border-radius: 8px;
+  background: $content-bgc;
+  display: flex;
+  flex-direction: column;
+  row-gap: 10px;
+  box-shadow: 0 12px 32px rgba(80, 58, 64, 0.26);
+}
+
+.title-select-option {
+  width: 100%;
+  height: 86px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 8px;
+  background: transparent;
+  overflow: hidden;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: #f3a6bd;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.title-select-option-active {
+  border-color: #ff7675;
+  box-shadow: 0 0 0 2px rgba(255, 118, 117, 0.24);
+}
+
+.title-select-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
 }
 </style>

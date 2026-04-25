@@ -42,7 +42,7 @@ interface IElectronAPI {
 
   // 玩家操作
   consumeItem: (itemId: number, count: number, petmateId: number) => Promise<Response<void>>;
-  completeCommission: (commissionId: string, requirements: { itemId: number, count: number }[]) => Promise<Response<CommissionCompletionResult>>;
+  completeCommission: (commissionId: string, requirements: { itemId: number, count: number }[], completionCount?: number) => Promise<Response<CommissionCompletionResult>>;
   buyItem: (itemId: number, count: number) => Promise<Response<Item>>;
   chat: (message: ChatMessage) => Promise<Response<void>>;
   startActivity: (petmateId: number, activityId: number) => Promise<Response<void>>;
@@ -51,6 +51,7 @@ interface IElectronAPI {
   claimWishReward: (petmateId: number, wishId: string) => Promise<Response<boolean>>;
   claimLaborSkin: () => Promise<Response<PlayerResourceState>>;
   equipPlayerSkin: (skinId: string) => Promise<Response<PlayerResourceState>>;
+  equipPlayerTitle: (titleId: string) => Promise<Response<PlayerResourceState>>;
 
   // 克隆音色
   cloneVoice: (url: string) => Promise<Response<string>>;

@@ -58,8 +58,16 @@ const createDefaultPlayerResources = (): PlayerResourceState => {
         skins: [classicSkin],
         equippedSkinId: CLASSIC_SKIN_ID,
         titles: [],
+        equippedTitleId: null,
         commissionCompletionCounts: {},
         completedCommissionIds: []
+    }
+}
+
+export class SkinAlreadyOwnedError extends Error {
+    constructor(skinName: string) {
+        super(`${skinName}已经领取过了，不可以重复领取，可以去衣橱换装。`)
+        this.name = "SkinAlreadyOwnedError"
     }
 }
 
@@ -96,7 +104,7 @@ const COMMISSION_REWARD_BUNDLES: Record<string, CommissionRewardBundle> = {
         titles: [
             {
                 id: "labor-2026-sunny-guardian",
-                name: "晴光守护者",
+                name: "曙光守护者",
                 description: "替尤美撑起晴天小伞的人。",
                 source: "洋伞赠礼"
             }
@@ -181,10 +189,11 @@ class PlayerResourceManager {
         }
 
         const hasSkin = this.resources.skins.some(resource => resource.id === skinId)
-        if (!hasSkin) {
-            this.resources.skins.push(createSkinResource(skinId))
+        if (hasSkin) {
+            throw new SkinAlreadyOwnedError(skinDefinition.name)
         }
 
+        this.resources.skins.push(createSkinResource(skinId))
         this.saveResources()
         return this.getResources()
     }
@@ -202,11 +211,26 @@ class PlayerResourceManager {
         return this.getResources()
     }
 
+    equipTitle(titleId: string): PlayerResourceState {
+        this.ensureInit()
+
+        const hasTitle = this.resources.titles.some(resource => resource.id === titleId)
+        if (!hasTitle) {
+            throw new Error("未拥有该称谓")
+        }
+
+        this.resources.equippedTitleId = titleId
+        this.saveResources()
+        return this.getResources()
+    }
+
     completeCommission(
         commissionId: string,
-        requirements: PackageItemConsumeRequirement[]
+        requirements: PackageItemConsumeRequirement[],
+        completionCount: number = 1
     ): CommissionCompletionResult {
         this.ensureInit()
+        const safeCompletionCount = normalizeCompletionCount(completionCount)
 
         const rewardBundle = this.getCommissionRewardBundle(commissionId)
         if (!rewardBundle) {
@@ -214,29 +238,35 @@ class PlayerResourceManager {
         }
 
         const inputValue = this.computeRequirementValue(requirements)
-        const rewardTier = this.resolveRewardTier(commissionId)
         const rewards: CommissionGrantedReward[] = []
+        let lastRewardTier: CommissionRewardTier = "profit"
 
-        if (rewardTier === "animation") {
-            const animationReward = this.grantAnimationReward(rewardBundle)
-            if (animationReward) rewards.push(animationReward)
-            rewards.push(...this.grantEconomicRewards("special", inputValue))
-        } else if (rewardTier === "title") {
-            const titleReward = this.grantTitleReward(commissionId)
-            if (titleReward) rewards.push(titleReward)
-            rewards.push(...this.grantEconomicRewards("special", inputValue))
-        } else {
-            rewards.push(...this.grantEconomicRewards(rewardTier, inputValue))
+        for (let index = 0; index < safeCompletionCount; index++) {
+            const rewardTier = this.resolveRewardTier(commissionId)
+            lastRewardTier = rewardTier
+
+            if (rewardTier === "animation") {
+                const animationReward = this.grantAnimationReward(rewardBundle)
+                if (animationReward) rewards.push(animationReward)
+                rewards.push(...this.grantEconomicRewards("special", inputValue))
+            } else if (rewardTier === "title") {
+                const titleReward = this.grantTitleReward(commissionId)
+                if (titleReward) rewards.push(titleReward)
+                rewards.push(...this.grantEconomicRewards("special", inputValue))
+            } else {
+                rewards.push(...this.grantEconomicRewards(rewardTier, inputValue))
+            }
         }
 
         this.resources.commissionCompletionCounts[commissionId] =
-            (this.resources.commissionCompletionCounts[commissionId] ?? 0) + 1
+            (this.resources.commissionCompletionCounts[commissionId] ?? 0) + safeCompletionCount
         this.saveResources()
 
         return {
             resources: this.getResources(),
-            rewardTier,
-            rewards
+            rewardTier: lastRewardTier,
+            completionCount: safeCompletionCount,
+            rewards: aggregateGrantedRewards(rewards)
         }
     }
 
@@ -275,7 +305,10 @@ class PlayerResourceManager {
     }
 
     private createItemRewardSpecs(mode: EconomicRewardMode): ItemRewardSpec[] {
-        const pool = mode === "loss" ? LOSS_ITEM_POOL : PROFIT_ITEM_POOL
+        const pool = (mode === "loss" ? LOSS_ITEM_POOL : PROFIT_ITEM_POOL)
+            .filter(entry => this.isRewardItemAvailable(entry.itemId))
+        if (!pool.length) return []
+
         const pickCount = mode === "loss" ? randomInt(2, 3) : mode === "profit" ? randomInt(3, 5) : randomInt(2, 3)
         const specs = new Map<number, number>()
 
@@ -303,7 +336,7 @@ class PlayerResourceManager {
         }
 
         for (const itemReward of itemRewards) {
-            const item = this.getExistingItem(itemReward.itemId)
+            const item = this.getRewardItem(itemReward.itemId)
             const packageItem = player.items.find(packageItem => packageItem.id === item.id)
 
             if (packageItem) {
@@ -364,6 +397,9 @@ class PlayerResourceManager {
             acquiredAt: new Date().toISOString()
         }
         this.resources.titles.push(resource)
+        if (!this.resources.equippedTitleId) {
+            this.resources.equippedTitleId = resource.id
+        }
 
         return {
             id: resource.id,
@@ -375,10 +411,7 @@ class PlayerResourceManager {
 
     private getTitleRewardCandidate(commissionId: string): Omit<PlayerTitleResource, "acquiredAt"> | undefined {
         const ownedTitleIds = new Set(this.resources.titles.map(title => title.id))
-        const preferredTitle = this.getCommissionRewardBundle(commissionId)?.titles.find(title => !ownedTitleIds.has(title.id))
-        if (preferredTitle) return preferredTitle
-
-        return this.getAllTitleRewards().find(title => !ownedTitleIds.has(title.id))
+        return this.getCommissionRewardBundle(commissionId)?.titles.find(title => !ownedTitleIds.has(title.id))
     }
 
     private getAllTitleRewards(): Omit<PlayerTitleResource, "acquiredAt">[] {
@@ -398,7 +431,7 @@ class PlayerResourceManager {
 
     private computeItemRewardValue(rewards: ItemRewardSpec[]): number {
         return rewards.reduce((total, reward) => {
-            const item = this.getExistingItem(reward.itemId)
+            const item = this.getRewardItem(reward.itemId)
             return total + item.price * reward.count
         }, 0)
     }
@@ -409,6 +442,19 @@ class PlayerResourceManager {
             throw new Error(`奖励物品不存在: ${itemId}`)
         }
         return item
+    }
+
+    private getRewardItem(itemId: number): Item {
+        const item = this.getExistingItem(itemId)
+        if (item.expired === true) {
+            throw new Error(`奖励物品已过期，不能被抽到: ${itemId}`)
+        }
+        return item
+    }
+
+    private isRewardItemAvailable(itemId: number): boolean {
+        const item = itemManager.getItem(itemId)
+        return item !== undefined && item.expired !== true
     }
 
     private ensureInit(): void {
@@ -425,12 +471,18 @@ class PlayerResourceManager {
         const equippedSkinId = resources?.equippedSkinId && ownedSkinIds.has(resources.equippedSkinId)
             ? resources.equippedSkinId
             : CLASSIC_SKIN_ID
+        const titles = this.normalizeTitles(resources?.titles)
+        const ownedTitleIds = new Set(titles.map(title => title.id))
+        const equippedTitleId = resources?.equippedTitleId && ownedTitleIds.has(resources.equippedTitleId)
+            ? resources.equippedTitleId
+            : titles[0]?.id ?? null
 
         return {
             animationResources: resources?.animationResources ?? [],
             skins,
             equippedSkinId,
-            titles: resources?.titles ?? [],
+            titles,
+            equippedTitleId,
             commissionCompletionCounts: resources?.commissionCompletionCounts ?? {},
             completedCommissionIds: resources?.completedCommissionIds ?? []
         }
@@ -448,12 +500,25 @@ class PlayerResourceManager {
         return [...normalized.values()]
     }
 
+    private normalizeTitles(titles?: PlayerTitleResource[]): PlayerTitleResource[] {
+        const titleDefinitions = new Map<string, Omit<PlayerTitleResource, "acquiredAt">>()
+        this.getAllTitleRewards().forEach(title => titleDefinitions.set(title.id, title))
+
+        return (titles ?? [])
+            .filter(title => titleDefinitions.has(title.id))
+            .map(title => ({
+                ...titleDefinitions.get(title.id)!,
+                acquiredAt: title.acquiredAt
+            }))
+    }
+
     private cloneResources(resources: PlayerResourceState): PlayerResourceState {
         return {
             animationResources: resources.animationResources.map(resource => ({ ...resource })),
             skins: resources.skins.map(resource => ({ ...resource })),
             equippedSkinId: resources.equippedSkinId,
             titles: resources.titles.map(resource => ({ ...resource })),
+            equippedTitleId: resources.equippedTitleId,
             commissionCompletionCounts: { ...resources.commissionCompletionCounts },
             completedCommissionIds: [...resources.completedCommissionIds]
         }
@@ -470,6 +535,68 @@ function createSkinResource(skinId: string, acquiredAt: string = new Date().toIS
         ...skinDefinition,
         acquiredAt
     }
+}
+
+function normalizeCompletionCount(completionCount: number): number {
+    if (!Number.isInteger(completionCount) || completionCount <= 0) {
+        throw new Error(`委托交付次数不合法: ${completionCount}`)
+    }
+
+    return completionCount
+}
+
+function aggregateGrantedRewards(rewards: CommissionGrantedReward[]): CommissionGrantedReward[] {
+    const aggregatedRewards: CommissionGrantedReward[] = []
+    const cashRewardMap = new Map<string, CommissionGrantedReward & { type: "cash" }>()
+    const itemRewardMap = new Map<number, CommissionGrantedReward & { type: "item" }>()
+    const uniqueRewardIds = new Set<string>()
+
+    rewards.forEach(reward => {
+        if (reward.type === "cash") {
+            const key = "cash"
+            const existingReward = cashRewardMap.get(key)
+            if (existingReward) {
+                existingReward.amount += reward.amount
+                existingReward.name = `${existingReward.amount} 金币`
+                existingReward.description = `累计获得 ${existingReward.amount} 金币。`
+                return
+            }
+
+            const cashReward = {
+                ...reward,
+                id: "cash-total",
+                description: `累计获得 ${reward.amount} 金币。`
+            }
+            cashRewardMap.set(key, cashReward)
+            aggregatedRewards.push(cashReward)
+            return
+        }
+
+        if (reward.type === "item") {
+            const existingReward = itemRewardMap.get(reward.itemId)
+            if (existingReward) {
+                existingReward.count += reward.count
+                existingReward.name = reward.name
+                existingReward.description = `累计获得 ${existingReward.count} 个${reward.name}。`
+                return
+            }
+
+            const itemReward = {
+                ...reward,
+                id: `item-${reward.itemId}`,
+                description: `累计获得 ${reward.count} 个${reward.name}。`
+            }
+            itemRewardMap.set(reward.itemId, itemReward)
+            aggregatedRewards.push(itemReward)
+            return
+        }
+
+        if (uniqueRewardIds.has(reward.id)) return
+        uniqueRewardIds.add(reward.id)
+        aggregatedRewards.push(reward)
+    })
+
+    return aggregatedRewards
 }
 
 function randomInt(min: number, max: number): number {

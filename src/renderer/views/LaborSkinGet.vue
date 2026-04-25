@@ -2,26 +2,26 @@
   <div class="skin-get-page">
     <div class="skin-get-stage">
       <img class="skin-get-page-image" :src="pageImage" alt="五一短裙套装领取页面" />
-      <button
-        class="claim-button"
-        type="button"
-        :disabled="isClaiming"
+      <div
+        class="claim-hotspot"
+        :class="{ 'claim-hotspot--claiming': isClaiming }"
         @click="handleClaim"
-      >
-        <img :src="claimButtonImage" alt="立即领取" />
-      </button>
+      />
     </div>
 
     <div
-      v-if="isSuccessShow"
+      v-if="dialogMode"
       class="success-overlay"
-      @click.self="isSuccessShow = false"
+      @click.self="dialogMode = null"
     >
       <div class="success-panel">
         <img class="success-icon" :src="skinIcon" alt="五一短裙套装" />
-        <div class="success-title">领取成功</div>
+        <div class="success-title">{{ dialogTitle }}</div>
+        <div v-if="dialogDescription" class="success-description">
+          {{ dialogDescription }}
+        </div>
         <button class="success-action" type="button" @click="goWardrobe">
-          去衣橱实装
+          {{ dialogActionText }}
         </button>
       </div>
     </div>
@@ -29,16 +29,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { openMessageModal } from "@/hooks/useInteract";
 import pageImage from "@/assets/page/51labor-skin-get/五一短裙套装领取页面.png";
-import claimButtonImage from "@/assets/page/51labor-skin-get/领取按钮-透明.png";
 import skinIcon from "@/assets/page/51labor-skin-get/五一短裙套装.png";
 
 const router = useRouter();
 const isClaiming = ref(false);
-const isSuccessShow = ref(false);
+const dialogMode = ref<"success" | "duplicate" | null>(null);
+
+const dialogTitle = computed(() =>
+  dialogMode.value === "duplicate" ? "已经领取过啦" : "领取成功"
+);
+const dialogDescription = computed(() =>
+  dialogMode.value === "duplicate"
+    ? "这个套装已经在衣橱里了，不可以重复领取。"
+    : ""
+);
+const dialogActionText = computed(() =>
+  dialogMode.value === "duplicate" ? "去衣橱换装" : "去衣橱实装"
+);
 
 const handleClaim = async () => {
   if (isClaiming.value) return;
@@ -47,7 +58,12 @@ const handleClaim = async () => {
   try {
     const response = await window.api.claimLaborSkin();
     if (response.code === 200) {
-      isSuccessShow.value = true;
+      dialogMode.value = "success";
+      return;
+    }
+
+    if (response.code === 409) {
+      dialogMode.value = "duplicate";
       return;
     }
 
@@ -61,7 +77,7 @@ const handleClaim = async () => {
 };
 
 const goWardrobe = () => {
-  isSuccessShow.value = false;
+  dialogMode.value = null;
   router.push("/wardrobe");
 };
 </script>
@@ -93,35 +109,16 @@ const goWardrobe = () => {
   pointer-events: none;
 }
 
-.claim-button {
+.claim-hotspot {
   position: absolute;
   left: 22.84%;
   top: 83.29%;
   width: 54.33%;
-  padding: 0;
-  border: none;
-  background: transparent;
+  height: 14.5%;
   cursor: pointer;
-  transition: transform 0.2s ease, filter 0.2s ease;
 
-  img {
-    width: 100%;
-    display: block;
-    pointer-events: none;
-  }
-
-  &:hover {
-    transform: translateY(-2px) scale(1.02);
-    filter: drop-shadow(0 8px 16px rgba(218, 82, 117, 0.28));
-  }
-
-  &:active {
-    transform: translateY(0) scale(0.98);
-  }
-
-  &:disabled {
+  &--claiming {
     cursor: wait;
-    filter: saturate(0.75);
   }
 }
 
@@ -162,6 +159,13 @@ const goWardrobe = () => {
   font-size: 24px;
   font-weight: 900;
   letter-spacing: 0;
+}
+
+.success-description {
+  color: #7b4b5b;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .success-action {

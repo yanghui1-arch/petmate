@@ -25,7 +25,7 @@
             v-for="requirement in requirementRows"
             :key="requirement.itemId"
             class="commission-requirement-row"
-            :class="{ missing: requirement.owned < requirement.count }"
+            :class="{ missing: requirement.owned < requirement.totalCount }"
           >
             <n-image
               :src="requirement.imageUrl ?? ''"
@@ -36,12 +36,47 @@
             />
             <div class="commission-requirement-main">
               <span class="commission-requirement-name">{{ requirement.itemName }}</span>
-              <span class="commission-requirement-tip">交付 {{ requirement.count }} 个</span>
+              <span class="commission-requirement-tip">交付 {{ requirement.count }} × {{ completionCount }} 个</span>
             </div>
             <span class="commission-requirement-count">
-              {{ requirement.owned }}/{{ requirement.count }}
+              {{ requirement.owned }}/{{ requirement.totalCount }}
             </span>
           </div>
+        </div>
+
+        <div class="commission-batch-control">
+          <span class="commission-batch-label">交付次数</span>
+          <div class="commission-batch-stepper">
+            <button
+              type="button"
+              :disabled="completionCount <= 1"
+              @click="decreaseCompletionCount"
+            >
+              -
+            </button>
+            <input
+              v-model.number="completionCount"
+              type="number"
+              min="1"
+              :max="maxCompletionCount"
+              @blur="normalizeCompletionCountInput"
+            />
+            <button
+              type="button"
+              :disabled="completionCount >= maxCompletionCount"
+              @click="increaseCompletionCount"
+            >
+              +
+            </button>
+          </div>
+          <button
+            type="button"
+            class="commission-batch-max"
+            :disabled="maxCompletionCount <= 0"
+            @click="completionCount = maxCompletionCount"
+          >
+            最大 {{ maxCompletionCount }}
+          </button>
         </div>
       </div>
 
@@ -87,6 +122,7 @@ const { refreshPlayerData } = usePlayer();
 const { getImageURL } = useShow();
 
 const isSubmitting = ref(false);
+const completionCount = ref(1);
 
 const isModalShow = computed({
   get: () => props.show,
@@ -97,16 +133,32 @@ const requirementRows = computed(() => {
   return (props.commission?.requirements ?? []).map((requirement) => ({
     ...requirement,
     owned: props.playerItemCounts[requirement.itemId] ?? 0,
+    totalCount: requirement.count * completionCount.value,
     imageUrl: getImageURL("item", requirement.itemUrl),
   }));
+});
+
+const maxCompletionCount = computed(() => {
+  const requirements = props.commission?.requirements ?? [];
+  if (requirements.length === 0) return 0;
+
+  return Math.max(
+    0,
+    Math.min(
+      ...requirements.map((requirement) =>
+        Math.floor((props.playerItemCounts[requirement.itemId] ?? 0) / requirement.count)
+      )
+    )
+  );
 });
 
 const hasEnoughRequirements = computed(() => {
   return (
     requirementRows.value.length > 0 &&
     requirementRows.value.every(
-      (requirement) => requirement.owned >= requirement.count
-    )
+      (requirement) => requirement.owned >= requirement.totalCount
+    ) &&
+    completionCount.value > 0
   );
 });
 
@@ -121,8 +173,8 @@ const canSubmit = computed(() => {
 const statusText = computed(() => {
   if (!props.commission) return "";
   if (props.commission.status === "expired") return "已截止";
-  if (!hasEnoughRequirements.value) return "材料不足";
-  return "可交付";
+  if (!hasEnoughRequirements.value) return "待交付";
+  return `可交付 ${completionCount.value} 次`;
 });
 
 const statusClass = computed(() => {
@@ -136,14 +188,14 @@ const submitButtonText = computed(() => {
   if (isSubmitting.value) return "交付中...";
   if (!props.commission) return "交付";
   if (props.commission.status === "expired") return "已截止";
-  if (!hasEnoughRequirements.value) return "材料不足";
-  return "交给尤美";
+  if (!hasEnoughRequirements.value) return "交给尤美";
+  return `交给尤美 ×${completionCount.value}`;
 });
 
 const deadlineText = computed(() => {
   if (!props.commission) return "";
   const deadline = props.commission.deadline;
-  return `截止时间 ${deadline.getMonth() + 1}月${deadline.getDate()}日 ${String(
+  return `截止时间 ${deadline.getFullYear()}年${deadline.getMonth() + 1}月${deadline.getDate()}日 ${String(
     deadline.getHours()
   ).padStart(2, "0")}:${String(deadline.getMinutes()).padStart(2, "0")}`;
 });
@@ -170,9 +222,17 @@ watch(
   (show) => {
     if (!show) {
       isSubmitting.value = false;
+      completionCount.value = 1;
+      return;
     }
+
+    normalizeCompletionCountInput();
   }
 );
+
+watch(maxCompletionCount, () => {
+  normalizeCompletionCountInput();
+});
 
 const closeModal = () => {
   isModalShow.value = false;
@@ -180,14 +240,15 @@ const closeModal = () => {
 
 const handleSubmit = async () => {
   if (!props.commission || isSubmitting.value) return;
+  normalizeCompletionCountInput();
 
   if (!hasEnoughRequirements.value) {
-    openMessageModal("fail", "材料不足，请检查背包");
+    openMessageModal("fail", "请检查背包");
     return;
   }
 
   isSubmitting.value = true;
-  const result = await submitCommission(props.commission);
+  const result = await submitCommission(props.commission, completionCount.value);
   isSubmitting.value = false;
 
   if (result.success) {
@@ -201,6 +262,28 @@ const handleSubmit = async () => {
 
   openMessageModal("fail", result.message);
 };
+
+const decreaseCompletionCount = () => {
+  completionCount.value = Math.max(1, completionCount.value - 1);
+};
+
+const increaseCompletionCount = () => {
+  if (maxCompletionCount.value <= 0) return;
+  completionCount.value = Math.min(maxCompletionCount.value, completionCount.value + 1);
+};
+
+function normalizeCompletionCountInput() {
+  if (maxCompletionCount.value <= 0) {
+    completionCount.value = 1;
+    return;
+  }
+
+  if (!Number.isInteger(completionCount.value) || completionCount.value <= 0) {
+    completionCount.value = 1;
+  }
+
+  completionCount.value = Math.min(completionCount.value, maxCompletionCount.value);
+}
 </script>
 
 <style scoped lang="scss">
@@ -372,6 +455,76 @@ const handleSubmit = async () => {
   text-align: center;
   border: 1px solid rgba(158, 241, 196, 0.32);
   background: rgba(158, 241, 196, 0.08);
+}
+
+.commission-batch-control {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 248, 225, 0.08);
+  border: 1px solid rgba(253, 203, 110, 0.2);
+}
+
+.commission-batch-label {
+  color: #fff8e1;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.commission-batch-stepper {
+  display: grid;
+  grid-template-columns: 28px minmax(44px, 1fr) 28px;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid rgba(253, 203, 110, 0.28);
+  background: rgba(35, 30, 31, 0.28);
+
+  button,
+  input {
+    height: 28px;
+    border: none;
+    color: #ffffff;
+    background: transparent;
+    text-align: center;
+    font-weight: 800;
+  }
+
+  button {
+    color: #ffe6a7;
+    font-size: 16px;
+
+    &:disabled {
+      cursor: not-allowed;
+      color: rgba(255, 255, 255, 0.32);
+    }
+  }
+
+  input {
+    min-width: 0;
+    border-left: 1px solid rgba(253, 203, 110, 0.18);
+    border-right: 1px solid rgba(253, 203, 110, 0.18);
+    outline: none;
+  }
+}
+
+.commission-batch-max {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid rgba(253, 203, 110, 0.28);
+  border-radius: 8px;
+  color: #8b4513;
+  font-size: 12px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #fff8e1, #ffd6e7);
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
 }
 
 .commission-modal-actions {
