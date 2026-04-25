@@ -62,7 +62,7 @@ const actionSpecs: Record<ActionName, ActionSpec> = {
     idle: {
         type: 'sequence',
         frameSources: idleFrameSources,
-        fps: 6,
+        fps: 10,
         renderScale: 1,
         renderBaseSize: TALL_FRAME_RENDER_BASE_SIZE,
         loopCount: 1,
@@ -95,8 +95,8 @@ const actionSpecs: Record<ActionName, ActionSpec> = {
     anger: {
         type: 'sprite',
         imageSrc: youmeiAnger,
-        frameWidth: 400,
-        frameHeight: 400,
+        frameWidth: 500,
+        frameHeight: 500,
         columns: 4,
         rows: 4,
         fps: 6,
