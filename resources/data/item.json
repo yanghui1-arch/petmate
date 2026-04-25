@@ -389,7 +389,8 @@
             "emotion": 210,
             "affectionExp": 60,
             "exp": 200
-        }
+        },
+        "expired": true
     },
     {
         "id": 21,
@@ -408,7 +409,8 @@
         "effect": {
             "affectionExp": 500,
             "exp": 1000
-        }
+        },
+        "expired": true
     },
     {
         "id": 22,
