@@ -41,6 +41,26 @@
           </router-link>
 
           <router-link
+            to="/commission"
+            class="page-navigator-item"
+            @click="show = false"
+          >
+            <span class="nav-icon">🎁</span>
+            <span class="nav-text">委托</span>
+            <span class="nav-arrow">→</span>
+          </router-link>
+
+          <router-link
+            to="/labor-skin-get"
+            class="page-navigator-item"
+            @click="show = false"
+          >
+            <span class="nav-icon">✨</span>
+            <span class="nav-text">领取新皮肤</span>
+            <span class="nav-arrow">→</span>
+          </router-link>
+
+          <router-link
             to="/wish"
             class="page-navigator-item"
             @click="show = false"
@@ -70,6 +90,16 @@
           >
             <span class="nav-icon">💬</span>
             <span class="nav-text">聊天</span>
+            <span class="nav-arrow">→</span>
+          </router-link>
+
+          <router-link
+            to="/wardrobe"
+            class="page-navigator-item"
+            @click="show = false"
+          >
+            <span class="nav-icon">👗</span>
+            <span class="nav-text">衣橱</span>
             <span class="nav-arrow">→</span>
           </router-link>
         </div>

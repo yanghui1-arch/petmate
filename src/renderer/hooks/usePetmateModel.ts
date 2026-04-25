@@ -1,5 +1,6 @@
 import { readonly, ref, type Ref } from 'vue'
 import { ModelStatus } from '../types/model'
+import type { PlayerResourceState } from '@main/types/player-resource'
 import youmeiDance from '@/assets/models/youmei/youmei-dance.png'
 import youmeiHello from '@/assets/models/youmei/youmei-hello-1.png'
 import youmeiStruggle from '@/assets/models/youmei/youmei-zhengzha.png'
@@ -47,9 +48,16 @@ const DRAG_START_DISTANCE = 4
 const BLANK_FRAME_ALPHA_THRESHOLD = 8
 const BLANK_FRAME_VISIBLE_PIXEL_THRESHOLD = 16
 const ANGRY_KICK_REPEAT_COUNT = 1
+const LABOR_KICK_ANIMATION_RESOURCE_ID = 'youmei-angry-kick-labor-2026'
+const CLASSIC_SKIN_ID = 'youmei-classic-dress'
+const LABOR_SKIRT_SKIN_ID = 'youmei-labor-skirt-2026'
 
 const idleFrameSources = resolveFrameSources(import.meta.glob<string>(
     '../assets/models/youmei/animations/idle/*.png',
+    { eager: true, import: 'default' }
+))
+const laborIdleFrameSources = resolveFrameSources(import.meta.glob<string>(
+    '../assets/models/youmei/animations/idle/labor-skin/*.png',
     { eager: true, import: 'default' }
 ))
 const angryFrameSources = resolveFrameSources(import.meta.glob<string>(
@@ -60,12 +68,16 @@ const angryKickFrameSources = resolveFrameSources(import.meta.glob<string>(
     '../assets/models/youmei/animations/angry_kick/*.png',
     { eager: true, import: 'default' }
 ))
+const laborAngryKickFrameSources = resolveFrameSources(import.meta.glob<string>(
+    '../assets/models/youmei/animations/angry_kick/labor-skin/*.png',
+    { eager: true, import: 'default' }
+))
 
 const actionSpecs: Record<ActionName, ActionSpec> = {
     idle: {
         type: 'sequence',
         frameSources: idleFrameSources,
-        fps: 10,
+        fps: 4,
         renderScale: 1,
         renderBaseSize: TALL_FRAME_RENDER_BASE_SIZE,
         loopCount: 1,
@@ -146,6 +158,8 @@ let isDragging = false
 let isAngry = false
 let isSystemAudioActive = false
 let activeAction: ActionName | null = null
+let unlockedAnimationResourceIds = new Set<string>()
+let equippedSkinId = CLASSIC_SKIN_ID
 
 const actionFrames: Record<ActionName, SpriteFrame[]> = {
     idle: [],
@@ -181,10 +195,12 @@ export const isShowContextMenu = ref(false)
 
 export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
     const init2D = async (): Promise<void> => {
+        await refreshUnlockedAnimationResources()
         await loadAnimationAssets()
         initSpriteContainer(petmateContainer.value)
         initSpriteCanvas()
         await initSystemAudioActivity()
+        initPlayerResourceListener()
         startAmbientAction()
 
         window.api.onShowContextMenu(() => {
@@ -238,6 +254,7 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         isSystemAudioActive = false
         activeAction = null
         window.api.removeAllSystemAudioActiveListeners()
+        window.api.removeAllPlayerResourcesUpdatedListeners()
     }
 
     return {
@@ -506,6 +523,8 @@ function resolveFrameSources(modules: Record<string, string>): string[] {
 }
 
 async function loadAnimationAssets(): Promise<void> {
+    applyUnlockedAnimationSources()
+
     const loadedFrames = await Promise.all(actionNames.map(async (action) => {
         return [action, await loadActionFrames(action, actionSpecs[action])] as const
     }))
@@ -517,6 +536,66 @@ async function loadAnimationAssets(): Promise<void> {
     const firstIdleFrame = actionFrames.idle[0]
     if (firstIdleFrame) {
         petMateModelConfig.scale = SPRITE_RENDER_SIZE / Math.max(firstIdleFrame.sourceWidth, firstIdleFrame.sourceHeight)
+    }
+}
+
+function initPlayerResourceListener() {
+    window.api.onPlayerResourcesUpdated((_, resources) => {
+        setUnlockedAnimationResources(resources)
+        void reloadUnlockableAnimationFrames()
+    })
+}
+
+async function refreshUnlockedAnimationResources(): Promise<void> {
+    const response = await window.api.getPlayerResources()
+    if (response.code === 200 && response.data) {
+        setUnlockedAnimationResources(response.data)
+    }
+}
+
+function setUnlockedAnimationResources(resources: PlayerResourceState): void {
+    unlockedAnimationResourceIds = new Set(resources.animationResources.map(resource => resource.id))
+    equippedSkinId = resources.equippedSkinId || CLASSIC_SKIN_ID
+}
+
+function applyUnlockedAnimationSources(): void {
+    const idleSpec = actionSpecs.idle
+    if (idleSpec.type === 'sequence') {
+        idleSpec.frameSources = equippedSkinId === LABOR_SKIRT_SKIN_ID && laborIdleFrameSources.length > 0
+            ? laborIdleFrameSources
+            : idleFrameSources
+    }
+
+    const angryKickSpec = actionSpecs.angryKick
+    if (angryKickSpec.type !== 'sequence') return
+
+    const shouldUseLaborKick = equippedSkinId === LABOR_SKIRT_SKIN_ID ||
+        unlockedAnimationResourceIds.has(LABOR_KICK_ANIMATION_RESOURCE_ID)
+
+    angryKickSpec.frameSources = shouldUseLaborKick && laborAngryKickFrameSources.length > 0
+        ? laborAngryKickFrameSources
+        : angryKickFrameSources
+}
+
+async function reloadUnlockableAnimationFrames(): Promise<void> {
+    applyUnlockedAnimationSources()
+    const [idleFrames, angryKickFrames] = await Promise.all([
+        loadActionFrames('idle', actionSpecs.idle),
+        loadActionFrames('angryKick', actionSpecs.angryKick)
+    ])
+    actionFrames.idle = idleFrames
+    actionFrames.angryKick = angryKickFrames
+
+    const firstIdleFrame = actionFrames.idle[0]
+    if (firstIdleFrame) {
+        petMateModelConfig.scale = SPRITE_RENDER_SIZE / Math.max(firstIdleFrame.sourceWidth, firstIdleFrame.sourceHeight)
+    }
+
+    if (!isDragging && !isAngry && activeAction === 'idle') {
+        activeAction = null
+        startAmbientAction()
+    } else if (!activeAction) {
+        showFirstIdleFrame()
     }
 }
 

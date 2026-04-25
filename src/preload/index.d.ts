@@ -6,6 +6,7 @@ import { ActivityInfo } from "../main/types/activity";
 import { SettingConfig } from "./settings";
 import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "./llm";
 import { WindowEvent, WindowInfo } from "../main/window-monitor";
+import { CommissionCompletionResult, PlayerResourceState } from "../main/types/player-resource";
 /**
  * 与主进程通信的接口
  * 所有方法都返回Promise
@@ -29,6 +30,7 @@ interface IElectronAPI {
   getTTSVoiceList: () => Promise<Response<TTSVoice[]>>;
   getChatPrompt: () => Promise<Response<string>>;
   getHistoryChatMessages: () => Promise<Response<HistoryChatMessage[]>>;
+  getPlayerResources: () => Promise<Response<PlayerResourceState>>;
 
   // set && update && add
   setChatLLMConfig: (config: ChatLLMConfig) => Promise<Response<ChatLLMConfig>>;
@@ -40,13 +42,15 @@ interface IElectronAPI {
 
   // 玩家操作
   consumeItem: (itemId: number, count: number, petmateId: number) => Promise<Response<void>>;
-  submitCommissionRequirements: (requirements: { itemId: number, count: number }[]) => Promise<Response<void>>;
+  completeCommission: (commissionId: string, requirements: { itemId: number, count: number }[]) => Promise<Response<CommissionCompletionResult>>;
   buyItem: (itemId: number, count: number) => Promise<Response<Item>>;
   chat: (message: ChatMessage) => Promise<Response<void>>;
   startActivity: (petmateId: number, activityId: number) => Promise<Response<void>>;
   cancelActivity: (petmateId: number) => Promise<Response<void>>;
   claimActivityReward: (petmateId: number) => Promise<Response<void>>;
   claimWishReward: (petmateId: number, wishId: string) => Promise<Response<boolean>>;
+  claimLaborSkin: () => Promise<Response<PlayerResourceState>>;
+  equipPlayerSkin: (skinId: string) => Promise<Response<PlayerResourceState>>;
 
   // 克隆音色
   cloneVoice: (url: string) => Promise<Response<string>>;
@@ -63,10 +67,12 @@ interface IElectronAPI {
   onPetmateAttributeDecayed: (callback: (event: Event, petmateId: number) => void) => void,
   onShowContextMenu: (callback: (event: Event) => void) => void,
   onSystemAudioActive: (callback: (event: Event, active: boolean) => void) => void,
+  onPlayerResourcesUpdated: (callback: (event: Event, resources: PlayerResourceState) => void) => void,
   removeAllAudioChunkListeners: () => void;
   removeAllTTSFinishedListeners: () => void;
   removeAllTTSFailedListeners: () => void;
   removeAllSystemAudioActiveListeners: () => void;
+  removeAllPlayerResourcesUpdatedListeners: () => void;
   getSystemAudioActive: () => Promise<boolean>;
   getPetmateWindowPosition: () => Promise<{x: number, y: number}>;
   movePetmateWindow: (x: number, y: number) => void;

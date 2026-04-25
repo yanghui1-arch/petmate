@@ -3,6 +3,7 @@ import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from '../main/llm'
 import { SettingConfig } from '../main/settings'
 import { ActivityInfo } from '../main/types/activity'
 import { ItemType } from '../main/types/item'
+import type { PlayerResourceState } from '../main/types/player-resource'
 import { WindowEvent } from '../main/window-monitor'
 
 /**
@@ -27,6 +28,7 @@ contextBridge.exposeInMainWorld('api', {
     getTTSVoiceList: () => ipcRenderer.invoke('get-tts-voice-list'),
     getChatPrompt: () => ipcRenderer.invoke('get-chat-prompt'),
     getHistoryChatMessages: () => ipcRenderer.invoke('get-history-chat-messages'),
+    getPlayerResources: () => ipcRenderer.invoke('get-player-resources'),
 
     // set && update && add
     setChatLLMConfig: (config: ChatLLMConfig) => ipcRenderer.invoke('set-chat-llm-config', config),
@@ -37,13 +39,15 @@ contextBridge.exposeInMainWorld('api', {
     saveChatMessages: () => ipcRenderer.invoke('save-chat-messages'),
     // 玩家的操作
     consumeItem: (itemId: number, count: number, petmateId: number) => ipcRenderer.invoke('consume-item', itemId, count, petmateId),
-    submitCommissionRequirements: (requirements: { itemId: number, count: number }[]) => ipcRenderer.invoke('submit-commission-requirements', requirements),
+    completeCommission: (commissionId: string, requirements: { itemId: number, count: number }[]) => ipcRenderer.invoke('complete-commission', commissionId, requirements),
     buyItem: (itemId: number, count: number) => ipcRenderer.invoke('buy-item', itemId, count),
     chat: (message: ChatMessage) => ipcRenderer.invoke('chat', message),
     startActivity: (petmateId: number, activityId: number) => ipcRenderer.invoke('start-activity', petmateId, activityId),
     cancelActivity: (petmateId: number) => ipcRenderer.invoke('cancel-activity', petmateId),
     claimActivityReward: (petmateId: number) => ipcRenderer.invoke('claim-activity-reward', petmateId),
     claimWishReward: (petmateId: number, wishId: string) => ipcRenderer.invoke('claim-wish-reward', petmateId, wishId),
+    claimLaborSkin: () => ipcRenderer.invoke('claim-labor-skin'),
+    equipPlayerSkin: (skinId: string) => ipcRenderer.invoke('equip-player-skin', skinId),
     // 克隆音色
     cloneVoice: (url: string) => ipcRenderer.invoke('clone-voice', url),
     // 监听
@@ -61,12 +65,14 @@ contextBridge.exposeInMainWorld('api', {
 
     onChristmasEffect: (callback: (event: IpcRendererEvent, christmasEffect: boolean) => void) => ipcRenderer.on('christmas-effect', callback),
     onSystemAudioActive: (callback: (event: IpcRendererEvent, active: boolean) => void) => ipcRenderer.on('system-audio-active', callback),
+    onPlayerResourcesUpdated: (callback: (event: IpcRendererEvent, resources: PlayerResourceState) => void) => ipcRenderer.on('player-resources-updated', callback),
 
     // 移除监听器
     removeAllAudioChunkListeners: () => ipcRenderer.removeAllListeners('tts-audio-chunk'),
     removeAllTTSFinishedListeners: () => ipcRenderer.removeAllListeners('tts-finished'),
     removeAllTTSFailedListeners: () => ipcRenderer.removeAllListeners('tts-failed'),
     removeAllSystemAudioActiveListeners: () => ipcRenderer.removeAllListeners('system-audio-active'),
+    removeAllPlayerResourcesUpdatedListeners: () => ipcRenderer.removeAllListeners('player-resources-updated'),
     onShowContextMenu: (callback: (event: IpcRendererEvent) => void) => ipcRenderer.on('show-context-menu', callback),
     getSystemAudioActive: () => ipcRenderer.invoke('get-system-audio-active'),
     getPetmateWindowPosition: () => ipcRenderer.invoke('get-petmate-window-position'),

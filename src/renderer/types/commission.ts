@@ -5,6 +5,16 @@ export interface CommissionRequirement {
     count: number
 }
 
+export interface CommissionRewardPreview {
+    id: string
+    type: 'cash' | 'item' | 'animation' | 'title'
+    name: string
+    description: string
+    imageUrl?: string
+    count?: number
+    amount?: number
+}
+
 export interface Commission {
     id: string
     name: string
@@ -13,5 +23,6 @@ export interface Commission {
     deadline: Date
     category: 'holiday' | 'daily'
     requirements: CommissionRequirement[]
+    rewards: CommissionRewardPreview[]
     status: 'active' | 'completed' | 'expired'
 }

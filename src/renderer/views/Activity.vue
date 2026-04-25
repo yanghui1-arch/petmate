@@ -119,7 +119,6 @@
           {{ currentActivePetmate?.name }}当前未进行任何活动
         </div>
       </div>
-      <CommissionBoard />
       <div class="activity-wrapper">
         <!-- 四个活动版块-->
         <n-grid x-gap="12" y-gap="10" :cols="2" v-show="!showActivity">
@@ -295,7 +294,6 @@ import { ref, computed } from "vue";
 import AttributeBar from "../components/AttributeBar.vue";
 import ActivityPopover from "@/components/activity/ActivityPopover.vue";
 import ActivityModal from "@/components/activity/ActivityModal.vue";
-import CommissionBoard from "@/components/commission/CommissionBoard.vue";
 import { openMessageModal } from "../hooks/useInteract";
 import { ActivityInfo } from "../types/common";
 import { usePlayer } from "../hooks/usePlayer";
@@ -593,7 +591,6 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
   display: flex;
   flex-direction: column;
   gap: 0;
-  overflow-y: auto;
   .activity-grade-layout {
     height: 18vh;
     margin-top: 20px;

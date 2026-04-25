@@ -9,6 +9,7 @@ import { playerManager, ServerData } from './modules/store';
 import { PlayerInfo } from './types/player';
 import { Response } from '../types/response';
 import { consumeItem, consumePackageItems, PackageItemConsumeRequirement } from './modules/player/basic';
+import { LABOR_SKIRT_SKIN_ID, playerResourceManager } from './modules/player/resource';
 import logger from './log';
 import { PetMate } from './modules/petmate/petmate';
 import { startActivity, finishActivity, cancelActivity, claimActivityReward } from './modules/player/act';
@@ -43,7 +44,8 @@ import {
     getHistoryChatMessages
 } from './llm';
 import { windowMonitor, WindowInfo, WindowEvent } from './window-monitor';
-import { getMainWindow } from './index';
+import { getMainWindow, getPageWindow } from './index';
+import { CommissionCompletionResult, PlayerResourceState } from './types/player-resource';
 import * as path from 'path';
 import * as fs from 'fs';
 import axios, { AxiosResponse } from 'axios';
@@ -131,25 +133,96 @@ ipcMain.handle("consume-item", (_: IpcMainInvokeEvent, itemId: number, count: nu
     }
 })
 
-/**
- * 提交委托材料。
- * 只扣除背包物品，不触发物品效果；用于 ticket 等不可直接使用的活动凭证。
- * @param requirements 需要交付的物品和数量
- * @returns 提交成功或失败
- */
-ipcMain.handle("submit-commission-requirements", (_: IpcMainInvokeEvent, requirements: PackageItemConsumeRequirement[]): Response<void> => {
+const notifyPlayerResourcesUpdated = (resources: PlayerResourceState): void => {
+    getMainWindow()?.webContents.send("player-resources-updated", resources);
     try {
-        consumePackageItems(requirements);
+        getPageWindow()?.webContents.send("player-resources-updated", resources);
+    } catch (error) {
+        logger.warn(`玩家资源更新通知页面窗口失败: ${error}`);
+    }
+}
+
+ipcMain.handle("get-player-resources", (_: IpcMainInvokeEvent): Response<PlayerResourceState> => {
+    try {
         return {
             code: 200,
-            message: "提交委托材料成功"
-        } as Response<void>;
+            data: playerResourceManager.getResources()
+        } as Response<PlayerResourceState>;
     } catch (error) {
-        logger.error(`提交委托材料失败: ${error}`);
+        logger.error(`获取玩家资源失败: ${error}`);
         return {
             code: 400,
-            message: error instanceof Error ? error.message : "提交委托材料失败"
-        } as Response<void>;
+            message: "获取玩家资源失败"
+        } as Response<PlayerResourceState>;
+    }
+})
+
+ipcMain.handle("claim-labor-skin", (_: IpcMainInvokeEvent): Response<PlayerResourceState> => {
+    try {
+        const resources = playerResourceManager.claimSkin(LABOR_SKIRT_SKIN_ID);
+        notifyPlayerResourcesUpdated(resources);
+
+        return {
+            code: 200,
+            message: "领取成功",
+            data: resources
+        } as Response<PlayerResourceState>;
+    } catch (error) {
+        logger.error(`领取五一短裙套装失败: ${error}`);
+        return {
+            code: 400,
+            message: error instanceof Error ? error.message : "领取失败"
+        } as Response<PlayerResourceState>;
+    }
+})
+
+ipcMain.handle("equip-player-skin", (_: IpcMainInvokeEvent, skinId: string): Response<PlayerResourceState> => {
+    try {
+        const resources = playerResourceManager.equipSkin(skinId);
+        notifyPlayerResourcesUpdated(resources);
+
+        return {
+            code: 200,
+            message: "实装成功",
+            data: resources
+        } as Response<PlayerResourceState>;
+    } catch (error) {
+        logger.error(`实装套装失败: ${error}`);
+        return {
+            code: 400,
+            message: error instanceof Error ? error.message : "实装失败"
+        } as Response<PlayerResourceState>;
+    }
+})
+
+/**
+ * 完成委托。
+ * 先扣除交付材料，再发放本次随机奖励。
+ */
+ipcMain.handle("complete-commission", (_: IpcMainInvokeEvent, commissionId: string, requirements: PackageItemConsumeRequirement[]): Response<CommissionCompletionResult> => {
+    try {
+        if (!playerResourceManager.getCommissionRewardBundle(commissionId)) {
+            return {
+                code: 400,
+                message: "未知委托"
+            } as Response<CommissionCompletionResult>;
+        }
+
+        consumePackageItems(requirements);
+        const result = playerResourceManager.completeCommission(commissionId, requirements);
+        notifyPlayerResourcesUpdated(result.resources);
+
+        return {
+            code: 200,
+            message: "委托完成",
+            data: result
+        } as Response<CommissionCompletionResult>;
+    } catch (error) {
+        logger.error(`完成委托失败: ${error}`);
+        return {
+            code: 400,
+            message: error instanceof Error ? error.message : "完成委托失败"
+        } as Response<CommissionCompletionResult>;
     }
 })
 

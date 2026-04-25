@@ -65,6 +65,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import type { Commission } from "@/types/commission";
+import type { CommissionCompletionResult } from "@main/types/player-resource";
 import { useCommission } from "@/hooks/useCommission";
 import { usePlayer } from "@/hooks/usePlayer";
 import { useShow } from "@/hooks/useShow";
@@ -78,6 +79,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "update:show", value: boolean): void;
+  (e: "completed", commission: Commission, result: CommissionCompletionResult): void;
 }>();
 
 const { submitCommission } = useCommission();
@@ -118,7 +120,6 @@ const canSubmit = computed(() => {
 
 const statusText = computed(() => {
   if (!props.commission) return "";
-  if (props.commission.status === "completed") return "已完成";
   if (props.commission.status === "expired") return "已截止";
   if (!hasEnoughRequirements.value) return "材料不足";
   return "可交付";
@@ -126,7 +127,6 @@ const statusText = computed(() => {
 
 const statusClass = computed(() => {
   if (!props.commission) return "";
-  if (props.commission.status === "completed") return "completed";
   if (props.commission.status === "expired") return "expired";
   if (!hasEnoughRequirements.value) return "missing";
   return "active";
@@ -135,7 +135,6 @@ const statusClass = computed(() => {
 const submitButtonText = computed(() => {
   if (isSubmitting.value) return "交付中...";
   if (!props.commission) return "交付";
-  if (props.commission.status === "completed") return "已完成";
   if (props.commission.status === "expired") return "已截止";
   if (!hasEnoughRequirements.value) return "材料不足";
   return "交给尤美";
@@ -194,7 +193,9 @@ const handleSubmit = async () => {
   if (result.success) {
     await refreshPlayerData();
     closeModal();
-    openMessageModal("success", "委托完成，尤美收下礼物啦");
+    if (result.result) {
+      emit("completed", props.commission, result.result);
+    }
     return;
   }
 

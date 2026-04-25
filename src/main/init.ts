@@ -5,6 +5,7 @@ import { PetMate } from "./modules/petmate/petmate";
 import { finishActivity } from "./modules/player/act";
 import { wishHandler } from "./modules/wish";
 import { activityManager, buffManager, itemManager, playerManager, prefabWishManager } from './modules/store'
+import { playerResourceManager } from './modules/player/resource'
 import { greenworksManager } from './greenworks'
 import { initSettings } from "./settings";
 import { app } from "electron";
@@ -28,6 +29,7 @@ export function appInit(): void {
     activityManager.initActivity()
     buffManager.initBuff()
     prefabWishManager.initPrefabWish()
+    playerResourceManager.initPlayerResource()
 
     // 初始化玩家数据的状态
     initPlayerDataStatus()
