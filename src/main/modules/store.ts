@@ -71,6 +71,23 @@ class PlayerManager {
         });
     }
 
+    private hydratePlayerItemInfo(player: PlayerInfo): PlayerInfo {
+        return {
+            ...player,
+            items: (player.items ?? []).map(packageItem => {
+                const item: Item | undefined = itemManager.getItem(packageItem.id);
+                if (!item) return packageItem;
+                return {
+                    ...packageItem,
+                    name: item.name,
+                    type: item.type,
+                    description: item.description,
+                    url: item.url
+                };
+            })
+        }
+    }
+
 
     /**
      * 更新Steam信息
@@ -116,10 +133,10 @@ class PlayerManager {
                             petmateData.completedWishesNum
                         )
                     });
-                    this.currentPlayer = {
+                    this.currentPlayer = this.hydratePlayerItemInfo({
                         ...this.currentPlayer,
                         petmates: reconstructedPetmates
-                    }
+                    })
                     this.savePlayer();
                     logger.info("从服务器获取玩家信息成功");
                 } else {
@@ -144,10 +161,10 @@ class PlayerManager {
                 )
             })
 
-            this.currentPlayer = {
+            this.currentPlayer = this.hydratePlayerItemInfo({
                 ...stored,
                 petmates: reconstructedPetmates
-            }
+            })
         }
     }
 

@@ -6,7 +6,7 @@
           <img
             :src="shopPetmateImage"
             alt="petmate"
-            style="flex: 1; max-height: 100%; object-fit: contain"
+            style="flex: 1; max-height: 100%; object-fit: contain; transform: translateY(5vh)"
           />
         </div>
       </div>
@@ -87,14 +87,14 @@
               ref="shopPageRef"
             >
               <div v-for="(page, index) in shopPageList" :key="'page' + index">
-                <n-grid x-gap="5" y-gap="5" :cols="3">
+                <n-grid x-gap="12" y-gap="5" :cols="3">
                   <n-gi
                     v-for="item in page"
                     :key="item.id"
                     style="
                       display: flex;
                       justify-content: center;
-                      padding: 2px 0;
+                      padding: 4px 0;
                     "
                   >
                     <div
@@ -103,13 +103,9 @@
                       @mouseenter="handleItemPopover($event, item)"
                       @click="showModal(item)"
                     >
-                      <!-- <div class="special-label">
-                        <i class="fold-label"></i>
-                        <span class="label-text">7折</span>
-                      </div> -->
                       <div class="item-name">{{ item.name }}</div>
                       <n-image
-                        width="38"
+                        width="72"
                         class="item-image"
                         :src="getImageURL('item', item.url) ?? ''"
                         preview-disabled
@@ -168,7 +164,7 @@ import { ItemType, Item, Requirement } from "../types/common";
 import type { PetMateAttribute } from "../types/petmate";
 import { executeItemPage } from "../utils/item";
 import { checkLocked } from "../utils/check";
-import shopPetmateImage from "../assets/image/shop-petmate-christmas.png";
+import shopPetmateImage from "../assets/image/shop-petmate-labor-2025.png";
 import greaterThanIcon from "../assets/image/greater-than.png";
 import shopItemIcon from "../assets/image/shop-item.png";
 
@@ -190,7 +186,7 @@ const petmateAttribute = computed(() => {
 const shopCurrType = ref<ItemType>("limit" as ItemType);
 const shopPageNum = ref(0);
 const shopCurrPage = ref(1);
-const shopPageSize = ref(6);
+const shopPageSize = ref(3);
 const shopPageList = ref<Item[][]>([]);
 
 // 新增：排序和搜索相关的响应式变量
@@ -331,10 +327,10 @@ const showModal = (shopItem: Item) => {
     .shop-head-layout {
       height: 32vh;
       border-radius: 20px;
-      // 黑市老板常态的话这里得改为-10px
       margin-bottom: -20px;
       border: none;
       position: relative;
+      z-index: 20; // 高于 shop-content-layout，使图片悬浮在商品块上方
     }
     .shop-content-layout {
       position: relative;
@@ -557,7 +553,7 @@ const showModal = (shopItem: Item) => {
   }
   .shop-content {
     width: 100%;
-    height: 205px; // 固定高度，防止商品数量不足时，高度变化
+    height: 215px; // 固定高度，防止商品数量不足时，高度变化
     position: relative;
     .shop-prev-page-arrow,
     .shop-next-page-arrow {
@@ -593,10 +589,10 @@ const showModal = (shopItem: Item) => {
       position: relative;
     }
     .shop-item {
-      width: 95px;
-      height: 95px;
+      width: 120px;
+      height: 175px;
       border: 1px solid $color-white;
-      border-radius: 5px;
+      border-radius: 8px;
       border-style: groove;
       display: flex;
       flex-direction: column;
@@ -649,17 +645,17 @@ const showModal = (shopItem: Item) => {
 
       .item-name {
         width: 100%;
-        font-size: 14px;
+        font-size: 15px;
         text-align: center;
         color: #8b4513;
         font-weight: 600;
-        padding: 5px 0;
+        padding: 7px 0;
         border-bottom: 1px solid #8b4513;
       }
 
       .item-price-wrapper {
         width: 100%;
-        font-size: 12px;
+        font-size: 14px;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -667,8 +663,9 @@ const showModal = (shopItem: Item) => {
         border-radius: 10px;
         color: #8b4513;
         font-weight: bold;
+        padding-bottom: 4px;
         .price-icon {
-          font-size: 14px;
+          font-size: 16px;
           margin-top: -3px; //对齐
         }
       }

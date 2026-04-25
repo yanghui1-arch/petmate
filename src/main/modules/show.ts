@@ -1,4 +1,4 @@
-import { ItemType } from "../types/item";
+import { getPrimaryItemType, ItemType } from "../types/item";
 import { Item } from "../types/item";
 import { itemManager } from "./store";
 import { PetMate } from "./petmate/petmate";
@@ -12,7 +12,7 @@ import { activityManager } from "./store";
  */
 export function showItems(type: ItemType): Item[] {
     const items: Item[] = itemManager.getAllItems();
-    return items.filter(item => item.type === type);
+    return items.filter(item => getPrimaryItemType(item.type) === type);
 }
 
 /**

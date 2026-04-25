@@ -118,6 +118,7 @@
                 >
                   <div
                     class="package-item"
+                    :class="{ 'package-item-unusable': !canUsePackageItem(item) }"
                     @mouseenter="handleItemPopover($event, item)"
                     @click="showModal(item)"
                   >
@@ -188,12 +189,12 @@ import BuffPopover from "@/components/buff/BuffPopover.vue";
 import ItemPopover from "@/components/item/ItemPopover.vue";
 import ItemModal from "@/components/item/ItemModal.vue";
 import type { CarouselInst } from "naive-ui";
-import { executePackageItemPage } from "../utils/item";
+import { canUseItemFromPackage, executePackageItemPage } from "../utils/item";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
-import { showItemPopover, showBuffPopover, popoverX, popoverY, popoverWidth, popoverItem, isItemEnter, popoverBuff, isBuffEnter } from "../hooks/useInteract";
+import { showItemPopover, showBuffPopover, popoverX, popoverY, popoverWidth, popoverItem, isItemEnter, popoverBuff, isBuffEnter, openMessageModal } from "../hooks/useInteract";
 import { PackageItemInfo } from "../types/player";
-import { ItemType, Item, ActiveBuff } from "../types/common";
+import { getPrimaryItemType, ItemType, Item, ActiveBuff } from "../types/common";
 import avator from "../assets/image/youmei-avatar.png";
 
 const { playerData, consumeItem } = usePlayer();
@@ -263,7 +264,7 @@ const packagePageRef = ref<CarouselInst | null>(null);
 const packagePageList = computed(() => {
   const allItems = playerData.value?.items || [];
   const filteredPackageItems = allItems.filter(
-    (item) => item.type === packageCurrType.value
+    (item) => getPrimaryItemType(item.type) === packageCurrType.value
   );
   return executePackageItemPage([...filteredPackageItems], packagePageSize.value);
 });
@@ -311,21 +312,31 @@ const handleBuffPopover = (event: MouseEvent, buff: ActiveBuff, index: number) =
   showBuffPopover(event, buff, index);
 };
 
+const canUsePackageItem = (item: PackageItemInfo) => {
+  const completeItem = completeItemsMap.value.get(item.id);
+  return completeItem ? canUseItemFromPackage(completeItem) : canUseItemFromPackage(item);
+};
+
 // 物品使用弹出框相关
 const modalTitle = ref("请选择使用数量");
 const isModalShow = ref(false);
 const modalItem = ref<Item | null>(null);
 const modalHasCount = ref(0);
 const showModal = (item: PackageItemInfo) => {
-  isModalShow.value = true;
   const completeItem = completeItemsMap.value.get(item.id);
-  if (completeItem) {
-    // 根据id查询物品信息
-    modalItem.value = {
-      ...completeItem,
-    };
-    modalHasCount.value = item.count;
+  if (!completeItem) {
+    return;
   }
+  if (!canUseItemFromPackage(completeItem)) {
+    openMessageModal("fail", "该物品不能在背包中直接使用");
+    return;
+  }
+  isModalShow.value = true;
+  // 根据id查询物品信息
+  modalItem.value = {
+    ...completeItem,
+  };
+  modalHasCount.value = item.count;
 };
 </script>
 
@@ -489,6 +500,10 @@ const showModal = (item: PackageItemInfo) => {
       position: relative;
       background: linear-gradient(135deg, $item-bg-start 0%, $item-bg-end 100%);
       box-shadow: 0 2px 8px 0 rgba(253, 203, 110, 0.15);
+      &.package-item-unusable {
+        cursor: not-allowed;
+        opacity: 0.85;
+      }
       .package-item-num {
         position: absolute;
         bottom: 1px;

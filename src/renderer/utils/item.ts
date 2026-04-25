@@ -1,5 +1,7 @@
 import { PackageItemInfo } from "../types/player";
-import { Item } from "../types/common";
+import { getItemTypes, Item, ItemTypeValue } from "../types/common";
+
+const UNUSABLE_PACKAGE_ITEM_TYPES = ["ticket"];
 
 const EFFECT_MAP = {
     hungry: "饱食度",
@@ -21,6 +23,15 @@ const EFFECT_MAP = {
  */
 export function convertItemEffect(effect: string) {
     return EFFECT_MAP[effect as keyof typeof EFFECT_MAP]
+}
+
+/**
+ * 判断物品是否允许在背包中直接使用
+ * @param item 物品
+ * @returns 是否可以直接使用
+ */
+export function canUseItemFromPackage(item: { type: ItemTypeValue }) {
+    return !getItemTypes(item.type).some(type => UNUSABLE_PACKAGE_ITEM_TYPES.includes(type));
 }
 
 /**

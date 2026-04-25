@@ -11,7 +11,7 @@
  */
 
 import { NotEnoughError, NotFoundError } from "../../error";
-import { Item } from "../../types/item";
+import { getItemTypes, Item } from "../../types/item";
 import { PackageItemInfo, PlayerInfo } from "../../types/player";
 import { itemManager, playerManager } from "../store"
 import { PetMate } from "../petmate/petmate";
@@ -21,6 +21,8 @@ import { Wish } from "../../types/wish";
 import { getMainWindow, getPageWindow } from "../../../main";
 import { calcBuffEffect } from "../utils/calc";
 import { handleCharacterLevelAchievement, handleFiftyAffectionAchievement, handleEmotionAchievement } from "./achieve";
+
+const UNUSABLE_PACKAGE_ITEM_TYPES = ["ticket"];
 
 /**
  * 购买物品
@@ -92,6 +94,9 @@ export function consumeItem(itemId: number, count: number = 1, petmateId: number
     const item = itemManager.getItem(itemId);
     if (!item) {
         throw new NotFoundError(`物品不存在: ${itemId}`);
+    }
+    if (getItemTypes(item.type).some(type => UNUSABLE_PACKAGE_ITEM_TYPES.includes(type))) {
+        throw new Error(`该物品不能在背包中直接使用: ${itemId}`);
     }
 
     petmate.updateHungry((item.effect.hungry ?? 0) * count);

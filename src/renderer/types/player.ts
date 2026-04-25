@@ -1,4 +1,4 @@
-import { ItemType } from "./common";
+import { ItemTypeValue } from "./common";
 import { PetMate } from "./petmate";
 
 export interface PlayerInfo {
@@ -13,7 +13,7 @@ export interface PlayerInfo {
 export interface PackageItemInfo {
     id: number;
     name: string;
-    type: ItemType;
+    type: ItemTypeValue;
     description: string;
     url: string;
     count: number;

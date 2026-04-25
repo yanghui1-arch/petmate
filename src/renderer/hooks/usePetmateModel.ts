@@ -47,6 +47,7 @@ const TALL_FRAME_RENDER_BASE_SIZE = 1536
 const DRAG_START_DISTANCE = 4
 const BLANK_FRAME_ALPHA_THRESHOLD = 8
 const BLANK_FRAME_VISIBLE_PIXEL_THRESHOLD = 16
+const ANGRY_KICK_REPEAT_COUNT = 2
 
 const idleFrameSources = resolveFrameSources(import.meta.glob<string>(
     '../assets/models/youmei/animations/idle/*.png',
@@ -202,11 +203,14 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
     }
 
     const setAngry = (active: boolean) => {
+        const wasAngry = isAngry
         isAngry = active
         if (isDragging) return
 
         if (isAngry) {
-            startLoopAction('angryKick', { spyBesideWindow: true })
+            if (wasAngry && (activeAction === 'angryKick' || activeAction === 'anger')) return
+
+            startAngrySequence()
             return
         }
 
@@ -312,7 +316,7 @@ function stopDragging() {
     isDragging = false
 
     if (isAngry) {
-        startLoopAction('angryKick', { spyBesideWindow: true })
+        startAngrySequence()
         return
     }
 
@@ -370,6 +374,28 @@ function startLoopAction(action: ActionName, state: Partial<ModelStatus>) {
     activeAction = action
     updateModelState(state)
     void runLoopAction(action, token)
+}
+
+function startAngrySequence() {
+    if (isDragging || !isAngry) return
+
+    const token = startNewAnimation()
+    activeAction = 'angryKick'
+    updateModelState({ spyBesideWindow: true })
+    void runAngrySequence(token)
+}
+
+async function runAngrySequence(token: number) {
+    for (let index = 0; index < ANGRY_KICK_REPEAT_COUNT; index++) {
+        if (token !== animationToken || isDragging || !isAngry) return
+        if (!await playActionFrames('angryKick', token)) return
+    }
+
+    if (token !== animationToken || isDragging || !isAngry) return
+
+    activeAction = 'anger'
+    updateModelState({ spyBesideWindow: true })
+    await runLoopAction('anger', token)
 }
 
 async function runLoopAction(action: ActionName, token: number) {

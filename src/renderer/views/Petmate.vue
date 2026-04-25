@@ -15,7 +15,7 @@ import { usePlayer } from '../hooks/usePlayer';
 import { useSettings } from '@/hooks/useSettings';
 import { useSnowfall } from 'vue-snowfall'
 
-const LOW_ATTRIBUTE_RATIO = 0.2;
+const LOW_ATTRIBUTE_RATIO = 0.3;
 const PLAYER_REFRESH_INTERVAL = 30 * 1000;
 
 const petmateContainer = ref();
@@ -34,10 +34,8 @@ const hasLowAttribute = computed(() => {
     const attrs = currentPetmate.value?.attrs;
     if (!attrs) return false;
 
-    return attrs.hungry <= attrs.maxHungry * LOW_ATTRIBUTE_RATIO
-        || attrs.emotion <= attrs.maxEmotion * LOW_ATTRIBUTE_RATIO
-        || attrs.energy <= attrs.maxEnergy * LOW_ATTRIBUTE_RATIO
-        || attrs.health <= attrs.maxHealth * LOW_ATTRIBUTE_RATIO;
+    return attrs.hungry < attrs.maxHungry * LOW_ATTRIBUTE_RATIO
+        || attrs.emotion < attrs.maxEmotion * LOW_ATTRIBUTE_RATIO;
 });
 
 watch(hasLowAttribute, (isLow) => {
@@ -79,8 +77,12 @@ onMounted(async () => {
     await initPlayerData();
     lastLowAttributeState = hasLowAttribute.value;
     hasInitializedAttributeBaseline = true;
-    isAngryByAttribute.value = false;
-    playIdle();
+    isAngryByAttribute.value = lastLowAttributeState;
+    if (lastLowAttributeState) {
+        setAngry(true);
+    } else {
+        playIdle();
+    }
 
     playerRefreshTimer = setInterval(() => {
         refreshPlayerData();

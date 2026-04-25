@@ -23,10 +23,10 @@ export function appInit(): void {
 
     // init store
     initSettings()
+    itemManager.initItem()
     playerManager.initPlayer(steamID)
     activityManager.initActivity()
     buffManager.initBuff()
-    itemManager.initItem()
     prefabWishManager.initPrefabWish()
 
     // 初始化玩家数据的状态

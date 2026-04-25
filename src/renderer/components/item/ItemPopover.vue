@@ -25,7 +25,7 @@
               <span v-else>{{ item.description }}</span>
             </div>
             <div>
-              <div class="popover-tip">使用后获得以下效果</div>
+              <div class="popover-tip">{{ itemEffectTip }}</div>
               <div class="popover-effect">
                 <template v-if="isLocked">
                   <span>???</span>
@@ -63,7 +63,7 @@
 
 <script setup lang="ts">
 import { defineProps, PropType } from "vue";
-import { convertItemEffect } from "../../utils/item";
+import { canUseItemFromPackage, convertItemEffect } from "../../utils/item";
 import { Item, Buff } from "../../types/common";
 import { convertRequirementText } from "../../utils/check";
 
@@ -91,7 +91,14 @@ const itemlockedName = computed(() => {
   return `${name[0]} ? ${name[name.length - 1]}`
 });
 
+const itemEffectTip = computed(() => {
+  return canUseItemFromPackage(props.item) ? "使用后获得以下效果" : "用途";
+});
+
 const itemEffectList = computed(() => {
+  if (!canUseItemFromPackage(props.item)) {
+    return ["不能在背包中直接使用"];
+  }
   const effectList: string[] = [];
   const effect = props.item.effect;
   for(const key in effect) {
@@ -107,7 +114,7 @@ const itemEffectList = computed(() => {
       continue;
     }
   }
-  return effectList;
+  return effectList.length ? effectList : ["无"];
 });
 
 </script>
