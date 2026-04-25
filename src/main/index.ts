@@ -17,8 +17,8 @@ app.commandLine.appendSwitch('--in-process-gpu')
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
-const PETMATE_WINDOW_WIDTH = 200
-const PETMATE_WINDOW_HEIGHT = 200
+const PETMATE_WINDOW_WIDTH = 300
+const PETMATE_WINDOW_HEIGHT = 300
 const PETMATE_DRAG_FRAME_MS = 1000 / 60
 
 type PetmateWindowDragSession = {

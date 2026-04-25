@@ -1,11 +1,11 @@
 import { readonly, ref, type Ref } from 'vue'
 import { ModelStatus } from '../types/model'
 import youmeiAnger from '@/assets/models/youmei/youmei-anger.png'
+import youmeiDance from '@/assets/models/youmei/youmei-dance.png'
 import youmeiHello from '@/assets/models/youmei/youmei-hello-1.png'
-import youmeiIdle from '@/assets/models/youmei/youmei-idle.png'
 import youmeiStruggle from '@/assets/models/youmei/youmei-zhengzha.png'
 
-type ActionName = 'idle' | 'hello' | 'anger' | 'struggle'
+type ActionName = 'idle' | 'dance' | 'hello' | 'anger' | 'angryKick' | 'struggle'
 
 type SpriteFrame = {
     image: HTMLImageElement
@@ -15,30 +15,61 @@ type SpriteFrame = {
     sourceHeight: number
 }
 
-type SpriteActionSpec = {
+type BaseActionSpec = {
+    fps: number
+    renderScale: number
+    renderBaseSize?: number
+    loopCount: number
+    skipBlankFrames: boolean
+}
+
+type SpriteActionSpec = BaseActionSpec & {
+    type: 'sprite'
     imageSrc: string
     frameWidth: number
     frameHeight: number
     columns: number
     rows: number
-    fps: number
-    renderScale: number
-    loopCount: number
-    skipBlankFrames: boolean
 }
 
-const CANVAS_WIDTH = 200
-const CANVAS_HEIGHT = 200
-const SPRITE_RENDER_SIZE = 200
+type FrameSequenceActionSpec = BaseActionSpec & {
+    type: 'sequence'
+    frameSources: string[]
+}
+
+type ActionSpec = SpriteActionSpec | FrameSequenceActionSpec
+
+const CANVAS_WIDTH = 300
+const CANVAS_HEIGHT = 300
+const SPRITE_RENDER_SIZE = 300
 const BASE_RENDER_FRAME_SIZE = 600
+const TALL_FRAME_RENDER_BASE_SIZE = 1536
 const DRAG_START_DISTANCE = 4
-const IDLE_HELLO_CYCLE_RANGE = { min: 12, max: 26 }
 const BLANK_FRAME_ALPHA_THRESHOLD = 8
 const BLANK_FRAME_VISIBLE_PIXEL_THRESHOLD = 16
 
-const actionSpecs: Record<ActionName, SpriteActionSpec> = {
+const idleFrameSources = resolveFrameSources(import.meta.glob<string>(
+    '../assets/models/youmei/animations/idle/*.png',
+    { eager: true, import: 'default' }
+))
+const angryKickFrameSources = resolveFrameSources(import.meta.glob<string>(
+    '../assets/models/youmei/animations/angry_kick/*.png',
+    { eager: true, import: 'default' }
+))
+
+const actionSpecs: Record<ActionName, ActionSpec> = {
     idle: {
-        imageSrc: youmeiIdle,
+        type: 'sequence',
+        frameSources: idleFrameSources,
+        fps: 6,
+        renderScale: 1,
+        renderBaseSize: TALL_FRAME_RENDER_BASE_SIZE,
+        loopCount: 1,
+        skipBlankFrames: false
+    },
+    dance: {
+        type: 'sprite',
+        imageSrc: youmeiDance,
         frameWidth: 600,
         frameHeight: 600,
         columns: 4,
@@ -49,6 +80,7 @@ const actionSpecs: Record<ActionName, SpriteActionSpec> = {
         skipBlankFrames: true
     },
     hello: {
+        type: 'sprite',
         imageSrc: youmeiHello,
         frameWidth: 600,
         frameHeight: 600,
@@ -60,6 +92,7 @@ const actionSpecs: Record<ActionName, SpriteActionSpec> = {
         skipBlankFrames: true
     },
     anger: {
+        type: 'sprite',
         imageSrc: youmeiAnger,
         frameWidth: 400,
         frameHeight: 400,
@@ -70,7 +103,17 @@ const actionSpecs: Record<ActionName, SpriteActionSpec> = {
         loopCount: 1,
         skipBlankFrames: true
     },
+    angryKick: {
+        type: 'sequence',
+        frameSources: angryKickFrameSources,
+        fps: 8,
+        renderScale: 1,
+        renderBaseSize: TALL_FRAME_RENDER_BASE_SIZE,
+        loopCount: 1,
+        skipBlankFrames: false
+    },
     struggle: {
+        type: 'sprite',
         imageSrc: youmeiStruggle,
         frameWidth: 500,
         frameHeight: 500,
@@ -83,8 +126,10 @@ const actionSpecs: Record<ActionName, SpriteActionSpec> = {
     }
 }
 
+const actionNames = Object.keys(actionSpecs) as ActionName[]
+
 let petMateModelConfig = {
-    scale: SPRITE_RENDER_SIZE / actionSpecs.idle.frameWidth
+    scale: SPRITE_RENDER_SIZE / BASE_RENDER_FRAME_SIZE
 }
 
 let spriteCanvas: HTMLCanvasElement | null = null
@@ -101,8 +146,10 @@ let isAngry = false
 
 const actionFrames: Record<ActionName, SpriteFrame[]> = {
     idle: [],
+    dance: [],
     hello: [],
     anger: [],
+    angryKick: [],
     struggle: []
 }
 
@@ -131,7 +178,7 @@ export const isShowContextMenu = ref(false)
 
 export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
     const init2D = async (): Promise<void> => {
-        await loadSpriteAssets()
+        await loadAnimationAssets()
         initSpriteContainer(petmateContainer.value)
         initSpriteCanvas()
         startIdleLoop()
@@ -156,7 +203,7 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         if (isDragging) return
 
         if (isAngry) {
-            startLoopAction('anger', { spyBesideWindow: true })
+            startLoopAction('angryKick', { spyBesideWindow: true })
             return
         }
 
@@ -259,7 +306,7 @@ function stopDragging() {
     isDragging = false
 
     if (isAngry) {
-        startLoopAction('anger', { spyBesideWindow: true })
+        startLoopAction('angryKick', { spyBesideWindow: true })
         return
     }
 
@@ -275,18 +322,9 @@ function startIdleLoop() {
 }
 
 async function runIdleLoop(token: number) {
-    let cyclesBeforeHello = randomBetween(IDLE_HELLO_CYCLE_RANGE.min, IDLE_HELLO_CYCLE_RANGE.max)
-
     while (token === animationToken && !isDragging && !isAngry) {
         updateModelState({ standIdle: true })
         if (!await playActionFrames('idle', token)) return
-
-        cyclesBeforeHello--
-        if (cyclesBeforeHello > 0 || isShowContextMenu.value) continue
-
-        updateModelState({ dance: true })
-        if (!await playActionFrames('hello', token)) return
-        cyclesBeforeHello = randomBetween(IDLE_HELLO_CYCLE_RANGE.min, IDLE_HELLO_CYCLE_RANGE.max)
     }
 }
 
@@ -320,6 +358,7 @@ function playActionFrames(action: ActionName, token: number): Promise<boolean> {
         actionFrames[action],
         getFrameDuration(spec.fps),
         spec.renderScale,
+        spec.renderBaseSize ?? BASE_RENDER_FRAME_SIZE,
         spec.loopCount,
         token
     )
@@ -329,6 +368,7 @@ async function playFrames(
     frames: SpriteFrame[],
     frameDuration: number,
     renderScaleMultiplier: number,
+    renderBaseSize: number,
     loopCount: number,
     token: number
 ): Promise<boolean> {
@@ -340,7 +380,7 @@ async function playFrames(
     for (let loopIndex = 0; loopIndex < loopCount; loopIndex++) {
         for (const frame of frames) {
             if (token !== animationToken) return false
-            drawSpriteFrame(frame, renderScaleMultiplier)
+            drawSpriteFrame(frame, renderScaleMultiplier, renderBaseSize)
             if (!await sleep(frameDuration, token)) return false
         }
     }
@@ -391,23 +431,47 @@ function clearActiveTimer() {
     activeTimerResolve = null
 }
 
-async function loadSpriteAssets(): Promise<void> {
-    const [idleImage, helloImage, angerImage, struggleImage] = await Promise.all([
-        loadImage(actionSpecs.idle.imageSrc),
-        loadImage(actionSpecs.hello.imageSrc),
-        loadImage(actionSpecs.anger.imageSrc),
-        loadImage(actionSpecs.struggle.imageSrc)
-    ])
+function resolveFrameSources(modules: Record<string, string>): string[] {
+    return Object.entries(modules)
+        .sort(([leftPath], [rightPath]) => leftPath.localeCompare(rightPath, undefined, { numeric: true }))
+        .map(([, source]) => source)
+}
 
-    actionFrames.idle = extractFixedGridFrames(idleImage, actionSpecs.idle)
-    actionFrames.hello = extractFixedGridFrames(helloImage, actionSpecs.hello)
-    actionFrames.anger = extractFixedGridFrames(angerImage, actionSpecs.anger)
-    actionFrames.struggle = extractFixedGridFrames(struggleImage, actionSpecs.struggle)
+async function loadAnimationAssets(): Promise<void> {
+    const loadedFrames = await Promise.all(actionNames.map(async (action) => {
+        return [action, await loadActionFrames(action, actionSpecs[action])] as const
+    }))
+
+    for (const [action, frames] of loadedFrames) {
+        actionFrames[action] = frames
+    }
 
     const firstIdleFrame = actionFrames.idle[0]
     if (firstIdleFrame) {
         petMateModelConfig.scale = SPRITE_RENDER_SIZE / Math.max(firstIdleFrame.sourceWidth, firstIdleFrame.sourceHeight)
     }
+}
+
+async function loadActionFrames(action: ActionName, spec: ActionSpec): Promise<SpriteFrame[]> {
+    if (spec.type === 'sequence') {
+        return loadFrameSequenceFrames(action, spec)
+    }
+
+    const image = await loadImage(spec.imageSrc)
+    return extractFixedGridFrames(image, spec)
+}
+
+async function loadFrameSequenceFrames(action: ActionName, spec: FrameSequenceActionSpec): Promise<SpriteFrame[]> {
+    if (spec.frameSources.length === 0) {
+        throw new Error(`未找到尤美帧动画资源: ${action}`)
+    }
+
+    const images = await Promise.all(spec.frameSources.map(loadImage))
+    const frames = images
+        .map(createWholeImageFrame)
+        .filter((frame) => !spec.skipBlankFrames || !isBlankFrame(frame))
+
+    return frames.length > 0 ? frames : [createWholeImageFrame(images[0])]
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -417,6 +481,16 @@ function loadImage(src: string): Promise<HTMLImageElement> {
         image.onerror = () => reject(new Error(`加载尤美帧动画失败: ${src}`))
         image.src = src
     })
+}
+
+function createWholeImageFrame(image: HTMLImageElement): SpriteFrame {
+    return {
+        image,
+        sourceX: 0,
+        sourceY: 0,
+        sourceWidth: image.naturalWidth,
+        sourceHeight: image.naturalHeight
+    }
 }
 
 function extractFixedGridFrames(image: HTMLImageElement, spec: SpriteActionSpec): SpriteFrame[] {
@@ -443,13 +517,7 @@ function extractFixedGridFrames(image: HTMLImageElement, spec: SpriteActionSpec)
 
     if (frames.length > 0) return frames
 
-    return [{
-        image,
-        sourceX: 0,
-        sourceY: 0,
-        sourceWidth: image.naturalWidth,
-        sourceHeight: image.naturalHeight
-    }]
+    return [createWholeImageFrame(image)]
 }
 
 function isBlankFrame(frame: SpriteFrame): boolean {
@@ -522,13 +590,19 @@ function initSpriteCanvas() {
 
 function showFirstIdleFrame() {
     const firstFrame = actionFrames.idle[0]
-    if (firstFrame) drawSpriteFrame(firstFrame, actionSpecs.idle.renderScale)
+    if (firstFrame) {
+        drawSpriteFrame(
+            firstFrame,
+            actionSpecs.idle.renderScale,
+            actionSpecs.idle.renderBaseSize ?? BASE_RENDER_FRAME_SIZE
+        )
+    }
 }
 
-function drawSpriteFrame(frame: SpriteFrame, renderScaleMultiplier: number) {
+function drawSpriteFrame(frame: SpriteFrame, renderScaleMultiplier: number, renderBaseSize: number) {
     if (!spriteCanvasContext) return
 
-    const renderScale = SPRITE_RENDER_SIZE / BASE_RENDER_FRAME_SIZE * renderScaleMultiplier
+    const renderScale = SPRITE_RENDER_SIZE / renderBaseSize * renderScaleMultiplier
     const targetWidth = frame.sourceWidth * renderScale
     const targetHeight = frame.sourceHeight * renderScale
     const targetX = (CANVAS_WIDTH - targetWidth) / 2
@@ -557,8 +631,4 @@ function releasePointerCapture(event: PointerEvent) {
 function updateModelState(state: Partial<ModelStatus>): ModelStatus {
     Object.assign(modelState, defaultModelState, state)
     return modelState
-}
-
-function randomBetween(min: number, max: number) {
-    return Math.floor(min + Math.random() * (max - min + 1))
 }
