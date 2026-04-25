@@ -8,7 +8,7 @@ import { join } from 'path'
 import trayIcon from '../../resources/icon.png?asset'
 import { playerManager } from './modules/store'
 import { greenworksManager } from './greenworks'
-import { getChristmasEffect, getOnTop, updateSettings } from './settings'
+import { getOnTop, updateSettings } from './settings'
 import { appInit } from './init'
 import * as fs from 'fs'
 import logger from './log'
@@ -178,16 +178,6 @@ const createWindow = (): void => {
             label: '显示',
             click: () => {
                 mainWindow?.show()
-            }
-        },
-        {
-            label: '圣诞特效',
-            type: "checkbox",
-            checked: getChristmasEffect(),
-            click: () => {
-                const newChristmasEffect = !getChristmasEffect();
-                mainWindow?.webContents.send('christmas-effect', newChristmasEffect);
-                updateSettings({ christmasEffect: newChristmasEffect })
             }
         },
         {

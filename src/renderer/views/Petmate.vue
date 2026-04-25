@@ -23,8 +23,6 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import WheelMenu from '../components/WheelMenu.vue';
 import { isShowContextMenu, usePetmateModel } from '../hooks/usePetmateModel';
 import { usePlayer } from '../hooks/usePlayer';
-import { useSettings } from '@/hooks/useSettings';
-import { useSnowfall } from 'vue-snowfall'
 
 const LOW_ATTRIBUTE_RATIO = 0.3;
 const PLAYER_REFRESH_INTERVAL = 30 * 1000;
@@ -32,8 +30,6 @@ const HUNGER_DIALOG_TEXT = '尤美真的.....真的.....好饿....';
 const HUNGER_DIALOG_TYPE_INTERVAL = 200;
 
 const petmateContainer = ref();
-const christmasEffect = ref<boolean>(false);
-let stopSnow;
 let playerRefreshTimer: ReturnType<typeof setInterval> | null = null;
 let hungerDialogTimer: ReturnType<typeof setInterval> | null = null;
 let hasInitializedAttributeBaseline = false;
@@ -82,30 +78,6 @@ watch(shouldShowHungryDialog, (shouldShow) => {
 }, { immediate: true });
 
 onMounted(async () => {
-    const { settings } = useSettings();
-    christmasEffect.value = settings.value!.christmasEffect;
-
-    if (christmasEffect.value === true) {
-        const { startSnowflakes, stopSnowflakes } = useSnowfall({
-            container: petmateContainer.value
-        })
-        stopSnow = stopSnowflakes
-        startSnowflakes()
-    }
-
-    window.api.onChristmasEffect((_, newChristmasEffect) => {
-        christmasEffect.value = newChristmasEffect
-        if (christmasEffect.value === true) {
-            const { startSnowflakes, stopSnowflakes } = useSnowfall({
-                container: petmateContainer.value
-            })
-            stopSnow = stopSnowflakes
-            startSnowflakes()
-        } else {
-            stopSnow?.('all')
-        }
-    })
-
     await init2D();
     playIdle();
     await initPlayerData();
@@ -127,7 +99,6 @@ onUnmounted(() => {
     if (playerRefreshTimer) clearInterval(playerRefreshTimer);
     clearHungerDialogTimer();
     destroy();
-    if(stopSnow) stopSnow('all')
 });
 
 function closeContextMenu() {

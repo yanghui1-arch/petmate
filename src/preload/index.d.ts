@@ -79,7 +79,6 @@ interface IElectronAPI {
   movePetmateWindow: (x: number, y: number) => void;
   startPetmateWindowDrag: () => void;
   stopPetmateWindowDrag: () => void;
-  onChristmasEffect: (callback: (event: Event, christmasEffect: boolean) => void) => void,
 
   // 其他
   listenTTSVoiceSample: (voice: TTSVoice, text: string) => Promise<Response<void>>;
