@@ -81,6 +81,42 @@ class GreenworksManager {
     }
 
     /**
+     * 查询成就是否已激活
+     * @param achievement 成就名称
+     * @param successCallback 成功回调
+     * @param failureCallback 失败回调
+     */
+    getAchievement(achievement: string, successCallback: (isAchieved: boolean) => void, failureCallback?: (err: string) => void) {
+        if (!this.isInitialized) {
+            console.error('Cannot get achievement: Greenworks not initialized');
+            if (failureCallback) failureCallback('Greenworks not initialized');
+            return;
+        }
+        try {
+            return greenworks.getAchievement(achievement, successCallback, failureCallback);
+        } catch (error) {
+            logger.error(`获取成就状态失败: ${achievement}`, error);
+            if (failureCallback) failureCallback(error instanceof Error ? error.message : String(error));
+        }
+    }
+
+    /**
+     * 获取当前游戏在Steam中配置的成就API名称
+     */
+    getAchievementNames(): string[] {
+        if (!this.isInitialized) {
+            console.error('Cannot get achievement names: Greenworks not initialized');
+            return [];
+        }
+        try {
+            return greenworks.getAchievementNames();
+        } catch (error) {
+            logger.error('获取成就列表失败', error);
+            return [];
+        }
+    }
+
+    /**
      * 在greenworks中，成就数据被当做统计数据来处理
      * 获取统计数据
      * @param name 统计数据名称

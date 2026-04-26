@@ -14,6 +14,9 @@ const ACH_FIFTY_ENTERTAINMENT = "ACH_FIFTY_ENTERTAINMENT"                // 玩�
 const ACH_ONE_HUNDRED_ENTERTAINMENT = "ACH_ONE_HUNDRED_ENTERTAINMENT"    // 快乐的尤美 尤美的第一百次娱乐
 const ACH_LITTLE_SAD = "ACH_LITTLE_SAD"                                  // 有点丧 心情掉到50点以下
 const ACH_FIFTY_AFFECTION = "ACH_FIFTY_AFFECTION"                        // 温度升温 好感度到50
+const ACH_51_GAME_PARTNER = "ACH_51_GAME_PARTNER"                        // 假期连胜搭子 获得称谓
+const ACH_51_LABOR = "ACH_51_LABOR"                                      // 假日小工匠 获得称谓
+const ACH_SUNSHINE_PROTECTOR = "ACH_SUNSHINE_PROTECTOR"                  // 曙光守护者 获得称谓
 
 export const achievements = {
     ACH_FIRST_OPEN,
@@ -32,4 +35,7 @@ export const achievements = {
     ACH_ONE_HUNDRED_ENTERTAINMENT,
     ACH_LITTLE_SAD,
     ACH_FIFTY_AFFECTION,
+    ACH_51_GAME_PARTNER,
+    ACH_51_LABOR,
+    ACH_SUNSHINE_PROTECTOR,
 }

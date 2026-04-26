@@ -11,7 +11,7 @@ declare module 'greenworks' {
         restartAppIfNecessary: (appId: number) => boolean;
         activateAchievement: (achievement: string, successCallback: () => void, failureCallback?: (err) => void) => void;
         clearAchievement: (achievement: string, successCallback: () => void, failureCallback: (err) => void) => void;
-        getAchievement: (achievement: string) => boolean;
+        getAchievement: (achievement: string, successCallback: (isAchieved: boolean) => void, failureCallback?: (err) => void) => void;
         getAchievementNames: () => string[];
         isSteamRunning: () => boolean;
         getStatInt: (name: string) => number;

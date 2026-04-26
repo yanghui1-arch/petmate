@@ -76,6 +76,43 @@ export function achieveFirstOpen() {
     })
 }
 
+const TITLE_NAME_TO_STEAM_ACHIEVEMENT: Record<string, string> = {
+    "假期连胜搭子": achievements.ACH_51_GAME_PARTNER,
+    "假日小工匠": achievements.ACH_51_LABOR,
+    "曙光守护者": achievements.ACH_SUNSHINE_PROTECTOR
+}
+
+/**
+ * 处理称谓成就
+ * @param titleName 称谓名称
+ */
+export function handleTitleAchievement(titleName: string) {
+    const achievement = TITLE_NAME_TO_STEAM_ACHIEVEMENT[titleName]
+    if (!achievement) return
+    if (!greenworksManager.getAchievementNames().includes(achievement)) {
+        logger.warn(`Achievement: ${achievement} is not configured in Steam, title: ${titleName}`)
+        return
+    }
+
+    greenworksManager.getAchievement(achievement, (isAchieved) => {
+        if (isAchieved) return
+
+        activateAchievement(achievement, () => { }, (err) => {
+            logger.error(`Achievement: ${achievement} activate failed: ${err}`)
+        })
+    }, (err) => {
+        logger.error(`Achievement: ${achievement} status check failed: ${err}`)
+    })
+}
+
+/**
+ * 处理已有称谓的成就补发
+ * @param titleNames 已拥有称谓名称
+ */
+export function handleOwnedTitleAchievements(titleNames: string[]) {
+    Array.from(new Set(titleNames)).forEach(handleTitleAchievement)
+}
+
 /**
  * 以下为通过统计数据来激活成就，当用户做完对应事件时，调用此函数来统计数据，并在内部判断是否需要激活成就
  */

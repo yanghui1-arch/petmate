@@ -12,6 +12,7 @@ import type {
     PlayerTitleResource
 } from "../../types/player-resource";
 import { itemManager, playerManager } from "../store";
+import { handleOwnedTitleAchievements, handleTitleAchievement } from "./achieve";
 
 type PlayerResourceStoreData = {
     resources: PlayerResourceState;
@@ -168,6 +169,7 @@ class PlayerResourceManager {
 
         const stored = (this.store as any).get("resources") as PlayerResourceState | undefined
         this.resources = this.normalizeResources(stored)
+        handleOwnedTitleAchievements(this.resources.titles.map(title => title.name))
         this.saveResources()
     }
 
@@ -400,6 +402,7 @@ class PlayerResourceManager {
         if (!this.resources.equippedTitleId) {
             this.resources.equippedTitleId = resource.id
         }
+        handleTitleAchievement(resource.name)
 
         return {
             id: resource.id,
