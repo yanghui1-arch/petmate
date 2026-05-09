@@ -8,4 +8,4 @@ export const WISH_GENERATE_INTERVAL = 2 * 60 * 60 * 1000 // 愿望生成间隔 -
 // export const WISH_GENERATE_INTERVAL = 10 * 1000; // 愿望生成间隔，测试使用，3分钟
 export const DAYS_TO_KEEP_WISH = 3 // 保留最近几天的愿望
 export const PETMATE_ONLINE_DECAY_INTERVAL = 60 * 1000 // 在线属性衰减间隔 - 1分钟
-export const PETMATE_ONLINE_DECAY_VALUE = 5 // 每次在线衰减的属性值
+export const PETMATE_ONLINE_DECAY_VALUE = 0 // 每次在线衰减的属性值
