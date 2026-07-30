@@ -2,7 +2,6 @@ import { readonly, ref, type Ref } from 'vue'
 import type { PlayerResourceState } from '@main/types/player-resource'
 import { ModelStatus } from '../types/model'
 import youmeiDance from '@/assets/models/youmei/youmei-dance.png'
-import youmeiHello from '@/assets/models/youmei/youmei-hello-1.png'
 import youmeiDragClassic from '@/assets/models/youmei/animations/drag/classic.png'
 import youmeiDragLabor from '@/assets/models/youmei/animations/drag/labor.png'
 import youmeiIdleBlinkClosed from '@/assets/models/youmei/animations/idle/blink/closed.png'
@@ -24,7 +23,7 @@ import youmeiLaborIdleBlinkQuarter from '@/assets/models/youmei/animations/idle/
 import youmeiLaborIdleBlinkThreeQuarter from '@/assets/models/youmei/animations/idle/labor-skin/blink/three-quarter.png'
 import youmeiLaborIdleOpen from '@/assets/models/youmei/animations/idle/labor-skin/01.png'
 
-type ActionName = 'idle' | 'dance' | 'hello' | 'anger' | 'angryKick' | 'struggle'
+type ActionName = 'idle' | 'dance' | 'anger' | 'angryKick' | 'struggle'
 
 type VisibleBounds = {
     left: number
@@ -207,19 +206,6 @@ const actionSpecs: Record<ActionName, ActionSpec> = {
         loopCount: Number.POSITIVE_INFINITY,
         skipBlankFrames: true
     },
-    hello: {
-        type: 'sprite',
-        imageSrc: youmeiHello,
-        frameWidth: 600,
-        frameHeight: 600,
-        columns: 2,
-        rows: 2,
-        frameDurationMs: 145,
-        frameBlendMs: 38,
-        visualScale: 0.92,
-        loopCount: 2,
-        skipBlankFrames: true
-    },
     anger: {
         type: 'sequence',
         frameSources: angryFrameSources,
@@ -334,10 +320,6 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         startAmbientAction()
     }
 
-    const playHello = () => {
-        requestHello()
-    }
-
     const setAngry = (active: boolean) => {
         const wasAngry = isAngry
         isAngry = active
@@ -385,7 +367,6 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         modelConfig: readonly(petMateModelConfig),
         modelState: readonly(modelState),
         playIdle,
-        playHello,
         setAngry,
         destroy
     }
@@ -433,11 +414,7 @@ function onPointerUp(event: PointerEvent) {
     const wasDragging = isDragging
     releasePointerCapture(event)
 
-    if (wasDragging) {
-        stopDragging()
-    } else {
-        requestHello()
-    }
+    if (wasDragging) stopDragging()
 
     activePointerId = null
 }
@@ -550,11 +527,6 @@ function resetDragMotion() {
     skirtSwayY = 0
     skirtSwayVelocityX = 0
     skirtSwayVelocityY = 0
-}
-
-function requestHello() {
-    if (isDragging || isAngry || isShowContextMenu.value) return
-    startAction('hello', { dance: true })
 }
 
 function startAmbientAction() {
@@ -674,12 +646,6 @@ function handleActionCompleted(action: ActionName) {
         return
     }
 
-    if (action === 'hello' && !isAngry && !isDragging) {
-        activeAction = null
-        startAmbientAction()
-        return
-    }
-
     startAmbientAction()
 }
 
@@ -750,14 +716,6 @@ function getMotionTransform(playback: Playback): MotionTransform {
                 x: Math.sin(seconds * 4.4) * 0.7,
                 y: -Math.abs(Math.sin(seconds * 4.4)) * 1.8,
                 rotation: Math.sin(seconds * 3.2) * 0.011,
-                scaleX: 1,
-                scaleY: 1
-            }
-        case 'hello':
-            return {
-                x: Math.sin(seconds * 5.2) * 0.35,
-                y: -Math.abs(Math.sin(seconds * 3.8)) * 1.2,
-                rotation: Math.sin(seconds * 4.2) * 0.006,
                 scaleX: 1,
                 scaleY: 1
             }
@@ -1021,7 +979,7 @@ function setSystemAudioActive(active: boolean) {
     if (isSystemAudioActive === active) return
 
     isSystemAudioActive = active
-    if (isDragging || isAngry || activeAction === 'hello' || activeAction === 'angryKick') {
+    if (isDragging || isAngry || activeAction === 'angryKick') {
         return
     }
 
