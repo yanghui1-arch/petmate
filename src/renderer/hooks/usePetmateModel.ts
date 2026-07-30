@@ -2,8 +2,8 @@ import { readonly, ref, type Ref } from 'vue'
 import type { PlayerResourceState } from '@main/types/player-resource'
 import { ModelStatus } from '../types/model'
 import youmeiDance from '@/assets/models/youmei/youmei-dance.png'
-import youmeiHello from '@/assets/models/youmei/youmei-hello-1.png'
-import youmeiStruggle from '@/assets/models/youmei/youmei-zhengzha.png'
+import youmeiDragClassic from '@/assets/models/youmei/animations/drag/classic.png'
+import youmeiDragLabor from '@/assets/models/youmei/animations/drag/labor.png'
 import youmeiIdleBlinkClosed from '@/assets/models/youmei/animations/idle/blink/closed.png'
 import youmeiIdleBlinkHalf from '@/assets/models/youmei/animations/idle/blink/half.png'
 import youmeiIdleBlinkMicro25 from '@/assets/models/youmei/animations/idle/blink/micro-25.png'
@@ -23,7 +23,7 @@ import youmeiLaborIdleBlinkQuarter from '@/assets/models/youmei/animations/idle/
 import youmeiLaborIdleBlinkThreeQuarter from '@/assets/models/youmei/animations/idle/labor-skin/blink/three-quarter.png'
 import youmeiLaborIdleOpen from '@/assets/models/youmei/animations/idle/labor-skin/01.png'
 
-type ActionName = 'idle' | 'dance' | 'hello' | 'anger' | 'angryKick' | 'struggle'
+type ActionName = 'idle' | 'dance' | 'anger' | 'angryKick' | 'struggle'
 
 type VisibleBounds = {
     left: number
@@ -134,6 +134,8 @@ const LABOR_KICK_ANIMATION_RESOURCE_ID = 'youmei-angry-kick-labor-2026'
 const CLASSIC_SKIN_ID = 'youmei-classic-dress'
 const LABOR_SKIRT_SKIN_ID = 'youmei-labor-skirt-2026'
 
+const classicDragFrameSources = [youmeiDragClassic]
+const laborDragFrameSources = [youmeiDragLabor]
 const idleFrameSources = [
     youmeiIdleOpen,
     youmeiIdleBlinkMicro25,
@@ -204,19 +206,6 @@ const actionSpecs: Record<ActionName, ActionSpec> = {
         loopCount: Number.POSITIVE_INFINITY,
         skipBlankFrames: true
     },
-    hello: {
-        type: 'sprite',
-        imageSrc: youmeiHello,
-        frameWidth: 600,
-        frameHeight: 600,
-        columns: 2,
-        rows: 2,
-        frameDurationMs: 145,
-        frameBlendMs: 38,
-        visualScale: 0.92,
-        loopCount: 2,
-        skipBlankFrames: true
-    },
     anger: {
         type: 'sequence',
         frameSources: angryFrameSources,
@@ -236,17 +225,13 @@ const actionSpecs: Record<ActionName, ActionSpec> = {
         skipBlankFrames: false
     },
     struggle: {
-        type: 'sprite',
-        imageSrc: youmeiStruggle,
-        frameWidth: 500,
-        frameHeight: 500,
-        columns: 4,
-        rows: 4,
-        frameDurationMs: 92,
-        frameBlendMs: 24,
-        visualScale: 0.96,
+        type: 'sequence',
+        frameSources: classicDragFrameSources,
+        frameDurationMs: 1000,
+        frameBlendMs: 0,
+        visualScale: 1,
         loopCount: Number.POSITIVE_INFINITY,
-        skipBlankFrames: true
+        skipBlankFrames: false
     }
 }
 
@@ -266,6 +251,23 @@ let poseTransition: PoseTransition | null = null
 let activePointerId: number | null = null
 let pointerStartScreenX = 0
 let pointerStartScreenY = 0
+let lastDragPointerScreenX = 0
+let lastDragPointerScreenY = 0
+let lastDragPointerTime = 0
+let dragResponseX = 0
+let dragResponseY = 0
+let dragResponseVelocityX = 0
+let dragResponseVelocityY = 0
+let dragTargetX = 0
+let dragTargetY = 0
+let hairSwayX = 0
+let hairSwayY = 0
+let hairSwayVelocityX = 0
+let hairSwayVelocityY = 0
+let skirtSwayX = 0
+let skirtSwayY = 0
+let skirtSwayVelocityX = 0
+let skirtSwayVelocityY = 0
 let isDragging = false
 let isAngry = false
 let isSystemAudioActive = false
@@ -318,10 +320,6 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         startAmbientAction()
     }
 
-    const playHello = () => {
-        requestHello()
-    }
-
     const setAngry = (active: boolean) => {
         const wasAngry = isAngry
         isAngry = active
@@ -359,6 +357,7 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         activeAction = null
         isDragging = false
         isSystemAudioActive = false
+        resetDragMotion()
         window.api.removeAllSystemAudioActiveListeners()
         window.api.removeAllPlayerResourcesUpdatedListeners()
     }
@@ -368,7 +367,6 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         modelConfig: readonly(petMateModelConfig),
         modelState: readonly(modelState),
         playIdle,
-        playHello,
         setAngry,
         destroy
     }
@@ -381,6 +379,9 @@ function onPointerDown(event: PointerEvent) {
     activePointerId = event.pointerId
     pointerStartScreenX = event.screenX
     pointerStartScreenY = event.screenY
+    lastDragPointerScreenX = event.screenX
+    lastDragPointerScreenY = event.screenY
+    lastDragPointerTime = performance.now()
 
     if (event.currentTarget instanceof HTMLElement) {
         event.currentTarget.setPointerCapture(event.pointerId)
@@ -388,7 +389,13 @@ function onPointerDown(event: PointerEvent) {
 }
 
 function onPointerMove(event: PointerEvent) {
-    if (activePointerId !== event.pointerId || isDragging) return
+    if (activePointerId !== event.pointerId) return
+
+    if (isDragging) {
+        event.preventDefault()
+        updateDragPointerMotion(event)
+        return
+    }
 
     const distance = Math.hypot(
         event.screenX - pointerStartScreenX,
@@ -397,7 +404,7 @@ function onPointerMove(event: PointerEvent) {
     if (distance < DRAG_START_DISTANCE) return
 
     event.preventDefault()
-    beginDragging()
+    beginDragging(event)
 }
 
 function onPointerUp(event: PointerEvent) {
@@ -407,11 +414,7 @@ function onPointerUp(event: PointerEvent) {
     const wasDragging = isDragging
     releasePointerCapture(event)
 
-    if (wasDragging) {
-        stopDragging()
-    } else {
-        requestHello()
-    }
+    if (wasDragging) stopDragging()
 
     activePointerId = null
 }
@@ -429,10 +432,14 @@ function onContextMenu(event: MouseEvent) {
     isShowContextMenu.value = true
 }
 
-function beginDragging() {
+function beginDragging(event: PointerEvent) {
     if (isDragging) return
 
+    resetDragMotion()
     isDragging = true
+    lastDragPointerScreenX = pointerStartScreenX
+    lastDragPointerScreenY = pointerStartScreenY
+    updateDragPointerMotion(event)
     window.api.startPetmateWindowDrag()
     startAction('struggle', { dragging: true })
 }
@@ -443,15 +450,83 @@ function stopDragging() {
 
     if (isAngry) {
         startAction('angryKick', { spyBesideWindow: true })
+        resetDragMotion()
         return
     }
 
     startAmbientAction()
+    resetDragMotion()
 }
 
-function requestHello() {
-    if (isDragging || isAngry || isShowContextMenu.value) return
-    startAction('hello', { dance: true })
+function updateDragPointerMotion(event: PointerEvent) {
+    const now = performance.now()
+    const elapsedMs = Math.max(now - lastDragPointerTime, 8)
+    const velocityX = (event.screenX - lastDragPointerScreenX) / elapsedMs
+    const velocityY = (event.screenY - lastDragPointerScreenY) / elapsedMs
+
+    dragTargetX = clamp(velocityX * 1.6, -1, 1)
+    dragTargetY = clamp(velocityY * 1.6, -1, 1)
+    lastDragPointerScreenX = event.screenX
+    lastDragPointerScreenY = event.screenY
+    lastDragPointerTime = now
+}
+
+function advanceDragMotion(deltaMs: number) {
+    if (!isDragging || deltaMs <= 0) return
+
+    const substepCount = Math.max(1, Math.ceil(deltaMs / 16))
+    const substepSeconds = deltaMs / substepCount / 1000
+
+    for (let step = 0; step < substepCount; step++) {
+        const springForceX = (dragTargetX - dragResponseX) * 85
+        const springForceY = (dragTargetY - dragResponseY) * 85
+        const damping = Math.exp(-13 * substepSeconds)
+        const targetDecay = Math.exp(-4.6 * substepSeconds)
+
+        dragResponseVelocityX = (dragResponseVelocityX + springForceX * substepSeconds) * damping
+        dragResponseVelocityY = (dragResponseVelocityY + springForceY * substepSeconds) * damping
+        dragResponseX = clamp(dragResponseX + dragResponseVelocityX * substepSeconds, -1.15, 1.15)
+        dragResponseY = clamp(dragResponseY + dragResponseVelocityY * substepSeconds, -1.15, 1.15)
+        dragTargetX *= targetDecay
+        dragTargetY *= targetDecay
+
+        const hairDamping = Math.exp(-6.2 * substepSeconds)
+        const hairTargetX = -dragResponseX * 1.48
+        const hairTargetY = -dragResponseY * 1.16
+        hairSwayVelocityX =
+            (hairSwayVelocityX + (hairTargetX - hairSwayX) * 44 * substepSeconds) * hairDamping
+        hairSwayVelocityY =
+            (hairSwayVelocityY + (hairTargetY - hairSwayY) * 48 * substepSeconds) * hairDamping
+        hairSwayX = clamp(hairSwayX + hairSwayVelocityX * substepSeconds, -1.4, 1.4)
+        hairSwayY = clamp(hairSwayY + hairSwayVelocityY * substepSeconds, -1.25, 1.25)
+
+        const skirtDamping = Math.exp(-8.4 * substepSeconds)
+        const skirtTargetX = -dragResponseX * 1.04
+        const skirtTargetY = -dragResponseY * 0.72
+        skirtSwayVelocityX =
+            (skirtSwayVelocityX + (skirtTargetX - skirtSwayX) * 68 * substepSeconds) * skirtDamping
+        skirtSwayVelocityY =
+            (skirtSwayVelocityY + (skirtTargetY - skirtSwayY) * 74 * substepSeconds) * skirtDamping
+        skirtSwayX = clamp(skirtSwayX + skirtSwayVelocityX * substepSeconds, -1.15, 1.15)
+        skirtSwayY = clamp(skirtSwayY + skirtSwayVelocityY * substepSeconds, -1, 1)
+    }
+}
+
+function resetDragMotion() {
+    dragResponseX = 0
+    dragResponseY = 0
+    dragResponseVelocityX = 0
+    dragResponseVelocityY = 0
+    dragTargetX = 0
+    dragTargetY = 0
+    hairSwayX = 0
+    hairSwayY = 0
+    hairSwayVelocityX = 0
+    hairSwayVelocityY = 0
+    skirtSwayX = 0
+    skirtSwayY = 0
+    skirtSwayVelocityX = 0
+    skirtSwayVelocityY = 0
 }
 
 function startAmbientAction() {
@@ -477,7 +552,13 @@ function startAction(
 
     const now = performance.now()
     const previousPose = activePlayback ? getRenderPose(activePlayback) : null
-    if (previousPose && activeAction !== action && options.transition !== false) {
+    const changesDragPose = activeAction === 'struggle' || action === 'struggle'
+    if (
+        previousPose &&
+        activeAction !== action &&
+        options.transition !== false &&
+        !changesDragPose
+    ) {
         poseTransition = {
             pose: previousPose,
             startedAt: now,
@@ -529,6 +610,7 @@ function renderAnimationFrame(now: number) {
     lastAnimationTime = now
 
     advancePlayback(deltaMs)
+    advanceDragMotion(deltaMs)
     renderScene(now)
     animationFrameId = window.requestAnimationFrame(renderAnimationFrame)
 }
@@ -561,12 +643,6 @@ function advancePlayback(deltaMs: number) {
 function handleActionCompleted(action: ActionName) {
     if (action === 'angryKick' && isAngry && !isDragging) {
         startAction('anger', { spyBesideWindow: true })
-        return
-    }
-
-    if (action === 'hello' && !isAngry && !isDragging) {
-        activeAction = null
-        startAmbientAction()
         return
     }
 
@@ -643,14 +719,6 @@ function getMotionTransform(playback: Playback): MotionTransform {
                 scaleX: 1,
                 scaleY: 1
             }
-        case 'hello':
-            return {
-                x: Math.sin(seconds * 5.2) * 0.35,
-                y: -Math.abs(Math.sin(seconds * 3.8)) * 1.2,
-                rotation: Math.sin(seconds * 4.2) * 0.006,
-                scaleX: 1,
-                scaleY: 1
-            }
         case 'anger':
             return {
                 ...neutral,
@@ -668,12 +736,7 @@ function getMotionTransform(playback: Playback): MotionTransform {
             }
         }
         case 'struggle':
-            return {
-                ...neutral,
-                x: Math.sin(seconds * 15) * 1.1,
-                y: -1.5 - Math.abs(Math.sin(seconds * 7.5)) * 1.2,
-                rotation: Math.sin(seconds * 11) * 0.018
-            }
+            return { x: 0, y: -2.6, rotation: 0, scaleX: 1, scaleY: 1 }
         default:
             return neutral
     }
@@ -796,18 +859,85 @@ function drawFrame(
     context.translate(CANVAS_WIDTH / 2 + motion.x, CHARACTER_BASELINE_Y + motion.y)
     context.rotate(motion.rotation)
     context.scale(motion.scaleX, motion.scaleY)
-    context.drawImage(
-        frame.image,
-        frame.sourceX,
-        frame.sourceY,
-        frame.sourceWidth,
-        frame.sourceHeight,
-        (-frame.sourceWidth * scale) / 2,
-        -clip.anchorY * scale,
-        frame.sourceWidth * scale,
-        frame.sourceHeight * scale
-    )
+    if (clip.action === 'struggle') {
+        drawDragFrameMesh(context, clip, frame)
+    } else {
+        context.drawImage(
+            frame.image,
+            frame.sourceX,
+            frame.sourceY,
+            frame.sourceWidth,
+            frame.sourceHeight,
+            (-frame.sourceWidth * scale) / 2,
+            -clip.anchorY * scale,
+            frame.sourceWidth * scale,
+            frame.sourceHeight * scale
+        )
+    }
     context.restore()
+}
+
+function drawDragFrameMesh(
+    context: CanvasRenderingContext2D,
+    clip: AnimationClip,
+    frame: SpriteFrame
+) {
+    const columns = 16
+    const rows = 32
+    const sourceOverlap = 2
+    const destinationOverlap = 0.72
+    const scale = clip.renderScale
+    const destinationLeft = (-frame.sourceWidth * scale) / 2
+    const destinationTop = -clip.anchorY * scale
+
+    for (let row = 0; row < rows; row++) {
+        const sourceTop = Math.floor((row * frame.sourceHeight) / rows)
+        const sourceBottom = Math.floor(((row + 1) * frame.sourceHeight) / rows)
+
+        for (let column = 0; column < columns; column++) {
+            const sourceLeft = Math.floor((column * frame.sourceWidth) / columns)
+            const sourceRight = Math.floor(((column + 1) * frame.sourceWidth) / columns)
+            const normalizedX = (sourceLeft + sourceRight) / 2 / frame.sourceWidth
+            const normalizedY = (sourceTop + sourceBottom) / 2 / frame.sourceHeight
+            const sideDistance = Math.abs(normalizedX - 0.5)
+
+            const hairSideWeight = smoothStep((sideDistance - 0.12) / 0.23)
+            const hairTopWeight = smoothStep((normalizedY - 0.025) / 0.11)
+            const hairBottomWeight = 1 - smoothStep((normalizedY - 0.46) / 0.09)
+            const hairLengthWeight = 0.22 + clamp01((normalizedY - 0.08) / 0.42) * 0.78
+            const hairWeight = hairSideWeight * hairTopWeight * hairBottomWeight * hairLengthWeight
+
+            const skirtCenterWeight = 1 - smoothStep((sideDistance - 0.28) / 0.15)
+            const skirtTopWeight = smoothStep((normalizedY - 0.31) / 0.12)
+            const skirtBottomWeight = 1 - smoothStep((normalizedY - 0.535) / 0.04)
+            const skirtLengthWeight = 0.18 + clamp01((normalizedY - 0.36) / 0.28) * 0.82
+            const skirtWeight =
+                skirtCenterWeight * skirtTopWeight * skirtBottomWeight * skirtLengthWeight
+
+            const offsetX = hairSwayX * hairWeight * 8.2 + skirtSwayX * skirtWeight * 5.9
+            const offsetY = hairSwayY * hairWeight * 3.5 + skirtSwayY * skirtWeight * 2.45
+            const leftOverlap = column === 0 ? 0 : sourceOverlap
+            const rightOverlap = column === columns - 1 ? 0 : sourceOverlap
+            const topOverlap = row === 0 ? 0 : sourceOverlap
+            const bottomOverlap = row === rows - 1 ? 0 : sourceOverlap
+            const cellSourceLeft = sourceLeft - leftOverlap
+            const cellSourceTop = sourceTop - topOverlap
+            const cellSourceWidth = sourceRight - sourceLeft + leftOverlap + rightOverlap
+            const cellSourceHeight = sourceBottom - sourceTop + topOverlap + bottomOverlap
+
+            context.drawImage(
+                frame.image,
+                frame.sourceX + cellSourceLeft,
+                frame.sourceY + cellSourceTop,
+                cellSourceWidth,
+                cellSourceHeight,
+                destinationLeft + cellSourceLeft * scale + offsetX - destinationOverlap,
+                destinationTop + cellSourceTop * scale + offsetY - destinationOverlap,
+                cellSourceWidth * scale + destinationOverlap * 2,
+                cellSourceHeight * scale + destinationOverlap * 2
+            )
+        }
+    }
 }
 
 function drawGroundShadow(context: CanvasRenderingContext2D, pose: RenderPose, opacity: number) {
@@ -849,7 +979,7 @@ function setSystemAudioActive(active: boolean) {
     if (isSystemAudioActive === active) return
 
     isSystemAudioActive = active
-    if (isDragging || isAngry || activeAction === 'hello' || activeAction === 'angryKick') {
+    if (isDragging || isAngry || activeAction === 'angryKick') {
         return
     }
 
@@ -914,6 +1044,12 @@ function applyUnlockedAnimationSources(): void {
                 : idleFrameSources
     }
 
+    const struggleSpec = actionSpecs.struggle
+    if (struggleSpec.type === 'sequence') {
+        struggleSpec.frameSources =
+            equippedSkinId === LABOR_SKIRT_SKIN_ID ? laborDragFrameSources : classicDragFrameSources
+    }
+
     const angrySpec = actionSpecs.anger
     if (angrySpec.type === 'sequence') {
         angrySpec.frameSources = getCurrentSkinAngryFrameSources()
@@ -942,7 +1078,7 @@ async function reloadSkinDependentAnimations(): Promise<void> {
     const generation = ++assetLoadGeneration
     applyUnlockedAnimationSources()
 
-    const actions: ActionName[] = ['idle', 'anger', 'angryKick']
+    const actions: ActionName[] = ['idle', 'anger', 'angryKick', 'struggle']
     const loadedClips = await Promise.all(
         actions.map(async (action) => {
             const clip = await loadAnimationClip(action, actionSpecs[action])
@@ -959,7 +1095,12 @@ async function reloadSkinDependentAnimations(): Promise<void> {
     petMateModelConfig.scale = animationClips.get('idle')?.renderScale ?? 1
 
     if (activeAction && actions.includes(activeAction)) {
-        const state = activeAction === 'idle' ? { standIdle: true } : { spyBesideWindow: true }
+        const state =
+            activeAction === 'idle'
+                ? { standIdle: true }
+                : activeAction === 'struggle'
+                  ? { dragging: true }
+                  : { spyBesideWindow: true }
         startAction(activeAction, state, { force: true, transition: false })
     }
 }
@@ -1253,6 +1394,10 @@ function updateModelState(state: Partial<ModelStatus>): ModelStatus {
 
 function clamp01(value: number): number {
     return Math.min(Math.max(value, 0), 1)
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+    return Math.min(Math.max(value, minimum), maximum)
 }
 
 function smoothStep(value: number): number {
