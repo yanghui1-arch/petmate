@@ -42,6 +42,8 @@ interface IElectronAPI {
   setChatPrompt: (prompt: string) => Promise<Response<void>>;
   saveChatMessages: () => Promise<Response<void>>;
   setLocalAIEnabled: (enabled: boolean) => Promise<Response<LocalAIStatus>>;
+  downloadLocalAIModels: () => Promise<Response<LocalAIStatus>>;
+  cancelLocalAIModelDownload: () => Promise<Response<LocalAIStatus>>;
 
   // 玩家操作
   consumeItem: (itemId: number, count: number, petmateId: number) => Promise<Response<void>>;

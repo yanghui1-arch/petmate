@@ -12,9 +12,6 @@ $localAiRoot = Join-Path $repoRoot 'resources\local-ai'
 $runtimeRoot = Join-Path $localAiRoot 'runtime'
 $llamaRoot = Join-Path $runtimeRoot 'llama'
 $ttsEnvironment = Join-Path $runtimeRoot 'tts-env'
-$modelsRoot = Join-Path $localAiRoot 'models'
-$llmModelRoot = Join-Path $modelsRoot 'llm'
-$ttsModelRoot = Join-Path $modelsRoot 'tts\Qwen3-TTS-12Hz-0.6B-Base'
 $voicesRoot = Join-Path $localAiRoot 'voices'
 $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) ('petmate-local-ai-' + [Guid]::NewGuid().ToString('N'))
 $substituteDrive = $null
@@ -92,78 +89,9 @@ function Install-LlamaArchive($Asset, [string]$TargetName, [bool]$ContainsServer
     }
 }
 
-function Get-ModelScopeFiles([string]$Model, [string]$Root = '') {
-    $encodedRoot = [Uri]::EscapeDataString($Root)
-    $uri = "https://www.modelscope.cn/api/v1/models/$Model/repo/files?Revision=master&Root=$encodedRoot"
-    $response = Invoke-RestMethod -Uri $uri -Headers @{
-        'User-Agent' = 'Petmate-local-ai-setup'
-    }
-    if (-not $response.Success) {
-        throw "Failed to list ModelScope repository $Model at $Root"
-    }
-
-    foreach ($file in $response.Data.Files) {
-        if ($file.Type -eq 'tree') {
-            Get-ModelScopeFiles -Model $Model -Root $file.Path
-        } elseif ($file.Type -eq 'blob') {
-            $file
-        }
-    }
-}
-
-function Download-ModelScopeFile(
-    [string]$Model,
-    [string]$RepositoryPath,
-    [string]$TargetPath,
-    [long]$ExpectedSize,
-    [string]$ExpectedSha256
-) {
-    if (Test-Path -LiteralPath $TargetPath) {
-        $existing = Get-Item -LiteralPath $TargetPath
-        if ($existing.Length -eq $ExpectedSize) {
-            Write-Step "Already downloaded: $RepositoryPath"
-            return
-        }
-    }
-
-    $parent = Split-Path -Parent $TargetPath
-    New-RequiredDirectory $parent
-    $partialPath = "$TargetPath.incomplete"
-    $urlPath = ($RepositoryPath -split '/') |
-        ForEach-Object { [Uri]::EscapeDataString($_) }
-    $url = "https://modelscope.cn/models/$Model/resolve/master/$($urlPath -join '/')"
-
-    Write-Step "Downloading $Model/$RepositoryPath"
-    & curl.exe `
-        --location `
-        --fail `
-        --retry 5 `
-        --retry-delay 2 `
-        --retry-all-errors `
-        --connect-timeout 30 `
-        --continue-at - `
-        --output $partialPath `
-        $url
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to download $Model/$RepositoryPath"
-    }
-
-    $downloaded = Get-Item -LiteralPath $partialPath
-    if ($downloaded.Length -ne $ExpectedSize) {
-        throw "Size mismatch for ${RepositoryPath}: expected $ExpectedSize, got $($downloaded.Length)"
-    }
-    $actualSha256 = (Get-FileHash -LiteralPath $partialPath -Algorithm SHA256).Hash.ToLowerInvariant()
-    if ($ExpectedSha256 -and $actualSha256 -ne $ExpectedSha256.ToLowerInvariant()) {
-        throw "SHA-256 mismatch for $RepositoryPath"
-    }
-    Move-Item -LiteralPath $partialPath -Destination $TargetPath -Force
-}
-
 try {
     New-RequiredDirectory $temporaryRoot
     New-RequiredDirectory $llamaRoot
-    New-RequiredDirectory $llmModelRoot
-    New-RequiredDirectory $ttsModelRoot
     New-RequiredDirectory $voicesRoot
 
     $selectedBackend = Get-DetectedBackend
@@ -274,26 +202,6 @@ try {
         }
     }
 
-    $llmModelPath = Join-Path $llmModelRoot 'Qwen3.5-2B-Q4_K_M.gguf'
-    Download-ModelScopeFile `
-        -Model 'unsloth/Qwen3.5-2B-GGUF' `
-        -RepositoryPath 'Qwen3.5-2B-Q4_K_M.gguf' `
-        -TargetPath $llmModelPath `
-        -ExpectedSize 1280835840 `
-        -ExpectedSha256 'aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223'
-
-    Write-Step 'Preparing Qwen3-TTS-12Hz-0.6B-Base files (about 2.5 GB)'
-    $ttsFiles = Get-ModelScopeFiles -Model 'Qwen/Qwen3-TTS-12Hz-0.6B-Base'
-    foreach ($file in $ttsFiles) {
-        $targetPath = Join-Path $ttsModelRoot ($file.Path -replace '/', '\')
-        Download-ModelScopeFile `
-            -Model 'Qwen/Qwen3-TTS-12Hz-0.6B-Base' `
-            -RepositoryPath $file.Path `
-            -TargetPath $targetPath `
-            -ExpectedSize $file.Size `
-            -ExpectedSha256 $file.Sha256
-    }
-
     $referenceAudio = Join-Path $voicesRoot 'default.wav'
     if (-not (Test-Path -LiteralPath $referenceAudio)) {
         Write-Step 'Downloading the official Qwen3-TTS reference voice for the first-run demo'
@@ -324,15 +232,14 @@ try {
         installedAt = (Get-Date).ToUniversalTime().ToString('o')
         llamaCppRelease = $installedLlamaRelease
         backend = $selectedBackend
-        llm = 'unsloth/Qwen3.5-2B-GGUF:Q4_K_M'
-        tts = 'Qwen/Qwen3-TTS-12Hz-0.6B-Base'
+        python = 'portable-cpython-3.12'
+        qwenTts = '0.1.1'
     } | ConvertTo-Json
     Set-Content -LiteralPath (Join-Path $localAiRoot 'installation.json') -Value $manifest -Encoding utf8
 
     Write-Host ''
     Write-Host 'Local AI setup complete.' -ForegroundColor Green
     Write-Host "Runtime: $runtimeRoot"
-    Write-Host "Models:  $modelsRoot"
 } finally {
     if ($substituteDrive) {
         & subst $substituteDrive /D

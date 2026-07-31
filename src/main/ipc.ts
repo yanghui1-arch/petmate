@@ -140,6 +140,37 @@ ipcMain.handle(
     }
 )
 
+ipcMain.handle(
+    "download-local-ai-models",
+    async (): Promise<Response<LocalAIStatus>> => {
+        try {
+            const status = await localAIManager.downloadModels()
+            return {
+                code: 200,
+                message: "本地模型下载完成",
+                data: status
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            logger.error(`[local-ai] 下载本地模型失败: ${message}`)
+            return {
+                code: 400,
+                message,
+                data: localAIManager.getStatus()
+            }
+        }
+    }
+)
+
+ipcMain.handle(
+    "cancel-local-ai-model-download",
+    (): Response<LocalAIStatus> => ({
+        code: 200,
+        message: "正在取消模型下载",
+        data: localAIManager.cancelModelDownload()
+    })
+)
+
 /**
  * 消耗物品
  * @param itemId 物品id

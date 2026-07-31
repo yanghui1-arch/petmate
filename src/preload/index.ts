@@ -40,6 +40,8 @@ contextBridge.exposeInMainWorld('api', {
     setChatPrompt: (prompt: string) => ipcRenderer.invoke('set-chat-prompt', prompt),
     saveChatMessages: () => ipcRenderer.invoke('save-chat-messages'),
     setLocalAIEnabled: (enabled: boolean) => ipcRenderer.invoke('set-local-ai-enabled', enabled),
+    downloadLocalAIModels: () => ipcRenderer.invoke('download-local-ai-models'),
+    cancelLocalAIModelDownload: () => ipcRenderer.invoke('cancel-local-ai-model-download'),
     // 玩家的操作
     consumeItem: (itemId: number, count: number, petmateId: number) => ipcRenderer.invoke('consume-item', itemId, count, petmateId),
     completeCommission: (commissionId: string, requirements: { itemId: number, count: number }[], completionCount?: number) => ipcRenderer.invoke('complete-commission', commissionId, requirements, completionCount),

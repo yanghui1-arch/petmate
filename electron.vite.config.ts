@@ -9,7 +9,7 @@ import glsl from 'vite-plugin-glsl';
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
-    publicDir: resolve('resources'),
+    publicDir: false,
   },
   preload: {
     plugins: [externalizeDepsPlugin()]
@@ -44,7 +44,7 @@ export default defineConfig({
         },
       },
     },
-    publicDir: resolve('resources'),
+    publicDir: false,
     build: {
         assetsInlineLimit: 0
     }

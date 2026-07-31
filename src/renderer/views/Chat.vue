@@ -4,22 +4,31 @@
             <span class="chat-title">尤美 Chat</span>
             <div class="runtime-controls">
                 <div class="runtime-toggle">
-                    <span class="status-dot" :class="localAIStatus.phase"></span>
+                    <span class="status-dot" :class="runtimePhaseClass"></span>
                     <span>{{ localAIStatusText }}</span>
                     <n-switch
                         :value="localAIStatus.enabled"
                         :loading="localAISwitching"
-                        :disabled="localAIStatus.phase === 'stopping'"
+                        :disabled="!modelsReady || downloadActive || localAIStatus.phase === 'stopping'"
                         @update:value="toggleLocalAI"
                     />
                 </div>
+                <n-button
+                    v-if="!modelsReady || downloadActive"
+                    size="tiny"
+                    :type="downloadActive ? 'warning' : 'primary'"
+                    ghost
+                    @click="handleModelDownload"
+                >
+                    {{ downloadButtonText }}
+                </n-button>
                 <div class="mute-toggle">
                     <span>{{ isMuted ? '静音' : '语音' }}</span>
                     <n-switch :value="isMuted" @update:value="changeMuted"/>
                 </div>
             </div>
-            <div v-if="localAIStatus.error" class="runtime-error" :title="localAIStatus.error">
-                {{ localAIStatus.error }}
+            <div v-if="runtimeNotice" class="runtime-error" :title="runtimeNotice">
+                {{ runtimeNotice }}
             </div>
         </div>
 
@@ -126,11 +135,51 @@ const localAIStatus = ref<LocalAIStatus>({
     phase: 'off',
     backend: null,
     ttsBackend: null,
+    download: {
+        phase: 'missing',
+        downloadedBytes: 0,
+        totalBytes: 0,
+        progress: 0,
+        currentFile: '',
+        detail: '尚未下载本地模型'
+    },
     llm: { phase: 'off', detail: '未加载' },
     tts: { phase: 'off', detail: '未加载' }
 });
 const localAIReady = computed(() => localAIStatus.value.phase === 'ready');
+const modelsReady = computed(() => localAIStatus.value.download.phase === 'ready');
+const downloadActive = computed(() => (
+    localAIStatus.value.download.phase === 'checking'
+    || localAIStatus.value.download.phase === 'downloading'
+));
+const runtimePhaseClass = computed(() => (
+    downloadActive.value ? 'starting' : localAIStatus.value.phase
+));
+const downloadButtonText = computed(() => {
+    if (localAIStatus.value.download.phase === 'checking') return '取消准备';
+    if (localAIStatus.value.download.phase === 'downloading') {
+        return `取消下载 ${localAIStatus.value.download.progress.toFixed(1)}%`;
+    }
+    if (localAIStatus.value.download.phase === 'error') return '重新下载模型';
+    return '下载本地模型';
+});
+const runtimeNotice = computed(() => {
+    if (localAIStatus.value.error) return localAIStatus.value.error;
+    if (localAIStatus.value.download.error) return localAIStatus.value.download.error;
+    if (downloadActive.value) {
+        const current = localAIStatus.value.download.currentFile;
+        if (current && localAIStatus.value.download.detail.includes(current)) {
+            return localAIStatus.value.download.detail;
+        }
+        return current
+            ? `${localAIStatus.value.download.detail} · ${current}`
+            : localAIStatus.value.download.detail;
+    }
+    return '';
+});
 const localAIStatusText = computed(() => {
+    if (downloadActive.value) return `模型下载 ${localAIStatus.value.download.progress.toFixed(1)}%`;
+    if (!modelsReady.value) return '本地 AI 未安装';
     switch (localAIStatus.value.phase) {
         case 'starting':
             if (localAIStatus.value.tts.phase === 'starting') return '正在加载语音模型';
@@ -146,6 +195,8 @@ const localAIStatusText = computed(() => {
     }
 });
 const inputPlaceholder = computed(() => {
+    if (downloadActive.value) return `模型下载中 ${localAIStatus.value.download.progress.toFixed(1)}%…`;
+    if (!modelsReady.value) return '请先点击顶部的“下载本地模型”';
     if (localAIStatus.value.phase === 'starting') return '模型加载中，请稍候…';
     if (localAIStatus.value.phase === 'error') return '本地模型启动失败，请查看顶部提示';
     if (!localAIReady.value) return '请先打开顶部的「本地 AI」开关';
@@ -295,7 +346,7 @@ const finishWhenChunksProcessed = async () => {
 };
 
 const toggleLocalAI = async (enabled: boolean) => {
-    if (localAISwitching.value) return;
+    if (localAISwitching.value || !modelsReady.value || downloadActive.value) return;
     localAISwitching.value = true;
     localAIStatus.value = {
         ...localAIStatus.value,
@@ -316,6 +367,25 @@ const toggleLocalAI = async (enabled: boolean) => {
         console.error('[local-ai] 切换失败:', error);
     } finally {
         localAISwitching.value = false;
+    }
+};
+
+const handleModelDownload = async () => {
+    try {
+        if (downloadActive.value) {
+            const response = await window.api.cancelLocalAIModelDownload();
+            if (response.data) localAIStatus.value = response.data;
+            return;
+        }
+        const response = await window.api.downloadLocalAIModels();
+        if (response.data) localAIStatus.value = response.data;
+        if (response.code !== 200) {
+            throw new Error(response.message || '模型下载失败');
+        }
+    } catch (error) {
+        const latest = await window.api.getLocalAIStatus();
+        if (latest.data) localAIStatus.value = latest.data;
+        console.error('[local-ai] 模型下载失败:', error);
     }
 };
 
@@ -473,7 +543,7 @@ onUnmounted(async () => {
         align-items: center;
         justify-content: space-between;
         position: relative;
-        padding: 8px 12px;
+        padding: 8px 58px 8px 12px;
         box-sizing: border-box;
         border-radius: 10px;
         margin-bottom: 10px;
@@ -490,8 +560,11 @@ onUnmounted(async () => {
         .runtime-controls {
             display: flex;
             align-items: center;
-            gap: 12px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 6px 10px;
             font-size: 11px;
+            max-width: 255px;
         }
 
         .runtime-toggle,

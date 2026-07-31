@@ -269,6 +269,7 @@ ipcMain.on('quit-app', () => {
 })
 
 app.on('before-quit', () => {
+    localAIManager.cancelModelDownload()
     void localAIManager.stop()
     stopPetmateWindowDrag()
     systemAudioActivityMonitor?.stop()

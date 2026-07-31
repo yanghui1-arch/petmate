@@ -18,6 +18,7 @@
     "docs:build": "npm run docs:generate",
     "setup:local-ai": "powershell -ExecutionPolicy Bypass -File scripts/setup-local-ai.ps1",
     "test:local-ai": "node scripts/test-local-ai.mjs",
+    "test:model-download": "node scripts/test-model-download.mjs",
     "build": "electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
@@ -73,6 +74,13 @@
   "build": {
     "appId": "com.mategamer.Petmate",
     "productName": "Petmate",
+    "files": [
+      "out/**/*",
+      "resources/data/**/*",
+      "resources/icon.png",
+      "resources/icon.ico",
+      "package.json"
+    ],
     "extraResources": [
       {
         "from": "resources/html",
@@ -86,6 +94,8 @@
         "to": "local-ai",
         "filter": [
           "**/*",
+          "!models/**",
+          "!installation.json",
           "!**/.cache/**",
           "!**/*.incomplete"
         ]

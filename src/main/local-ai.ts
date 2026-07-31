@@ -8,6 +8,10 @@ import { dirname, join, resolve } from 'path'
 import OpenAI from 'openai'
 import { ChatCompletionStream } from 'openai/resources/chat/completions'
 import logger from './log'
+import {
+    LocalAIModelDownloader,
+    type LocalAIModelDownloadStatus
+} from './local-ai-download'
 import type { ChatMessage } from './llm'
 
 export type LocalAIPhase = 'off' | 'starting' | 'ready' | 'stopping' | 'error'
@@ -24,6 +28,7 @@ export interface LocalAIStatus {
     phase: LocalAIPhase
     backend: LocalAIBackend | null
     ttsBackend: string | null
+    download: LocalAIModelDownloadStatus
     llm: LocalAIComponentStatus
     tts: LocalAIComponentStatus
     error?: string
@@ -40,6 +45,14 @@ function initialStatus(): LocalAIStatus {
         phase: 'off',
         backend: null,
         ttsBackend: null,
+        download: {
+            phase: 'missing',
+            downloadedBytes: 0,
+            totalBytes: 0,
+            progress: 0,
+            currentFile: '',
+            detail: '尚未下载本地模型'
+        },
         llm: { phase: 'off', detail: '未加载' },
         tts: { phase: 'off', detail: '未加载' }
     }
@@ -58,8 +71,13 @@ class LocalAIManager {
     private ttsPort: number | null = null
     private stopping = false
     private readonly apiKey = randomBytes(24).toString('hex')
+    private modelDownloader: LocalAIModelDownloader | null = null
+    private synthesisQueue: Promise<void> = Promise.resolve()
 
     getStatus(): LocalAIStatus {
+        if (app.isReady()) {
+            this.status.download = this.getModelDownloader().getStatus()
+        }
         return structuredClone(this.status)
     }
 
@@ -73,6 +91,21 @@ class LocalAIManager {
         } else {
             await this.stop()
         }
+        return this.getStatus()
+    }
+
+    async downloadModels(): Promise<LocalAIStatus> {
+        if (this.status.enabled) {
+            throw new Error('请先关闭本地 AI，再下载或修复模型')
+        }
+        await this.getModelDownloader().download()
+        this.status.download = this.getModelDownloader().getStatus()
+        this.publishStatus()
+        return this.getStatus()
+    }
+
+    cancelModelDownload(): LocalAIStatus {
+        this.getModelDownloader().cancel()
         return this.getStatus()
     }
 
@@ -94,6 +127,12 @@ class LocalAIManager {
     }
 
     async synthesize(text: string): Promise<Buffer> {
+        const task = this.synthesisQueue.then(() => this.performSynthesis(text))
+        this.synthesisQueue = task.then(() => undefined, () => undefined)
+        return task
+    }
+
+    private async performSynthesis(text: string): Promise<Buffer> {
         if (!this.isReady() || this.ttsPort === null) {
             throw new Error('本地 TTS 尚未就绪')
         }
@@ -119,11 +158,16 @@ class LocalAIManager {
         if (this.status.phase === 'ready' || this.status.phase === 'starting') return
 
         this.stopping = false
+        const download = this.getModelDownloader().getStatus()
+        if (download.phase !== 'ready' || !this.getModelDownloader().isInstalled()) {
+            throw new Error('本地模型尚未下载，请先点击聊天页的“下载模型”按钮')
+        }
         this.status = {
             enabled: true,
             phase: 'starting',
             backend: null,
             ttsBackend: null,
+            download,
             llm: { phase: 'starting', detail: '正在检查 llama.cpp 与模型文件' },
             tts: { phase: 'off', detail: '等待加载' }
         }
@@ -135,10 +179,18 @@ class LocalAIManager {
             const llamaExecutable = join(paths.llamaRuntimeRoot, backend, process.platform === 'win32' ? 'llama-server.exe' : 'llama-server')
 
             this.assertFile(llamaExecutable, `缺少 llama.cpp ${backend} 运行时`)
-            this.assertFile(paths.llmModel, `缺少大语言模型 ${LLM_MODEL_NAME}`)
+            this.assertFile(
+                paths.llmModel,
+                `缺少大语言模型 ${LLM_MODEL_NAME}`,
+                '请在聊天页重新下载模型'
+            )
             this.assertFile(paths.pythonExecutable, '缺少 Qwen3-TTS Python 运行环境')
             this.assertFile(paths.ttsServer, '缺少 TTS 本地服务脚本')
-            this.assertFile(join(paths.ttsModel, 'config.json'), `缺少 TTS 模型 ${TTS_MODEL_NAME}`)
+            this.assertFile(
+                join(paths.ttsModel, 'config.json'),
+                `缺少 TTS 模型 ${TTS_MODEL_NAME}`,
+                '请在聊天页重新下载模型'
+            )
             this.assertFile(paths.referenceAudio, '缺少 TTS 参考音频')
             this.assertFile(paths.referenceText, '缺少 TTS 参考文本')
 
@@ -225,25 +277,40 @@ class LocalAIManager {
 
     private resolvePaths() {
         const customRoot = process.env.PETMATE_LOCAL_AI_DIR
-        const root = customRoot
+        const runtimeRoot = customRoot
             ? resolve(customRoot)
             : app.isPackaged
                 ? join(process.resourcesPath, 'local-ai')
                 : join(app.getAppPath(), 'resources', 'local-ai')
+        const modelsRoot = process.env.PETMATE_LOCAL_AI_MODELS_DIR
+            ? resolve(process.env.PETMATE_LOCAL_AI_MODELS_DIR)
+            : join(app.getPath('userData'), 'local-ai', 'models')
         const pythonExecutable = process.platform === 'win32'
-            ? join(root, 'runtime', 'tts-env', 'python.exe')
-            : join(root, 'runtime', 'tts-env', 'bin', 'python')
+            ? join(runtimeRoot, 'runtime', 'tts-env', 'python.exe')
+            : join(runtimeRoot, 'runtime', 'tts-env', 'bin', 'python')
 
         return {
-            root,
-            llamaRuntimeRoot: join(root, 'runtime', 'llama'),
+            runtimeRoot,
+            modelsRoot,
+            llamaRuntimeRoot: join(runtimeRoot, 'runtime', 'llama'),
             pythonExecutable,
-            ttsServer: join(root, 'tts_server.py'),
-            llmModel: join(root, 'models', 'llm', LLM_MODEL_NAME),
-            ttsModel: join(root, 'models', 'tts', TTS_MODEL_NAME),
-            referenceAudio: join(root, 'voices', 'default.wav'),
-            referenceText: join(root, 'voices', 'default.txt')
+            ttsServer: join(runtimeRoot, 'tts_server.py'),
+            llmModel: join(modelsRoot, 'llm', LLM_MODEL_NAME),
+            ttsModel: join(modelsRoot, 'tts', TTS_MODEL_NAME),
+            referenceAudio: join(runtimeRoot, 'voices', 'default.wav'),
+            referenceText: join(runtimeRoot, 'voices', 'default.txt')
         }
+    }
+
+    private getModelDownloader(): LocalAIModelDownloader {
+        if (!this.modelDownloader) {
+            const { modelsRoot } = this.resolvePaths()
+            this.modelDownloader = new LocalAIModelDownloader(modelsRoot, status => {
+                this.status.download = status
+                this.publishStatus()
+            })
+        }
+        return this.modelDownloader
     }
 
     private selectBackend(runtimeRoot: string): LocalAIBackend {
@@ -445,9 +512,13 @@ class LocalAIManager {
         void this.stopProcesses()
     }
 
-    private assertFile(path: string, label: string): void {
+    private assertFile(
+        path: string,
+        label: string,
+        recovery = '请先运行 npm run setup:local-ai'
+    ): void {
         if (!existsSync(path)) {
-            throw new Error(`${label}：${path}。请先运行 npm run setup:local-ai`)
+            throw new Error(`${label}：${path}。${recovery}`)
         }
     }
 

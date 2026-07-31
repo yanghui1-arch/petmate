@@ -1,10 +1,17 @@
 import { readonly, ref } from 'vue'
 
+interface QueuedAudio {
+    chunks: ArrayBuffer[]
+    mimeType: string
+}
+
 const isMuted = ref(false)
 let audioElement: HTMLAudioElement | null = null
 let audioObjectUrl: string | null = null
-let audioChunks: ArrayBuffer[] = []
-let audioFormat = 'mp3'
+let pendingCompressedChunks: ArrayBuffer[] = []
+let playbackQueue: QueuedAudio[] = []
+let playing = false
+let streamFinished = false
 let initialized = false
 
 export function useAudio() {
@@ -14,59 +21,74 @@ export function useAudio() {
 
         window.api.onAudioChunk((_, audio, format = 'mp3') => {
             if (isMuted.value) return
-            audioFormat = format
+            streamFinished = false
             const source = audio as Uint8Array
             const copy = new Uint8Array(source.byteLength)
             copy.set(source)
-            audioChunks.push(copy.buffer)
+
+            if (format === 'wav') {
+                playbackQueue.push({
+                    chunks: [copy.buffer],
+                    mimeType: 'audio/wav'
+                })
+                void playNext()
+            } else {
+                pendingCompressedChunks.push(copy.buffer)
+            }
         })
 
         window.api.onTTSFinished(() => {
-            if (isMuted.value || audioChunks.length === 0) {
-                resetPendingAudio()
-                return
+            if (pendingCompressedChunks.length > 0) {
+                playbackQueue.push({
+                    chunks: pendingCompressedChunks,
+                    mimeType: 'audio/mpeg'
+                })
+                pendingCompressedChunks = []
             }
-            void playPendingAudio()
+            streamFinished = true
+            void playNext()
         })
 
         window.api.onTTSFailed(() => {
-            resetPendingAudio()
+            pendingCompressedChunks = []
+            streamFinished = true
+            void playNext()
         })
     }
 
-    const playPendingAudio = async () => {
-        const chunks = audioChunks
-        const format = audioFormat
-        resetPendingAudio()
-
-        if (audioElement) {
-            audioElement.pause()
-            audioElement.src = ''
-        }
-        if (audioObjectUrl) {
-            URL.revokeObjectURL(audioObjectUrl)
-            audioObjectUrl = null
+    const playNext = async () => {
+        if (playing || isMuted.value) return
+        const next = playbackQueue.shift()
+        if (!next) {
+            if (streamFinished) resetStreamState()
+            return
         }
 
-        const mimeType = format === 'wav' ? 'audio/wav' : 'audio/mpeg'
-        audioObjectUrl = URL.createObjectURL(new Blob(chunks, { type: mimeType }))
+        playing = true
+        releaseCurrentPlayer()
+        audioObjectUrl = URL.createObjectURL(new Blob(next.chunks, { type: next.mimeType }))
         audioElement = new Audio(audioObjectUrl)
-        audioElement.addEventListener('ended', releasePlayer, { once: true })
+
+        let settled = false
+        const finishCurrent = () => {
+            if (settled) return
+            settled = true
+            releaseCurrentPlayer()
+            playing = false
+            void playNext()
+        }
+        audioElement.addEventListener('ended', finishCurrent, { once: true })
+        audioElement.addEventListener('error', finishCurrent, { once: true })
 
         try {
             await audioElement.play()
         } catch (error) {
             console.error('[audio] 播放 TTS 音频失败:', error)
-            releasePlayer()
+            finishCurrent()
         }
     }
 
-    const resetPendingAudio = () => {
-        audioChunks = []
-        audioFormat = 'mp3'
-    }
-
-    const releasePlayer = () => {
+    const releaseCurrentPlayer = () => {
         if (audioElement) {
             audioElement.pause()
             audioElement.src = ''
@@ -78,6 +100,11 @@ export function useAudio() {
         }
     }
 
+    const resetStreamState = () => {
+        pendingCompressedChunks = []
+        streamFinished = false
+    }
+
     const clearAudioResources = () => {
         if (initialized) {
             window.api.removeAllAudioChunkListeners()
@@ -85,8 +112,11 @@ export function useAudio() {
             window.api.removeAllTTSFailedListeners()
             initialized = false
         }
-        resetPendingAudio()
-        releasePlayer()
+        pendingCompressedChunks = []
+        playbackQueue = []
+        playing = false
+        streamFinished = false
+        releaseCurrentPlayer()
     }
 
     const changeMuted = (newValue: boolean) => {
