@@ -3,10 +3,34 @@ import type { Response } from '../../types/response'
 import { PlayerInfo } from '../types/player'
 import { ChatMessage } from '../types/llm'
 
-
 // 全局状态 - 单个实例共享整个应用
 const playerData = ref<PlayerInfo | null>(null)
 const error = ref<string | null>(null)
+const PLAYER_DATA_SYNC_CHANNEL = 'petmate-player-data-sync'
+
+type PlayerDataSyncMessage = {
+    type: 'activity-changed'
+    petmateId: number
+}
+
+let playerDataSyncChannel: BroadcastChannel | null | undefined
+
+function getPlayerDataSyncChannel(): BroadcastChannel | null {
+    if (playerDataSyncChannel !== undefined) return playerDataSyncChannel
+
+    playerDataSyncChannel =
+        typeof BroadcastChannel === 'undefined'
+            ? null
+            : new BroadcastChannel(PLAYER_DATA_SYNC_CHANNEL)
+    return playerDataSyncChannel
+}
+
+function notifyActivityChanged(petmateId: number): void {
+    getPlayerDataSyncChannel()?.postMessage({
+        type: 'activity-changed',
+        petmateId
+    } satisfies PlayerDataSyncMessage)
+}
 
 export function usePlayer() {
     /**
@@ -34,10 +58,14 @@ export function usePlayer() {
             error.value = err instanceof Error ? err.message : 'Unknown error occurred'
             console.error('Failed to refresh player data:', err)
         }
-    };
+    }
 
     // 消耗物品
-    const consumeItem = async (itemId: number, count: number, petmateId: number): Promise<boolean> => {
+    const consumeItem = async (
+        itemId: number,
+        count: number,
+        petmateId: number
+    ): Promise<boolean> => {
         try {
             const response = await window.api.consumeItem(itemId, count, petmateId)
             if (response.code === 200) {
@@ -79,6 +107,7 @@ export function usePlayer() {
             if (response.code === 200) {
                 // 开启活动后重新获取玩家数据
                 await refreshPlayerData()
+                notifyActivityChanged(petmateId)
                 return true
             } else {
                 throw new Error(response.message || 'Failed to start activity')
@@ -96,6 +125,7 @@ export function usePlayer() {
             const response = await window.api.cancelActivity(petmateId)
             if (response.code === 200) {
                 await refreshPlayerData()
+                notifyActivityChanged(petmateId)
                 return true
             } else {
                 throw new Error(response.message || 'Failed to cancel activity')
@@ -113,6 +143,7 @@ export function usePlayer() {
             const response = await window.api.claimActivityReward(petmateId)
             if (response.code === 200) {
                 await refreshPlayerData()
+                notifyActivityChanged(petmateId)
                 return true
             } else {
                 throw new Error(response.message || 'Failed to end activity reward')
@@ -123,7 +154,6 @@ export function usePlayer() {
             return false
         }
     }
-
 
     /**
      * 手动领取心愿奖励
@@ -173,6 +203,21 @@ export function usePlayer() {
         }
     }
 
+    const subscribeToPlayerDataSync = (
+        callback: (message: PlayerDataSyncMessage) => void
+    ): (() => void) => {
+        const channel = getPlayerDataSyncChannel()
+        if (!channel) return () => {}
+
+        const listener = (event: MessageEvent<PlayerDataSyncMessage>) => {
+            if (event.data?.type === 'activity-changed') {
+                callback(event.data)
+            }
+        }
+        channel.addEventListener('message', listener)
+        return () => channel.removeEventListener('message', listener)
+    }
+
     // 返回只读引用，但提供更新方法
     return {
         // 只读数据访问
@@ -182,6 +227,7 @@ export function usePlayer() {
         // 数据管理方法
         refreshPlayerData,
         initPlayerData,
+        subscribeToPlayerDataSync,
 
         // 操作方法，自动同步数据
         consumeItem,
@@ -192,6 +238,6 @@ export function usePlayer() {
         claimWishReward,
 
         // 聊天
-        chat,
+        chat
     }
 }
