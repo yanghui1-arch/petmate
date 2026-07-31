@@ -41,3 +41,11 @@ coverage/
 out/
 
 steamworks_sdk/
+
+# Local AI models and generated runtimes (download with npm run setup:local-ai)
+resources/local-ai/models/
+resources/local-ai/runtime/
+resources/local-ai/voices/*.wav
+resources/local-ai/installation.json
+__pycache__/
+*.pyc

@@ -2,11 +2,11 @@ import { BrowserWindow, WebContents } from 'electron';
 import Store from 'electron-store';
 import logger  from './log';
 import { ChatLLMConfigError, LLMConfigError, TTSProcessError } from './error';
-import { OpenAI } from 'openai';
 import { ChatCompletionStream } from 'openai/resources/chat/completions';
 import { v4 as uuidv4 } from 'uuid';
 import { WebSocket } from 'ws';
 import { handleChatAchievement } from './modules/player/achieve';
+import { localAIManager } from './local-ai';
 
 export interface ChatLLMConfig {
     model: string;
@@ -120,9 +120,6 @@ const DEFAULT_TTS_VOICE: TTSVoice = {
 let currentChatLLMConfig: ChatLLMConfig = DEFAULT_CHAT_LLM_CONFIG;
 let currentTTSLLMConfig: TTSLLMConfig = DEFAULT_TTS_LLM_CONFIG;
 
-// chat client
-let chatClient: OpenAI | null = null;
-
 // chat history message
 let chatHistoryMessages: HistoryChatMessage[] = [];
 
@@ -186,56 +183,8 @@ interface TTSFinishTask {
  * @throws LLMConfigError 如果大模型配置错误
  */
 function initLLM(): void {
-    initLLMClient();
-    logger.info('[llm] 大模型客户端初始化成功');
     initChatHistoryMessages();
     logger.info('[llm] 聊天历史记录初始化成功');
-}
-
-/**
- * 初始化所有大模型的客户端
- * @throws LLMConfigError 如果初始化大模型配置出错的话会抛出这个异常
- */
-function initLLMClient(): void {
-    try {
-        initLLMConfig();
-        // 初始化
-        // 文本
-        chatClient = new OpenAI({
-            baseURL: currentChatLLMConfig.baseUrl,
-            apiKey: currentChatLLMConfig.apiKey
-        })
-        // tts
-
-    } catch (error) {
-        if (error instanceof LLMConfigError) {
-            logger.error('[llm] 大模型配置错误，请在设置中配置');
-        } else {
-            logger.error('[llm] 大模型客户端初始化失败', error);
-        }
-        throw error;
-    }
-}
-
-/**
- * 初始化所有大模型的模型配置
- * 如果模型配置有一个有问题，则初始化失败，会抛出异常的
- * @throws LLMConfigError 如果模型未设置API密钥或API地址
- */
-function initLLMConfig(): void {
-    const chatLLMConfig: ChatLLMConfig = getChatLLMConfig();
-    const ttsLLMConfig: TTSLLMConfig = getTTSLLMConfig();
-    if (chatLLMConfig.apiKey === '' || ttsLLMConfig.apiKey === '') {
-        logger.error('[llm] 未设置API密钥，请在设置中配置');
-        throw new LLMConfigError('未设置API密钥');
-    }
-    if (chatLLMConfig.baseUrl === '' || ttsLLMConfig.baseUrl === '') {
-        logger.error('[llm] 未设置API地址，请在设置中配置');
-        throw new LLMConfigError('未设置API地址');
-    }
-    currentChatLLMConfig = chatLLMConfig;
-    currentTTSLLMConfig = ttsLLMConfig;
-    logger.info('[llm] 大模型配置初始化成功');
 }
 
 /**
@@ -443,14 +392,10 @@ function clearChatHistoryMessages(): void {
  * @throws LLMConfigError 如果文本大模型客户端未初始化
  */
 async function postChatMessage(messages: ChatMessage[]): Promise<ChatCompletionStream> {
-    if (!chatClient) {
-        throw new LLMConfigError('文本大模型客户端未初始化');
+    if (!localAIManager.isReady()) {
+        throw new LLMConfigError('本地模型尚未就绪，请先打开本地 AI 开关');
     }
-    const completion = await chatClient.chat.completions.stream({
-        model: currentChatLLMConfig.model,
-        messages: messages,
-    })
-    return completion;
+    return localAIManager.createChatStream(messages);
 }
 
 /**
@@ -628,72 +573,51 @@ function waitForTTSReady(timeout: number = 5000): Promise<boolean> {
  * @throws ChatLLMConfigError 如果传过来的聊天信息不是用户消息
  * @throws LLMConfigError 如果大模型配置错误
  */
-async function chat(message: ChatMessage, sender: WebContents): Promise<void> {
-    try {
-        // 如果websocket没建立连接，先建立一下连接
-        if (!ttsWebsocket && !ttsStarted) {
-            ttsTaskId = connectTTSWebsocket(currentTTSLLMConfig, sender);
-        }
-        if (message.role !== 'user') {
-            throw new ChatLLMConfigError("[llm] 请确保传过来的聊天信息是用户消息");
-        }
-        // 等待TTS任务准备就绪
-        // 必须得保证TTS任务准备就绪，不然会因为websocket的异步性导致ttsStarted=False
-        const ttsReady = await waitForTTSReady();
-        if (!ttsReady) {
-            throw new TTSProcessError('TTS任务初始化超时，请检查网络连接和API配置');
-        }
-
-        // 建立好连接并确认好用户信息之后，将当前的聊天信息加入到历史聊天信息中
-        chatHistoryMessages.push({
-            chatMessage: message,
-            createdAt: new Date()
-        });
-        // [future] 得在这里再考虑一下上下文长度问题，但这一个版本先不考虑
-
-        const mainWindow = BrowserWindow.fromWebContents(sender);
-        const runner: ChatCompletionStream = await postChatMessage(chatHistoryMessages.map(message => message.chatMessage));
-        let response: string = "";
-        for await (const chunk of runner) {
-            const content = chunk.choices[0].delta.content ?? "";
-            if (content !== "") {
-                tts(content);
-                response += content;
-                mainWindow?.webContents.send('chat-chunk', content);
-            }
-        }
-
-        // 将回复信息加入到历史聊天信息中
-        chatHistoryMessages.push({
-            chatMessage: ChatMessageFactory.asAssistant(response),
-            createdAt: new Date()
-        });
-        saveChatHistoryMessages()
-
-        // 发送一个finished task事件
-        if (!ttsTaskId) throw new TTSProcessError('无法正确获取tts任务id，导致无法发送finished task事件');
-
-        const finishTaskMessage: TTSFinishTask = {
-            header: {
-                action: 'finish-task',
-                task_id: ttsTaskId,
-                streaming: 'duplex'
-            },
-            payload: {
-                input: {}
-            }
-        }
-        ttsWebsocket?.send(JSON.stringify(finishTaskMessage));
-
-        // 更新聊天成就
-        handleChatAchievement();
-    } catch (error) {
-        ttsTaskId = null;
-        ttsStarted = false;
-        ttsWebsocket?.close();
-        ttsWebsocket = null;
-        throw error;
+async function chat(message: ChatMessage, sender: WebContents, speak: boolean = true): Promise<void> {
+    if (!localAIManager.isReady()) {
+        throw new LLMConfigError('本地模型尚未就绪，请先打开聊天页顶部的本地 AI 开关');
     }
+    if (message.role !== 'user') {
+        throw new ChatLLMConfigError("[llm] 请确保传过来的聊天信息是用户消息");
+    }
+
+    chatHistoryMessages.push({
+        chatMessage: message,
+        createdAt: new Date()
+    });
+
+    const mainWindow = BrowserWindow.fromWebContents(sender);
+    const runner: ChatCompletionStream = await postChatMessage(
+        chatHistoryMessages.map(historyMessage => historyMessage.chatMessage)
+    );
+    let response: string = "";
+    for await (const chunk of runner) {
+        const content = chunk.choices[0].delta.content ?? "";
+        if (content !== "") {
+            response += content;
+            mainWindow?.webContents.send('chat-chunk', content);
+        }
+    }
+
+    chatHistoryMessages.push({
+        chatMessage: ChatMessageFactory.asAssistant(response),
+        createdAt: new Date()
+    });
+    saveChatHistoryMessages();
+    mainWindow?.webContents.send('chat-finished');
+
+    if (speak && response.trim() !== "") {
+        try {
+            const audio = await localAIManager.synthesize(response);
+            mainWindow?.webContents.send('tts-audio-chunk', audio, 'wav');
+            mainWindow?.webContents.send('tts-finished');
+        } catch (error) {
+            logger.error(`[local-ai] TTS 合成失败，但文本回复已完成: ${error}`);
+            mainWindow?.webContents.send('tts-failed', error instanceof Error ? error.message : String(error));
+        }
+    }
+
+    handleChatAchievement();
 }
 
 

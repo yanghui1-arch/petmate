@@ -178,15 +178,15 @@ export function usePlayer() {
     }
 
     // 聊天
-    const chat = async (message: ChatMessage): Promise<boolean> => {
+    const chat = async (message: ChatMessage, speak: boolean = true): Promise<boolean> => {
         try {
-            const response = await window.api.chat(message)
+            const response = await window.api.chat(message, speak)
             if (response.code === 200) {
                 return true
             } else {
                 // 超过上下文了，需要重新发送一次chat
                 if (response.code === 401) {
-                    const response = await window.api.chat(message)
+                    const response = await window.api.chat(message, speak)
                     if (response.code === 200) {
                         return true
                     } else {

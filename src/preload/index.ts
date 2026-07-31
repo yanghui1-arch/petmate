@@ -5,6 +5,7 @@ import { ActivityInfo } from '../main/types/activity'
 import { ItemType } from '../main/types/item'
 import type { PlayerResourceState } from '../main/types/player-resource'
 import { WindowEvent } from '../main/window-monitor'
+import { LocalAIStatus } from '../main/local-ai'
 
 /**
  * API 调用接口
@@ -29,6 +30,7 @@ contextBridge.exposeInMainWorld('api', {
     getChatPrompt: () => ipcRenderer.invoke('get-chat-prompt'),
     getHistoryChatMessages: () => ipcRenderer.invoke('get-history-chat-messages'),
     getPlayerResources: () => ipcRenderer.invoke('get-player-resources'),
+    getLocalAIStatus: () => ipcRenderer.invoke('get-local-ai-status'),
 
     // set && update && add
     setChatLLMConfig: (config: ChatLLMConfig) => ipcRenderer.invoke('set-chat-llm-config', config),
@@ -37,11 +39,12 @@ contextBridge.exposeInMainWorld('api', {
     addTTSVoice: (voice: TTSVoice) => ipcRenderer.invoke('add-tts-voice', voice),
     setChatPrompt: (prompt: string) => ipcRenderer.invoke('set-chat-prompt', prompt),
     saveChatMessages: () => ipcRenderer.invoke('save-chat-messages'),
+    setLocalAIEnabled: (enabled: boolean) => ipcRenderer.invoke('set-local-ai-enabled', enabled),
     // 玩家的操作
     consumeItem: (itemId: number, count: number, petmateId: number) => ipcRenderer.invoke('consume-item', itemId, count, petmateId),
     completeCommission: (commissionId: string, requirements: { itemId: number, count: number }[], completionCount?: number) => ipcRenderer.invoke('complete-commission', commissionId, requirements, completionCount),
     buyItem: (itemId: number, count: number) => ipcRenderer.invoke('buy-item', itemId, count),
-    chat: (message: ChatMessage) => ipcRenderer.invoke('chat', message),
+    chat: (message: ChatMessage, speak: boolean = true) => ipcRenderer.invoke('chat', message, speak),
     startActivity: (petmateId: number, activityId: number) => ipcRenderer.invoke('start-activity', petmateId, activityId),
     cancelActivity: (petmateId: number) => ipcRenderer.invoke('cancel-activity', petmateId),
     claimActivityReward: (petmateId: number) => ipcRenderer.invoke('claim-activity-reward', petmateId),
@@ -53,7 +56,9 @@ contextBridge.exposeInMainWorld('api', {
     cloneVoice: (url: string) => ipcRenderer.invoke('clone-voice', url),
     // 监听
     onTextChunk: (callback: (event: IpcRendererEvent, text: string) => void) => ipcRenderer.on('chat-chunk', callback),
-    onAudioChunk: (callback: (event: IpcRendererEvent, audio: Buffer) => void) => ipcRenderer.on('tts-audio-chunk', callback),
+    onChatFinished: (callback: (event: IpcRendererEvent) => void) => ipcRenderer.on('chat-finished', callback),
+    onAudioChunk: (callback: (event: IpcRendererEvent, audio: Buffer, format?: string) => void) => ipcRenderer.on('tts-audio-chunk', callback),
+    onLocalAIStatus: (callback: (event: IpcRendererEvent, status: LocalAIStatus) => void) => ipcRenderer.on('local-ai-status', callback),
     onWishGenerated: (callback: (event: IpcRendererEvent, petmateId: number) => void) => ipcRenderer.on('wish-generated', callback),
     onResetPetmatePosition: (callback: (event: IpcRendererEvent) => void) => ipcRenderer.on('reset-petmate-position', callback),
 
@@ -68,11 +73,14 @@ contextBridge.exposeInMainWorld('api', {
     onPlayerResourcesUpdated: (callback: (event: IpcRendererEvent, resources: PlayerResourceState) => void) => ipcRenderer.on('player-resources-updated', callback),
 
     // 移除监听器
+    removeAllTextChunkListeners: () => ipcRenderer.removeAllListeners('chat-chunk'),
+    removeAllChatFinishedListeners: () => ipcRenderer.removeAllListeners('chat-finished'),
     removeAllAudioChunkListeners: () => ipcRenderer.removeAllListeners('tts-audio-chunk'),
     removeAllTTSFinishedListeners: () => ipcRenderer.removeAllListeners('tts-finished'),
     removeAllTTSFailedListeners: () => ipcRenderer.removeAllListeners('tts-failed'),
     removeAllSystemAudioActiveListeners: () => ipcRenderer.removeAllListeners('system-audio-active'),
     removeAllPlayerResourcesUpdatedListeners: () => ipcRenderer.removeAllListeners('player-resources-updated'),
+    removeAllLocalAIStatusListeners: () => ipcRenderer.removeAllListeners('local-ai-status'),
     onShowContextMenu: (callback: (event: IpcRendererEvent) => void) => ipcRenderer.on('show-context-menu', callback),
     getSystemAudioActive: () => ipcRenderer.invoke('get-system-audio-active'),
     getPetmateWindowPosition: () => ipcRenderer.invoke('get-petmate-window-position'),

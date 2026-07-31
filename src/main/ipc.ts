@@ -51,6 +51,7 @@ import * as fs from 'fs';
 import axios, { AxiosResponse } from 'axios';
 import { Youmei } from './modules/petmate/youmei';
 import { greenworksManager } from './greenworks';
+import { localAIManager, LocalAIStatus } from './local-ai';
 
 /**
  * 初始化设置数据
@@ -109,6 +110,35 @@ ipcMain.handle("init-llm", (_: IpcMainInvokeEvent): Response<void> => {
         } as Response<void>;
     }
 })
+
+ipcMain.handle("get-local-ai-status", (_: IpcMainInvokeEvent): Response<LocalAIStatus> => {
+    return {
+        code: 200,
+        data: localAIManager.getStatus()
+    }
+})
+
+ipcMain.handle(
+    "set-local-ai-enabled",
+    async (_: IpcMainInvokeEvent, enabled: boolean): Promise<Response<LocalAIStatus>> => {
+        try {
+            const status = await localAIManager.setEnabled(enabled)
+            return {
+                code: 200,
+                message: enabled ? "本地模型加载成功" : "本地模型已卸载",
+                data: status
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            logger.error(`[local-ai] 切换本地模型失败: ${message}`)
+            return {
+                code: 400,
+                message,
+                data: localAIManager.getStatus()
+            }
+        }
+    }
+)
 
 /**
  * 消耗物品
@@ -342,9 +372,9 @@ ipcMain.handle("listen-tts-voice-sample", async (event: IpcMainInvokeEvent, voic
  * @param message 聊天信息
  * @returns 发送聊天信息成功或失败
  */
-ipcMain.handle("chat", async (event: IpcMainInvokeEvent, message: ChatMessage): Promise<Response<void>> => {
+ipcMain.handle("chat", async (event: IpcMainInvokeEvent, message: ChatMessage, speak: boolean = true): Promise<Response<void>> => {
     try {
-        await chat(message, event.sender);
+        await chat(message, event.sender, speak);
         return {
             code: 200,
             message: "发送聊天信息成功"

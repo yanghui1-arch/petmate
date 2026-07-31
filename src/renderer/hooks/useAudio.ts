@@ -1,134 +1,102 @@
-import { ref, readonly } from 'vue';
+import { readonly, ref } from 'vue'
 
-const isMuted = ref<boolean>(false);
-let audioElement: HTMLAudioElement | null = null;
-let mediaSource: MediaSource | null = null;
-let sourceBuffer: SourceBuffer | null = null;
-let audioChunkListener: ((event: Event, audio: Buffer) => void) | null = null;
-let pendingTimeouts: Set<NodeJS.Timeout> = new Set();
+const isMuted = ref(false)
+let audioElement: HTMLAudioElement | null = null
+let audioObjectUrl: string | null = null
+let audioChunks: ArrayBuffer[] = []
+let audioFormat = 'mp3'
+let initialized = false
 
 export function useAudio() {
-
     const initAudioResources = () => {
-        // 先清理之前的资源（如果存在）
-        clearAudioResources();
+        clearAudioResources()
+        initialized = true
 
-        audioElement = new Audio();
-        mediaSource = new MediaSource();
-        audioElement!.src = URL.createObjectURL(mediaSource!);
-        audioElement!.play();
-        
-        mediaSource.addEventListener('sourceopen', () => {
-            console.log('SourceBuffer opened');
-            sourceBuffer = mediaSource!.addSourceBuffer('audio/mpeg');
+        window.api.onAudioChunk((_, audio, format = 'mp3') => {
+            if (isMuted.value) return
+            audioFormat = format
+            const source = audio as Uint8Array
+            const copy = new Uint8Array(source.byteLength)
+            copy.set(source)
+            audioChunks.push(copy.buffer)
+        })
 
-            // 创建新的监听器函数
-            audioChunkListener = (_: Event, audio: Buffer) => {
-                console.log('Received audio chunk:', audio);
-                appendAudioData(audio);
-            };
-
-            // 注册监听器
-            window.api.onAudioChunk(audioChunkListener);
-        });
-    };
-
-    const appendAudioData = (audio: Buffer) => {
-        // 验证资源状态
-        if (!sourceBuffer || !mediaSource || mediaSource.readyState !== 'open') {
-            console.warn('Cannot append audio: MediaSource or SourceBuffer not ready');
-            return;
-        }
-
-        // 检查 SourceBuffer 是否可以接受新数据
-        if (!sourceBuffer.updating) {
-            try {
-                // 将音频数据追加到 sourceBuffer
-                sourceBuffer.appendBuffer(audio);
-            } catch (err) {
-                console.error('Error appending audio buffer:', err);
+        window.api.onTTSFinished(() => {
+            if (isMuted.value || audioChunks.length === 0) {
+                resetPendingAudio()
+                return
             }
-        } else {
-            console.log('SourceBuffer is updating, waiting...');
-            // 如果 SourceBuffer 正在更新，稍后再尝试添加数据
-            const timeoutId = setTimeout(() => {
-                pendingTimeouts.delete(timeoutId);
-                appendAudioData(audio);
-            }, 150);
-            pendingTimeouts.add(timeoutId);
-        }
-    };
+            void playPendingAudio()
+        })
 
-    const clearAudioResources = () => {
-        // 清除所有待处理的超时
-        pendingTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
-        pendingTimeouts.clear();
+        window.api.onTTSFailed(() => {
+            resetPendingAudio()
+        })
+    }
 
-        // 移除音频块监听器
-        if (audioChunkListener) {
-            window.api.removeAllAudioChunkListeners();
-            audioChunkListener = null;
-        }
-
-        // 停止音频播放
-        if (audioElement && !audioElement.paused) {
-            audioElement.pause();
-        }
-    
-        // 清空 SourceBuffer 数据
-        if (mediaSource?.readyState === 'open' && sourceBuffer) {
-            try {
-                // 等待 SourceBuffer 更新完成
-                if (!sourceBuffer.updating) {
-                    mediaSource.removeSourceBuffer(sourceBuffer);
-                } else {
-                    // 如果正在更新，等待完成后再移除
-                    sourceBuffer.addEventListener('updateend', () => {
-                        if (mediaSource?.readyState === 'open' && sourceBuffer) {
-                            mediaSource.removeSourceBuffer(sourceBuffer);
-                        }
-                    }, { once: true });
-                }
-            } catch (err) {
-                console.error('Error removing source buffer:', err);
-            }
-        }
-
-        // 重置引用
-        sourceBuffer = null;
-    
-        // 释放 MediaSource 和 Audio 元素
-        if (mediaSource) {
-            try {
-                if (mediaSource.readyState === 'open') {
-                    mediaSource.endOfStream();
-                }
-            } catch (err) {
-                console.error('Error ending media source stream:', err);
-            }
-            mediaSource = null;
-        }
+    const playPendingAudio = async () => {
+        const chunks = audioChunks
+        const format = audioFormat
+        resetPendingAudio()
 
         if (audioElement) {
-            URL.revokeObjectURL(audioElement.src);
-            audioElement.src = '';
-            audioElement = null;
+            audioElement.pause()
+            audioElement.src = ''
         }
-        
-        console.log('Audio resources cleared.');
-    };
-    
+        if (audioObjectUrl) {
+            URL.revokeObjectURL(audioObjectUrl)
+            audioObjectUrl = null
+        }
 
-    const changeMuted = (newVal: boolean) => {
-        isMuted.value = newVal;
-    };
+        const mimeType = format === 'wav' ? 'audio/wav' : 'audio/mpeg'
+        audioObjectUrl = URL.createObjectURL(new Blob(chunks, { type: mimeType }))
+        audioElement = new Audio(audioObjectUrl)
+        audioElement.addEventListener('ended', releasePlayer, { once: true })
+
+        try {
+            await audioElement.play()
+        } catch (error) {
+            console.error('[audio] 播放 TTS 音频失败:', error)
+            releasePlayer()
+        }
+    }
+
+    const resetPendingAudio = () => {
+        audioChunks = []
+        audioFormat = 'mp3'
+    }
+
+    const releasePlayer = () => {
+        if (audioElement) {
+            audioElement.pause()
+            audioElement.src = ''
+            audioElement = null
+        }
+        if (audioObjectUrl) {
+            URL.revokeObjectURL(audioObjectUrl)
+            audioObjectUrl = null
+        }
+    }
+
+    const clearAudioResources = () => {
+        if (initialized) {
+            window.api.removeAllAudioChunkListeners()
+            window.api.removeAllTTSFinishedListeners()
+            window.api.removeAllTTSFailedListeners()
+            initialized = false
+        }
+        resetPendingAudio()
+        releasePlayer()
+    }
+
+    const changeMuted = (newValue: boolean) => {
+        isMuted.value = newValue
+    }
 
     return {
-        // 是否静音
         isMuted: readonly(isMuted),
-
         initAudioResources,
         clearAudioResources,
-        changeMuted,
+        changeMuted
     }
 }

@@ -9,6 +9,13 @@ files:
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+extraResources:
+  - from: resources/local-ai
+    to: local-ai
+    filter:
+      - '**/*'
+      - '!**/.cache/**'
+      - '!**/*.incomplete'
 asarUnpack:
   - resources/**
 win:
