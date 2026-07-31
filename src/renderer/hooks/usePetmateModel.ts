@@ -22,8 +22,18 @@ import youmeiLaborIdleBlinkNearOpen from '@/assets/models/youmei/animations/idle
 import youmeiLaborIdleBlinkQuarter from '@/assets/models/youmei/animations/idle/labor-skin/blink/quarter.png'
 import youmeiLaborIdleBlinkThreeQuarter from '@/assets/models/youmei/animations/idle/labor-skin/blink/three-quarter.png'
 import youmeiLaborIdleOpen from '@/assets/models/youmei/animations/idle/labor-skin/01.png'
+import youmeiDrawBasicClassicBase from '@/assets/models/youmei/animations/activity/draw-basic-stable/classic/base.png'
+import youmeiDrawBasicLaborBase from '@/assets/models/youmei/animations/activity/draw-basic-stable/labor-skin/base.png'
 
-type ActionName = 'idle' | 'dance' | 'anger' | 'angryKick' | 'struggle'
+type ActionName =
+    | 'idle'
+    | 'dance'
+    | 'anger'
+    | 'angryKick'
+    | 'struggle'
+    | 'drawBasicIntro'
+    | 'drawBasicLoop'
+    | 'drawBasicOutro'
 
 type VisibleBounds = {
     left: number
@@ -107,6 +117,7 @@ type RenderPose = {
     nextFrame: SpriteFrame | null
     frameBlend: number
     motion: MotionTransform
+    timeSeconds: number
 }
 
 type PoseTransition = {
@@ -133,6 +144,7 @@ const IDLE_BLINK_RADIUS_Y_RATIO = 0.025
 const LABOR_KICK_ANIMATION_RESOURCE_ID = 'youmei-angry-kick-labor-2026'
 const CLASSIC_SKIN_ID = 'youmei-classic-dress'
 const LABOR_SKIRT_SKIN_ID = 'youmei-labor-skirt-2026'
+const DRAW_BASIC_ACTIVITY_ID = 1
 
 const classicDragFrameSources = [youmeiDragClassic]
 const laborDragFrameSources = [youmeiDragLabor]
@@ -182,6 +194,8 @@ const laborAngryKickFrameSources = resolveFrameSources(
         import: 'default'
     })
 )
+const classicDrawBasicFrameSources = [youmeiDrawBasicClassicBase]
+const laborDrawBasicFrameSources = [youmeiDrawBasicLaborBase]
 
 const actionSpecs: Record<ActionName, ActionSpec> = {
     idle: {
@@ -232,6 +246,33 @@ const actionSpecs: Record<ActionName, ActionSpec> = {
         visualScale: 1,
         loopCount: Number.POSITIVE_INFINITY,
         skipBlankFrames: false
+    },
+    drawBasicIntro: {
+        type: 'sequence',
+        frameSources: classicDrawBasicFrameSources,
+        frameDurationMs: 460,
+        frameBlendMs: 0,
+        visualScale: 0.785,
+        loopCount: 1,
+        skipBlankFrames: false
+    },
+    drawBasicLoop: {
+        type: 'sequence',
+        frameSources: classicDrawBasicFrameSources,
+        frameDurationMs: 460,
+        frameBlendMs: 0,
+        visualScale: 0.785,
+        loopCount: Number.POSITIVE_INFINITY,
+        skipBlankFrames: false
+    },
+    drawBasicOutro: {
+        type: 'sequence',
+        frameSources: classicDrawBasicFrameSources,
+        frameDurationMs: 420,
+        frameBlendMs: 0,
+        visualScale: 0.785,
+        loopCount: 1,
+        skipBlankFrames: false
     }
 }
 
@@ -243,6 +284,14 @@ let petMateModelConfig = { scale: 1 }
 let spriteCanvas: HTMLCanvasElement | null = null
 let spriteCanvasContext: CanvasRenderingContext2D | null = null
 let spriteContainer: HTMLDivElement | null = null
+const activityPartLayerCache = new WeakMap<
+    HTMLImageElement,
+    Map<string, HTMLCanvasElement>
+>()
+const activityBlinkLayerCache = new WeakMap<
+    HTMLImageElement,
+    Map<string, HTMLCanvasElement>
+>()
 let canvasPixelRatio = 1
 let animationFrameId: number | null = null
 let lastAnimationTime = 0
@@ -271,6 +320,7 @@ let skirtSwayVelocityY = 0
 let isDragging = false
 let isAngry = false
 let isSystemAudioActive = false
+let activeActivityId: number | null = null
 let activeAction: ActionName | null = null
 let assetLoadGeneration = 0
 let unlockedAnimationResourceIds = new Set<string>()
@@ -323,11 +373,36 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
     const setAngry = (active: boolean) => {
         const wasAngry = isAngry
         isAngry = active
-        if (isDragging) return
+        if (isDragging || activeActivityId === DRAW_BASIC_ACTIVITY_ID) return
 
         if (isAngry) {
             if (wasAngry && (activeAction === 'angryKick' || activeAction === 'anger')) return
             startAction('angryKick', { spyBesideWindow: true })
+            return
+        }
+
+        startAmbientAction()
+    }
+
+    const setActivity = (activityId: number | null) => {
+        const nextActivityId = activityId === DRAW_BASIC_ACTIVITY_ID ? activityId : null
+        if (nextActivityId === activeActivityId) return
+
+        const previousActivityId = activeActivityId
+        activeActivityId = nextActivityId
+        if (isDragging) return
+
+        if (activeActivityId === DRAW_BASIC_ACTIVITY_ID) {
+            startAction('drawBasicIntro', { sitting: true }, { force: true })
+            return
+        }
+
+        if (
+            previousActivityId === DRAW_BASIC_ACTIVITY_ID &&
+            activeAction &&
+            isDrawBasicAction(activeAction)
+        ) {
+            startAction('drawBasicOutro', { sitting: true }, { force: true, transition: false })
             return
         }
 
@@ -355,6 +430,7 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         activePlayback = null
         poseTransition = null
         activeAction = null
+        activeActivityId = null
         isDragging = false
         isSystemAudioActive = false
         resetDragMotion()
@@ -368,6 +444,7 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         modelState: readonly(modelState),
         playIdle,
         setAngry,
+        setActivity,
         destroy
     }
 }
@@ -529,8 +606,24 @@ function resetDragMotion() {
     skirtSwayVelocityY = 0
 }
 
+function isDrawBasicAction(action: ActionName): boolean {
+    return action === 'drawBasicIntro' || action === 'drawBasicLoop' || action === 'drawBasicOutro'
+}
+
 function startAmbientAction() {
-    if (isDragging || isAngry) return
+    if (isDragging) return
+
+    if (activeActivityId === DRAW_BASIC_ACTIVITY_ID) {
+        startAction('drawBasicLoop', { sitting: true })
+        return
+    }
+
+    if (isAngry) {
+        if (activeAction !== 'anger' && activeAction !== 'angryKick') {
+            startAction('angryKick', { spyBesideWindow: true })
+        }
+        return
+    }
 
     if (isSystemAudioActive) {
         startAction('dance', { dance: true })
@@ -553,11 +646,14 @@ function startAction(
     const now = performance.now()
     const previousPose = activePlayback ? getRenderPose(activePlayback) : null
     const changesDragPose = activeAction === 'struggle' || action === 'struggle'
+    const changesDrawBasicPose =
+        isDrawBasicAction(action) && activeAction !== null && isDrawBasicAction(activeAction)
     if (
         previousPose &&
         activeAction !== action &&
         options.transition !== false &&
-        !changesDragPose
+        !changesDragPose &&
+        !changesDrawBasicPose
     ) {
         poseTransition = {
             pose: previousPose,
@@ -627,13 +723,16 @@ function advancePlayback(deltaMs: number) {
         playback.stepIndex++
 
         if (playback.stepIndex >= playback.clip.steps.length) {
-            playback.stepIndex = 0
             playback.completedLoops++
 
             if (playback.completedLoops >= playback.clip.loopCount) {
+                playback.stepIndex = playback.clip.steps.length - 1
+                playback.stepElapsedMs = playback.stepDurationMs
                 handleActionCompleted(playback.clip.action)
                 return
             }
+
+            playback.stepIndex = 0
         }
 
         playback.stepDurationMs = resolveStepDuration(playback.clip.steps[playback.stepIndex])
@@ -643,6 +742,20 @@ function advancePlayback(deltaMs: number) {
 function handleActionCompleted(action: ActionName) {
     if (action === 'angryKick' && isAngry && !isDragging) {
         startAction('anger', { spyBesideWindow: true })
+        return
+    }
+
+    if (action === 'drawBasicIntro') {
+        if (activeActivityId === DRAW_BASIC_ACTIVITY_ID && !isDragging) {
+            startAction('drawBasicLoop', { sitting: true }, { force: true, transition: false })
+        } else if (!isDragging) {
+            startAction('drawBasicOutro', { sitting: true }, { force: true, transition: false })
+        }
+        return
+    }
+
+    if (action === 'drawBasicOutro') {
+        startAmbientAction()
         return
     }
 
@@ -692,7 +805,8 @@ function getRenderPose(playback: Playback): RenderPose {
         frame: playback.clip.frames[step.frameIndex],
         nextFrame: frameBlend > 0 ? playback.clip.frames[nextStep.frameIndex] : null,
         frameBlend,
-        motion: getMotionTransform(playback)
+        motion: getMotionTransform(playback),
+        timeSeconds: playback.totalElapsedMs / 1000
     }
 }
 
@@ -737,6 +851,16 @@ function getMotionTransform(playback: Playback): MotionTransform {
         }
         case 'struggle':
             return { x: 0, y: -2.6, rotation: 0, scaleX: 1, scaleY: 1 }
+        case 'drawBasicIntro': {
+            const progress = smoothStep(getPlaybackProgress(playback))
+            return { ...neutral, x: -32 * (1 - progress) }
+        }
+        case 'drawBasicOutro': {
+            const progress = smoothStep(getPlaybackProgress(playback))
+            return { ...neutral, x: -32 * progress }
+        }
+        case 'drawBasicLoop':
+            return neutral
         default:
             return neutral
     }
@@ -760,11 +884,18 @@ function drawPose(context: CanvasRenderingContext2D, pose: RenderPose, opacity: 
 
     const currentOpacity = opacity * (1 - pose.frameBlend)
     if (currentOpacity > 0) {
-        drawFrame(context, pose.clip, pose.frame, pose.motion, currentOpacity)
+        drawFrame(context, pose.clip, pose.frame, pose.motion, currentOpacity, pose.timeSeconds)
     }
 
     if (pose.nextFrame && pose.frameBlend > 0) {
-        drawFrame(context, pose.clip, pose.nextFrame, pose.motion, opacity * pose.frameBlend)
+        drawFrame(
+            context,
+            pose.clip,
+            pose.nextFrame,
+            pose.motion,
+            opacity * pose.frameBlend,
+            pose.timeSeconds
+        )
     }
 }
 
@@ -850,9 +981,11 @@ function drawFrame(
     clip: AnimationClip,
     frame: SpriteFrame,
     motion: MotionTransform,
-    opacity: number
+    opacity: number,
+    timeSeconds = 0
 ) {
     const scale = clip.renderScale
+    const anchorY = isDrawBasicAction(clip.action) ? frame.bounds.bottom : clip.anchorY
 
     context.save()
     context.globalAlpha = clamp01(opacity)
@@ -861,6 +994,8 @@ function drawFrame(
     context.scale(motion.scaleX, motion.scaleY)
     if (clip.action === 'struggle') {
         drawDragFrameMesh(context, clip, frame)
+    } else if (isDrawBasicAction(clip.action)) {
+        drawStableActivityFrame(context, clip, frame, timeSeconds)
     } else {
         context.drawImage(
             frame.image,
@@ -869,12 +1004,401 @@ function drawFrame(
             frame.sourceWidth,
             frame.sourceHeight,
             (-frame.sourceWidth * scale) / 2,
-            -clip.anchorY * scale,
+            -anchorY * scale,
             frame.sourceWidth * scale,
             frame.sourceHeight * scale
         )
     }
     context.restore()
+}
+
+type ActivityPartRig = {
+    key: string
+    x: number
+    y: number
+    radiusX: number
+    radiusY: number
+    maskRotation?: number
+    pivotX: number
+    pivotY: number
+    motionScale: number
+}
+
+type ActivityEyeRig = {
+    x: number
+    y: number
+    width: number
+    height: number
+}
+
+type DrawingRig = {
+    hairParts: ActivityPartRig[]
+    eyes: ActivityEyeRig[]
+}
+
+type ActivityPartMotion = {
+    rotation: number
+}
+
+function drawStableActivityFrame(
+    context: CanvasRenderingContext2D,
+    clip: AnimationClip,
+    frame: SpriteFrame,
+    timeSeconds: number
+) {
+    const scale = clip.renderScale
+    const destinationLeft = (-frame.sourceWidth * scale) / 2
+    const destinationTop = -frame.bounds.bottom * scale
+    const rig = getDrawingRig()
+    const isAnimating = clip.action === 'drawBasicLoop'
+    context.drawImage(
+        frame.image,
+        frame.sourceX,
+        frame.sourceY,
+        frame.sourceWidth,
+        frame.sourceHeight,
+        destinationLeft,
+        destinationTop,
+        frame.sourceWidth * scale,
+        frame.sourceHeight * scale
+    )
+
+    if (isAnimating) {
+        const hairMotion = getActivityHairMotion(timeSeconds)
+        for (const hairPart of rig.hairParts) {
+            drawActivityPart(
+                context,
+                frame,
+                hairPart,
+                destinationLeft,
+                destinationTop,
+                scale,
+                hairMotion
+            )
+        }
+        drawActivityBlink(
+            context,
+            frame,
+            rig,
+            destinationLeft,
+            destinationTop,
+            scale,
+            timeSeconds
+        )
+    }
+}
+
+function getDrawingRig(): DrawingRig {
+    if (equippedSkinId === LABOR_SKIRT_SKIN_ID) {
+        return {
+            hairParts: [
+                {
+                    key: 'lower-hair',
+                    x: 142,
+                    y: 198,
+                    radiusX: 18,
+                    radiusY: 34,
+                    maskRotation: 0.08,
+                    pivotX: 169,
+                    pivotY: 150,
+                    motionScale: 1
+                }
+            ],
+            eyes: [
+                {
+                    x: 205,
+                    y: 134,
+                    width: 19,
+                    height: 14
+                },
+                {
+                    x: 232,
+                    y: 134,
+                    width: 18,
+                    height: 14
+                }
+            ]
+        }
+    }
+
+    return {
+        hairParts: [
+            {
+                key: 'lower-hair',
+                x: 171,
+                y: 199,
+                radiusX: 15,
+                radiusY: 33,
+                maskRotation: 0.04,
+                pivotX: 193,
+                pivotY: 148,
+                motionScale: 1
+            }
+        ],
+        eyes: [
+            {
+                x: 223,
+                y: 141,
+                width: 12,
+                height: 7
+            },
+            {
+                x: 248,
+                y: 138,
+                width: 11,
+                height: 7
+            }
+        ]
+    }
+}
+
+function getActivityHairMotion(timeSeconds: number): ActivityPartMotion {
+    const breathingPhase = (timeSeconds * Math.PI * 2) / 4.4
+    const strokePhase = (timeSeconds * Math.PI * 2) / 2.1
+    return {
+        rotation:
+            Math.sin(breathingPhase) * 0.038 +
+            Math.sin(breathingPhase * 2) * 0.005 +
+            Math.sin(strokePhase - 0.55) * 0.004
+    }
+}
+
+function rotateActivityContext(
+    context: CanvasRenderingContext2D,
+    pivotX: number,
+    pivotY: number,
+    rotation: number
+) {
+    context.translate(pivotX, pivotY)
+    context.rotate(rotation)
+    context.translate(-pivotX, -pivotY)
+}
+
+function drawActivityPart(
+    context: CanvasRenderingContext2D,
+    frame: SpriteFrame,
+    part: ActivityPartRig,
+    destinationLeft: number,
+    destinationTop: number,
+    scale: number,
+    motion: ActivityPartMotion
+) {
+    const layer = getActivityPartLayer(frame, part)
+    const pivotX = destinationLeft + part.pivotX * scale
+    const pivotY = destinationTop + part.pivotY * scale
+
+    context.save()
+    rotateActivityContext(
+        context,
+        pivotX,
+        pivotY,
+        motion.rotation * part.motionScale
+    )
+    drawActivityPartLayer(context, frame, part, destinationLeft, destinationTop, scale, layer)
+    context.restore()
+}
+
+function drawActivityPartLayer(
+    context: CanvasRenderingContext2D,
+    frame: SpriteFrame,
+    part: ActivityPartRig,
+    destinationLeft: number,
+    destinationTop: number,
+    scale: number,
+    layer = getActivityPartLayer(frame, part)
+) {
+    context.drawImage(
+        layer,
+        destinationLeft,
+        destinationTop,
+        frame.sourceWidth * scale,
+        frame.sourceHeight * scale
+    )
+}
+
+function getActivityPartLayer(
+    frame: SpriteFrame,
+    part: ActivityPartRig
+): HTMLCanvasElement {
+    let imageLayers = activityPartLayerCache.get(frame.image)
+    if (!imageLayers) {
+        imageLayers = new Map()
+        activityPartLayerCache.set(frame.image, imageLayers)
+    }
+    const cachedLayer = imageLayers.get(part.key)
+    if (cachedLayer) return cachedLayer
+
+    const layer = document.createElement('canvas')
+    layer.width = frame.sourceWidth
+    layer.height = frame.sourceHeight
+    const layerContext = layer.getContext('2d')
+    if (!layerContext) return layer
+
+    layerContext.drawImage(
+        frame.image,
+        frame.sourceX,
+        frame.sourceY,
+        frame.sourceWidth,
+        frame.sourceHeight,
+        0,
+        0,
+        frame.sourceWidth,
+        frame.sourceHeight
+    )
+    layerContext.globalCompositeOperation = 'destination-in'
+    layerContext.save()
+    layerContext.translate(part.x, part.y)
+    layerContext.rotate(part.maskRotation ?? 0)
+    layerContext.scale(part.radiusX, part.radiusY)
+    const feather = layerContext.createRadialGradient(0, 0, 0.52, 0, 0, 1)
+    feather.addColorStop(0, 'rgba(0, 0, 0, 1)')
+    feather.addColorStop(0.84, 'rgba(0, 0, 0, 1)')
+    feather.addColorStop(1, 'rgba(0, 0, 0, 0)')
+    layerContext.fillStyle = feather
+    layerContext.fillRect(-1.05, -1.05, 2.1, 2.1)
+    layerContext.restore()
+    imageLayers.set(part.key, layer)
+    return layer
+}
+
+function getActivityBlinkAmount(timeSeconds: number): number {
+    const blinkTime = timeSeconds % 5.2
+    const blinkStart = 3.2
+    const blinkDuration = 0.38
+    if (blinkTime < blinkStart || blinkTime > blinkStart + blinkDuration) return 0
+
+    const progress = (blinkTime - blinkStart) / blinkDuration
+    if (progress < 0.34) return smoothStep(progress / 0.34)
+    if (progress < 0.5) return 1
+    return 1 - smoothStep((progress - 0.5) / 0.5)
+}
+
+function drawActivityBlink(
+    context: CanvasRenderingContext2D,
+    frame: SpriteFrame,
+    rig: DrawingRig,
+    destinationLeft: number,
+    destinationTop: number,
+    scale: number,
+    timeSeconds: number
+) {
+    const amount = getActivityBlinkAmount(timeSeconds)
+    if (amount <= 0) return
+
+    const padding = 2
+    rig.eyes.forEach((eye, eyeIndex) => {
+        const layer = getActivityBlinkLayer(frame, eye, amount, eyeIndex)
+        context.drawImage(
+            layer,
+            destinationLeft + (eye.x - padding) * scale,
+            destinationTop + (eye.y - padding) * scale,
+            layer.width * scale,
+            layer.height * scale
+        )
+    })
+}
+
+function getActivityBlinkLayer(
+    frame: SpriteFrame,
+    eye: ActivityEyeRig,
+    amount: number,
+    eyeIndex: number
+): HTMLCanvasElement {
+    let imageLayers = activityBlinkLayerCache.get(frame.image)
+    if (!imageLayers) {
+        imageLayers = new Map()
+        activityBlinkLayerCache.set(frame.image, imageLayers)
+    }
+
+    const stage = Math.max(1, Math.min(8, Math.round(amount * 8)))
+    const cacheKey = `${eyeIndex}:${stage}`
+    const cachedLayer = imageLayers.get(cacheKey)
+    if (cachedLayer) return cachedLayer
+
+    const padding = 2
+    const layer = document.createElement('canvas')
+    layer.width = Math.ceil(eye.width + padding * 2)
+    layer.height = Math.ceil(eye.height + padding * 2)
+    const layerContext = layer.getContext('2d')
+    if (!layerContext) return layer
+
+    const stageAmount = stage / 8
+    const sourceX = frame.sourceX + eye.x
+    const sourceY = frame.sourceY + eye.y
+    const topSampleHeight = Math.max(4, Math.round(eye.height * 0.24))
+    const bottomSampleHeight = Math.max(4, Math.round(eye.height * 0.24))
+    const upperHeight = eye.height * 0.56
+    const lowerHeight = eye.height - upperHeight
+
+    layerContext.drawImage(
+        frame.image,
+        sourceX,
+        Math.max(frame.sourceY, sourceY - 3),
+        eye.width,
+        topSampleHeight,
+        padding,
+        padding,
+        eye.width,
+        upperHeight
+    )
+    layerContext.drawImage(
+        frame.image,
+        sourceX,
+        sourceY + eye.height + 1,
+        eye.width,
+        bottomSampleHeight,
+        padding,
+        padding + upperHeight,
+        eye.width,
+        lowerHeight
+    )
+
+    const compressedHeight = Math.max(2.2, eye.height * (1 - stageAmount * 0.86))
+    layerContext.globalAlpha = 1 - smoothStep(clamp01((stageAmount - 0.5) / 0.42))
+    layerContext.drawImage(
+        frame.image,
+        sourceX,
+        sourceY,
+        eye.width,
+        eye.height,
+        padding,
+        padding + (eye.height - compressedHeight) / 2,
+        eye.width,
+        compressedHeight
+    )
+    layerContext.globalAlpha = 1
+
+    if (stageAmount > 0.58) {
+        layerContext.globalAlpha = clamp01((stageAmount - 0.58) / 0.34)
+        layerContext.strokeStyle = '#5b322f'
+        layerContext.lineWidth = 1.1
+        layerContext.lineCap = 'round'
+        layerContext.beginPath()
+        layerContext.moveTo(padding + eye.width * 0.18, padding + eye.height * 0.52)
+        layerContext.quadraticCurveTo(
+            padding + eye.width * 0.5,
+            padding + eye.height * 0.43,
+            padding + eye.width * 0.82,
+            padding + eye.height * 0.5
+        )
+        layerContext.stroke()
+        layerContext.globalAlpha = 1
+    }
+
+    layerContext.globalCompositeOperation = 'destination-in'
+    layerContext.save()
+    layerContext.translate(layer.width / 2, layer.height / 2)
+    layerContext.scale(eye.width * 0.64, eye.height * 0.76)
+    const feather = layerContext.createRadialGradient(0, 0, 0.68, 0, 0, 1)
+    feather.addColorStop(0, 'rgba(0, 0, 0, 1)')
+    feather.addColorStop(0.88, 'rgba(0, 0, 0, 1)')
+    feather.addColorStop(1, 'rgba(0, 0, 0, 0)')
+    layerContext.fillStyle = feather
+    layerContext.fillRect(-1.05, -1.05, 2.1, 2.1)
+    layerContext.restore()
+
+    imageLayers.set(cacheKey, layer)
+    return layer
 }
 
 function drawDragFrameMesh(
@@ -979,7 +1503,12 @@ function setSystemAudioActive(active: boolean) {
     if (isSystemAudioActive === active) return
 
     isSystemAudioActive = active
-    if (isDragging || isAngry || activeAction === 'angryKick') {
+    if (
+        isDragging ||
+        isAngry ||
+        activeActivityId === DRAW_BASIC_ACTIVITY_ID ||
+        activeAction === 'angryKick'
+    ) {
         return
     }
 
@@ -1056,15 +1585,30 @@ function applyUnlockedAnimationSources(): void {
     }
 
     const angryKickSpec = actionSpecs.angryKick
-    if (angryKickSpec.type !== 'sequence') return
+    if (angryKickSpec.type === 'sequence') {
+        const shouldUseLaborKick =
+            equippedSkinId === LABOR_SKIRT_SKIN_ID ||
+            unlockedAnimationResourceIds.has(LABOR_KICK_ANIMATION_RESOURCE_ID)
+        angryKickSpec.frameSources =
+            shouldUseLaborKick && laborAngryKickFrameSources.length > 0
+                ? laborAngryKickFrameSources
+                : angryKickFrameSources
+    }
 
-    const shouldUseLaborKick =
-        equippedSkinId === LABOR_SKIRT_SKIN_ID ||
-        unlockedAnimationResourceIds.has(LABOR_KICK_ANIMATION_RESOURCE_ID)
-    angryKickSpec.frameSources =
-        shouldUseLaborKick && laborAngryKickFrameSources.length > 0
-            ? laborAngryKickFrameSources
-            : angryKickFrameSources
+    const drawBasicFrameSources =
+        equippedSkinId === LABOR_SKIRT_SKIN_ID && laborDrawBasicFrameSources.length > 0
+            ? laborDrawBasicFrameSources
+            : classicDrawBasicFrameSources
+    for (const action of [
+        'drawBasicIntro',
+        'drawBasicLoop',
+        'drawBasicOutro'
+    ] satisfies ActionName[]) {
+        const spec = actionSpecs[action]
+        if (spec.type === 'sequence') {
+            spec.frameSources = drawBasicFrameSources
+        }
+    }
 }
 
 function getCurrentSkinAngryFrameSources(): string[] {
@@ -1078,7 +1622,15 @@ async function reloadSkinDependentAnimations(): Promise<void> {
     const generation = ++assetLoadGeneration
     applyUnlockedAnimationSources()
 
-    const actions: ActionName[] = ['idle', 'anger', 'angryKick', 'struggle']
+    const actions: ActionName[] = [
+        'idle',
+        'anger',
+        'angryKick',
+        'struggle',
+        'drawBasicIntro',
+        'drawBasicLoop',
+        'drawBasicOutro'
+    ]
     const loadedClips = await Promise.all(
         actions.map(async (action) => {
             const clip = await loadAnimationClip(action, actionSpecs[action])
@@ -1100,7 +1652,9 @@ async function reloadSkinDependentAnimations(): Promise<void> {
                 ? { standIdle: true }
                 : activeAction === 'struggle'
                   ? { dragging: true }
-                  : { spyBesideWindow: true }
+                  : isDrawBasicAction(activeAction)
+                    ? { sitting: true }
+                    : { spyBesideWindow: true }
         startAction(activeAction, state, { force: true, transition: false })
     }
 }
@@ -1136,7 +1690,7 @@ async function loadAnimationClip(action: ActionName, spec: ActionSpec): Promise<
         loopCount: spec.loopCount,
         renderScale,
         anchorY: Math.max(...frames.map((frame) => frame.bounds.bottom)),
-        hasEmbeddedShadow: spec.type === 'sequence',
+        hasEmbeddedShadow: spec.type === 'sequence' && !isDrawBasicAction(action),
         usesAlignedIdleBlink
     }
 }

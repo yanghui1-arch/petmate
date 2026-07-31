@@ -1,136 +1,161 @@
 <template>
     <div class="petmate-container">
         <div ref="petmateContainer" class="petmate-canvas-container"></div>
-        <div
-            v-if="shouldShowHungryDialog"
-            class="hunger-dialog"
-            aria-live="polite"
-        >
+        <div v-if="shouldShowHungryDialog" class="hunger-dialog" aria-live="polite">
             <span>{{ hungryDialogVisibleText }}</span>
-            <span
-                v-if="isHungryDialogTyping"
-                class="hunger-dialog-caret"
-            ></span>
+            <span v-if="isHungryDialogTyping" class="hunger-dialog-caret"></span>
         </div>
         <div class="context-menu" v-if="isShowContextMenu">
-            <WheelMenu @closed="closeContextMenu"/>
+            <WheelMenu @closed="closeContextMenu" />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import WheelMenu from '../components/WheelMenu.vue';
-import { isShowContextMenu, usePetmateModel } from '../hooks/usePetmateModel';
-import { usePlayer } from '../hooks/usePlayer';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import WheelMenu from '../components/WheelMenu.vue'
+import { isShowContextMenu, usePetmateModel } from '../hooks/usePetmateModel'
+import { usePlayer } from '../hooks/usePlayer'
 
-const LOW_ATTRIBUTE_RATIO = 0.3;
-const PLAYER_REFRESH_INTERVAL = 30 * 1000;
-const HUNGER_DIALOG_TEXT = '尤美真的.....真的.....好饿....';
-const HUNGER_DIALOG_TYPE_INTERVAL = 200;
+const LOW_ATTRIBUTE_RATIO = 0.3
+const PLAYER_REFRESH_INTERVAL = 30 * 1000
+const HUNGER_DIALOG_TEXT = '尤美真的.....真的.....好饿....'
+const HUNGER_DIALOG_TYPE_INTERVAL = 200
 
-const petmateContainer = ref();
-let playerRefreshTimer: ReturnType<typeof setInterval> | null = null;
-let hungerDialogTimer: ReturnType<typeof setInterval> | null = null;
-let hasInitializedAttributeBaseline = false;
-let lastLowAttributeState = false;
-const isAngryByAttribute = ref(false);
-const hungryDialogVisibleText = ref('');
+const petmateContainer = ref()
+let playerRefreshTimer: ReturnType<typeof setInterval> | null = null
+let hungerDialogTimer: ReturnType<typeof setInterval> | null = null
+let stopPlayerDataSync: (() => void) | null = null
+let hasInitializedAttributeBaseline = false
+let lastLowAttributeState = false
+const isAngryByAttribute = ref(false)
+const hungryDialogVisibleText = ref('')
 
-const { init2D, playIdle, setAngry, destroy } = usePetmateModel(petmateContainer);
-const { playerData, initPlayerData, refreshPlayerData } = usePlayer();
+const { init2D, playIdle, setAngry, setActivity, destroy } = usePetmateModel(petmateContainer)
+const { playerData, initPlayerData, refreshPlayerData, subscribeToPlayerDataSync } = usePlayer()
 
-const currentPetmate = computed(() => playerData.value?.petmates[0]);
+const currentPetmate = computed(() => playerData.value?.petmates[0])
+const activeActivityId = computed(() => {
+    const status = currentPetmate.value?.status
+    if (!status || status.status === 'idle' || status.status === 'finished') return null
+    return status.activity?.id ?? null
+})
 const shouldShowHungryDialog = computed(() => {
-    const attrs = currentPetmate.value?.attrs;
-    if (!attrs) return false;
+    const attrs = currentPetmate.value?.attrs
+    if (!attrs) return false
 
-    return attrs.hungry <= attrs.maxHungry * LOW_ATTRIBUTE_RATIO;
-});
+    return attrs.hungry <= attrs.maxHungry * LOW_ATTRIBUTE_RATIO
+})
 const isHungryDialogTyping = computed(() => {
-    return shouldShowHungryDialog.value && hungryDialogVisibleText.value.length < HUNGER_DIALOG_TEXT.length;
-});
+    return (
+        shouldShowHungryDialog.value &&
+        hungryDialogVisibleText.value.length < HUNGER_DIALOG_TEXT.length
+    )
+})
 const hasLowAttribute = computed(() => {
-    const attrs = currentPetmate.value?.attrs;
-    if (!attrs) return false;
+    const attrs = currentPetmate.value?.attrs
+    if (!attrs) return false
 
-    return attrs.hungry < attrs.maxHungry * LOW_ATTRIBUTE_RATIO
-        || attrs.emotion < attrs.maxEmotion * LOW_ATTRIBUTE_RATIO;
-});
+    return (
+        attrs.hungry < attrs.maxHungry * LOW_ATTRIBUTE_RATIO ||
+        attrs.emotion < attrs.maxEmotion * LOW_ATTRIBUTE_RATIO
+    )
+})
 
 watch(hasLowAttribute, (isLow) => {
-    if (!hasInitializedAttributeBaseline) return;
-    if (isLow === lastLowAttributeState) return;
+    if (!hasInitializedAttributeBaseline) return
+    if (isLow === lastLowAttributeState) return
 
-    lastLowAttributeState = isLow;
-    isAngryByAttribute.value = isLow;
-    setAngry(isLow);
-});
+    lastLowAttributeState = isLow
+    isAngryByAttribute.value = isLow
+    setAngry(isLow)
+})
 
-watch(shouldShowHungryDialog, (shouldShow) => {
-    if (!shouldShow) {
-        clearHungerDialogTimer();
-        hungryDialogVisibleText.value = '';
-        return;
-    }
+watch(
+    activeActivityId,
+    (activityId) => {
+        setActivity(activityId)
+    },
+    { immediate: true }
+)
 
-    startHungerDialogTypewriter();
-}, { immediate: true });
+watch(
+    shouldShowHungryDialog,
+    (shouldShow) => {
+        if (!shouldShow) {
+            clearHungerDialogTimer()
+            hungryDialogVisibleText.value = ''
+            return
+        }
+
+        startHungerDialogTypewriter()
+    },
+    { immediate: true }
+)
 
 onMounted(async () => {
-    await init2D();
-    playIdle();
-    await initPlayerData();
-    lastLowAttributeState = hasLowAttribute.value;
-    hasInitializedAttributeBaseline = true;
-    isAngryByAttribute.value = lastLowAttributeState;
+    stopPlayerDataSync = subscribeToPlayerDataSync(() => {
+        void refreshPlayerData()
+    })
+    window.api.onActivityFinished(() => {
+        void refreshPlayerData()
+    })
+
+    await init2D()
+    playIdle()
+    await initPlayerData()
+    lastLowAttributeState = hasLowAttribute.value
+    hasInitializedAttributeBaseline = true
+    isAngryByAttribute.value = lastLowAttributeState
     if (lastLowAttributeState) {
-        setAngry(true);
+        setAngry(true)
     } else {
-        playIdle();
+        playIdle()
     }
 
     playerRefreshTimer = setInterval(() => {
-        refreshPlayerData();
-    }, PLAYER_REFRESH_INTERVAL);
+        refreshPlayerData()
+    }, PLAYER_REFRESH_INTERVAL)
 })
 
 onUnmounted(() => {
-    if (playerRefreshTimer) clearInterval(playerRefreshTimer);
-    clearHungerDialogTimer();
-    destroy();
-});
+    if (playerRefreshTimer) clearInterval(playerRefreshTimer)
+    stopPlayerDataSync?.()
+    stopPlayerDataSync = null
+    clearHungerDialogTimer()
+    destroy()
+})
 
 function closeContextMenu() {
-    isShowContextMenu.value = false;
+    isShowContextMenu.value = false
     if (isAngryByAttribute.value) {
-        setAngry(true);
-        return;
+        setAngry(true)
+        return
     }
 
-    playIdle();
+    playIdle()
 }
 
 function startHungerDialogTypewriter() {
-    clearHungerDialogTimer();
-    hungryDialogVisibleText.value = '';
+    clearHungerDialogTimer()
+    hungryDialogVisibleText.value = ''
 
-    let currentIndex = 0;
+    let currentIndex = 0
     hungerDialogTimer = setInterval(() => {
-        currentIndex += 1;
-        hungryDialogVisibleText.value = HUNGER_DIALOG_TEXT.slice(0, currentIndex);
+        currentIndex += 1
+        hungryDialogVisibleText.value = HUNGER_DIALOG_TEXT.slice(0, currentIndex)
 
         if (currentIndex >= HUNGER_DIALOG_TEXT.length) {
-            clearHungerDialogTimer();
+            clearHungerDialogTimer()
         }
-    }, HUNGER_DIALOG_TYPE_INTERVAL);
+    }, HUNGER_DIALOG_TYPE_INTERVAL)
 }
 
 function clearHungerDialogTimer() {
-    if (!hungerDialogTimer) return;
+    if (!hungerDialogTimer) return
 
-    clearInterval(hungerDialogTimer);
-    hungerDialogTimer = null;
+    clearInterval(hungerDialogTimer)
+    hungerDialogTimer = null
 }
 </script>
 
@@ -172,7 +197,7 @@ function clearHungerDialogTimer() {
     animation: hungerDialogPopIn 0.22s ease-out;
 
     &::after {
-        content: "";
+        content: '';
         position: absolute;
         right: 30px;
         bottom: -8px;
