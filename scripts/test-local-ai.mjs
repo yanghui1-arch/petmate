@@ -15,7 +15,7 @@ const defaultModelsRoot = process.platform === 'win32' && process.env.APPDATA
 const modelsRoot = process.env.PETMATE_LOCAL_AI_MODELS_DIR
   ? resolve(process.env.PETMATE_LOCAL_AI_MODELS_DIR)
   : defaultModelsRoot
-const llmOnly = process.argv.includes('--llm-only')
+const forceLLMOnly = process.argv.includes('--llm-only')
 const testApiKey = 'petmate-local-ai-test'
 
 function assertFile(path) {
@@ -86,6 +86,30 @@ function takeSpeechSegments(buffer, flush = false) {
   return { segments, remainder }
 }
 
+async function detectTTSAcceleration(pythonExecutable) {
+  if (!existsSync(pythonExecutable)) return null
+  const probe = [
+    'import torch',
+    "backend = 'none'",
+    "backend = ('rocm' if torch.version.hip else 'cuda') if torch.cuda.is_available() else backend",
+    'print(backend)'
+  ].join('; ')
+
+  return new Promise(resolvePromise => {
+    const processHandle = spawn(pythonExecutable, ['-c', probe], {
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
+    let stdout = ''
+    processHandle.stdout.on('data', data => { stdout += data.toString('utf8') })
+    processHandle.once('error', () => resolvePromise(null))
+    processHandle.once('exit', code => {
+      const backend = stdout.trim().toLowerCase()
+      resolvePromise(code === 0 && ['cuda', 'rocm'].includes(backend) ? backend : null)
+    })
+  })
+}
+
 const llamaExecutable = join(runtimeRoot, 'runtime', 'llama', 'vulkan', 'llama-server.exe')
 const llmModel = join(modelsRoot, 'llm', 'Qwen3.5-2B-Q4_K_M.gguf')
 const pythonExecutable = join(runtimeRoot, 'runtime', 'tts-env', 'python.exe')
@@ -93,6 +117,8 @@ const ttsServerScript = join(runtimeRoot, 'tts_server.py')
 const ttsModel = join(modelsRoot, 'tts', 'Qwen3-TTS-12Hz-0.6B-Base')
 const referenceAudio = join(runtimeRoot, 'voices', 'default.wav')
 const referenceText = join(runtimeRoot, 'voices', 'default.txt')
+const ttsAcceleration = forceLLMOnly ? null : await detectTTSAcceleration(pythonExecutable)
+const llmOnly = forceLLMOnly || !ttsAcceleration
 
 for (const file of [llamaExecutable, llmModel]) assertFile(file)
 if (!llmOnly) {
@@ -238,7 +264,14 @@ try {
       outputPath
     }, null, 2))
   } else {
-    console.log(JSON.stringify({ llmHealth, reply }, null, 2))
+    console.log(JSON.stringify({
+      llmHealth,
+      reply,
+      ttsSkipped: true,
+      ttsSkipReason: forceLLMOnly
+        ? 'forced by --llm-only'
+        : 'no CUDA/ROCm acceleration detected'
+    }, null, 2))
   }
 } catch (error) {
   console.error(error)

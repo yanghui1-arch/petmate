@@ -170,11 +170,10 @@ try {
 
     $qwenTtsReady = $false
     try {
-        $backendCheck = if ($selectedBackend -eq 'cuda') {
-            "import importlib.util, torch; assert all(importlib.util.find_spec(name) for name in ('qwen_tts', 'torch', 'soundfile')); assert torch.version.cuda is not None"
-        } else {
-            "import importlib.util; assert all(importlib.util.find_spec(name) for name in ('qwen_tts', 'torch', 'soundfile'))"
-        }
+        # The packaged runtime must work on the end user's NVIDIA machine even when
+        # the release is assembled on an AMD/CPU build host. A CUDA PyTorch wheel is
+        # safe to probe on machines without CUDA; torch.cuda.is_available() stays false.
+        $backendCheck = "import importlib.util, torch; assert all(importlib.util.find_spec(name) for name in ('qwen_tts', 'torch', 'soundfile')); assert torch.version.cuda is not None"
         & $portablePython -c $backendCheck
         $qwenTtsReady = $LASTEXITCODE -eq 0
     } catch {
@@ -182,15 +181,11 @@ try {
     }
 
     if (-not $qwenTtsReady) {
-        Write-Step 'Installing qwen-tts 0.1.1 and its local inference dependencies'
+        Write-Step 'Installing qwen-tts 0.1.1 with the portable CUDA runtime'
         & $portablePython -m pip install --upgrade pip
-        if ($selectedBackend -eq 'cuda') {
-            & $portablePython -m pip install 'torch==2.11.0' 'torchaudio==2.11.0' --index-url 'https://download.pytorch.org/whl/cu128'
-        } else {
-            & $portablePython -m pip install 'torch==2.11.0' 'torchaudio==2.11.0' --index-url 'https://download.pytorch.org/whl/cpu'
-        }
+        & $portablePython -m pip install 'torch==2.11.0' 'torchaudio==2.11.0' --index-url 'https://download.pytorch.org/whl/cu128'
         if ($LASTEXITCODE -ne 0) {
-            throw "Failed to install the $selectedBackend PyTorch runtime"
+            throw 'Failed to install the CUDA PyTorch runtime'
         }
         & $portablePython -m pip install `
             'qwen-tts==0.1.1' `
@@ -232,6 +227,7 @@ try {
         installedAt = (Get-Date).ToUniversalTime().ToString('o')
         llamaCppRelease = $installedLlamaRelease
         backend = $selectedBackend
+        ttsBackend = 'cuda'
         python = 'portable-cpython-3.12'
         qwenTts = '0.1.1'
     } | ConvertTo-Json

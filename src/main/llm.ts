@@ -565,8 +565,8 @@ function waitForTTSReady(timeout: number = 5000): Promise<boolean> {
 
 /**
  * 发送聊天信息
- * 会向渲染进程发送音频信息和文本信息，其中文本信息会以流的形式发送，音频信息会以二进制流的形式发送
- * 文本信息流和音频信息流是几乎同步发送的
+ * 文本按 token 流式发送；TTS 按完整语义片段合成 WAV，片段生成后立即发送并顺序播放。
+ * 这属于分段流式播放，不是模型原生的音频帧流式生成。
  * chat-chunk为文本信息流的参数，tts-audio-chunk为音频信息流的参数
  * @param messages 聊天信息
  * @throws TTSProcessError 如果tts任务的参数未正确初始化
@@ -641,6 +641,7 @@ async function chat(message: ChatMessage, sender: WebContents, speak: boolean = 
     let speechBuffer = "";
     let ttsFailure: unknown = null;
     let ttsPipeline = Promise.resolve();
+    const shouldSpeak = speak && localAIManager.isTTSReady();
 
     const enqueueSpeech = (segments: string[]) => {
         for (const rawSegment of segments) {
@@ -664,7 +665,7 @@ async function chat(message: ChatMessage, sender: WebContents, speak: boolean = 
         if (content !== "") {
             response += content;
             mainWindow?.webContents.send('chat-chunk', content);
-            if (speak) {
+            if (shouldSpeak) {
                 speechBuffer += content;
                 const speech = takeSpeechSegments(speechBuffer);
                 speechBuffer = speech.remainder;
@@ -680,7 +681,7 @@ async function chat(message: ChatMessage, sender: WebContents, speak: boolean = 
     saveChatHistoryMessages();
     mainWindow?.webContents.send('chat-finished');
 
-    if (speak) {
+    if (shouldSpeak) {
         const finalSpeech = takeSpeechSegments(speechBuffer, true);
         enqueueSpeech(finalSpeech.segments);
         await ttsPipeline;

@@ -23,12 +23,37 @@
                     {{ downloadButtonText }}
                 </n-button>
                 <div class="mute-toggle">
-                    <span>{{ isMuted ? '静音' : '语音' }}</span>
-                    <n-switch :value="isMuted" @update:value="changeMuted"/>
+                    <span>{{ voiceStatusText }}</span>
+                    <n-switch
+                        :value="isMuted"
+                        :disabled="!localAIReady || ttsUnavailable"
+                        @update:value="changeMuted"
+                    />
                 </div>
             </div>
             <div v-if="runtimeNotice" class="runtime-error" :title="runtimeNotice">
                 {{ runtimeNotice }}
+            </div>
+        </div>
+
+        <div v-if="downloadActive" class="model-download-progress">
+            <div class="download-progress-meta">
+                <span class="download-file" :title="downloadProgressDetail">
+                    {{ downloadProgressDetail }}
+                </span>
+                <span class="download-size">{{ downloadSizeText }}</span>
+            </div>
+            <n-progress
+                type="line"
+                :height="10"
+                :percentage="downloadPercentage"
+                :show-indicator="false"
+                color="#e28fac"
+                rail-color="rgba(255, 255, 255, 0.18)"
+                processing
+            />
+            <div class="download-progress-percent">
+                {{ downloadPercentage.toFixed(1) }}%
             </div>
         </div>
 
@@ -121,6 +146,7 @@ interface ChatMessageWithTimestamp extends ChatMessage {
 }
 
 const { chat } = usePlayer();
+const { isMuted, initAudioResources, clearAudioResources, changeMuted } = useAudio();
 
 // 响应式数据
 const messages = ref<ChatMessageWithTimestamp[]>([]);
@@ -148,12 +174,34 @@ const localAIStatus = ref<LocalAIStatus>({
 });
 const localAIReady = computed(() => localAIStatus.value.phase === 'ready');
 const modelsReady = computed(() => localAIStatus.value.download.phase === 'ready');
+const ttsAvailable = computed(() => localAIStatus.value.tts.phase === 'ready');
+const ttsUnavailable = computed(() => localAIReady.value && !ttsAvailable.value);
 const downloadActive = computed(() => (
     localAIStatus.value.download.phase === 'checking'
     || localAIStatus.value.download.phase === 'downloading'
 ));
 const runtimePhaseClass = computed(() => (
     downloadActive.value ? 'starting' : localAIStatus.value.phase
+));
+const downloadPercentage = computed(() => Math.min(
+    100,
+    Math.max(0, localAIStatus.value.download.progress)
+));
+const formatBytes = (bytes: number): string => {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const unitIndex = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    return `${(bytes / 1024 ** unitIndex).toFixed(unitIndex >= 3 ? 2 : 1)} ${units[unitIndex]}`;
+};
+const downloadSizeText = computed(() => {
+    const { downloadedBytes, totalBytes } = localAIStatus.value.download;
+    if (totalBytes <= 0) return '正在获取文件列表';
+    return `${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}`;
+});
+const downloadProgressDetail = computed(() => (
+    localAIStatus.value.download.currentFile
+        ? `正在下载 ${localAIStatus.value.download.currentFile}`
+        : localAIStatus.value.download.detail
 ));
 const downloadButtonText = computed(() => {
     if (localAIStatus.value.download.phase === 'checking') return '取消准备';
@@ -166,16 +214,14 @@ const downloadButtonText = computed(() => {
 const runtimeNotice = computed(() => {
     if (localAIStatus.value.error) return localAIStatus.value.error;
     if (localAIStatus.value.download.error) return localAIStatus.value.download.error;
-    if (downloadActive.value) {
-        const current = localAIStatus.value.download.currentFile;
-        if (current && localAIStatus.value.download.detail.includes(current)) {
-            return localAIStatus.value.download.detail;
-        }
-        return current
-            ? `${localAIStatus.value.download.detail} · ${current}`
-            : localAIStatus.value.download.detail;
+    if (localAIReady.value && !ttsAvailable.value) {
+        return localAIStatus.value.tts.detail;
     }
     return '';
+});
+const voiceStatusText = computed(() => {
+    if (ttsUnavailable.value) return 'TTS 不可用';
+    return isMuted.value ? '静音' : '语音';
 });
 const localAIStatusText = computed(() => {
     if (downloadActive.value) return `模型下载 ${localAIStatus.value.download.progress.toFixed(1)}%`;
@@ -185,7 +231,7 @@ const localAIStatusText = computed(() => {
             if (localAIStatus.value.tts.phase === 'starting') return '正在加载语音模型';
             return '正在加载本地大模型';
         case 'ready':
-            return `本地 AI · ${(localAIStatus.value.backend ?? 'cpu').toUpperCase()}`;
+            return `本地 AI · ${(localAIStatus.value.backend ?? 'cpu').toUpperCase()}${ttsAvailable.value ? '' : ' · 仅文字'}`;
         case 'stopping':
             return '正在卸载本地模型';
         case 'error':
@@ -453,8 +499,6 @@ const handleEnter = (e: KeyboardEvent) => {
     }
 };
 
-const { isMuted, initAudioResources, clearAudioResources, changeMuted } = useAudio();
-
 // 设置事件监听器
 onMounted(async () => {
     // 只初始化聊天历史；本地模型必须由用户手动打开开关后才会加载。
@@ -608,6 +652,49 @@ onUnmounted(async () => {
             color: #ffb5b5;
             font-size: 9px;
             text-align: center;
+        }
+    }
+
+    .model-download-progress {
+        position: relative;
+        flex-shrink: 0;
+        margin: -2px 0 10px;
+        padding: 10px 12px 9px;
+        border: 1px solid rgba(226, 143, 172, 0.35);
+        border-radius: 10px;
+        background: rgba(88, 71, 76, 0.96);
+        color: $font-light;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+
+        .download-progress-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 7px;
+            font-size: 11px;
+        }
+
+        .download-file {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .download-size {
+            flex-shrink: 0;
+            color: rgba(255, 255, 255, 0.72);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .download-progress-percent {
+            margin-top: 4px;
+            color: #f1b3c8;
+            font-size: 10px;
+            font-weight: 600;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
         }
     }
 

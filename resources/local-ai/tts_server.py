@@ -11,7 +11,6 @@ from typing import Any
 
 import soundfile as sf
 import torch
-from qwen_tts import Qwen3TTSModel
 
 
 def parse_args() -> argparse.Namespace:
@@ -27,9 +26,16 @@ def parse_args() -> argparse.Namespace:
 class TTSRuntime:
     def __init__(self, model_path: str, ref_audio: str, ref_text_file: str) -> None:
         self.lock = threading.Lock()
-        self.backend = "cuda" if torch.cuda.is_available() else "cpu"
-        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
-        self.dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
+        if not torch.cuda.is_available():
+            raise RuntimeError(
+                "Qwen3-TTS requires an accelerated CUDA/ROCm device in Petmate"
+            )
+        self.backend = "rocm" if torch.version.hip else "cuda"
+        self.device = "cuda:0"
+        self.dtype = torch.bfloat16
+        # Keep the inference package completely untouched on CPU-only machines.
+        from qwen_tts import Qwen3TTSModel
+
         self.model = Qwen3TTSModel.from_pretrained(
             model_path,
             device_map=self.device,

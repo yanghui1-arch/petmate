@@ -1,5 +1,5 @@
 import { BrowserWindow, app } from 'electron'
-import { ChildProcess, execFileSync, spawn } from 'child_process'
+import { ChildProcess, execFile, execFileSync, spawn } from 'child_process'
 import { randomBytes } from 'crypto'
 import { existsSync } from 'fs'
 import { createServer } from 'net'
@@ -82,7 +82,11 @@ class LocalAIManager {
     }
 
     isReady(): boolean {
-        return this.status.phase === 'ready' && this.chatClient !== null && this.ttsPort !== null
+        return this.status.phase === 'ready' && this.chatClient !== null
+    }
+
+    isTTSReady(): boolean {
+        return this.status.tts.phase === 'ready' && this.ttsPort !== null
     }
 
     async setEnabled(enabled: boolean): Promise<LocalAIStatus> {
@@ -133,7 +137,7 @@ class LocalAIManager {
     }
 
     private async performSynthesis(text: string): Promise<Buffer> {
-        if (!this.isReady() || this.ttsPort === null) {
+        if (!this.isTTSReady() || this.ttsPort === null) {
             throw new Error('本地 TTS 尚未就绪')
         }
 
@@ -184,16 +188,6 @@ class LocalAIManager {
                 `缺少大语言模型 ${LLM_MODEL_NAME}`,
                 '请在聊天页重新下载模型'
             )
-            this.assertFile(paths.pythonExecutable, '缺少 Qwen3-TTS Python 运行环境')
-            this.assertFile(paths.ttsServer, '缺少 TTS 本地服务脚本')
-            this.assertFile(
-                join(paths.ttsModel, 'config.json'),
-                `缺少 TTS 模型 ${TTS_MODEL_NAME}`,
-                '请在聊天页重新下载模型'
-            )
-            this.assertFile(paths.referenceAudio, '缺少 TTS 参考音频')
-            this.assertFile(paths.referenceText, '缺少 TTS 参考文本')
-
             this.status.backend = backend
             this.llmPort = await this.findFreePort()
             this.startLlama(llamaExecutable, paths.llmModel, backend, this.llmPort)
@@ -209,6 +203,33 @@ class LocalAIManager {
                 apiKey: this.apiKey
             })
             this.status.llm = { phase: 'ready', detail: `Qwen3.5-2B 已加载（${backend.toUpperCase()}）` }
+            this.status.tts = { phase: 'starting', detail: '正在检测 TTS 加速设备' }
+            this.publishStatus()
+            const ttsAcceleration = await this.detectTTSAcceleration(paths.pythonExecutable)
+            if (this.stopping || !this.status.enabled || this.status.phase !== 'starting') return
+
+            if (!ttsAcceleration) {
+                this.status.ttsBackend = null
+                this.status.tts = {
+                    phase: 'off',
+                    detail: '未启用：没有可供 Qwen3-TTS 使用的 CUDA 或 ROCm 加速设备'
+                }
+                this.status.phase = 'ready'
+                this.publishStatus()
+                logger.info(`[local-ai] 本地大模型已就绪，LLM=${backend}；TTS 因无可用加速设备未启动`)
+                return
+            }
+
+            this.assertFile(paths.pythonExecutable, '缺少 Qwen3-TTS Python 运行环境')
+            this.assertFile(paths.ttsServer, '缺少 TTS 本地服务脚本')
+            this.assertFile(
+                join(paths.ttsModel, 'config.json'),
+                `缺少 TTS 模型 ${TTS_MODEL_NAME}`,
+                '请在聊天页重新下载模型'
+            )
+            this.assertFile(paths.referenceAudio, '缺少 TTS 参考音频')
+            this.assertFile(paths.referenceText, '缺少 TTS 参考文本')
+
             this.status.tts = { phase: 'starting', detail: '正在加载 Qwen3-TTS 0.6B Base' }
             this.publishStatus()
 
@@ -235,6 +256,10 @@ class LocalAIManager {
             this.publishStatus()
             logger.info(`[local-ai] 本地模型已就绪，LLM=${backend}, TTS=${this.status.ttsBackend}`)
         } catch (error) {
+            if (this.stopping || !this.status.enabled) {
+                logger.info('[local-ai] 本地模型启动已取消')
+                return
+            }
             const message = errorMessage(error)
             logger.error(`[local-ai] 启动失败: ${message}`)
             await this.stopProcesses()
@@ -324,14 +349,45 @@ class LocalAIManager {
 
         const gpuNames = this.readWindowsGPUNames()
         if (
-            /(AMD|Radeon|Intel|Arc)/i.test(gpuNames)
+            (hasNvidia || /(AMD|Radeon|Intel.*(?:Arc|Graphics|Iris|UHD|HD Graphics))/i.test(gpuNames))
             && existsSync(join(runtimeRoot, 'vulkan', 'llama-server.exe'))
         ) {
             return 'vulkan'
         }
 
-        if (existsSync(join(runtimeRoot, 'vulkan', 'llama-server.exe'))) return 'vulkan'
         return 'cpu'
+    }
+
+    private detectTTSAcceleration(pythonExecutable: string): Promise<string | null> {
+        if (!existsSync(pythonExecutable)) return Promise.resolve(null)
+
+        const probe = [
+            'import torch',
+            "backend = 'none'",
+            "backend = ('rocm' if torch.version.hip else 'cuda') if torch.cuda.is_available() else backend",
+            'print(backend)'
+        ].join('; ')
+
+        return new Promise(resolvePromise => {
+            execFile(
+                pythonExecutable,
+                ['-c', probe],
+                {
+                    encoding: 'utf8',
+                    windowsHide: true,
+                    timeout: 30_000
+                },
+                (error, stdout) => {
+                    if (error) {
+                        logger.warn(`[local-ai] TTS 加速设备探测失败，将跳过 TTS：${errorMessage(error)}`)
+                        resolvePromise(null)
+                        return
+                    }
+                    const backend = stdout.trim().toLowerCase()
+                    resolvePromise(['cuda', 'rocm'].includes(backend) ? backend : null)
+                }
+            )
+        })
     }
 
     private startLlama(
@@ -433,7 +489,9 @@ class LocalAIManager {
         let lastError = ''
 
         while (Date.now() - startedAt < timeout) {
-            if (this.stopping) throw new Error(`${name} 启动已取消`)
+            if (this.stopping || !this.status.enabled || this.status.phase !== 'starting') {
+                throw new Error(`${name} 启动已取消`)
+            }
             try {
                 const response = await fetch(url, {
                     headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined
