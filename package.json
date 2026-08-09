@@ -93,11 +93,8 @@
         "from": "resources/local-ai",
         "to": "local-ai",
         "filter": [
-          "**/*",
-          "!models/**",
-          "!installation.json",
-          "!**/.cache/**",
-          "!**/*.incomplete"
+          "runtime/llama/**/llama-server.exe",
+          "runtime/llama/**/*.dll"
         ]
       }
     ],

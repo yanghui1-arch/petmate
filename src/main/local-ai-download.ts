@@ -31,20 +31,6 @@ export interface LocalAIModelDownloadStatus {
     error?: string
 }
 
-interface ModelScopeFile {
-    Path: string
-    Type: 'blob' | 'tree'
-    Size: number
-    Sha256?: string
-}
-
-interface ModelScopeListResponse {
-    Success: boolean
-    Data?: {
-        Files?: ModelScopeFile[]
-    }
-}
-
 interface DownloadFile {
     repository: string
     repositoryPath: string
@@ -57,9 +43,6 @@ const LLM_REPOSITORY = 'unsloth/Qwen3.5-2B-GGUF'
 const LLM_FILENAME = 'Qwen3.5-2B-Q4_K_M.gguf'
 const LLM_SIZE = 1_280_835_840
 const LLM_SHA256 = 'aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223'
-const TTS_REPOSITORY = 'Qwen/Qwen3-TTS-12Hz-0.6B-Base'
-const TTS_MODEL_DIRECTORY = 'Qwen3-TTS-12Hz-0.6B-Base'
-const TTS_MAIN_MODEL_SIZE = 1_829_344_272
 
 function initialDownloadStatus(): LocalAIModelDownloadStatus {
     return {
@@ -126,7 +109,7 @@ export class LocalAIModelDownloader {
             totalBytes: 0,
             progress: 0,
             currentFile: '',
-            detail: '正在从 ModelScope 获取模型文件列表'
+            detail: '正在检查本地模型文件'
         }
         this.publish(true)
 
@@ -134,7 +117,7 @@ export class LocalAIModelDownloader {
             mkdirSync(this.modelsRoot, { recursive: true })
             if (existsSync(this.installationMarker)) unlinkSync(this.installationMarker)
 
-            const files = await this.getDownloadFiles(signal)
+            const files = this.getDownloadFiles()
             const totalBytes = files.reduce((sum, file) => sum + file.size, 0)
             let downloadedBytes = files.reduce((sum, file) => {
                 const completedSize = this.fileSize(file.targetPath) === file.size ? file.size : 0
@@ -211,7 +194,6 @@ export class LocalAIModelDownloader {
                 installedAt: new Date().toISOString(),
                 source: 'ModelScope',
                 llm: `${LLM_REPOSITORY}:${LLM_FILENAME}`,
-                tts: TTS_REPOSITORY,
                 totalBytes
             }, null, 2))
 
@@ -258,8 +240,7 @@ export class LocalAIModelDownloader {
         }
     }
 
-    private async getDownloadFiles(signal: AbortSignal): Promise<DownloadFile[]> {
-        const ttsFiles = await this.listModelScopeFiles(TTS_REPOSITORY, '', signal)
+    private getDownloadFiles(): DownloadFile[] {
         return [
             {
                 repository: LLM_REPOSITORY,
@@ -267,53 +248,8 @@ export class LocalAIModelDownloader {
                 targetPath: this.safeTarget(join('llm', LLM_FILENAME)),
                 size: LLM_SIZE,
                 sha256: LLM_SHA256
-            },
-            ...ttsFiles
-                .filter(file => file.Type === 'blob')
-                .map(file => ({
-                    repository: TTS_REPOSITORY,
-                    repositoryPath: file.Path,
-                    targetPath: this.safeTarget(join(
-                        'tts',
-                        TTS_MODEL_DIRECTORY,
-                        ...file.Path.split('/')
-                    )),
-                    size: file.Size,
-                    sha256: file.Sha256
-                }))
-        ]
-    }
-
-    private async listModelScopeFiles(
-        repository: string,
-        root: string,
-        signal: AbortSignal
-    ): Promise<ModelScopeFile[]> {
-        const url = new URL(`https://www.modelscope.cn/api/v1/models/${repository}/repo/files`)
-        url.searchParams.set('Revision', 'master')
-        url.searchParams.set('Root', root)
-        const response = await fetch(url, {
-            signal,
-            headers: { 'User-Agent': 'Petmate-local-ai-downloader' }
-        })
-        if (!response.ok) {
-            throw new Error(`ModelScope 文件列表请求失败 (${response.status})`)
-        }
-
-        const payload = await response.json() as ModelScopeListResponse
-        if (!payload.Success || !payload.Data?.Files) {
-            throw new Error(`ModelScope 没有返回 ${repository} 的文件列表`)
-        }
-
-        const files: ModelScopeFile[] = []
-        for (const file of payload.Data.Files) {
-            if (file.Type === 'tree') {
-                files.push(...await this.listModelScopeFiles(repository, file.Path, signal))
-            } else {
-                files.push(file)
             }
-        }
-        return files
+        ]
     }
 
     private async downloadFile(
@@ -393,7 +329,6 @@ export class LocalAIModelDownloader {
         return (
             existsSync(this.installationMarker)
             && this.fileSize(this.llmModelPath) === LLM_SIZE
-            && this.fileSize(this.ttsMainModelPath) === TTS_MAIN_MODEL_SIZE
         )
     }
 
@@ -434,12 +369,4 @@ export class LocalAIModelDownloader {
         return join(this.modelsRoot, 'llm', LLM_FILENAME)
     }
 
-    private get ttsMainModelPath(): string {
-        return join(
-            this.modelsRoot,
-            'tts',
-            TTS_MODEL_DIRECTORY,
-            'model.safetensors'
-        )
-    }
 }

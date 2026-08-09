@@ -17,25 +17,9 @@ const partialModel = join(
 )
 
 const mockLLMSize = 1_280_835_840
-const mockTTSSize = 1_829_344_272
 
 globalThis.fetch = async (input, init = {}) => {
   const url = String(input)
-  if (url.includes('/api/v1/models/')) {
-    return new Response(JSON.stringify({
-      Success: true,
-      Data: {
-        Files: [{
-          Path: 'model.safetensors',
-          Type: 'blob',
-          Size: mockTTSSize
-        }]
-      }
-    }), {
-      headers: { 'Content-Type': 'application/json' }
-    })
-  }
-
   assert.match(url, /Qwen3\.5-2B-Q4_K_M\.gguf$/)
   const range = new Headers(init.headers).get('Range')
   const start = range ? Number(range.match(/^bytes=(\d+)-$/)?.[1] ?? 0) : 0
@@ -97,7 +81,7 @@ try {
     assert.ok(progressUpdates.some(status => (
       status.currentFile === 'Qwen3.5-2B-Q4_K_M.gguf'
       && status.progress > 0
-      && status.totalBytes === mockLLMSize + mockTTSSize
+      && status.totalBytes === mockLLMSize
     )))
   }
 

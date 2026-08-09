@@ -565,62 +565,12 @@ function waitForTTSReady(timeout: number = 5000): Promise<boolean> {
 
 /**
  * 发送聊天信息
- * 文本按 token 流式发送；TTS 按完整语义片段合成 WAV，片段生成后立即发送并顺序播放。
- * 这属于分段流式播放，不是模型原生的音频帧流式生成。
- * chat-chunk为文本信息流的参数，tts-audio-chunk为音频信息流的参数
+ * 本地模型按 token 流式发送文本，聊天链路不再启动或调用 TTS。
  * @param messages 聊天信息
- * @throws TTSProcessError 如果tts任务的参数未正确初始化
  * @throws ChatLLMConfigError 如果传过来的聊天信息不是用户消息
  * @throws LLMConfigError 如果大模型配置错误
  */
-function takeSpeechSegments(buffer: string, flush: boolean = false): {
-    segments: string[];
-    remainder: string;
-} {
-    const segments: string[] = [];
-    let remainder = buffer;
-
-    while (remainder.length > 0) {
-        const sentenceEnd = remainder.search(/[。！？!?；;\n]/);
-        if (sentenceEnd >= 0) {
-            const segment = remainder.slice(0, sentenceEnd + 1).trim();
-            remainder = remainder.slice(sentenceEnd + 1);
-            if (segment) segments.push(segment);
-            continue;
-        }
-
-        if (remainder.length >= 80) {
-            const window = remainder.slice(0, 80);
-            const commaEnd = Math.max(
-                window.lastIndexOf('，'),
-                window.lastIndexOf(','),
-                window.lastIndexOf('、')
-            );
-            const cutAt = commaEnd >= 30 ? commaEnd + 1 : 80;
-            const segment = remainder.slice(0, cutAt).trim();
-            remainder = remainder.slice(cutAt);
-            if (segment) segments.push(segment);
-            continue;
-        }
-        break;
-    }
-
-    if (flush && remainder.trim()) {
-        segments.push(remainder.trim());
-        remainder = '';
-    }
-    return { segments, remainder };
-}
-
-function cleanSpeechText(text: string): string {
-    return text
-        .replace(/\[([^\]]+)]\([^)]+\)/g, '$1')
-        .replace(/[*_`#>]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-}
-
-async function chat(message: ChatMessage, sender: WebContents, speak: boolean = true): Promise<void> {
+async function chat(message: ChatMessage, sender: WebContents, _speak: boolean = false): Promise<void> {
     if (!localAIManager.isReady()) {
         throw new LLMConfigError('本地模型尚未就绪，请先打开聊天页顶部的本地 AI 开关');
     }
@@ -638,39 +588,12 @@ async function chat(message: ChatMessage, sender: WebContents, speak: boolean = 
         chatHistoryMessages.map(historyMessage => historyMessage.chatMessage)
     );
     let response: string = "";
-    let speechBuffer = "";
-    let ttsFailure: unknown = null;
-    let ttsPipeline = Promise.resolve();
-    const shouldSpeak = speak && localAIManager.isTTSReady();
-
-    const enqueueSpeech = (segments: string[]) => {
-        for (const rawSegment of segments) {
-            const segment = cleanSpeechText(rawSegment);
-            if (!segment) continue;
-            const synthesis = localAIManager.synthesize(segment);
-            ttsPipeline = ttsPipeline.then(async () => {
-                try {
-                    const audio = await synthesis;
-                    mainWindow?.webContents.send('tts-audio-chunk', audio, 'wav');
-                } catch (error) {
-                    ttsFailure ??= error;
-                    logger.error(`[local-ai] 流式 TTS 片段合成失败: ${error}`);
-                }
-            });
-        }
-    };
 
     for await (const chunk of runner) {
         const content = chunk.choices[0].delta.content ?? "";
         if (content !== "") {
             response += content;
             mainWindow?.webContents.send('chat-chunk', content);
-            if (shouldSpeak) {
-                speechBuffer += content;
-                const speech = takeSpeechSegments(speechBuffer);
-                speechBuffer = speech.remainder;
-                enqueueSpeech(speech.segments);
-            }
         }
     }
 
@@ -680,20 +603,6 @@ async function chat(message: ChatMessage, sender: WebContents, speak: boolean = 
     });
     saveChatHistoryMessages();
     mainWindow?.webContents.send('chat-finished');
-
-    if (shouldSpeak) {
-        const finalSpeech = takeSpeechSegments(speechBuffer, true);
-        enqueueSpeech(finalSpeech.segments);
-        await ttsPipeline;
-        if (ttsFailure) {
-            mainWindow?.webContents.send(
-                'tts-failed',
-                ttsFailure instanceof Error ? ttsFailure.message : String(ttsFailure)
-            );
-        } else {
-            mainWindow?.webContents.send('tts-finished');
-        }
-    }
 
     handleChatAchievement();
 }

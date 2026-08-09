@@ -22,14 +22,6 @@
                 >
                     {{ downloadButtonText }}
                 </n-button>
-                <div class="mute-toggle">
-                    <span>{{ voiceStatusText }}</span>
-                    <n-switch
-                        :value="isMuted"
-                        :disabled="!localAIReady || ttsUnavailable"
-                        @update:value="changeMuted"
-                    />
-                </div>
             </div>
             <div v-if="runtimeNotice" class="runtime-error" :title="runtimeNotice">
                 {{ runtimeNotice }}
@@ -132,7 +124,6 @@
 import { ref, nextTick, onMounted, onUnmounted } from 'vue';
 import { usePlayer } from '../hooks/usePlayer';
 import type { ChatMessage, HistoryChatMessage } from '../types/llm';
-import { useAudio } from '../hooks/useAudio';
 import petmateAvatar from "../assets/image/youmei-avatar.png";
 import userAvatar from "../assets/image/petmate-3.jpg";
 import type { LocalAIStatus } from '../../main/local-ai';
@@ -146,7 +137,6 @@ interface ChatMessageWithTimestamp extends ChatMessage {
 }
 
 const { chat } = usePlayer();
-const { isMuted, initAudioResources, clearAudioResources, changeMuted } = useAudio();
 
 // 响应式数据
 const messages = ref<ChatMessageWithTimestamp[]>([]);
@@ -160,7 +150,6 @@ const localAIStatus = ref<LocalAIStatus>({
     enabled: false,
     phase: 'off',
     backend: null,
-    ttsBackend: null,
     download: {
         phase: 'missing',
         downloadedBytes: 0,
@@ -169,13 +158,10 @@ const localAIStatus = ref<LocalAIStatus>({
         currentFile: '',
         detail: '尚未下载本地模型'
     },
-    llm: { phase: 'off', detail: '未加载' },
-    tts: { phase: 'off', detail: '未加载' }
+    llm: { phase: 'off', detail: '未加载' }
 });
 const localAIReady = computed(() => localAIStatus.value.phase === 'ready');
 const modelsReady = computed(() => localAIStatus.value.download.phase === 'ready');
-const ttsAvailable = computed(() => localAIStatus.value.tts.phase === 'ready');
-const ttsUnavailable = computed(() => localAIReady.value && !ttsAvailable.value);
 const downloadActive = computed(() => (
     localAIStatus.value.download.phase === 'checking'
     || localAIStatus.value.download.phase === 'downloading'
@@ -195,7 +181,7 @@ const formatBytes = (bytes: number): string => {
 };
 const downloadSizeText = computed(() => {
     const { downloadedBytes, totalBytes } = localAIStatus.value.download;
-    if (totalBytes <= 0) return '正在获取文件列表';
+    if (totalBytes <= 0) return '正在准备下载';
     return `${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}`;
 });
 const downloadProgressDetail = computed(() => (
@@ -214,24 +200,16 @@ const downloadButtonText = computed(() => {
 const runtimeNotice = computed(() => {
     if (localAIStatus.value.error) return localAIStatus.value.error;
     if (localAIStatus.value.download.error) return localAIStatus.value.download.error;
-    if (localAIReady.value && !ttsAvailable.value) {
-        return localAIStatus.value.tts.detail;
-    }
     return '';
-});
-const voiceStatusText = computed(() => {
-    if (ttsUnavailable.value) return 'TTS 不可用';
-    return isMuted.value ? '静音' : '语音';
 });
 const localAIStatusText = computed(() => {
     if (downloadActive.value) return `模型下载 ${localAIStatus.value.download.progress.toFixed(1)}%`;
     if (!modelsReady.value) return '本地 AI 未安装';
     switch (localAIStatus.value.phase) {
         case 'starting':
-            if (localAIStatus.value.tts.phase === 'starting') return '正在加载语音模型';
             return '正在加载本地大模型';
         case 'ready':
-            return `本地 AI · ${(localAIStatus.value.backend ?? 'cpu').toUpperCase()}${ttsAvailable.value ? '' : ' · 仅文字'}`;
+            return `本地 AI · ${(localAIStatus.value.backend ?? 'cpu').toUpperCase()}`;
         case 'stopping':
             return '正在卸载本地模型';
         case 'error':
@@ -462,7 +440,7 @@ const handleSend = async () => {
         };
 
         // 发送消息到主进程
-        const success = await chat(chatMessage, !isMuted.value);
+        const success = await chat(chatMessage, false);
 
         if (!success) {
             // 发送失败的处理 - 更新等待中的消息为错误状态
@@ -532,19 +510,6 @@ onMounted(async () => {
         void finishWhenChunksProcessed();
     });
 
-    // 监听音频流块
-    if (isMuted.value === false) {
-        initAudioResources();
-    }
-});
-
-watch(isMuted, (newVal) => {
-    // 如果为静音就清理掉音频资源，如果非静音就初始化资源
-    if (newVal === true) {
-        clearAudioResources();
-    } else {
-        initAudioResources();
-    }
 });
 
 
@@ -554,7 +519,6 @@ onUnmounted(async () => {
         clearInterval(streamCheckInterval);
         streamCheckInterval = null;
     }
-    clearAudioResources();
     window.api.removeAllTextChunkListeners();
     window.api.removeAllChatFinishedListeners();
     window.api.removeAllLocalAIStatusListeners();
@@ -611,8 +575,7 @@ onUnmounted(async () => {
             max-width: 255px;
         }
 
-        .runtime-toggle,
-        .mute-toggle {
+        .runtime-toggle {
             display: flex;
             align-items: center;
             gap: 6px;
