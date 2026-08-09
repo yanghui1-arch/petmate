@@ -2,7 +2,6 @@
  * 所有跟页面展示的方法都放在这个hook下面
  */
 
-import { ChatLLMConfig, TTSLLMConfig } from "../types/llm"
 import { ActivityInfo, Item, ItemType, Wish } from "../types/common"
 
 export function useShow() {
@@ -131,34 +130,6 @@ export function useShow() {
     }
 
     /**
-     * 获取Chat LLM和TTS LLM的配置
-     * @returns Chat LLM和TTS LLM的配置
-     */
-    const getLLMConfig = async (): Promise<{
-        chatLLMConfig: ChatLLMConfig | undefined,
-        ttsLLMConfig: TTSLLMConfig | undefined
-    }> => {
-        try {
-            const chatLLMConfigRes = await window.api.getChatLLMConfig()
-            const ttsLLMConfigRes = await window.api.getTTSLLMConfig()
-            if (chatLLMConfigRes.code === 200 && ttsLLMConfigRes.code === 200) {
-                return {
-                    chatLLMConfig: chatLLMConfigRes.data,
-                    ttsLLMConfig: ttsLLMConfigRes.data
-                }
-            } else {
-                throw new Error(chatLLMConfigRes.message || ttsLLMConfigRes.message)
-            }
-        } catch (error) {
-            console.error(error)
-            return {
-                chatLLMConfig: undefined,
-                ttsLLMConfig: undefined
-            }
-        }
-    }
-
-    /**
      * 动态引入资源路径
      * @param firstDir 资源所属的一级目录，比如item, buff, activity
      * @param imagePath 图片路径，如food/donut或fashion/五一短裙套装.png
@@ -187,7 +158,6 @@ export function useShow() {
         getItemInfo,
         getActivities,
         getPetmateOneWish,
-        getLLMConfig,
         getImageURL
     }
 }

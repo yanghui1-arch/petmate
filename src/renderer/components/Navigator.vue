@@ -105,11 +105,6 @@
             <span class="nav-text">恢复数据</span>
             <span class="nav-arrow">→</span>
           </router-link>
-          <div class="page-navigator-item" style="cursor: pointer;" @click="handleModelConfigRouter">
-            <span class="nav-icon">⚙️</span>
-            <span class="nav-text">模型配置</span>
-            <span class="nav-arrow">→</span>
-          </div>
           <!-- <router-link
             to="/settings"
             class="page-navigator-item"
@@ -143,10 +138,6 @@ const show = computed({
   get: () => props.active,
   set: (val: boolean) => emit("update:active", val),
 });
-
-const handleModelConfigRouter = () => {
-  window.api.openNewWindow("/config", 800, 500)
-}
 </script>
 
 <style lang="scss" scoped>
