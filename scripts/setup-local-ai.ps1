@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('Auto', 'Cuda', 'Vulkan', 'Cpu')]
+    [ValidateSet('Auto', 'All', 'Cuda', 'Vulkan', 'Cpu')]
     [string]$Backend = 'Auto'
 )
 
@@ -104,10 +104,11 @@ try {
     $cpuAsset = Get-ReleaseAsset $release '^llama-.*-bin-win-cpu-x64\.zip$'
     Install-LlamaArchive $cpuAsset 'cpu' $true
 
-    if ($selectedBackend -eq 'vulkan') {
+    if ($selectedBackend -in @('vulkan', 'all')) {
         $vulkanAsset = Get-ReleaseAsset $release '^llama-.*-bin-win-vulkan-x64\.zip$'
         Install-LlamaArchive $vulkanAsset 'vulkan' $true
-    } elseif ($selectedBackend -eq 'cuda') {
+    }
+    if ($selectedBackend -in @('cuda', 'all')) {
         $cudaAsset = Get-ReleaseAsset $release '^llama-.*-bin-win-cuda-12\.4-x64\.zip$'
         $cudaRuntimeAsset = Get-ReleaseAsset $release '^cudart-llama-bin-win-cuda-12\.4-x64\.zip$'
         Install-LlamaArchive $cudaAsset 'cuda' $true
@@ -183,7 +184,12 @@ try {
     if (-not $qwenTtsReady) {
         Write-Step 'Installing qwen-tts 0.1.1 with the portable CUDA runtime'
         & $portablePython -m pip install --upgrade pip
-        & $portablePython -m pip install 'torch==2.11.0' 'torchaudio==2.11.0' --index-url 'https://download.pytorch.org/whl/cu128'
+        & $portablePython -m pip install `
+            --force-reinstall `
+            --no-deps `
+            'torch==2.11.0' `
+            'torchaudio==2.11.0' `
+            --index-url 'https://download.pytorch.org/whl/cu128'
         if ($LASTEXITCODE -ne 0) {
             throw 'Failed to install the CUDA PyTorch runtime'
         }
@@ -194,6 +200,10 @@ try {
             'torchaudio==2.11.0'
         if ($LASTEXITCODE -ne 0) {
             throw 'Failed to install qwen-tts'
+        }
+        & $portablePython -c "import torch; assert torch.version.cuda is not None, torch.__version__"
+        if ($LASTEXITCODE -ne 0) {
+            throw 'CUDA PyTorch verification failed after installation'
         }
     }
 

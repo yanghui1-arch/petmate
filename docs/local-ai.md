@@ -38,10 +38,14 @@ ModelScope 下载约 3.8 GB 文件，并执行大小与 SHA-256 校验。下载�
 可以手动指定当前开发机需要准备的 llama.cpp 后端：
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup-local-ai.ps1 -Backend All
 powershell -ExecutionPolicy Bypass -File scripts/setup-local-ai.ps1 -Backend Cuda
 powershell -ExecutionPolicy Bypass -File scripts/setup-local-ai.ps1 -Backend Vulkan
 powershell -ExecutionPolicy Bypass -File scripts/setup-local-ai.ps1 -Backend Cpu
 ```
+
+`npm run build:win` 会自动以 `All` 模式准备 CPU、Vulkan、CUDA 三套 llama.cpp
+运行时和 CUDA 版 TTS 环境，发布包不依赖打包机器所用的显卡类型。
 
 ## 文本流与分段 TTS
 
