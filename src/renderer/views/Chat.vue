@@ -186,7 +186,7 @@ const downloadSizeText = computed(() => {
 });
 const downloadProgressDetail = computed(() => (
     localAIStatus.value.download.currentFile
-        ? `正在下载 ${localAIStatus.value.download.currentFile}`
+        ? `正在下载`
         : localAIStatus.value.download.detail
 ));
 const downloadButtonText = computed(() => {
