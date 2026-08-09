@@ -16,7 +16,11 @@
                   v-if="equippedTitle || ownedTitles.length > 0"
                   type="button"
                   class="home-player-title-slot"
-                  :class="{ 'home-player-title-slot-empty': !equippedTitle }"
+                  :class="{
+                    'home-player-title-slot-empty': !equippedTitle,
+                    'home-player-title-slot-clickable': equippedTitle,
+                  }"
+                  aria-label="选择称号"
                   @click="openTitleSelector"
                 >
                   <img
@@ -532,6 +536,25 @@ const showModal = (item: PackageItemInfo) => {
         align-items: center;
         justify-content: center;
         overflow: hidden;
+      }
+      .home-player-title-slot-clickable {
+        cursor: pointer;
+        transition: transform 0.18s ease, filter 0.18s ease;
+
+        &:hover {
+          transform: translateY(-2px) scale(1.02);
+          filter: brightness(1.06) drop-shadow(0 4px 6px rgba(243, 166, 189, 0.42));
+        }
+
+        &:active {
+          transform: translateY(0) scale(0.99);
+        }
+
+        &:focus-visible {
+          outline: 2px solid #f3a6bd;
+          outline-offset: 2px;
+          border-radius: 6px;
+        }
       }
       .home-player-title-slot-empty {
         opacity: 0;
