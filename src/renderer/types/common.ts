@@ -1,6 +1,6 @@
 
 // 物品
-export type ItemType = "food" | "drink" | "medicine" | "gift" | "limit" | "ticket" | "others"
+export type ItemType = "food" | "drink" | "medicine" | "gift" | "limit" | "ticket" | "fashion" | "others"
 export type ItemTypeValue = ItemType | readonly ItemType[]
 
 export function getItemTypes(type: ItemTypeValue): readonly ItemType[] {
@@ -24,6 +24,7 @@ export interface Item {
     effect: ItemEffect,
     description: string,
     requirement: Requirement
+    skinId?: string,
     expired?: boolean
 }
 

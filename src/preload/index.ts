@@ -51,7 +51,6 @@ contextBridge.exposeInMainWorld('api', {
     cancelActivity: (petmateId: number) => ipcRenderer.invoke('cancel-activity', petmateId),
     claimActivityReward: (petmateId: number) => ipcRenderer.invoke('claim-activity-reward', petmateId),
     claimWishReward: (petmateId: number, wishId: string) => ipcRenderer.invoke('claim-wish-reward', petmateId, wishId),
-    claimLaborSkin: () => ipcRenderer.invoke('claim-labor-skin'),
     equipPlayerSkin: (skinId: string) => ipcRenderer.invoke('equip-player-skin', skinId),
     equipPlayerTitle: (titleId: string) => ipcRenderer.invoke('equip-player-title', titleId),
     // 克隆音色

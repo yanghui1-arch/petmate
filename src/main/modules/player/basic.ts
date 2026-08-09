@@ -21,8 +21,9 @@ import { Wish } from "../../types/wish";
 import { getMainWindow, getPageWindow } from "../../../main";
 import { calcBuffEffect } from "../utils/calc";
 import { handleCharacterLevelAchievement, handleFiftyAffectionAchievement, handleEmotionAchievement } from "./achieve";
+import { playerResourceManager, SkinAlreadyOwnedError } from "./resource";
 
-const UNUSABLE_PACKAGE_ITEM_TYPES = ["ticket"];
+const UNUSABLE_PACKAGE_ITEM_TYPES = ["ticket", "fashion"];
 
 export type PackageItemConsumeRequirement = {
     itemId: number;
@@ -40,17 +41,33 @@ export type PackageItemConsumeRequirement = {
  */
 export function buyItem(itemId: number, count: number): Item {
     const player: PlayerInfo = playerManager.getPlayer();
-    const playerItemNum: number = player.items.find(item => item.id === itemId)?.count ?? 0;
     const item: Item | undefined = itemManager.getItem(itemId);
     if (!item) {
         throw new NotFoundError(`购买物品的时候发现物品不存在: ${itemId}`);
+    }
+    if (!Number.isInteger(count) || count <= 0) {
+        throw new Error(`购买物品数量不合法: ${count}`);
+    }
+    if (item.skinId && count !== 1) {
+        throw new Error("时装每次只能购买一套");
     }
     const totalPrice = item.price * count;
     const playerCash = player.cash;
     if (playerCash < totalPrice) {
         throw new NotEnoughError(`购买物品的时候发现玩家现金不足: 购买${count}个物品id[${itemId}]， 需要${totalPrice}元， 但是只有${playerCash}元`);
     }
+    if (item.skinId && playerResourceManager.hasSkin(item.skinId)) {
+        throw new SkinAlreadyOwnedError(item.name);
+    }
+
     player.cash -= totalPrice;
+    if (item.skinId) {
+        playerResourceManager.unlockSkin(item.skinId);
+        playerManager.updatePlayer(player);
+        return item;
+    }
+
+    const playerItemNum: number = player.items.find(item => item.id === itemId)?.count ?? 0;
     if (playerItemNum === 0) {
         player.items.push({
             id: itemId,

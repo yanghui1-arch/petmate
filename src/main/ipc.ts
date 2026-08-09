@@ -9,7 +9,7 @@ import { playerManager, ServerData } from './modules/store';
 import { PlayerInfo } from './types/player';
 import { Response } from '../types/response';
 import { consumeItem, consumePackageItems, PackageItemConsumeRequirement } from './modules/player/basic';
-import { LABOR_SKIRT_SKIN_ID, playerResourceManager, SkinAlreadyOwnedError } from './modules/player/resource';
+import { playerResourceManager } from './modules/player/resource';
 import logger from './log';
 import { PetMate } from './modules/petmate/petmate';
 import { startActivity, finishActivity, cancelActivity, claimActivityReward } from './modules/player/act';
@@ -218,33 +218,6 @@ ipcMain.handle("get-player-resources", (_: IpcMainInvokeEvent): Response<PlayerR
     }
 })
 
-ipcMain.handle("claim-labor-skin", (_: IpcMainInvokeEvent): Response<PlayerResourceState> => {
-    try {
-        const resources = playerResourceManager.claimSkin(LABOR_SKIRT_SKIN_ID);
-        notifyPlayerResourcesUpdated(resources);
-
-        return {
-            code: 200,
-            message: "领取成功",
-            data: resources
-        } as Response<PlayerResourceState>;
-    } catch (error) {
-        logger.error(`领取五一短裙套装失败: ${error}`);
-        if (error instanceof SkinAlreadyOwnedError) {
-            return {
-                code: 409,
-                message: error.message,
-                data: playerResourceManager.getResources()
-            } as Response<PlayerResourceState>;
-        }
-
-        return {
-            code: 400,
-            message: error instanceof Error ? error.message : "领取失败"
-        } as Response<PlayerResourceState>;
-    }
-})
-
 ipcMain.handle("equip-player-skin", (_: IpcMainInvokeEvent, skinId: string): Response<PlayerResourceState> => {
     try {
         const resources = playerResourceManager.equipSkin(skinId);
@@ -334,16 +307,19 @@ ipcMain.handle("complete-commission", (_: IpcMainInvokeEvent, commissionId: stri
 ipcMain.handle("buy-item", (_: IpcMainInvokeEvent, itemId: number, count: number): Response<Item> => {
     try {
         const item: Item = buyItem(itemId, count);
+        if (item.skinId) {
+            notifyPlayerResourcesUpdated(playerResourceManager.getResources());
+        }
         return {
             code: 200,
-            message: "购买物品成功",
+            message: item.skinId ? "购买时装成功" : "购买物品成功",
             data: item
         } as Response<Item>;
     } catch (error) {
         logger.error(`购买物品失败: ${error}`);
         return {
             code: 400,
-            message: "购买物品失败"
+            message: error instanceof Error ? error.message : "购买物品失败"
         } as Response<Item>;
     }
 })

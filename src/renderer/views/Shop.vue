@@ -277,6 +277,7 @@ const handleSearch = () => {
 
 const shopTypeList = ref([
   { name: "limit" as ItemType, label: "⏰限时" },
+  { name: "fashion" as ItemType, label: "👗时装" },
   { name: "food" as ItemType, label: "🍔食物" },
   { name: "medicine" as ItemType, label: "💊药品" },
   { name: "gift" as ItemType, label: "🎁礼物" },

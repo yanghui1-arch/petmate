@@ -54,7 +54,6 @@ interface IElectronAPI {
   cancelActivity: (petmateId: number) => Promise<Response<void>>;
   claimActivityReward: (petmateId: number) => Promise<Response<void>>;
   claimWishReward: (petmateId: number, wishId: string) => Promise<Response<boolean>>;
-  claimLaborSkin: () => Promise<Response<PlayerResourceState>>;
   equipPlayerSkin: (skinId: string) => Promise<Response<PlayerResourceState>>;
   equipPlayerTitle: (titleId: string) => Promise<Response<PlayerResourceState>>;
 

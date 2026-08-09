@@ -12,7 +12,6 @@ import Settings from '@/views/Settings.vue'
 import Chat from '@/views/Chat.vue'
 import Config from '@/views/Config.vue'
 import DataRecovery from '@/views/DataRecovery.vue'
-import LaborSkinGet from '@/views/LaborSkinGet.vue'
 import Wardrobe from '@/views/Wardrobe.vue'
 
 // meta属性可以为每个路由设置一些自定义属性，在.vue文件中引入useRoute()，通过route.meta.xxx就可以实现一些针对不同页面的逻辑
@@ -23,7 +22,6 @@ const routes = [
   { path: '/shop', name: 'Shop', component: Shop },
   { path: '/activity', name: 'Activity', component: Activity },
   { path: '/commission', name: 'Commission', component: Commission },
-  { path: '/labor-skin-get', name: 'LaborSkinGet', component: LaborSkinGet, meta: { hideNavigator: true } },
   { path: '/wardrobe', name: 'Wardrobe', component: Wardrobe },
   { path: '/wish', name: 'Wish', component: Wish },
   { path: '/card', name: 'Card', component: Card },

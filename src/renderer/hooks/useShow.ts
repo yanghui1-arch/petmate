@@ -161,7 +161,7 @@ export function useShow() {
     /**
      * 动态引入资源路径
      * @param firstDir 资源所属的一级目录，比如item, buff, activity
-     * @param imagePath 图片路径，如food/donut
+     * @param imagePath 图片路径，如food/donut或fashion/五一短裙套装.png
      * @returns 资源路径
      */
     const getImageURL = (firstDir: string, imagePath: string) => {
@@ -170,7 +170,8 @@ export function useShow() {
             if (parsedImagePath.length > 2) throw new Error("图片路径不合法，请确保是food/donut这样的格式");
             const secondDir = parsedImagePath[0]
             const imageName = parsedImagePath[1]
-            const pathname = new URL(`../assets/image/${firstDir}/${secondDir}/${imageName}.webp`, import.meta.url).pathname
+            const imageFileName = /\.[a-z0-9]+$/i.test(imageName) ? imageName : `${imageName}.webp`
+            const pathname = new URL(`../assets/image/${firstDir}/${secondDir}/${imageFileName}`, import.meta.url).pathname
             if(pathname.includes("undefined")) throw new Error(`图片路径../assets/image/${firstDir}/${secondDir}/${imageName}.webp不存在`);
             return pathname
         } catch (error) {

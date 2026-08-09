@@ -67,7 +67,7 @@ const createDefaultPlayerResources = (): PlayerResourceState => {
 
 export class SkinAlreadyOwnedError extends Error {
     constructor(skinName: string) {
-        super(`${skinName}已经领取过了，不可以重复领取，可以去衣橱换装。`)
+        super(`${skinName}已经拥有，不可以重复购买，可以去衣橱换装。`)
         this.name = "SkinAlreadyOwnedError"
     }
 }
@@ -182,7 +182,12 @@ class PlayerResourceManager {
         return COMMISSION_REWARD_BUNDLES[commissionId]
     }
 
-    claimSkin(skinId: string): PlayerResourceState {
+    hasSkin(skinId: string): boolean {
+        this.ensureInit()
+        return this.resources.skins.some(resource => resource.id === skinId)
+    }
+
+    unlockSkin(skinId: string): PlayerResourceState {
         this.ensureInit()
 
         const skinDefinition = SKIN_DEFINITIONS[skinId]
@@ -190,8 +195,7 @@ class PlayerResourceManager {
             throw new Error(`未知套装: ${skinId}`)
         }
 
-        const hasSkin = this.resources.skins.some(resource => resource.id === skinId)
-        if (hasSkin) {
+        if (this.hasSkin(skinId)) {
             throw new SkinAlreadyOwnedError(skinDefinition.name)
         }
 

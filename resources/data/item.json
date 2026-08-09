@@ -468,5 +468,22 @@
             "affectionLevel": 1
         },
         "effect": {}
+    },
+    {
+        "id": 25,
+        "name": "五一短裙套装",
+        "type": "fashion",
+        "description": "充满劳动节活力的短裙套装，购买后永久解锁，可前往衣橱实装。",
+        "url": "fashion/五一短裙套装.png",
+        "price": 20000,
+        "requirement": {
+            "level": 1,
+            "singLevel": 1,
+            "drawLevel": 1,
+            "gameLevel": 1,
+            "affectionLevel": 1
+        },
+        "effect": {},
+        "skinId": "youmei-labor-skirt-2026"
     }
 ]

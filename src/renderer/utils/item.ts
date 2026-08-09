@@ -1,7 +1,7 @@
 import { PackageItemInfo } from "../types/player";
 import { getItemTypes, Item, ItemTypeValue } from "../types/common";
 
-const UNUSABLE_PACKAGE_ITEM_TYPES = ["ticket"];
+const UNUSABLE_PACKAGE_ITEM_TYPES = ["ticket", "fashion"];
 
 const EFFECT_MAP = {
     hungry: "饱食度",

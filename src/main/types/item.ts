@@ -1,7 +1,7 @@
 import { Buff } from "./buff";
 import { Requirement } from "./common";
 
-export type ItemType = "food" | "drink" | "medicine" | "gift" | "limit" | "ticket" | "others"
+export type ItemType = "food" | "drink" | "medicine" | "gift" | "limit" | "ticket" | "fashion" | "others"
 export type ItemTypeValue = ItemType | readonly ItemType[]
 
 export function getItemTypes(type: ItemTypeValue): readonly ItemType[] {
@@ -25,6 +25,7 @@ export type Item = {
     price: number,
     effect: ItemEffect,
     description: string,
+    skinId?: string,
     expired?: boolean,
 }
 

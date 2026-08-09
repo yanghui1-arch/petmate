@@ -24,9 +24,9 @@
           </div>
         </div>
         <!-- 数量选择 -->
-        <div class="item-modal-title">{{ title }}</div>
+        <div class="item-modal-title">{{ displayTitle }}</div>
         <div class="item-modal-content">
-          <div class="counter">
+          <div v-if="!isFashionItem" class="counter">
             <button class="counter-sub-btn" @click="subCount">-</button>
             <input
               type="number"
@@ -50,7 +50,7 @@
 import { defineProps, ref, PropType, watch } from "vue";
 import { usePlayer } from "../../hooks/usePlayer";
 import { useShow } from "../../hooks/useShow";
-import { Item, Buff } from "../../types/common";
+import { Item, Buff, getItemTypes } from "../../types/common";
 import { openMessageModal } from "../../hooks/useInteract";
 import { canUseItemFromPackage, convertItemEffect } from "../../utils/item";
 
@@ -80,11 +80,21 @@ const itemImageURL = computed(() => {
   return getImageURL("item", props.item.url);
 });
 
+const isFashionItem = computed(() =>
+  getItemTypes(props.item.type).includes("fashion")
+);
+
+const displayTitle = computed(() =>
+  isFashionItem.value ? "确认购买该时装" : props.title
+);
+
 const effectsTip = computed(() => {
+  if (isFashionItem.value) return "购买后获得";
   return canUseItemFromPackage(props.item) ? "使用后获得以下效果" : "用途";
 });
 
 const itemEffectList = computed(() => {
+  if (isFashionItem.value) return ["永久解锁，可前往衣橱实装"];
   if (!props.item?.effect) return [];
   if (!canUseItemFromPackage(props.item)) return ["不能在背包中直接使用"];
   const effectList: string[] = [];
