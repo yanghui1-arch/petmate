@@ -543,7 +543,8 @@ const showModal = (item: PackageItemInfo) => {
 
         &:hover {
           transform: translateY(-2px) scale(1.02);
-          filter: brightness(1.06) drop-shadow(0 4px 6px rgba(243, 166, 189, 0.42));
+          filter: brightness(1.06)
+            drop-shadow(0 4px 6px rgba(243, 166, 189, 0.42));
         }
 
         &:active {
