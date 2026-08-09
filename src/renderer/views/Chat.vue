@@ -1,8 +1,52 @@
 <template>
     <div class="chat-container">
         <div class="chat-header">
-            <span style="font-family: Petmate; font-size: 30px">尤美 Chat</span>
-            <n-switch :value="isMuted" @update:value="changeMuted"/>
+            <span class="chat-title">尤美 Chat</span>
+            <div class="runtime-controls">
+                <div class="runtime-toggle">
+                    <span class="status-dot" :class="runtimePhaseClass"></span>
+                    <span>{{ localAIStatusText }}</span>
+                    <n-switch
+                        :value="localAIStatus.enabled"
+                        :loading="localAISwitching"
+                        :disabled="!modelsReady || downloadActive || localAIStatus.phase === 'stopping'"
+                        @update:value="toggleLocalAI"
+                    />
+                </div>
+                <n-button
+                    v-if="!modelsReady || downloadActive"
+                    size="tiny"
+                    :type="downloadActive ? 'warning' : 'primary'"
+                    ghost
+                    @click="handleModelDownload"
+                >
+                    {{ downloadButtonText }}
+                </n-button>
+            </div>
+            <div v-if="runtimeNotice" class="runtime-error" :title="runtimeNotice">
+                {{ runtimeNotice }}
+            </div>
+        </div>
+
+        <div v-if="downloadActive" class="model-download-progress">
+            <div class="download-progress-meta">
+                <span class="download-file" :title="downloadProgressDetail">
+                    {{ downloadProgressDetail }}
+                </span>
+                <span class="download-size">{{ downloadSizeText }}</span>
+            </div>
+            <n-progress
+                type="line"
+                :height="10"
+                :percentage="downloadPercentage"
+                :show-indicator="false"
+                color="#e28fac"
+                rail-color="rgba(255, 255, 255, 0.18)"
+                processing
+            />
+            <div class="download-progress-percent">
+                {{ downloadPercentage.toFixed(1) }}%
+            </div>
         </div>
 
         <!-- 聊天消息显示区域 -->
@@ -53,19 +97,19 @@
             <n-input
                 v-model:value="inputMessage"
                 size="small"
-                placeholder="和尤美聊聊吧ヾ(≧▽≦*)o"
+                :placeholder="inputPlaceholder"
                 type="textarea"
                 :autosize="{ minRows: 1, maxRows: 3 }"
                 @keydown="handleEnter"
                 style="width: 85%; border-radius: 10px;"
-                :disabled="loading || isTyping"
+                :disabled="loading || isTyping || !localAIReady"
             />
 
             <n-button
                 color="#55484b"
                 size="large"
                 :loading="loading"
-                :disabled="loading || isTyping || !inputMessage.trim()"
+                :disabled="loading || isTyping || !inputMessage.trim() || !localAIReady"
                 :keyboard="true"
                 circle
                 @click="handleSend"
@@ -80,9 +124,9 @@
 import { ref, nextTick, onMounted, onUnmounted } from 'vue';
 import { usePlayer } from '../hooks/usePlayer';
 import type { ChatMessage, HistoryChatMessage } from '../types/llm';
-import { useAudio } from '../hooks/useAudio';
 import petmateAvatar from "../assets/image/youmei-avatar.png";
 import userAvatar from "../assets/image/petmate-3.jpg";
+import type { LocalAIStatus } from '../../main/local-ai';
 
 
 // 扩展的消息接口，包含时间戳
@@ -101,6 +145,87 @@ const buttonStatus = ref('↑');
 const loading = ref(false);
 const isTyping = ref(false); // 是否正在打字输出
 const chatContentRef = ref<HTMLElement | null>(null);
+const localAISwitching = ref(false);
+const localAIStatus = ref<LocalAIStatus>({
+    enabled: false,
+    phase: 'off',
+    backend: null,
+    download: {
+        phase: 'missing',
+        downloadedBytes: 0,
+        totalBytes: 0,
+        progress: 0,
+        currentFile: '',
+        detail: '尚未下载本地模型'
+    },
+    llm: { phase: 'off', detail: '未加载' }
+});
+const localAIReady = computed(() => localAIStatus.value.phase === 'ready');
+const modelsReady = computed(() => localAIStatus.value.download.phase === 'ready');
+const downloadActive = computed(() => (
+    localAIStatus.value.download.phase === 'checking'
+    || localAIStatus.value.download.phase === 'downloading'
+));
+const runtimePhaseClass = computed(() => (
+    downloadActive.value ? 'starting' : localAIStatus.value.phase
+));
+const downloadPercentage = computed(() => Math.min(
+    100,
+    Math.max(0, localAIStatus.value.download.progress)
+));
+const formatBytes = (bytes: number): string => {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const unitIndex = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    return `${(bytes / 1024 ** unitIndex).toFixed(unitIndex >= 3 ? 2 : 1)} ${units[unitIndex]}`;
+};
+const downloadSizeText = computed(() => {
+    const { downloadedBytes, totalBytes } = localAIStatus.value.download;
+    if (totalBytes <= 0) return '正在准备下载';
+    return `${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}`;
+});
+const downloadProgressDetail = computed(() => (
+    localAIStatus.value.download.currentFile
+        ? `正在下载`
+        : localAIStatus.value.download.detail
+));
+const downloadButtonText = computed(() => {
+    if (localAIStatus.value.download.phase === 'checking') return '取消准备';
+    if (localAIStatus.value.download.phase === 'downloading') {
+        return `取消下载 ${localAIStatus.value.download.progress.toFixed(1)}%`;
+    }
+    if (localAIStatus.value.download.phase === 'error') return '重新下载模型';
+    return '下载本地模型';
+});
+const runtimeNotice = computed(() => {
+    if (localAIStatus.value.error) return localAIStatus.value.error;
+    if (localAIStatus.value.download.error) return localAIStatus.value.download.error;
+    return '';
+});
+const localAIStatusText = computed(() => {
+    if (downloadActive.value) return `模型下载 ${localAIStatus.value.download.progress.toFixed(1)}%`;
+    if (!modelsReady.value) return '本地 AI 未安装';
+    switch (localAIStatus.value.phase) {
+        case 'starting':
+            return '正在加载本地大模型';
+        case 'ready':
+            return `本地 AI · ${(localAIStatus.value.backend ?? 'cpu').toUpperCase()}`;
+        case 'stopping':
+            return '正在卸载本地模型';
+        case 'error':
+            return '本地 AI 启动失败';
+        default:
+            return '本地 AI 已关闭';
+    }
+});
+const inputPlaceholder = computed(() => {
+    if (downloadActive.value) return `模型下载中 ${localAIStatus.value.download.progress.toFixed(1)}%…`;
+    if (!modelsReady.value) return '请先点击顶部的“下载本地模型”';
+    if (localAIStatus.value.phase === 'starting') return '模型加载中，请稍候…';
+    if (localAIStatus.value.phase === 'error') return '本地模型启动失败，请查看顶部提示';
+    if (!localAIReady.value) return '请先打开顶部的「本地 AI」开关';
+    return '和尤美聊聊吧ヾ(≧▽≦*)o';
+});
 
 // Stream processing
 let currentAssistantMessageIndex = -1;
@@ -236,31 +361,62 @@ const createPendingAssistantMessage = (): number => {
     return messages.value.length - 1;
 };
 
-// 设置流检测器，在没有新文本块时结束流
-const setupStreamChecker = () => {
-    // 清除之前的定时器
-    if (streamCheckInterval) {
-        clearInterval(streamCheckInterval);
-        streamCheckInterval = null;
+const finishWhenChunksProcessed = async () => {
+    while (isProcessingChunks || chunkQueue.length > 0) {
+        await processChunkQueue();
+        await new Promise(resolve => setTimeout(resolve, 10));
     }
+    await finishStreamResponse();
+};
 
-    // 初始化时间
-    lastChunkTime = Date.now();
+const toggleLocalAI = async (enabled: boolean) => {
+    if (localAISwitching.value || !modelsReady.value || downloadActive.value) return;
+    localAISwitching.value = true;
+    localAIStatus.value = {
+        ...localAIStatus.value,
+        enabled,
+        phase: enabled ? 'starting' : 'stopping',
+        error: undefined
+    };
 
-    // 设置新的定时器检查流是否结束
-    streamCheckInterval = setInterval(() => {
-        if (Date.now() - lastChunkTime > 1000) { // 1秒没有新块就认为结束
-            clearInterval(streamCheckInterval!);
-            streamCheckInterval = null;
-            finishStreamResponse();
+    try {
+        const response = await window.api.setLocalAIEnabled(enabled);
+        if (response.data) localAIStatus.value = response.data;
+        if (response.code !== 200) {
+            throw new Error(response.message || '切换本地模型失败');
         }
-    }, 500);
+    } catch (error) {
+        const latest = await window.api.getLocalAIStatus();
+        if (latest.data) localAIStatus.value = latest.data;
+        console.error('[local-ai] 切换失败:', error);
+    } finally {
+        localAISwitching.value = false;
+    }
+};
+
+const handleModelDownload = async () => {
+    try {
+        if (downloadActive.value) {
+            const response = await window.api.cancelLocalAIModelDownload();
+            if (response.data) localAIStatus.value = response.data;
+            return;
+        }
+        const response = await window.api.downloadLocalAIModels();
+        if (response.data) localAIStatus.value = response.data;
+        if (response.code !== 200) {
+            throw new Error(response.message || '模型下载失败');
+        }
+    } catch (error) {
+        const latest = await window.api.getLocalAIStatus();
+        if (latest.data) localAIStatus.value = latest.data;
+        console.error('[local-ai] 模型下载失败:', error);
+    }
 };
 
 // 发送消息处理
 const handleSend = async () => {
     const message = inputMessage.value.trim();
-    if (!message || loading.value || isTyping.value) return;
+    if (!message || loading.value || isTyping.value || !localAIReady.value) return;
 
     loading.value = true;
     buttonStatus.value = '';
@@ -275,6 +431,7 @@ const handleSend = async () => {
         // 创建等待中的助手消息
         currentAssistantMessageIndex = createPendingAssistantMessage();
         streamBuffer = '';
+        isTyping.value = true;
 
         // 创建聊天消息对象
         const chatMessage: ChatMessage = {
@@ -283,19 +440,13 @@ const handleSend = async () => {
         };
 
         // 发送消息到主进程
-        const success = await chat(chatMessage);
+        const success = await chat(chatMessage, false);
 
-        if (success) {
-            // 如果发送成功，开始接收流式回复
-            isTyping.value = true;
-            loading.value = false; // Hide loading, ready for streaming
-            // 为这次聊天设置流检测器
-            setupStreamChecker();
-        } else {
+        if (!success) {
             // 发送失败的处理 - 更新等待中的消息为错误状态
             if (currentAssistantMessageIndex >= 0) {
                 messages.value[currentAssistantMessageIndex].isLoading = false;
-                messages.value[currentAssistantMessageIndex].content = '请保证你聊天LLM的base_url和api_key都是正确的。你可以点击左上角 -> 配置 -> 聊天LLM 中进行查看。内容可能包含黄色内容，你可能需要更改说话风格以实现越狱效果。';
+                messages.value[currentAssistantMessageIndex].content = '本地模型没有成功完成回复。请确认顶部开关显示“本地 AI”，并查看启动错误提示。';
             }
             // 重置状态
             finishStreamResponse();
@@ -326,12 +477,15 @@ const handleEnter = (e: KeyboardEvent) => {
     }
 };
 
-const { isMuted, initAudioResources, clearAudioResources, changeMuted } = useAudio();
-
 // 设置事件监听器
 onMounted(async () => {
-    // 需要在此处初始化llm客户端
+    // 只初始化聊天历史；本地模型必须由用户手动打开开关后才会加载。
     await window.api.initLLM()
+    const statusResponse = await window.api.getLocalAIStatus();
+    if (statusResponse.data) localAIStatus.value = statusResponse.data;
+    window.api.onLocalAIStatus((_, status) => {
+        localAIStatus.value = status;
+    });
 
     // 初始化聊天记录
     const historyChatMessagesResponse = await window.api.getHistoryChatMessages();
@@ -352,20 +506,10 @@ onMounted(async () => {
         console.log('Received text chunk:', text);
         handleTextChunk(text);
     });
+    window.api.onChatFinished(() => {
+        void finishWhenChunksProcessed();
+    });
 
-    // 监听音频流块
-    if (isMuted.value === false) {
-        initAudioResources();
-    }
-});
-
-watch(isMuted, (newVal) => {
-    // 如果为静音就清理掉音频资源，如果非静音就初始化资源
-    if (newVal === true) {
-        clearAudioResources();
-    } else {
-        initAudioResources();
-    }
 });
 
 
@@ -375,7 +519,9 @@ onUnmounted(async () => {
         clearInterval(streamCheckInterval);
         streamCheckInterval = null;
     }
-    clearAudioResources();
+    window.api.removeAllTextChunkListeners();
+    window.api.removeAllChatFinishedListeners();
+    window.api.removeAllLocalAIStatusListeners();
     await window.api.saveChatMessages();
 });
 
@@ -399,16 +545,120 @@ onUnmounted(async () => {
        聊天头部 - 标题区域
        ========================================== */
     .chat-header {
-        height: 60px;
+        min-height: 72px;
         background-color: $content-bgc; // 主题内容区背景色
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: space-between;
+        position: relative;
+        padding: 8px 58px 8px 12px;
+        box-sizing: border-box;
         border-radius: 10px;
         margin-bottom: 10px;
         flex-shrink: 0; // 防止头部收缩
         color: $font-light; // 浅色字体提供对比度
         box-shadow: 0 4px 24px 0 rgba(253, 203, 110, 0.15); // 温暖的金色阴影
+
+        .chat-title {
+            font-family: Petmate;
+            font-size: 26px;
+            white-space: nowrap;
+        }
+
+        .runtime-controls {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 6px 10px;
+            font-size: 11px;
+            max-width: 255px;
+        }
+
+        .runtime-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #a7a7a7;
+
+            &.starting,
+            &.stopping {
+                background: #f0a33a;
+                animation: pulse 1.2s ease-in-out infinite;
+            }
+
+            &.ready {
+                background: #55b879;
+                box-shadow: 0 0 6px rgba(85, 184, 121, 0.8);
+            }
+
+            &.error {
+                background: #d65a5a;
+            }
+        }
+
+        .runtime-error {
+            position: absolute;
+            left: 12px;
+            right: 12px;
+            bottom: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #ffb5b5;
+            font-size: 9px;
+            text-align: center;
+        }
+    }
+
+    .model-download-progress {
+        position: relative;
+        flex-shrink: 0;
+        margin: -2px 0 10px;
+        padding: 10px 12px 9px;
+        border: 1px solid rgba(226, 143, 172, 0.35);
+        border-radius: 10px;
+        background: rgba(88, 71, 76, 0.96);
+        color: $font-light;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+
+        .download-progress-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 7px;
+            font-size: 11px;
+        }
+
+        .download-file {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .download-size {
+            flex-shrink: 0;
+            color: rgba(255, 255, 255, 0.72);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .download-progress-percent {
+            margin-top: 4px;
+            color: #f1b3c8;
+            font-size: 10px;
+            font-weight: 600;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
     }
 
     /* ==========================================

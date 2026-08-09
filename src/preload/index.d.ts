@@ -7,6 +7,7 @@ import { SettingConfig } from "./settings";
 import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "./llm";
 import { WindowEvent, WindowInfo } from "../main/window-monitor";
 import { CommissionCompletionResult, PlayerResourceState } from "../main/types/player-resource";
+import { LocalAIStatus } from "../main/local-ai";
 /**
  * 与主进程通信的接口
  * 所有方法都返回Promise
@@ -31,6 +32,7 @@ interface IElectronAPI {
   getChatPrompt: () => Promise<Response<string>>;
   getHistoryChatMessages: () => Promise<Response<HistoryChatMessage[]>>;
   getPlayerResources: () => Promise<Response<PlayerResourceState>>;
+  getLocalAIStatus: () => Promise<Response<LocalAIStatus>>;
 
   // set && update && add
   setChatLLMConfig: (config: ChatLLMConfig) => Promise<Response<ChatLLMConfig>>;
@@ -39,12 +41,15 @@ interface IElectronAPI {
   addTTSVoice: (voice: TTSVoice) => Promise<Response<void>>;
   setChatPrompt: (prompt: string) => Promise<Response<void>>;
   saveChatMessages: () => Promise<Response<void>>;
+  setLocalAIEnabled: (enabled: boolean) => Promise<Response<LocalAIStatus>>;
+  downloadLocalAIModels: () => Promise<Response<LocalAIStatus>>;
+  cancelLocalAIModelDownload: () => Promise<Response<LocalAIStatus>>;
 
   // 玩家操作
   consumeItem: (itemId: number, count: number, petmateId: number) => Promise<Response<void>>;
   completeCommission: (commissionId: string, requirements: { itemId: number, count: number }[], completionCount?: number) => Promise<Response<CommissionCompletionResult>>;
   buyItem: (itemId: number, count: number) => Promise<Response<Item>>;
-  chat: (message: ChatMessage) => Promise<Response<void>>;
+  chat: (message: ChatMessage, speak?: boolean) => Promise<Response<void>>;
   startActivity: (petmateId: number, activityId: number) => Promise<Response<void>>;
   cancelActivity: (petmateId: number) => Promise<Response<void>>;
   claimActivityReward: (petmateId: number) => Promise<Response<void>>;
@@ -58,7 +63,9 @@ interface IElectronAPI {
 
   // 监听
   onTextChunk: (callback: (event: Event, text: string) => void) => void;
-  onAudioChunk: (callback: (event: Event, audio: Buffer) => void) => void;
+  onChatFinished: (callback: (event: Event) => void) => void;
+  onAudioChunk: (callback: (event: Event, audio: Buffer, format?: string) => void) => void;
+  onLocalAIStatus: (callback: (event: Event, status: LocalAIStatus) => void) => void;
   onWishGenerated: (callback: (event: Event, petmateId: number) => void) => void,
   onResetPetmatePosition: (callback: (event: Event) => void) => void,
   onTTSFinished: (callback: (event: Event) => void) => void,
@@ -69,11 +76,14 @@ interface IElectronAPI {
   onShowContextMenu: (callback: (event: Event) => void) => void,
   onSystemAudioActive: (callback: (event: Event, active: boolean) => void) => void,
   onPlayerResourcesUpdated: (callback: (event: Event, resources: PlayerResourceState) => void) => void,
+  removeAllTextChunkListeners: () => void;
+  removeAllChatFinishedListeners: () => void;
   removeAllAudioChunkListeners: () => void;
   removeAllTTSFinishedListeners: () => void;
   removeAllTTSFailedListeners: () => void;
   removeAllSystemAudioActiveListeners: () => void;
   removeAllPlayerResourcesUpdatedListeners: () => void;
+  removeAllLocalAIStatusListeners: () => void;
   getSystemAudioActive: () => Promise<boolean>;
   getPetmateWindowPosition: () => Promise<{x: number, y: number}>;
   movePetmateWindow: (x: number, y: number) => void;

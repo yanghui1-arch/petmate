@@ -13,6 +13,7 @@ import { appInit } from './init'
 import * as fs from 'fs'
 import logger from './log'
 import { SystemAudioActivityMonitor } from './packages/system-audio-activity'
+import { localAIManager } from './local-ai'
 
 app.commandLine.appendSwitch('--in-process-gpu')
 
@@ -268,6 +269,8 @@ ipcMain.on('quit-app', () => {
 })
 
 app.on('before-quit', () => {
+    localAIManager.cancelModelDownload()
+    void localAIManager.stop()
     stopPetmateWindowDrag()
     systemAudioActivityMonitor?.stop()
     // 清理定时任务
