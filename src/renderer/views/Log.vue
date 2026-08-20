@@ -3,22 +3,28 @@
     <div class="home-log-layout">
       <div class="home-log-nav">
         <n-tabs type="line" animated>
-          <n-tab-pane name="item-log" tab="物品日志">
+          <n-tab-pane name="item-log" :tab="t('log.item')">
             <div class="home-item-log-wrapper">
               <div class="home-item-log" v-for="i in 10" :key="i">
                 <span class="log-time" style="margin-right: 10px;">12:17:55</span>
-                <span class="log-content">随机掉落了[金币] + 10</span>
+                <span class="log-content">{{ t('log.sampleItem') }}</span>
               </div>
             </div>
           </n-tab-pane>
-          <n-tab-pane name="activity-log" tab="活动日志">
-            活动日志
+          <n-tab-pane name="activity-log" :tab="t('log.activity')">
+            {{ t('log.activity') }}
           </n-tab-pane>
         </n-tabs>
       </div>
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+</script>
 
 <style lang="scss" scoped>
 .home-log-layout {

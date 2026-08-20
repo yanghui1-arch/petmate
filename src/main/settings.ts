@@ -1,11 +1,9 @@
 import Store from 'electron-store';
 import { NotFoundError } from './error';
+import { isAppLocale } from '../types/config';
+import type { SettingConfig } from '../types/config';
 
-export type SettingConfig = {
-    modelSize: number;
-    focusMode: boolean;
-    onTop: boolean;
-}
+export type { AppLocale, SettingConfig } from '../types/config';
 
 
 const store: Store<SettingConfig> = new Store<SettingConfig>({
@@ -20,6 +18,7 @@ export const defaultSettings: SettingConfig = {
     modelSize: 50,
     focusMode: false,
     onTop: true,
+    locale: 'zh-CN',
 }
 
 // 最新的设置，需要保证其一直都是最新的，因此在每一次的getSettings函数中，都要将文件中的设置赋值给他
@@ -73,10 +72,16 @@ export function updateSettings(updates: Partial<SettingConfig>): SettingConfig {
  * @throws 如果设置不存在，则抛出NotFoundError
  */
 export function getSettings(): SettingConfig {
-    let settings: SettingConfig | undefined = (store as any).get('settings') as SettingConfig | undefined;
-    if (!settings) {
+    const storedSettings = (store as any).get('settings') as Partial<SettingConfig> | undefined;
+    if (!storedSettings) {
         throw new NotFoundError('设置不存在，请初始化设置');
     }
+
+    const settings: SettingConfig = {
+        ...defaultSettings,
+        ...storedSettings,
+        locale: isAppLocale(storedSettings.locale) ? storedSettings.locale : defaultSettings.locale,
+    };
     currentSettings = settings;
     return settings;
 }

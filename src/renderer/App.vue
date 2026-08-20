@@ -45,6 +45,7 @@ import {
   messageModalTitle,
 } from "./hooks/useInteract";
 import { useSettings } from "./hooks/useSettings";
+import { setLocale } from "./i18n";
 import navigatorIcon from "./assets/image/navigator.png";
 
 // 根据路由的meta属性，决定是否显示关闭按钮，petmate页面不显示
@@ -61,17 +62,20 @@ const activate = (place: DrawerPlacement) => {
 
 // 全局玩家状态 - 在这里加载数据
 const { playerData, initPlayerData, refreshPlayerData } = usePlayer();
-const { initSettings } = useSettings();
+const { initSettings, settings } = useSettings();
 
 // 当应用挂载时加载玩家数据
 onMounted(async () => {
   window.api.onPetmateAttributeDecayed(() => {
     refreshPlayerData();
   });
-  await initPlayerData();
   console.log("正在初始化设置");
-  await initSettings();
+  const settingsInitialized = await initSettings();
+  if (settingsInitialized && settings.value) {
+    setLocale(settings.value.locale);
+  }
   console.log("设置初始化完成");
+  await initPlayerData();
 });
 
 const closeWin = () => {

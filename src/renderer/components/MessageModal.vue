@@ -14,7 +14,7 @@
 
         <div class="message-modal-content">
           <div class="confirm">
-            <button class="confirm-btn" @click="confirm">确定</button>
+            <button class="confirm-btn" @click="confirm">{{ t("common.confirm") }}</button>
           </div>
         </div>
       </div>
@@ -24,9 +24,12 @@
 
   <script setup lang="ts">
 import { defineProps } from "vue";
+import { useI18n } from "vue-i18n";
 import { closeMessageModal } from "../hooks/useInteract";
 import successIcon from "../assets/image/message/success.png";
 import failIcon from "../assets/image/message/fail.png";
+
+const { t } = useI18n();
 
 defineProps({
   show: { type: Boolean, required: true }, // 是否显示

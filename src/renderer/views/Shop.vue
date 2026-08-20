@@ -1,5 +1,5 @@
 <template>
-  <div class="shop-container">
+  <div class="shop-container" :class="localeClass">
     <div class="shop-layout">
       <div class="shop-head-layout">
         <div class="shop-head-wrapper">
@@ -14,7 +14,7 @@
       <div class="shop-content-layout">
         <div class="shop-content-wrapper">
           <div class="shop-content-head-wrapper">
-            <div class="shop-content-head-title">欢迎来到黑市</div>
+            <div class="shop-content-head-title">{{ t("shop.title") }}</div>
             <div class="money-wrapper">
               <span class="money-icon">💵</span>
               <span class="money-value"> {{ playerData?.cash }}</span>
@@ -29,7 +29,8 @@
               :class="{ 'active-shop-type': shopCurrType === shopType.name }"
               class="shop-type-btn"
             >
-              {{ shopType.label }}
+              <span class="shop-type-icon" aria-hidden="true">{{ shopType.icon }}</span>
+              <span class="shop-type-label">{{ shopType.label }}</span>
             </button>
           </div>
           <div class="shop-content-head">
@@ -39,11 +40,11 @@
                 v-model="sortType"
                 @change="handleSortChange"
               >
-                <option value="default">默认排序</option>
-                <option value="level-asc">按等级升序</option>
-                <option value="level-desc">按等级降序</option>
-                <option value="price-asc">按价格升序</option>
-                <option value="price-desc">按价格降序</option>
+                <option value="default">{{ t("shop.sortDefault") }}</option>
+                <option value="level-asc">{{ t("shop.sortLevelAsc") }}</option>
+                <option value="level-desc">{{ t("shop.sortLevelDesc") }}</option>
+                <option value="price-asc">{{ t("shop.sortPriceAsc") }}</option>
+                <option value="price-desc">{{ t("shop.sortPriceDesc") }}</option>
               </select>
             </div>
 
@@ -51,11 +52,11 @@
               <input
                 type="text"
                 class="search-input"
-                placeholder="请输入商品关键词"
+                :placeholder="t('shop.keywordPlaceholder')"
                 v-model="searchKeyword"
                 @keyup.enter="handleSearch"
               />
-              <button class="search-btn" @click="handleSearch">搜索</button>
+              <button class="search-btn" @click="handleSearch">{{ t("shop.search") }}</button>
             </div>
           </div>
           <div class="shop-content">
@@ -87,7 +88,7 @@
               ref="shopPageRef"
             >
               <div v-for="(page, index) in shopPageList" :key="'page' + index">
-                <n-grid x-gap="12" y-gap="5" :cols="3">
+                <n-grid x-gap="5" y-gap="5" :cols="3">
                   <n-gi
                     v-for="item in page"
                     :key="item.id"
@@ -103,7 +104,7 @@
                       @mouseenter="handleItemPopover($event, item)"
                       @click="showModal(item)"
                     >
-                      <div class="item-name">{{ item.name }}</div>
+                      <div class="item-name">{{ getItemName(item) }}</div>
                       <n-image
                         width="72"
                         class="item-image"
@@ -153,6 +154,7 @@
 
 <script setup lang="ts">
 import Pagedot from "@/components/Pagedot.vue";
+import { useI18n } from "vue-i18n";
 import ItemPopover from "@/components/item/ItemPopover.vue";
 import ItemModal from "@/components/item/ItemModal.vue";
 import LockStyle from "@/components/LockStyle.vue";
@@ -163,6 +165,7 @@ import { showItemPopover, popoverX, popoverY, popoverWidth, popoverItem, isItemE
 import { ItemType, Item, Requirement } from "../types/common";
 import type { PetMateAttribute } from "../types/petmate";
 import { executeItemPage } from "../utils/item";
+import { getItemDescription, getItemName } from "../utils/content";
 import { checkLocked } from "../utils/check";
 import shopPetmateImage from "../assets/image/shop-petmate-labor-2025.png";
 import greaterThanIcon from "../assets/image/greater-than.png";
@@ -170,6 +173,9 @@ import shopItemIcon from "../assets/image/shop-item.png";
 
 const { playerData } = usePlayer();
 const { getShopItems, getImageURL } = useShow();
+const { t, locale } = useI18n();
+
+const localeClass = computed(() => `locale-${locale.value.split("-")[0]}`);
 
 // Petmate相关
 const currentPetmateID = ref(0);
@@ -217,8 +223,8 @@ const filterAndSortItems = (items: Item[]): Item[] => {
     const keyword = searchKeyword.value.toLowerCase().trim();
     filteredItems = filteredItems.filter(
       (item) =>
-        item.name.toLowerCase().includes(keyword) ||
-        (item.description && item.description.toLowerCase().includes(keyword))
+        getItemName(item).toLowerCase().includes(keyword) ||
+        (item.description && getItemDescription(item).toLowerCase().includes(keyword))
     );
   }
 
@@ -275,13 +281,13 @@ const handleSearch = () => {
   prepareShopData();
 };
 
-const shopTypeList = ref([
-  { name: "limit" as ItemType, label: "⏰限时" },
-  { name: "fashion" as ItemType, label: "👗时装" },
-  { name: "food" as ItemType, label: "🍔食物" },
-  { name: "medicine" as ItemType, label: "💊药品" },
-  { name: "gift" as ItemType, label: "🎁礼物" },
-  { name: "drink" as ItemType, label: "🥤饮料" },
+const shopTypeList = computed(() => [
+  { name: "limit" as ItemType, icon: "⏰", label: t("shop.categories.limit") },
+  { name: "fashion" as ItemType, icon: "👗", label: t("shop.categories.fashion") },
+  { name: "food" as ItemType, icon: "🍔", label: t("shop.categories.food") },
+  { name: "medicine" as ItemType, icon: "💊", label: t("shop.categories.medicine") },
+  { name: "gift" as ItemType, icon: "🎁", label: t("shop.categories.gift") },
+  { name: "drink" as ItemType, icon: "🥤", label: t("shop.categories.drink") },
 ]);
 
 const shopPageRef = ref<CarouselInst | null>(null);
@@ -307,7 +313,7 @@ const handleItemPopover = (event: MouseEvent, item: Item) => {
 };
 
 // 物品购买弹出框相关
-const modalTitle = ref("请选择购买数量");
+const modalTitle = computed(() => t("shop.modalTitle"));
 const isModalShow = ref(false);
 const modalItem = ref<Item | null>(null);
 const showModal = (shopItem: Item) => {
@@ -434,17 +440,25 @@ const showModal = (shopItem: Item) => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    column-gap: 8px;
     width: 100%;
   }
   .shop-content-head-title {
-    font-size: 24px;
+    flex: 1;
+    min-width: 0;
+    font-size: clamp(16px, 5vw, 22px);
+    line-height: 1.25;
     font-weight: bold;
     color: #e0a6a6;
+    overflow-wrap: anywhere;
   }
   .money-wrapper {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
     column-gap: 5px;
     border-radius: 25px;
-    padding: 0 10px;
+    padding: 0 4px;
 
     .money-icon {
       font-size: 22px;
@@ -460,17 +474,25 @@ const showModal = (shopItem: Item) => {
   }
   .shop-type-wrapper {
     width: 100%;
-    display: flex;
-    column-gap: 5px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
     margin-bottom: 5px;
     .shop-type-btn {
-      padding: 8px 0;
-      flex: 1;
+      width: 100%;
+      min-width: 0;
+      padding: 6px 3px;
       border: none;
       border-radius: 20px;
       font-size: 12px;
       font-weight: 500;
       text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      column-gap: 2px;
+      white-space: nowrap;
+      overflow: hidden;
       transition: all 0.3s ease;
       background: linear-gradient(135deg, #f7f5f5 0%, #fad2d2 100%);
       color: #8b4513;
@@ -487,21 +509,40 @@ const showModal = (shopItem: Item) => {
       color: white;
       box-shadow: 0 4px 15px rgba(255, 118, 117, 0.4);
     }
+    .shop-type-icon {
+      flex: 0 0 auto;
+      line-height: 1;
+    }
+    .shop-type-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
   .shop-content-head {
-    display: flex;
-    flex-direction: row;
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.35fr);
     align-items: center;
-    justify-content: space-around;
+    column-gap: 6px;
     padding-bottom: 2px;
+    .sort-wrapper,
+    .search-wrapper {
+      min-width: 0;
+      width: 100%;
+    }
     .sort-wrapper {
       .sort-select {
+        width: 100%;
+        min-width: 0;
         padding: 3px 8px;
         font-size: 12px;
         border: 1px solid #ffeaa7;
         border-radius: 5px;
         background: white;
         color: #8b4513;
+        overflow: hidden;
+        text-overflow: ellipsis;
         transition: all 0.3s ease;
         &:focus {
           border-color: #ff7675;
@@ -511,12 +552,13 @@ const showModal = (shopItem: Item) => {
       }
     }
     .search-wrapper {
-      flex: 1;
       display: flex;
       justify-content: flex-end;
-      column-gap: 5px;
+      column-gap: 4px;
       .search-input {
-        width: 65%;
+        width: auto;
+        min-width: 0;
+        flex: 1;
         font-size: 12px;
         padding: 3px 4px;
         border: 1px solid #ffeaa7;
@@ -536,7 +578,8 @@ const showModal = (shopItem: Item) => {
         }
       }
       .search-btn {
-        padding: 1px 10px;
+        flex: 0 0 auto;
+        padding: 1px 6px;
         background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
         border: none;
         border-radius: 5px;
@@ -590,7 +633,9 @@ const showModal = (shopItem: Item) => {
       position: relative;
     }
     .shop-item {
-      width: 120px;
+      width: 100%;
+      max-width: 120px;
+      min-width: 0;
       height: 175px;
       border: 1px solid $color-white;
       border-radius: 8px;
@@ -646,11 +691,19 @@ const showModal = (shopItem: Item) => {
 
       .item-name {
         width: 100%;
-        font-size: 15px;
+        min-height: 36px;
+        max-height: 36px;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        word-break: break-word;
+        line-height: 1.2;
+        font-size: 13px;
         text-align: center;
         color: #8b4513;
         font-weight: 600;
-        padding: 7px 0;
+        padding: 5px 3px;
         border-bottom: 1px solid #8b4513;
       }
 
@@ -759,6 +812,21 @@ const showModal = (shopItem: Item) => {
         }
       }
     }
+  }
+}
+
+.shop-container.locale-en {
+  .shop-content-head-title {
+    font-size: 16px;
+  }
+
+  .shop-type-btn,
+  .search-btn {
+    font-size: 11px;
+  }
+
+  .item-name {
+    font-size: 12px;
   }
 }
 </style>

@@ -931,19 +931,20 @@ ipcMain.handle("add-tts-voice", (_: IpcMainInvokeEvent, voice: TTSVoice): Respon
  * 更改设置
  * @param settings 新的设置内容，可以是SettingConfig的一部分内容
  */
-ipcMain.handle("update-settings", (_: IpcMainInvokeEvent, settings: Partial<SettingConfig>): Response<void> => {
+ipcMain.handle("update-settings", (_: IpcMainInvokeEvent, settings: Partial<SettingConfig>): Response<SettingConfig> => {
     try {
-        updateSettings(settings);
+        const updatedSettings = updateSettings(settings);
         return {
             code: 200,
-            message: "更改设置成功"
-        } as Response<void>;
+            message: "更改设置成功",
+            data: updatedSettings,
+        } as Response<SettingConfig>;
     } catch (error) {
         logger.error(`更改设置失败: ${error}`);
         return {
             code: 400,
             message: "更改设置失败"
-        } as Response<void>;
+        } as Response<SettingConfig>;
     }
 })
 

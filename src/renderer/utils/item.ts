@@ -1,20 +1,21 @@
 import { PackageItemInfo } from "../types/player";
 import { getItemTypes, Item, ItemTypeValue } from "../types/common";
+import { i18n } from "../i18n";
 
 const UNUSABLE_PACKAGE_ITEM_TYPES = ["ticket", "fashion"];
 
 const EFFECT_MAP = {
-    hungry: "饱食度",
-    energy: "精力",
-    emotion: "心情",
-    health: "健康",
-    exp: "经验",
-    gameExp: "游戏经验",
-    singExp: "唱歌经验",
-    drawExp: "绘画经验",
-    affectionExp: "亲密度经验",
-    cash: "现金",
-}
+    hungry: "attributes.hungry",
+    energy: "attributes.energy",
+    emotion: "attributes.emotion",
+    health: "attributes.health",
+    exp: "attributes.exp",
+    gameExp: "attributes.gameExp",
+    singExp: "attributes.singExp",
+    drawExp: "attributes.drawExp",
+    affectionExp: "attributes.affectionExp",
+    cash: "attributes.cash",
+} as const;
 
 /**
  * 转换物品效果为中文
@@ -22,7 +23,8 @@ const EFFECT_MAP = {
  * @returns 效果名称
  */
 export function convertItemEffect(effect: string) {
-    return EFFECT_MAP[effect as keyof typeof EFFECT_MAP]
+    const messageKey = EFFECT_MAP[effect as keyof typeof EFFECT_MAP];
+    return messageKey ? i18n.global.t(messageKey) : effect;
 }
 
 /**

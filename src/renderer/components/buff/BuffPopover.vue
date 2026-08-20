@@ -16,17 +16,17 @@
           class="popover-wrapper"
         >
           <div class="popover-title">
-            <span>{{ activeBuff.buff.name }}</span>
+            <span>{{ buffName }}</span>
           </div>
           <div class="popover-content">
             <div class="popover-description">
-              <span>{{ activeBuff.buff.description }}</span>
+              <span>{{ buffDescription }}</span>
             </div>
             <div>
               <div class="popover-remaining-time">{{ remainingTime }}</div>
             </div>
             <div>
-              <div class="popover-tip">效果</div>
+              <div class="popover-tip">{{ t("buff.effect") }}</div>
               <div class="popover-effect">
                 <span
                   v-for="(value, key) in filteredEffect"
@@ -44,7 +44,9 @@
     
     <script setup lang="ts">
 import { defineProps } from "vue";
+import { useI18n } from "vue-i18n";
 import { convertBuffText } from "../../utils/buff";
+import { getBuffDescription, getBuffName } from "../../utils/content";
 import { ActiveBuff } from "../../types/common";
 
 const props = defineProps({
@@ -56,6 +58,9 @@ const props = defineProps({
   activeBuff: { type: Object as PropType<ActiveBuff>, required: true }, // buff
   isLocked: { type: Boolean, default: false }, // 是否锁定
 });
+const { t } = useI18n();
+const buffName = computed(() => getBuffName(props.activeBuff.buff));
+const buffDescription = computed(() => getBuffDescription(props.activeBuff.buff));
 // 过滤掉默认倍率
 const filteredEffect = computed(() => {
   let result = {};
@@ -75,9 +80,9 @@ setInterval(() => {
 
 const remainingTime = computed(() => {
   // 单位秒
-  return `剩${Math.floor(
-    (props.activeBuff.endTime.getTime() - nowTime.value) / 1000
-  )}秒`;
+  return t("buff.remaining", {
+    seconds: Math.floor((props.activeBuff.endTime.getTime() - nowTime.value) / 1000),
+  });
 });
 </script>
     

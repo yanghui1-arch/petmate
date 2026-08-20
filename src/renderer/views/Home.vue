@@ -1,5 +1,5 @@
 <template>
-  <div class="home-container">
+  <div class="home-container" :class="localeClass">
     <div class="home-layout">
       <div class="home-panel-layout">
         <div class="home-title-wrapper">
@@ -20,7 +20,7 @@
                     'home-player-title-slot-empty': !equippedTitle,
                     'home-player-title-slot-clickable': equippedTitle,
                   }"
-                  aria-label="选择称号"
+                  :aria-label="t('home.selectTitle')"
                   @click="openTitleSelector"
                 >
                   <img
@@ -38,7 +38,7 @@
                 />
               </div>
               <div class="home-panel-grade">
-                <span>{{ currentActivePetmate?.name }}</span>
+                <span>{{ getPetmateName(currentActivePetmate?.name) }}</span>
                 <span class="grade-value"
                   >LEVEL {{ petmateAttribute?.level }}</span
                 >
@@ -59,32 +59,36 @@
               </div>
 
               <div class="attribute-item">
-                <span>饱食度</span>
+                <span>{{ t("home.hunger") }}</span>
                 <!-- <AttributeBar :value="hp" color="#ff9812" /> -->
                 <AttributeBar
                   :value="petmateAttribute?.hungry ?? 0"
                   :max="petmateAttribute?.maxHungry ?? 100"
+                  width="100%"
                 />
               </div>
               <div class="attribute-item">
-                <span>精力</span>
+                <span>{{ t("home.energy") }}</span>
                 <AttributeBar
                   :value="petmateAttribute?.energy ?? 0"
                   :max="petmateAttribute?.maxEnergy ?? 100"
+                  width="100%"
                 />
               </div>
               <div class="attribute-item">
-                <span>心情</span>
+                <span>{{ t("home.emotion") }}</span>
                 <AttributeBar
                   :value="petmateAttribute?.emotion ?? 0"
                   :max="petmateAttribute?.maxEmotion ?? 100"
+                  width="100%"
                 />
               </div>
               <div class="attribute-item">
-                <span>健康</span>
+                <span>{{ t("home.health") }}</span>
                 <AttributeBar
                   :value="petmateAttribute?.health ?? 0"
                   :max="petmateAttribute?.maxHealth ?? 100"
+                  width="100%"
                 />
               </div>
             </div>
@@ -109,7 +113,8 @@
             :class="{ 'active-package-type': packageCurrType === packageType.name }"
             class="package-type-btn"
           >
-            {{ packageType.label }}
+            <span class="package-type-icon" aria-hidden="true">{{ packageType.icon }}</span>
+            <span class="package-type-label">{{ packageType.label }}</span>
           </button>
         </div>
         <div class="home-package-wrapper">
@@ -165,8 +170,8 @@
               />
             </div>
             <div class="home-package-footer-right">
-              <button class="prev-page" @click="prevPage">上一页</button>
-              <button class="next-page" @click="nextPage">下一页</button>
+              <button class="prev-page" @click="prevPage">{{ t("home.previousPage") }}</button>
+              <button class="next-page" @click="nextPage">{{ t("home.nextPage") }}</button>
             </div>
           </div>
         </div>
@@ -216,6 +221,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import AttributeBar from "@/components/AttributeBar.vue";
 import Pagedot from "@/components/Pagedot.vue";
 import BuffPopover from "@/components/buff/BuffPopover.vue";
@@ -224,6 +230,7 @@ import ItemModal from "@/components/item/ItemModal.vue";
 import type { CarouselInst } from "naive-ui";
 import type { PlayerResourceState } from "@main/types/player-resource";
 import { canUseItemFromPackage, executePackageItemPage } from "../utils/item";
+import { getPetmateName } from "../utils/content";
 import { usePlayer } from "../hooks/usePlayer";
 import { useShow } from "../hooks/useShow";
 import { showItemPopover, showBuffPopover, popoverX, popoverY, popoverWidth, popoverItem, isItemEnter, popoverBuff, isBuffEnter, openMessageModal } from "../hooks/useInteract";
@@ -240,23 +247,27 @@ type TitleViewModel = {
   image: string;
 };
 
-const TITLE_CATALOG: TitleViewModel[] = [
+const { t, locale } = useI18n();
+
+const localeClass = computed(() => `locale-${locale.value.split("-")[0]}`);
+
+const titleCatalog = computed<TitleViewModel[]>(() => [
   {
     id: "labor-2026-holiday-craftsperson",
-    name: "假日小工匠",
+    name: t("home.titles.holidayCraftsperson"),
     image: holidayCraftspersonTitleImage,
   },
   {
     id: "labor-2026-sunny-guardian",
-    name: "曙光守护者",
+    name: t("home.titles.dawnGuardian"),
     image: dawnGuardianTitleImage,
   },
   {
     id: "labor-2026-winning-duo",
-    name: "假期连胜搭子",
+    name: t("home.titles.winningDuo"),
     image: winningDuoTitleImage,
   },
-];
+]);
 
 const { playerData, consumeItem } = usePlayer();
 const { getAllItems, getImageURL } = useShow();
@@ -318,7 +329,7 @@ const ownedTitleIds = computed(() => {
 });
 
 const ownedTitles = computed(() =>
-  TITLE_CATALOG.filter((title) => ownedTitleIds.value.has(title.id))
+  titleCatalog.value.filter((title) => ownedTitleIds.value.has(title.id))
 );
 
 const equippedTitleId = computed(() => playerResources.value?.equippedTitleId ?? null);
@@ -365,13 +376,13 @@ const equipTitle = async (titleId: string) => {
 const packageCurrType = ref("food");
 const packageCurrPage = ref(1);
 const packagePageSize = ref(18);
-const packageTypeList = ref([
-  { name: "food" as ItemType, label: "🍔食物" },
-  { name: "medicine" as ItemType, label: "💊药品" },
-  { name: "gift" as ItemType, label: "🎁礼物" },
-  { name: "drink" as ItemType, label: "🥤饮料" },
-  { name: "limit" as ItemType, label: "⏰限时" },
-  { name: "others" as ItemType, label: "其他" },
+const packageTypeList = computed(() => [
+  { name: "food" as ItemType, icon: "🍔", label: t("home.categories.food") },
+  { name: "medicine" as ItemType, icon: "💊", label: t("home.categories.medicine") },
+  { name: "gift" as ItemType, icon: "🎁", label: t("home.categories.gift") },
+  { name: "drink" as ItemType, icon: "🥤", label: t("home.categories.drink") },
+  { name: "limit" as ItemType, icon: "⏰", label: t("home.categories.limit") },
+  { name: "others" as ItemType, icon: "📦", label: t("home.categories.others") },
 ]);
 
 const packagePageRef = ref<CarouselInst | null>(null);
@@ -435,7 +446,7 @@ const canUsePackageItem = (item: PackageItemInfo) => {
 };
 
 // 物品使用弹出框相关
-const modalTitle = ref("请选择使用数量");
+const modalTitle = computed(() => t("home.modalTitle"));
 const isModalShow = ref(false);
 const modalItem = ref<Item | null>(null);
 const modalHasCount = ref(0);
@@ -445,7 +456,7 @@ const showModal = (item: PackageItemInfo) => {
     return;
   }
   if (!canUseItemFromPackage(completeItem)) {
-    openMessageModal("fail", "该物品不能在背包中直接使用");
+    openMessageModal("fail", t("home.cannotUse"));
     return;
   }
   isModalShow.value = true;
@@ -498,11 +509,14 @@ const showModal = (item: PackageItemInfo) => {
   padding: 0 15px;
   background-color: $content-bgc;
   .home-panel-content {
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: minmax(104px, 0.78fr) minmax(0, 1fr);
     align-items: center;
-    column-gap: 15px;
+    column-gap: 8px;
+    min-width: 0;
     .home-panel-info {
+      width: 100%;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       justify-content: space-around;
@@ -568,34 +582,47 @@ const showModal = (item: PackageItemInfo) => {
       }
     }
     .home-panel-attribute {
-      flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       justify-content: space-around;
       row-gap: 5px;
       .home-panel-view {
         width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        column-gap: 5px;
+        row-gap: 3px;
+        justify-content: flex-end;
+        .home-panel-buff {
+          background-color: #f5f5dc;
+          border-radius: 5px;
           display: flex;
           align-items: center;
-          column-gap: 5px;
-          justify-content: flex-end;
-          .home-panel-buff {
-            background-color: #f5f5dc;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-          }
+        }
       }
       .attribute-item {
-        display: flex;
+        display: grid;
+        grid-template-columns: 56px minmax(60px, 1fr);
+        column-gap: 6px;
         align-items: center;
-        justify-content: space-between;
-        span {
-          width: 60px;
+        min-width: 0;
+        > span {
+          min-width: 0;
           color: $font-light;
           font-weight: 500;
-          letter-spacing: 3px;
-          text-align: center;
+          font-size: 14px;
+          letter-spacing: 1px;
+          text-align: right;
+          white-space: nowrap;
+        }
+        :deep(.attribute-bar) {
+          width: 100% !important;
+          min-width: 0;
+        }
+        :deep(.attribute-bar-label) {
+          font-size: 11px;
         }
       }
     }
@@ -605,25 +632,39 @@ const showModal = (item: PackageItemInfo) => {
 }
 
 .home-package-type {
-  display: flex;
-  row-gap: 6px;
-  column-gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
   margin-bottom: 5px;
-  flex-wrap: wrap;
   .package-type-btn {
-    // flex: 1;
-    width: 24%;
+    width: 100%;
+    min-width: 0;
     background: linear-gradient(135deg, $btn-grad-start 0%, $btn-grad-end 100%);
     color: $accent-brown;
     border: none;
     border-radius: 20px;
-    padding: 6px 0;
+    padding: 6px 4px;
     font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    column-gap: 3px;
+    white-space: nowrap;
+    overflow: hidden;
     box-shadow: 0 2px 10px rgba(253, 203, 110, 0.3);
     transition: all 0.3s ease;
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 15px rgba(253, 203, 110, 0.4);
+    }
+    .package-type-icon {
+      flex: 0 0 auto;
+      line-height: 1;
+    }
+    .package-type-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
   // active优先级更高，放后面
@@ -690,11 +731,13 @@ const showModal = (item: PackageItemInfo) => {
     }
     .home-package-footer-right {
       justify-content: flex-start;
-      column-gap: 10px;
+      column-gap: 5px;
       .prev-page,
       .next-page {
+        min-width: 0;
+        flex: 1;
         border: 1px solid $color-white;
-        padding: 3px 10px;
+        padding: 3px 5px;
         border-radius: 3px;
         background: linear-gradient(
           135deg,
@@ -704,6 +747,10 @@ const showModal = (item: PackageItemInfo) => {
         box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4),
           0 5px 15px rgba(0, 0, 0, 0.2);
         color: $accent-brown;
+        font-size: 11px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
     }
   }
@@ -750,5 +797,20 @@ const showModal = (item: PackageItemInfo) => {
   height: 100%;
   display: block;
   object-fit: contain;
+}
+
+.home-container.locale-en {
+  .attribute-item > span {
+    font-size: 12px;
+    letter-spacing: 0.5px;
+  }
+
+  .attribute-item {
+    grid-template-columns: 52px minmax(60px, 1fr);
+  }
+
+  .package-type-btn {
+    font-size: 11px;
+  }
 }
 </style>

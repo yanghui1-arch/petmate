@@ -10,7 +10,7 @@
             height="25"
             preview-disabled
           />
-          <span class="activity-grade-label">唱歌</span>
+          <span class="activity-grade-label">{{ t("activity.grades.sing") }}</span>
           <span class="activity-grade-value"
             >Lv.{{ petmateAttribute?.singLevel ?? 0 }}</span
           >
@@ -28,7 +28,7 @@
             height="25"
             preview-disabled
           />
-          <span class="activity-grade-label">绘画</span>
+          <span class="activity-grade-label">{{ t("activity.grades.draw") }}</span>
           <span class="activity-grade-value"
             >Lv.{{ petmateAttribute?.drawLevel ?? 0 }}</span
           >
@@ -46,7 +46,7 @@
             height="25"
             preview-disabled
           />
-          <span class="activity-grade-label">游戏</span>
+          <span class="activity-grade-label">{{ t("activity.grades.game") }}</span>
           <span class="activity-grade-value"
             >Lv.{{ petmateAttribute?.gameLevel ?? 0 }}</span
           >
@@ -84,7 +84,7 @@
           </div>
           <div class="btn-activity-reward" v-else>
             <n-button type="primary" @click="handleClaimReward"
-              >领取奖励</n-button
+              >{{ t("activity.claimReward") }}</n-button
             >
           </div>
           <div class="active-activity-info">
@@ -93,16 +93,12 @@
               v-if="petmateStatus?.status !== 'finished'"
             >
               <span
-                >{{ currentActivePetmate?.name }}正在{{
-                  petmateStatus?.activity?.name
-                }}</span
+                >{{ t("activity.active", { petmate: getPetmateName(currentActivePetmate?.name), activity: getActivityName(petmateStatus.activity) }) }}</span
               >
             </div>
             <div class="active-activity-title" v-else>
               <span
-                >{{ currentActivePetmate?.name }}已完成{{
-                  petmateStatus?.activity?.name
-                }}</span
+                >{{ t("activity.completed", { petmate: getPetmateName(currentActivePetmate?.name), activity: getActivityName(petmateStatus.activity) }) }}</span
               >
             </div>
             <div class="active-activity-info-reward">
@@ -116,7 +112,7 @@
         </div>
         <!-- 无活动状态 -->
         <div class="active-activity-none" v-else>
-          {{ currentActivePetmate?.name }}当前未进行任何活动
+          {{ t("activity.idle", { petmate: getPetmateName(currentActivePetmate?.name) }) }}
         </div>
       </div>
       <div class="activity-wrapper">
@@ -148,7 +144,7 @@
                 </div>
                 <div class="activity-section-footer">
                   <span class="activity-section-type">{{
-                    activitySection.type
+                    t(`activity.sections.${activitySection.type}.name`)
                   }}</span>
                   <div class="activity-section-dots">
                     <span></span>
@@ -207,7 +203,7 @@
                 @click="showModal(actItem)"
               >
                 <div class="activity-item-header">
-                  <div class="activity-item-name">{{ actItem.name }}</div>
+                  <div class="activity-item-name">{{ getActivityName(actItem) }}</div>
                 </div>
                 <div class="activity-item-content">
                   <div class="activity-item-icon">
@@ -242,7 +238,7 @@
 
                 <div class="activity-item-reward">
                   <span class="activity-item-emoji">🏆</span>
-                  <span>{{ actItem.rewardSummary }}</span>
+                  <span>{{ getActivityRewardSummary(actItem) }}</span>
                 </div>
 
                 <!-- 活动未解锁时的状态 -->
@@ -252,7 +248,7 @@
                 >
                   <div class="lock-icon">🔒</div>
                   <div class="locked-requirements">
-                    <div class="locked-title">解锁条件:</div>
+                    <div class="locked-title">{{ t("activity.lockedTitle") }}</div>
                     <div class="locked-requirements-list">
                       <div
                         v-for="requirement in getMissingRequirements(
@@ -291,6 +287,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { useI18n } from "vue-i18n";
 import AttributeBar from "../components/AttributeBar.vue";
 import ActivityPopover from "@/components/activity/ActivityPopover.vue";
 import ActivityModal from "@/components/activity/ActivityModal.vue";
@@ -301,6 +298,7 @@ import { useShow } from "../hooks/useShow";
 import { showActItemPopover, popoverX, popoverY, popoverWidth, popoverActItem, isActItemEnter } from "../hooks/useInteract";
 import { checkLocked } from "../utils/check";
 import { convertActivityText, computeActivityTime } from "../utils/activity";
+import { getActivityName, getActivityRewardSummary, getPetmateName } from "../utils/content";
 import { PetMateAttribute } from "../types/petmate";
 import gradeIcon from "../assets/image/activity/grade-icon.png";
 import actSwitchIcon from "../assets/image/activity/switch.png";
@@ -308,6 +306,7 @@ import backArrowIcon from "../assets/image/activity/back-arrow.png";
 
 const { playerData, claimActivityReward } = usePlayer();
 const { getActivities, getImageURL } = useShow();
+const { t } = useI18n();
 
 type ActivitySection = {
   id: number;
@@ -368,19 +367,19 @@ const getMissingRequirements = (requirement: ActivityInfo["requirement"]) => {
     };
   const missing: string[] = [];
   if (level < (requirement.level ?? 0)) {
-    missing.push(`等级 Lv.${requirement.level}`);
+    missing.push(t("activity.missing.level", { level: requirement.level }));
   }
   if (singLevel < (requirement.singLevel ?? 0)) {
-    missing.push(`唱歌 Lv.${requirement.singLevel}`);
+    missing.push(t("activity.missing.singLevel", { level: requirement.singLevel }));
   }
   if (drawLevel < (requirement.drawLevel ?? 0)) {
-    missing.push(`绘画 Lv.${requirement.drawLevel}`);
+    missing.push(t("activity.missing.drawLevel", { level: requirement.drawLevel }));
   }
   if (gameLevel < (requirement.gameLevel ?? 0)) {
-    missing.push(`游戏 Lv.${requirement.gameLevel}`);
+    missing.push(t("activity.missing.gameLevel", { level: requirement.gameLevel }));
   }
   if (affectionLevel < (requirement.affectionLevel ?? 0)) {
-    missing.push(`亲密度 Lv.${requirement.affectionLevel}`);
+    missing.push(t("activity.missing.affectionLevel", { level: requirement.affectionLevel }));
   }
   return missing;
 };
@@ -398,11 +397,11 @@ const modalType = ref("");
  */
 const showModal = (actItem: ActivityInfo) => {
   if (checkActivityLocked(actItem.requirement)) {
-    openMessageModal("fail", "活动未解锁");
+    openMessageModal("fail", t("activity.messages.locked"));
     return;
   }
   if (petmateStatus.value?.activity) {
-    openMessageModal("fail", "当前角色已有活动");
+    openMessageModal("fail", t("activity.messages.alreadyActive"));
     return;
   }
   isModalShow.value = true;
@@ -425,30 +424,30 @@ const cancelActivity = () => {
 const handleClaimReward = async () => {
   const success = await claimActivityReward(currentPetmateID.value);
   if (success) {
-    openMessageModal("success", "领取奖励成功");
+    openMessageModal("success", t("activity.messages.claimSuccess"));
   } else {
-    openMessageModal("fail", "领取奖励失败");
+    openMessageModal("fail", t("activity.messages.claimFailed"));
   }
 };
 
-const activitySectionList: ActivitySection[] = [
+const activitySectionList = computed<ActivitySection[]>(() => [
   {
     id: 1,
     type: "study",
-    name: "学习",
-    description: "每一篇鼓舞诗章，都是时代的远航",
+    name: t("activity.sections.study.name"),
+    description: t("activity.sections.study.description"),
   },
   {
     id: 2,
     type: "work",
-    name: "工作",
-    description: "真正的工作，在于把每一份付出，都变成你未来版图上的一座新城。",
+    name: t("activity.sections.work.name"),
+    description: t("activity.sections.work.description"),
   },
   {
     id: 3,
     type: "entertainment",
-    name: "娱乐",
-    description: "休憩是为下一次伟大的远征积蓄最充沛的能量",
+    name: t("activity.sections.entertainment.name"),
+    description: t("activity.sections.entertainment.description"),
   },
   // {
   //   id: 4,
@@ -456,7 +455,7 @@ const activitySectionList: ActivitySection[] = [
   //   name: "empty",
   //   description: "最有价值的活动，都在这里了",
   // },
-];
+]);
 
 
 const isActItemLocked = ref(false);
@@ -482,7 +481,7 @@ const selectActivitySection = (
 ) => {
   currentActivitySection.value = activitySection;
   console.log("selectActivitySection", activityItemRefs.value);
-  activitySectionList.forEach((activitySection) => {
+  activitySectionList.value.forEach((activitySection) => {
     const sectionEl = activityItemRefs.value[activitySection.id - 1];
     if (!sectionEl) return;
 
@@ -567,7 +566,7 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
     activityContentRef.value?.classList.remove("activity-content-fade-out");
 
     // 原路返回
-    activitySectionList.forEach((activity) => {
+    activitySectionList.value.forEach((activity) => {
       const sectionEl = activityItemRefs.value[activity.id - 1];
       if (!sectionEl) return;
 

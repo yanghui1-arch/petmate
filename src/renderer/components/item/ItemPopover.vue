@@ -17,12 +17,12 @@
         >
         <div class="popover-title">
             <span v-if="isLocked">{{ itemlockedName }}</span>
-            <span v-else>{{ item.name }}</span>
+            <span v-else>{{ itemName }}</span>
           </div>
           <div class="popover-content">
             <div class="popover-description">
               <span v-if="isLocked">???</span>
-              <span v-else>{{ item.description }}</span>
+              <span v-else>{{ itemDescription }}</span>
             </div>
             <div>
               <div class="popover-tip">{{ itemEffectTip }}</div>
@@ -38,7 +38,7 @@
               </div>
             </div>
             <div v-if="isRequirementShow">
-              <div class="popover-tip">要求</div>
+              <div class="popover-tip">{{ t("item.requirement") }}</div>
               <div class="popover-requirement">
                 <span
                   v-for="(value, key) in item.requirement"
@@ -48,10 +48,10 @@
               </div>
             </div>
             <div v-if="isSourceShow">
-              <div class="popover-tip">获得方式</div>
+              <div class="popover-tip">{{ t("item.source") }}</div>
               <div class="popover-source">
-                <span>黑市</span>
-                <span>活动</span>
+                <span>{{ t("item.blackMarket") }}</span>
+                <span>{{ t("item.activity") }}</span>
               </div>
             </div>
           </div>
@@ -63,7 +63,9 @@
 
 <script setup lang="ts">
 import { defineProps, PropType } from "vue";
+import { useI18n } from "vue-i18n";
 import { canUseItemFromPackage, convertItemEffect } from "../../utils/item";
+import { getBuffName, getItemDescription, getItemName } from "../../utils/content";
 import { Item, Buff } from "../../types/common";
 import { convertRequirementText } from "../../utils/check";
 
@@ -80,7 +82,7 @@ const props = defineProps({
 });
 
 const itemlockedName = computed(() => {
-  const name = props.item.name;
+  const name = getItemName(props.item);
   if(!name) {
     return "??"
   }
@@ -91,13 +93,17 @@ const itemlockedName = computed(() => {
   return `${name[0]} ? ${name[name.length - 1]}`
 });
 
+const { t } = useI18n();
+const itemName = computed(() => getItemName(props.item));
+const itemDescription = computed(() => getItemDescription(props.item));
+
 const itemEffectTip = computed(() => {
-  return canUseItemFromPackage(props.item) ? "使用后获得以下效果" : "用途";
+  return canUseItemFromPackage(props.item) ? t("item.usedGain") : t("item.purpose");
 });
 
 const itemEffectList = computed(() => {
   if (!canUseItemFromPackage(props.item)) {
-    return ["不能在背包中直接使用"];
+    return [t("item.cannotUse")];
   }
   const effectList: string[] = [];
   const effect = props.item.effect;
@@ -110,11 +116,11 @@ const itemEffectList = computed(() => {
     // buff类型
     if(effect[key] && typeof effect[key] === 'object' && 'name' in effect[key]) {
       const buff = effect[key] as Buff;
-      effectList.push(`${buff.name} buff`);
+      effectList.push(`${getBuffName(buff)} buff`);
       continue;
     }
   }
-  return effectList.length ? effectList : ["无"];
+  return effectList.length ? effectList : [t("item.noEffect")];
 });
 
 </script>

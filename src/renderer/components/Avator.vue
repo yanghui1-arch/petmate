@@ -5,12 +5,14 @@
         :size="60"
         src="https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
         />
-        <label class="show-accompany">(已陪伴一天)</label>
+        <label class="show-accompany">{{ t("avatar.accompaniedOneDay") }}</label>
     </div>
 </template>
 
 <script lang="ts" setup>
+import { useI18n } from "vue-i18n";
 
+const { t } = useI18n();
 </script>
 
 <style lang="scss" scoped>

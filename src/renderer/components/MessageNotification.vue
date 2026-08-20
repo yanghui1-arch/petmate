@@ -4,9 +4,12 @@
 
 <script setup lang="ts">
 import { useNotification } from "naive-ui";
+import { useI18n } from "vue-i18n";
 import { usePlayer } from "../hooks/usePlayer";
 import { useRoute } from "vue-router";
+import { getPetmateName, getWishNameFromSource } from "../utils/content";
 const { playerData, refreshPlayerData } = usePlayer();
+const { t } = useI18n();
 
 const notificationDuration = 3000; // 通知持续时间，ms
 
@@ -27,8 +30,8 @@ onMounted(() => {
       (petmate) => petmate.id === petmateId
     );
     notification.info({
-      title: "系统消息",
-      content: `${petmate?.name}生成了一个心愿，快去看看吧`,
+      title: t("notifications.system"),
+      content: t("notifications.wishGenerated", { petmate: getPetmateName(petmate?.name) }),
       duration: notificationDuration,
     });
   });
@@ -44,8 +47,8 @@ onMounted(() => {
       (petmate) => petmate.id === petmateId
     );
     notification.success({
-      title: "活动完成",
-      content: `${petmate?.name}的活动已完成，快去领取奖励吧！`,
+      title: t("notifications.activityCompletedTitle"),
+      content: t("notifications.activityCompleted", { petmate: getPetmateName(petmate?.name) }),
       duration: notificationDuration,
     });
   });
@@ -63,8 +66,8 @@ onMounted(() => {
       // 如果完成了多个心愿，则产生多个通知
       finishedWishNames.forEach((wishName) => {
         notification.success({
-          title: "系统消息",
-          content: `${petmate?.name}完成了心愿：${wishName}，快去看看吧`,
+          title: t("notifications.system"),
+          content: t("notifications.wishCompleted", { petmate: getPetmateName(petmate?.name), wish: getWishNameFromSource(wishName) }),
           duration: notificationDuration,
         });
       });

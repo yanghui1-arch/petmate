@@ -11,11 +11,11 @@
             preview-disabled
             class="item-preview-image"
           />
-          <div class="item-preview-name">{{ props.item?.name }}</div>
+          <div class="item-preview-name">{{ itemName }}</div>
         </div>
         <!-- 描述和效果 -->
         <div class="item-modal-info">
-          <div class="item-modal-description">{{ props.item?.description }}</div>
+          <div class="item-modal-description">{{ itemDescription }}</div>
           <div class="item-modal-effects">
             <div class="effects-label">{{ effectsTip }}</div>
             <div class="effects-tags">
@@ -37,8 +37,8 @@
             <button class="counter-add-btn" @click="addCount">+</button>
           </div>
           <div class="confirm">
-            <button class="confirm-btn" @click="confirm">确定</button>
-            <button class="cancel-btn" @click="cancel">取消</button>
+            <button class="confirm-btn" @click="confirm">{{ t("common.confirm") }}</button>
+            <button class="cancel-btn" @click="cancel">{{ t("common.cancel") }}</button>
           </div>
         </div>
       </div>
@@ -48,14 +48,17 @@
 
 <script setup lang="ts">
 import { defineProps, ref, PropType, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { usePlayer } from "../../hooks/usePlayer";
 import { useShow } from "../../hooks/useShow";
 import { Item, Buff, getItemTypes } from "../../types/common";
 import { openMessageModal } from "../../hooks/useInteract";
 import { canUseItemFromPackage, convertItemEffect } from "../../utils/item";
+import { getBuffName, getItemDescription, getItemName } from "../../utils/content";
 
 const { buyItem, consumeItem } = usePlayer();
 const { getImageURL } = useShow();
+const { t } = useI18n();
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -85,18 +88,20 @@ const isFashionItem = computed(() =>
 );
 
 const displayTitle = computed(() =>
-  isFashionItem.value ? "确认购买该时装" : props.title
+  isFashionItem.value ? t("item.buyFashion") : props.title
 );
+const itemName = computed(() => getItemName(props.item));
+const itemDescription = computed(() => getItemDescription(props.item));
 
 const effectsTip = computed(() => {
-  if (isFashionItem.value) return "购买后获得";
-  return canUseItemFromPackage(props.item) ? "使用后获得以下效果" : "用途";
+  if (isFashionItem.value) return t("item.purchasedGain");
+  return canUseItemFromPackage(props.item) ? t("item.usedGain") : t("item.purpose");
 });
 
 const itemEffectList = computed(() => {
-  if (isFashionItem.value) return ["永久解锁，可前往衣橱实装"];
+  if (isFashionItem.value) return [t("item.permanentUnlock")];
   if (!props.item?.effect) return [];
-  if (!canUseItemFromPackage(props.item)) return ["不能在背包中直接使用"];
+  if (!canUseItemFromPackage(props.item)) return [t("item.cannotUse")];
   const effectList: string[] = [];
   const effect = props.item.effect;
   for (const key in effect) {
@@ -110,10 +115,10 @@ const itemEffectList = computed(() => {
     }
     if (effect[key] && typeof effect[key] === "object" && "name" in effect[key]) {
       const buff = effect[key] as Buff;
-      effectList.push(`${buff.name} buff`);
+      effectList.push(`${getBuffName(buff)} buff`);
     }
   }
-  return effectList.length ? effectList : ["无"];
+  return effectList.length ? effectList : [t("item.noEffect")];
 });
 
 const count = ref(1);
@@ -152,22 +157,22 @@ const confirm = async () => {
   let title = "";
   if (count.value == 0) {
     title =
-      props.type === "use" ? "使用物品数量不能为0" : "购买物品数量不能为0";
+      props.type === "use" ? t("item.useCountZero") : t("item.buyCountZero");
     count.value = 1;
     openMessageModal("fail", title);
     return;
   }
   if (props.type === "buy") {
     success = await buyItem(props.item.id, count.value);
-    title = success ? "购买成功" : "购买失败";
+    title = success ? t("item.buySuccess") : t("item.buyFailed");
   } else if (props.type === "use") {
     if (!canUseItemFromPackage(props.item)) {
       isModalShow.value = false;
-      openMessageModal("fail", "该物品不能在背包中直接使用");
+      openMessageModal("fail", t("item.cannotUse"));
       return;
     }
     success = await consumeItem(props.item.id, count.value, props.petmateId);
-    title = success ? "使用成功" : "使用失败";
+    title = success ? t("item.useSuccess") : t("item.useFailed");
   }
   isModalShow.value = false;
   success

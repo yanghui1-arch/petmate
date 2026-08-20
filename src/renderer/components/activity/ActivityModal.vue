@@ -5,26 +5,24 @@
         <div class="message-modal-header">
           <div class="message-modal-title">
             <span v-if="type === 'start'"
-              >是否开始活动‘{{ actItem.name }}’？</span
+              >{{ t("activity.modal.startTitle", { activity: activityName }) }}</span
             >
             <span v-if="type === 'cancel'"
-              >是否取消活动‘{{ actItem.name }}’？</span
+              >{{ t("activity.modal.cancelTitle", { activity: activityName }) }}</span
             >
           </div>
           <div class="message-modal-tip">
             <span v-if="type === 'start'"
-              >本次活动耗时{{
-                computeActivityTime(actItem.consume.spendingTime)
-              }}</span
+              >{{ t("activity.modal.duration", { duration: computeActivityTime(actItem.consume.spendingTime) }) }}</span
             >
-            <span v-if="type === 'cancel'">取消活动后，活动奖励将不会发放</span>
+            <span v-if="type === 'cancel'">{{ t("activity.modal.cancelTip") }}</span>
           </div>
         </div>
 
         <div class="message-modal-content">
           <div class="confirm">
-            <button class="confirm-btn" @click="confirm">确定</button>
-            <button class="cancel-btn" @click="cancel">取消</button>
+            <button class="confirm-btn" @click="confirm">{{ t("common.confirm") }}</button>
+            <button class="cancel-btn" @click="cancel">{{ t("common.cancel") }}</button>
           </div>
         </div>
       </div>
@@ -34,11 +32,14 @@
     
     <script setup lang="ts">
 import { defineProps } from "vue";
+import { useI18n } from "vue-i18n";
 import { usePlayer } from "../../hooks/usePlayer";
 import { ActivityInfo } from "../../types/common";
 import { computeActivityTime } from "../../utils/activity";
+import { getActivityName } from "../../utils/content";
 import { openMessageModal } from "../../hooks/useInteract";
 const { startActivity, cancelActivity } = usePlayer();
+const { t } = useI18n();
 
 const props = defineProps({
   show: { type: Boolean, required: true }, // 是否显示
@@ -56,22 +57,24 @@ const isModalShow = computed({
   set: (val) => emit("update:show", val),
 });
 
+const activityName = computed(() => getActivityName(props.actItem));
+
 // 按钮相关
 const confirm = async () => {
   if (props.type === "start") {
     const success = await startActivity(props.petmateId, props.actItem.id);
     if (success) {
       isModalShow.value = false;
-      openMessageModal("success", "活动开始成功");
+      openMessageModal("success", t("activity.messages.startSuccess"));
     } else {
-      openMessageModal("fail", "活动开始失败");
+      openMessageModal("fail", t("activity.messages.startFailed"));
     }
   }
   if (props.type === "cancel") {
     const success = await cancelActivity(props.petmateId);
     if (success) {
       isModalShow.value = false;
-      openMessageModal("success", "活动取消成功");
+      openMessageModal("success", t("activity.messages.cancelSuccess"));
     }
   }
 };

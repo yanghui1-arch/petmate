@@ -1,12 +1,13 @@
 import { ref, readonly } from 'vue'
 import { Item, ActiveBuff, ActivityInfo } from '../types/common'
+import { i18n } from '../i18n'
 
 // 系统消息模态框，用于app显示系统交互信息
 type MessageModalType = 'success' | 'fail'
 // 全局状态 - 单个实例共享整个应用
 const _isMessageModalShow = ref(false)
 const _messageModalType = ref<MessageModalType>("fail")
-const _messageModalTitle = ref<string>("出了点小差错~")
+const _messageModalTitle = ref<string>(i18n.global.t('common.unexpectedError'))
 
 export function openMessageModal(type: MessageModalType, title: string) {
     _isMessageModalShow.value = true

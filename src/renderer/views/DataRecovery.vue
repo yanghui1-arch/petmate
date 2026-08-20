@@ -2,20 +2,20 @@
     <n-spin :show="showSpin" stroke="#fb7b87" class="spin-container">
         <div class="data-recovery-container">
             <div class="recover-btn-wrapper">
-                <button class="recover-btn" @click="handleRecoverData">点击恢复数据</button>
+                <button class="recover-btn" @click="handleRecoverData">{{ t('dataRecovery.button') }}</button>
             </div>
             <div class="recover-doc-wrapper">
                 <div class="recover-doc-title">
-                    说明
+                    {{ t('dataRecovery.heading') }}
                 </div>
                 <div class="recover-doc-content">
-                    <p>数据只能恢复到v0.5.1之前的最新一个版本（不包括v0.5.1），因此请慎点这个按钮！！！在整个过程中，需要保持联网状态，点击以后重启Petmate即可。背包中没有物品/没有心愿是正常现象，因为从v0.5.1开始重新设计了物品和心愿</p>
+                    <p>{{ t('dataRecovery.description') }}</p>
                 </div>
             </div>
         </div>
         <template #description>
             <div class="recover-tip">
-                正在恢复数据，请不要离开...
+                {{ t('dataRecovery.recovering') }}
             </div>
         </template>
     </n-spin>
@@ -23,15 +23,17 @@
 
 <script setup lang="ts">
 import { openMessageModal } from '../hooks/useInteract';
+import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
+const { t } = useI18n();
 const showSpin = ref(false);
 const handleRecoverData = () => {
     showSpin.value = true;
     window.server.recoverData().then((res) => {
         if (res.code === 200) {
-            openMessageModal('success', res.message || '恢复数据成功，现在继续愉快地玩耍吧~');
+            openMessageModal('success', t('dataRecovery.success'));
         } else {
-            openMessageModal('fail', res.message || '恢复数据失败，请稍后再试~');
+            openMessageModal('fail', t('dataRecovery.failed'));
         }
         showSpin.value = false;
     });

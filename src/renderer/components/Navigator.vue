@@ -3,20 +3,20 @@
     <div class="settings-layout">
       <div class="settings-header">
         <div class="settings-title">
-          <span class="title-text">Petmate</span>
+          <span class="title-text">{{ t("app.name") }}</span>
         </div>
       </div>
 
       <div class="page-navigator">
         <div class="navigator-section">
-          <div class="section-title">主要功能</div>
+          <div class="section-title">{{ t("nav.sections.main") }}</div>
           <router-link
             to="/home"
             class="page-navigator-item"
             @click="show = false"
           >
             <span class="nav-icon">🏠</span>
-            <span class="nav-text">主页</span>
+            <span class="nav-text">{{ t("nav.home") }}</span>
             <span class="nav-arrow">→</span>
           </router-link>
 
@@ -26,7 +26,7 @@
             @click="show = false"
           >
             <span class="nav-icon">🛒</span>
-            <span class="nav-text">商店</span>
+            <span class="nav-text">{{ t("nav.shop") }}</span>
             <span class="nav-arrow">→</span>
           </router-link>
 
@@ -36,7 +36,7 @@
             @click="show = false"
           >
             <span class="nav-icon">🎮</span>
-            <span class="nav-text">活动</span>
+            <span class="nav-text">{{ t("nav.activity") }}</span>
             <span class="nav-arrow">→</span>
           </router-link>
 
@@ -46,7 +46,7 @@
             @click="show = false"
           >
             <span class="nav-icon">🎁</span>
-            <span class="nav-text">委托</span>
+            <span class="nav-text">{{ t("nav.commission") }}</span>
             <span class="nav-arrow">→</span>
           </router-link>
 
@@ -56,13 +56,13 @@
             @click="show = false"
           >
             <span class="nav-icon">⭐</span>
-            <span class="nav-text">心愿</span>
+            <span class="nav-text">{{ t("nav.wish") }}</span>
             <span class="nav-arrow">→</span>
           </router-link>
         </div>
 
         <div class="navigator-section">
-          <div class="section-title">管理</div>
+          <div class="section-title">{{ t("nav.sections.manage") }}</div>
           <!-- <router-link
             to="/card"
             class="page-navigator-item"
@@ -79,7 +79,7 @@
             @click="show = false"
           >
             <span class="nav-icon">💬</span>
-            <span class="nav-text">聊天</span>
+            <span class="nav-text">{{ t("nav.chat") }}</span>
             <span class="nav-arrow">→</span>
           </router-link>
 
@@ -89,31 +89,32 @@
             @click="show = false"
           >
             <span class="nav-icon">👗</span>
-            <span class="nav-text">衣橱</span>
+            <span class="nav-text">{{ t("nav.wardrobe") }}</span>
             <span class="nav-arrow">→</span>
           </router-link>
         </div>
 
         <div class="navigator-section">
-          <div class="section-title">系统</div>
+          <div class="section-title">{{ t("nav.sections.system") }}</div>
           <router-link
             to="/data-recovery"
             class="page-navigator-item"
             @click="show = false"
           >
             <span class="nav-icon">💾</span>
-            <span class="nav-text">恢复数据</span>
+            <span class="nav-text">{{ t("nav.dataRecovery") }}</span>
             <span class="nav-arrow">→</span>
           </router-link>
-          <!-- <router-link
+
+          <router-link
             to="/settings"
             class="page-navigator-item"
             @click="show = false"
           >
             <span class="nav-icon">🔧</span>
-            <span class="nav-text">设置</span>
+            <span class="nav-text">{{ t("nav.settings") }}</span>
             <span class="nav-arrow">→</span>
-          </router-link> -->
+          </router-link>
         </div>
       </div>
     </div>
@@ -122,7 +123,10 @@
 
 <script setup lang="ts">
 import { defineProps, computed } from "vue";
+import { useI18n } from "vue-i18n";
 import type { DrawerPlacement } from "naive-ui";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   active: boolean;

@@ -13,7 +13,7 @@ export function useSettings() {
         try {
             const res = await window.api.initSettings()
             if (res.code === 200) {
-                settings.value = res.data!
+                if (res.data) settings.value = res.data
                 return true
             } else {
                 throw new Error(res.message)

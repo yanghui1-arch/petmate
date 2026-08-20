@@ -16,16 +16,16 @@
           class="popover-wrapper"
         >
           <div class="popover-title">
-            <span v-if="isLocked">??</span>
-            <span v-else>{{ actItem.name }}</span>
+            <span v-if="isLocked">{{ t("activity.popover.locked") }}</span>
+            <span v-else>{{ activityName }}</span>
           </div>
           <div class="popover-content">
             <div class="popover-description">
-              <span v-if="isLocked">???</span>
-              <span v-else>{{ actItem.description }}</span>
+              <span v-if="isLocked">{{ t("activity.popover.locked") }}</span>
+              <span v-else>{{ activityDescription }}</span>
             </div>
             <div>
-              <div class="popover-tip">要求</div>
+              <div class="popover-tip">{{ t("activity.popover.requirement") }}</div>
               <div class="popover-requirement">
                 <span
                   v-for="(value, key) in actItem.requirement"
@@ -35,10 +35,10 @@
               </div>
             </div>
             <div>
-              <div class="popover-tip">消耗</div>
+              <div class="popover-tip">{{ t("activity.popover.consume") }}</div>
               <div class="popover-consume">
                 <template v-if="isLocked">
-                  <span>???</span>
+                  <span>{{ t("activity.popover.locked") }}</span>
                 </template>
                 <template v-else>
                   <span
@@ -50,10 +50,10 @@
               </div>
             </div>
             <div>
-              <div class="popover-tip">奖励</div>
+              <div class="popover-tip">{{ t("activity.popover.reward") }}</div>
               <div class="popover-reward">
                 <template v-if="isLocked">
-                  <span>???</span>
+                  <span>{{ t("activity.popover.locked") }}</span>
                 </template>
                 <template v-else>
                   <span
@@ -73,7 +73,9 @@
   
   <script setup lang="ts">
 import { defineProps } from "vue";
+import { useI18n } from "vue-i18n";
 import { convertActivityText } from "../../utils/activity";
+import { getActivityDescription, getActivityName } from "../../utils/content";
 import { ActivityInfo } from "../../types/common";
 
 const props = defineProps({
@@ -85,6 +87,11 @@ const props = defineProps({
   actItem: { type: Object as PropType<ActivityInfo>, required: true }, // 物品
   isLocked: { type: Boolean, default: false }, // 是否锁定
 });
+
+const { t } = useI18n();
+
+const activityName = computed(() => getActivityName(props.actItem));
+const activityDescription = computed(() => getActivityDescription(props.actItem));
 
 // 过滤掉spendingTime
 const filteredConsume = computed(() => {

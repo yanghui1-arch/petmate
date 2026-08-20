@@ -1,7 +1,7 @@
 <template>
     <div class="chat-container">
         <div class="chat-header">
-            <span class="chat-title">尤美 Chat</span>
+            <span class="chat-title">{{ t("chat.title", { petmate: t("common.petmate") }) }}</span>
             <div class="runtime-controls">
                 <div class="runtime-toggle">
                     <span class="status-dot" :class="runtimePhaseClass"></span>
@@ -59,7 +59,7 @@
             >
                 <!-- Assistant Avatar (left side) -->
                 <div v-if="message.role === 'assistant'" class="avatar">
-                    <img :src="petmateAvatar" alt="尤美 Avatar" />
+                    <img :src="petmateAvatar" :alt="t('chat.avatarAlt', { petmate: t('common.petmate') })" />
                     <div class="avatar-glow"></div>
                 </div>
 
@@ -122,6 +122,7 @@
 
 <script lang="ts" setup>
 import { ref, nextTick, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { usePlayer } from '../hooks/usePlayer';
 import type { ChatMessage, HistoryChatMessage } from '../types/llm';
 import petmateAvatar from "../assets/image/youmei-avatar.png";
@@ -137,6 +138,7 @@ interface ChatMessageWithTimestamp extends ChatMessage {
 }
 
 const { chat } = usePlayer();
+const { t, locale } = useI18n();
 
 // 响应式数据
 const messages = ref<ChatMessageWithTimestamp[]>([]);
@@ -156,9 +158,9 @@ const localAIStatus = ref<LocalAIStatus>({
         totalBytes: 0,
         progress: 0,
         currentFile: '',
-        detail: '尚未下载本地模型'
+        detail: t('chat.localAiNotInstalled')
     },
-    llm: { phase: 'off', detail: '未加载' }
+    llm: { phase: 'off', detail: t('chat.localAiNotInstalled') }
 });
 const localAIReady = computed(() => localAIStatus.value.phase === 'ready');
 const modelsReady = computed(() => localAIStatus.value.download.phase === 'ready');
@@ -181,21 +183,21 @@ const formatBytes = (bytes: number): string => {
 };
 const downloadSizeText = computed(() => {
     const { downloadedBytes, totalBytes } = localAIStatus.value.download;
-    if (totalBytes <= 0) return '正在准备下载';
+    if (totalBytes <= 0) return t('chat.downloadPreparing');
     return `${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}`;
 });
 const downloadProgressDetail = computed(() => (
     localAIStatus.value.download.currentFile
-        ? `正在下载`
+        ? t('chat.downloading')
         : localAIStatus.value.download.detail
 ));
 const downloadButtonText = computed(() => {
-    if (localAIStatus.value.download.phase === 'checking') return '取消准备';
+    if (localAIStatus.value.download.phase === 'checking') return t('chat.cancelPreparing');
     if (localAIStatus.value.download.phase === 'downloading') {
-        return `取消下载 ${localAIStatus.value.download.progress.toFixed(1)}%`;
+        return t('chat.cancelDownload', { progress: localAIStatus.value.download.progress.toFixed(1) });
     }
-    if (localAIStatus.value.download.phase === 'error') return '重新下载模型';
-    return '下载本地模型';
+    if (localAIStatus.value.download.phase === 'error') return t('chat.redownloadModel');
+    return t('chat.downloadModel');
 });
 const runtimeNotice = computed(() => {
     if (localAIStatus.value.error) return localAIStatus.value.error;
@@ -203,28 +205,28 @@ const runtimeNotice = computed(() => {
     return '';
 });
 const localAIStatusText = computed(() => {
-    if (downloadActive.value) return `模型下载 ${localAIStatus.value.download.progress.toFixed(1)}%`;
-    if (!modelsReady.value) return '本地 AI 未安装';
+    if (downloadActive.value) return t('chat.downloadProgress', { progress: localAIStatus.value.download.progress.toFixed(1) });
+    if (!modelsReady.value) return t('chat.localAiNotInstalled');
     switch (localAIStatus.value.phase) {
         case 'starting':
-            return '正在加载本地大模型';
+            return t('chat.loadingLocalModel');
         case 'ready':
-            return `本地 AI · ${(localAIStatus.value.backend ?? 'cpu').toUpperCase()}`;
+            return t('chat.ready', { backend: (localAIStatus.value.backend ?? 'cpu').toUpperCase() });
         case 'stopping':
-            return '正在卸载本地模型';
+            return t('chat.unloadingLocalModel');
         case 'error':
-            return '本地 AI 启动失败';
+            return t('chat.startupFailed');
         default:
-            return '本地 AI 已关闭';
+            return t('chat.closed');
     }
 });
 const inputPlaceholder = computed(() => {
-    if (downloadActive.value) return `模型下载中 ${localAIStatus.value.download.progress.toFixed(1)}%…`;
-    if (!modelsReady.value) return '请先点击顶部的“下载本地模型”';
-    if (localAIStatus.value.phase === 'starting') return '模型加载中，请稍候…';
-    if (localAIStatus.value.phase === 'error') return '本地模型启动失败，请查看顶部提示';
-    if (!localAIReady.value) return '请先打开顶部的「本地 AI」开关';
-    return '和尤美聊聊吧ヾ(≧▽≦*)o';
+    if (downloadActive.value) return t('chat.downloadPlaceholder', { progress: localAIStatus.value.download.progress.toFixed(1) });
+    if (!modelsReady.value) return t('chat.clickDownload');
+    if (localAIStatus.value.phase === 'starting') return t('chat.modelLoading');
+    if (localAIStatus.value.phase === 'error') return t('chat.modelFailed');
+    if (!localAIReady.value) return t('chat.openSwitch');
+    return t('chat.prompt');
 });
 
 // Stream processing
@@ -240,7 +242,7 @@ let isProcessingChunks = false;
 
 // 格式化时间显示
 const formatTime = (date: Date): string => {
-    return date.toLocaleTimeString('zh-CN', {
+    return date.toLocaleTimeString(locale.value, {
         hour: '2-digit',
         minute: '2-digit'
     });
@@ -383,7 +385,7 @@ const toggleLocalAI = async (enabled: boolean) => {
         const response = await window.api.setLocalAIEnabled(enabled);
         if (response.data) localAIStatus.value = response.data;
         if (response.code !== 200) {
-            throw new Error(response.message || '切换本地模型失败');
+            throw new Error(response.message || t('chat.toggleFailed'));
         }
     } catch (error) {
         const latest = await window.api.getLocalAIStatus();
@@ -404,7 +406,7 @@ const handleModelDownload = async () => {
         const response = await window.api.downloadLocalAIModels();
         if (response.data) localAIStatus.value = response.data;
         if (response.code !== 200) {
-            throw new Error(response.message || '模型下载失败');
+            throw new Error(response.message || t('chat.downloadFailed'));
         }
     } catch (error) {
         const latest = await window.api.getLocalAIStatus();
@@ -446,7 +448,7 @@ const handleSend = async () => {
             // 发送失败的处理 - 更新等待中的消息为错误状态
             if (currentAssistantMessageIndex >= 0) {
                 messages.value[currentAssistantMessageIndex].isLoading = false;
-                messages.value[currentAssistantMessageIndex].content = '本地模型没有成功完成回复。请确认顶部开关显示“本地 AI”，并查看启动错误提示。';
+                messages.value[currentAssistantMessageIndex].content = t('chat.replyFailed');
             }
             // 重置状态
             finishStreamResponse();
@@ -456,7 +458,7 @@ const handleSend = async () => {
         // 错误处理 - 如果有等待中的消息，更新为错误状态
         if (currentAssistantMessageIndex >= 0) {
             messages.value[currentAssistantMessageIndex].isLoading = false;
-            messages.value[currentAssistantMessageIndex].content = '出现了一些问题，请稍后再试。';
+            messages.value[currentAssistantMessageIndex].content = t('chat.genericError');
         }
         // 重置状态
         finishStreamResponse();

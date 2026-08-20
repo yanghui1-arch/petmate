@@ -2,21 +2,34 @@
     <div id="settings">
       <div class="settings-body">
         
+        <div class="settings-item language-setting-item">
+          <div class="settings-label">
+            <label>{{ t('settings.language') }}</label>
+            <small>{{ t('settings.languageDescription') }}</small>
+          </div>
+          <n-select
+            class="language-select"
+            :value="locale"
+            :options="languageOptions"
+            @update:value="handleLocaleChange"
+          />
+        </div>
+
         <!-- 模型大小选择 -->
         <div class="settings-item">
-          <div class="settings-label"><label>模型大小</label></div>
+          <div class="settings-label"><label>{{ t('settings.modelSize') }}</label></div>
           <n-slider class="settings-switch" v-model:value="modelMaxSize" :step="1" />
         </div>
 
         <!-- 专注模式 -->
         <div class="settings-item">
-          <div class="settings-label"><label>专注模式</label></div>
+          <div class="settings-label"><label>{{ t('settings.focusMode') }}</label></div>
           <n-switch class="settings-switch" v-model:value="focusActive" />
         </div>
         
         <!-- 悬浮 -->
         <div class="settings-item">
-          <div class="settings-label"><label>置于最上层</label></div>
+          <div class="settings-label"><label>{{ t('settings.onTop') }}</label></div>
           <n-switch class="settings-switch" v-model:value="topCanvasActive" />
         </div>
 
@@ -25,14 +38,29 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useSettings } from '../hooks/useSettings'
+import { useLocale } from '../hooks/useLocale'
+import type { AppLocale } from '../../types/config'
 
 const { settings, updateSettings } = useSettings()
+const { t } = useI18n()
+const { locale, changeLocale } = useLocale()
 
 const focusActive = ref(false)
 const topCanvasActive = ref(true)
 const modelMaxSize = ref(50)
+
+const languageOptions = computed(() => [
+  { label: t('language.options.simplifiedChinese'), value: 'zh-CN' as AppLocale },
+  { label: t('language.options.traditionalChinese'), value: 'zh-TW' as AppLocale },
+  { label: t('language.options.english'), value: 'en-US' as AppLocale },
+])
+
+const handleLocaleChange = async (value: AppLocale) => {
+  await changeLocale(value)
+}
 
 onMounted(async () => {
   if (settings.value) {
@@ -83,11 +111,18 @@ watch(modelMaxSize, async (newVal) => {
     padding: 5px;
     .settings-label {
       padding: 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
     .settings-switch {
       padding-top: 10px;
       margin-left: auto;
       width: 40%;
+    }
+    .language-select {
+      width: 45%;
+      margin-left: auto;
     }
   }
 }
@@ -95,5 +130,10 @@ watch(modelMaxSize, async (newVal) => {
 label {
   font-size: 16px;
   color: $font-gray;
+}
+
+small {
+  color: rgba($font-gray, 0.7);
+  font-size: 11px;
 }
 </style>

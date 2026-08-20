@@ -13,13 +13,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import WheelMenu from '../components/WheelMenu.vue'
 import { isShowContextMenu, usePetmateModel } from '../hooks/usePetmateModel'
 import { usePlayer } from '../hooks/usePlayer'
 
 const LOW_ATTRIBUTE_RATIO = 0.3
 const PLAYER_REFRESH_INTERVAL = 30 * 1000
-const HUNGER_DIALOG_TEXT = '尤美真的.....真的.....好饿....'
 const HUNGER_DIALOG_TYPE_INTERVAL = 200
 
 const petmateContainer = ref()
@@ -30,6 +30,8 @@ let hasInitializedAttributeBaseline = false
 let lastLowAttributeState = false
 const isAngryByAttribute = ref(false)
 const hungryDialogVisibleText = ref('')
+const { t } = useI18n()
+const hungerDialogText = computed(() => t('petmate.hungryDialog'))
 
 const { init2D, playIdle, setAngry, setActivity, destroy } = usePetmateModel(petmateContainer)
 const { playerData, initPlayerData, refreshPlayerData, subscribeToPlayerDataSync } = usePlayer()
@@ -49,7 +51,7 @@ const shouldShowHungryDialog = computed(() => {
 const isHungryDialogTyping = computed(() => {
     return (
         shouldShowHungryDialog.value &&
-        hungryDialogVisibleText.value.length < HUNGER_DIALOG_TEXT.length
+        hungryDialogVisibleText.value.length < hungerDialogText.value.length
     )
 })
 const hasLowAttribute = computed(() => {
@@ -143,9 +145,9 @@ function startHungerDialogTypewriter() {
     let currentIndex = 0
     hungerDialogTimer = setInterval(() => {
         currentIndex += 1
-        hungryDialogVisibleText.value = HUNGER_DIALOG_TEXT.slice(0, currentIndex)
+        hungryDialogVisibleText.value = hungerDialogText.value.slice(0, currentIndex)
 
-        if (currentIndex >= HUNGER_DIALOG_TEXT.length) {
+        if (currentIndex >= hungerDialogText.value.length) {
             clearHungerDialogTimer()
         }
     }, HUNGER_DIALOG_TYPE_INTERVAL)

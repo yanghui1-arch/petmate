@@ -1,20 +1,22 @@
+import { i18n } from "../i18n";
+
 const ACTIVITY_MAP = {
-    hungry: "饱食度",
-    energy: "精力",
-    emotion: "心情",
-    health: "健康",
-    cash: "金币",
-    exp: "经验",
-    gameExp: "游戏经验",
-    singExp: "唱歌经验",
-    drawExp: "绘画经验",
-    affectionExp: "亲密度经验",
-    level: "Petmate Lv.",
-    singLevel: "唱歌Lv.",
-    drawLevel: "绘画Lv.",
-    gameLevel: "游戏Lv.",
-    affectionLevel: "亲密度Lv.",
-}
+    hungry: "attributes.hungry",
+    energy: "attributes.energy",
+    emotion: "attributes.emotion",
+    health: "attributes.health",
+    cash: "attributes.cash",
+    exp: "attributes.exp",
+    gameExp: "attributes.gameExp",
+    singExp: "attributes.singExp",
+    drawExp: "attributes.drawExp",
+    affectionExp: "attributes.affectionExp",
+    level: "attributes.level",
+    singLevel: "attributes.singLevel",
+    drawLevel: "attributes.drawLevel",
+    gameLevel: "attributes.gameLevel",
+    affectionLevel: "attributes.affectionLevel",
+} as const;
 
 /**
  * 转换活动效果为中文
@@ -22,7 +24,8 @@ const ACTIVITY_MAP = {
  * @returns 效果名称
  */
 export function convertActivityText(effect: string) {
-    return ACTIVITY_MAP[effect as keyof typeof ACTIVITY_MAP]
+    const messageKey = ACTIVITY_MAP[effect as keyof typeof ACTIVITY_MAP];
+    return messageKey ? i18n.global.t(messageKey) : effect;
 }
 
 /**
@@ -34,16 +37,16 @@ export function computeActivityTime(spendingTime: number) {
     const hours = Math.floor(spendingTime / 3600)
     const minutes = Math.floor((spendingTime % 3600) / 60)
     const seconds = Math.floor(spendingTime % 60)
-    let computedTime = ""
+    const timeParts: string[] = [];
     if (seconds > 0) {
-        computedTime = seconds + "秒"
+        timeParts.unshift(`${seconds}${i18n.global.t("common.seconds")}`);
     }
     if (minutes > 0) {
-        computedTime = minutes + "分" + computedTime
+        timeParts.unshift(`${minutes}${i18n.global.t("common.minutes")}`);
     }
     if (hours > 0) {
-        computedTime = hours + "时" + computedTime
+        timeParts.unshift(`${hours}${i18n.global.t("common.hours")}`);
     }
-    return computedTime
+    return timeParts.join(" ");
 }
 

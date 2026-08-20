@@ -21,7 +21,7 @@
       </div>
 
       <div class="reward-content">
-        <div class="reward-kicker">委托完成</div>
+        <div class="reward-kicker">{{ t("commission.rewardReveal") }}</div>
         <div class="reward-title">{{ commissionName }}</div>
         <div class="reward-list">
           <div
@@ -41,7 +41,7 @@
           </div>
         </div>
         <button type="button" class="reward-accept-btn" @click="closeReveal">
-          收下奖励
+          {{ t("commission.takeReward") }}
         </button>
       </div>
     </div>
@@ -50,6 +50,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import type { CommissionRewardPreview } from "@/types/commission";
 
 const props = defineProps<{
@@ -57,6 +58,8 @@ const props = defineProps<{
   commissionName: string;
   rewardPreviews: CommissionRewardPreview[];
 }>();
+
+const { t } = useI18n();
 
 const emit = defineEmits<{
   (e: "update:show", value: boolean): void;
@@ -107,10 +110,7 @@ function closeReveal() {
 }
 
 function getRewardBadge(type: CommissionRewardPreview["type"]) {
-  if (type === "cash") return "金";
-  if (type === "item") return "物";
-  if (type === "animation") return "动";
-  return "称";
+  return t(`commission.rewardTypes.${type}`);
 }
 
 function clearTimers() {

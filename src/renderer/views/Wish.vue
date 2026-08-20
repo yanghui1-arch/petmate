@@ -5,7 +5,7 @@
       <div class="wish-header">
         <div class="wish-title">
           <span style="font-family: Petmate; font-size: 30px"
-            >{{ currentActivePetmate?.name ?? "尤美" }} Wish</span
+            >{{ t("wish.title", { petmate: getPetmateName(currentActivePetmate?.name) }) }}</span
           >
         </div>
       </div>
@@ -24,10 +24,10 @@
           </div>
           <div class="affection-info">
             <div class="petmate-name">
-              {{ currentActivePetmate?.name ?? "尤美" }}
+              {{ getPetmateName(currentActivePetmate?.name) }}
             </div>
             <div class="affection-level">
-              好感 LV. {{ petmateAttribute?.affectionLevel ?? -1 }}
+              {{ t("wish.affection") }} LV. {{ petmateAttribute?.affectionLevel ?? -1 }}
             </div>
             <div class="affection-progress">
               <n-progress
@@ -53,7 +53,7 @@
         <div class="stats-card completed-stats">
           <div class="stats-icon">✅</div>
           <div class="stats-content">
-            <div class="stats-label">已完成</div>
+            <div class="stats-label">{{ t("wish.completed") }}</div>
             <div class="stats-value">
               <n-number-animation :from="0" :to="petmateCompletedWishesNum" />
             </div>
@@ -62,7 +62,7 @@
         <div class="stats-card progress-stats">
           <div class="stats-icon">⏳</div>
           <div class="stats-content">
-            <div class="stats-label">进行中</div>
+            <div class="stats-label">{{ t("wish.doing") }}</div>
             <div class="stats-value">
               <n-number-animation :from="0" :to="progressWishNum" />
             </div>
@@ -74,8 +74,8 @@
       <div class="wish-content-section">
         <div v-if="!check" class="wish-list-view">
           <div class="wish-list-header">
-            <span>心愿列表</span>
-            <div class="wish-count">{{ wishList.length }} 个心愿</div>
+              <span>{{ t("wish.list") }}</span>
+              <div class="wish-count">{{ t("wish.count", { count: wishList.length }) }}</div>
           </div>
           <div class="wish-list-wrapper">
             <n-infinite-scroll style="height: 100%">
@@ -92,8 +92,8 @@
                 </div>
                 <div v-else class="empty-wishes">
                   <div class="empty-icon">💭</div>
-                  <div class="empty-text">暂无心愿</div>
-                  <div class="empty-subtitle">快去多和它互动吧！</div>
+                  <div class="empty-text">{{ t("wish.empty") }}</div>
+                  <div class="empty-subtitle">{{ t("wish.emptySubtitle") }}</div>
                 </div>
               </div>
             </n-infinite-scroll>
@@ -119,9 +119,9 @@
                 <img :src="wishIcon" alt="wish" />
               </div>
               <div class="wish-detail-text">
-                <div class="wish-name">{{ checkWishInfo?.name }}</div>
+                <div class="wish-name">{{ checkWishInfo ? getWishName(checkWishInfo) : "" }}</div>
                 <div class="wish-deadline">
-                  截止: {{ formatTime(checkWishInfo?.endTime ?? new Date()) }}
+                  {{ t("wish.deadline", { time: formatTime(checkWishInfo?.endTime ?? new Date()) }) }}
                 </div>
               </div>
             </div>
@@ -129,7 +129,7 @@
 
           <div class="progress-section">
             <div class="progress-title">
-              <span>完成进度</span>
+              <span>{{ t("wish.progress") }}</span>
               <n-button
                   v-if="checkWishInfo && checkWishInfo?.status === 'finished'"
                   @click="handleClaimReward"
@@ -138,14 +138,14 @@
                   class="claim-button"
                 >
                 <span class="claim-icon">🎁</span>
-                <span class="claim-text">领取奖励</span>
+                <span class="claim-text">{{ t("wish.claim") }}</span>
               </n-button>
               <div
                   v-if="checkWishInfo && checkWishInfo?.status === 'claimed'"
                   class="claimed-status"
                 >
                 <span class="claimed-icon">✅</span>
-                <span class="claimed-text">已领取</span>
+                <span class="claimed-text">{{ t("wish.claimed") }}</span>
               </div>
             </div>
 
@@ -155,7 +155,7 @@
                 v-if="activityProgress.length > 0"
                 class="requirement-category"
               >
-                <h4>活动要求</h4>
+                <h4>{{ t("wish.activityRequirements") }}</h4>
                 <div class="requirement-list">
                   <div
                     v-for="progress in activityProgress"
@@ -164,7 +164,7 @@
                     :class="{ completed: progress.status === 'finished' }"
                   >
                     <img :src="getImageURL('activity', progress.src) ?? ''" class="requirement-icon" />
-                    <span class="requirement-name">{{ progress.name }}</span>
+                    <span class="requirement-name">{{ getWishRequirementName(progress) }}</span>
                     <div class="requirement-status">
                       <img
                         v-if="progress.status === 'finished'"
@@ -183,7 +183,7 @@
 
               <!-- 物品要求 -->
               <div v-if="itemProgress.length > 0" class="requirement-category">
-                <h4>物品要求</h4>
+                <h4>{{ t("wish.itemRequirements") }}</h4>
                 <div class="requirement-list">
                   <div
                     v-for="progress in itemProgress"
@@ -193,7 +193,7 @@
                   >
                     <img :src="getImageURL('item', progress.src) ?? ''" class="requirement-icon" />
                     <span class="requirement-name">
-                      {{ progress.name }}
+                      {{ getWishRequirementName(progress) }}
                       <span v-if="progress.type === 'item'" class="item-count">
                         ({{ progress.userCount }} / {{ progress.count }})
                       </span>
@@ -217,12 +217,12 @@
 
             <!-- 心愿奖励展示 -->
             <div class="rewards-display-section">
-              <div class="rewards-title">心愿奖励</div>
+              <div class="rewards-title">{{ t("wish.rewards") }}</div>
               <div class="rewards-container">
                 <!-- 完成心愿给好感度 -->
                 <div class="reward-item">
                   <div class="reward-info">
-                    <span class="reward-name">好感度</span>
+                    <span class="reward-name">{{ t("wish.affectionReward") }}</span>
                     <span v-if="checkWishInfo?.affectionExp" class="reward-count">
                       + {{ checkWishInfo?.affectionExp }}
                     </span>
@@ -233,7 +233,7 @@
                   <template v-if="wishReward.type === 'item'">
                     <img :src="getImageURL('item', wishReward.src) ?? ''" class="reward-icon" />
                     <div class="reward-info">
-                      <span class="reward-name">{{ wishReward.name }}</span>
+                      <span class="reward-name">{{ getWishRewardName(wishReward) }}</span>
                       <span v-if="wishReward.count" class="reward-count">
                         x{{ wishReward.count }}
                       </span>
@@ -242,7 +242,7 @@
                   <template v-else>
                     <img :src="getImageURL('buff', wishReward.src) ?? ''" class="reward-icon" />
                     <div class="reward-info">
-                      <span class="reward-name">{{ wishReward.name }}</span>
+                      <span class="reward-name">{{ getWishRewardName(wishReward) }}</span>
                     </div>
                   </template>
                   <div class="reward-badge">
@@ -260,6 +260,7 @@
 
 <script lang="ts" setup>
 import { ref, computed, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import WishItem from "../components/wish/WishItem.vue";
 import { usePlayer } from "../hooks/usePlayer";
 import { WishRequirement } from "../types/common";
@@ -267,8 +268,10 @@ import { formatTime } from "../utils/time";
 import { openMessageModal } from "../hooks/useInteract";
 import { useShow } from "../hooks/useShow";
 import { Wish, WishReward } from "../types/common";
+import { getPetmateName, getWishName, getWishRequirementName, getWishRewardName } from "../utils/content";
 const { playerData, claimWishReward } = usePlayer();
 const { getItemInfo, getImageURL } = useShow();
+const { t } = useI18n();
 import petmateAvatar from "../assets/image/youmei-avatar.png";
 import wishIcon from "../assets/image/wish.png";
 import rightIcon from "../assets/image/right.png";
@@ -350,7 +353,7 @@ const isClaimingReward = ref(false);
 // 处理奖励领取
 const handleClaimReward = async () => {
   if (!checkWishInfo.value) {
-    openMessageModal("fail", "心愿不存在");
+    openMessageModal("fail", t("wish.missing"));
     return;
   }
   const success = await claimWishReward(
@@ -358,7 +361,7 @@ const handleClaimReward = async () => {
     checkWishInfo.value.id
   );
   if (success) {
-    openMessageModal("success", "领取奖励成功");
+    openMessageModal("success", t("wish.claimSuccess"));
     // 重新check一下
     checkWish(checkWishInfo.value.id);
   }

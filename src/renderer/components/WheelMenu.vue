@@ -79,11 +79,15 @@
 
   <script setup lang="ts">
   import { ref, computed, onMounted, nextTick } from 'vue'
+  import { useI18n } from 'vue-i18n'
+  import { useLocale } from '../hooks/useLocale'
+  import type { AppLocale } from '../../types/config'
 
   interface MenuItem {
     id: string
-    title: String
-    action?: () => void
+    title: string
+    action?: () => void | Promise<void>
+    children?: MenuItem[]
   }
 
   // Props
@@ -114,43 +118,72 @@
   const overlayRef = ref<HTMLElement>()
   const svgRef = ref<SVGElement>()
 
-  // Sample menu items with nested structure
-  const defaultMenuItems: MenuItem[] = [
+  const { t } = useI18n()
+  const { changeLocale } = useLocale()
+
+  const selectLocale = async (locale: AppLocale) => {
+    const changed = await changeLocale(locale)
+    if (!changed) {
+      console.error(t('language.saveFailed'))
+    }
+  }
+
+  const languageItems = computed<MenuItem[]>(() => [
+    {
+      id: 'zh-CN',
+      title: t('language.options.simplifiedChinese'),
+      action: () => selectLocale('zh-CN')
+    },
+    {
+      id: 'zh-TW',
+      title: t('language.options.traditionalChinese'),
+      action: () => selectLocale('zh-TW')
+    },
+    {
+      id: 'en-US',
+      title: t('language.options.english'),
+      action: () => selectLocale('en-US')
+    }
+  ])
+
+  const defaultMenuItems = computed<MenuItem[]>(() => [
     {
       id: 'home',
-      title: '主页',
+      title: t('wheel.home'),
       action: () => window.api.openNewWindow('/home')
     },
     {
       id: 'shop',
-      title: '商店',
+      title: t('wheel.shop'),
       action: () => window.api.openNewWindow('/shop')
     },
     {
       id: 'activity',
-      title: '活动',
+      title: t('wheel.activity'),
       action: () => window.api.openNewWindow('/activity')
     },
     {
       id: 'chat',
-      title: '聊天',
+      title: t('wheel.chat'),
       action: () => window.api.openNewWindow('/chat')
     },
     {
-      id: 'tutorial',
-      title: '操作教程',
-      action: () => window.api.openOpt()
+      id: 'language',
+      title: t('wheel.language'),
+      children: languageItems.value
     },
     {
       id: 'quit',
-      title: '退出Petmate',
+      title: t('wheel.quit'),
       action: () => window.api.quitApp()
     }
-  ]
+  ])
 
   // Computed properties
-  const menuItems = computed(() => props.menuItems || defaultMenuItems)
-  const currentMenu = computed(() => menuStack.value[menuLevel.value] || menuItems.value)
+  const menuItems = computed(() => props.menuItems || defaultMenuItems.value)
+  const currentMenu = computed(() =>
+    menuLevel.value === 0 ? menuItems.value : menuStack.value[menuLevel.value - 1] || menuItems.value
+  )
   const center = computed(() => props.size / 2)
   const outerRadius = computed(() => props.size / 4)
   const innerRadius = computed(() => props.size / 8)
@@ -202,8 +235,15 @@
 
   const selectItem = (item: MenuItem, index: number) => {
     selectedIndex.value = index
+    if (item.children?.length) {
+      menuStack.value.push(item.children)
+      menuLevel.value += 1
+      selectedIndex.value = 0
+      return
+    }
+
     if (item.action) {
-        item.action()
+        void item.action()
     }
     emit('clicked', item)
     if (props.closeOnClick) {
@@ -212,8 +252,14 @@
 }
 
   const handleCenterClick = () => {
+    if (menuLevel.value > 0) {
+      menuStack.value = menuStack.value.slice(0, -1)
+      menuLevel.value -= 1
+      selectedIndex.value = 0
+      return
+    }
+
     closeMenu()
-    console.log("关闭了选项")
   }
 
   const handleKeydown = (event: KeyboardEvent) => {

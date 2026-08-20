@@ -1,16 +1,18 @@
 import { Requirement } from "@/types/common";
 import { PetMateAttribute } from "@/types/petmate";
+import { i18n } from "../i18n";
 
 const REQUIREMENT_MAP = {
-    level: "Petmate Lv.",
-    singLevel: "唱歌Lv.",
-    drawLevel: "绘画Lv.",
-    gameLevel: "游戏Lv.",
-    affectionLevel: "亲密度Lv.",
+    level: "attributes.level",
+    singLevel: "attributes.singLevel",
+    drawLevel: "attributes.drawLevel",
+    gameLevel: "attributes.gameLevel",
+    affectionLevel: "attributes.affectionLevel",
 }
 
 export const convertRequirementText = (key: string) => {
-    return REQUIREMENT_MAP[key as keyof typeof REQUIREMENT_MAP]
+    const translationKey = REQUIREMENT_MAP[key as keyof typeof REQUIREMENT_MAP]
+    return i18n.global.t(translationKey ?? "common.requirement")
 }
 
 /**
@@ -49,22 +51,22 @@ export const getMissingRequirements = (requirement: Requirement, petmateAttribut
         drawLevel: 1,
         gameLevel: 1,
         affectionLevel: 1,
-      };
+    };
     const missing: string[] = [];
     if (level < (requirement.level ?? 0)) {
-      missing.push(`等级 Lv.${requirement.level}`);
+      missing.push(i18n.global.t("activity.missing.level", { level: requirement.level }));
     }
     if (singLevel < (requirement.singLevel ?? 0)) {
-      missing.push(`唱歌 Lv.${requirement.singLevel}`);
+      missing.push(i18n.global.t("activity.missing.singLevel", { level: requirement.singLevel }));
     }
     if (drawLevel < (requirement.drawLevel ?? 0)) {
-      missing.push(`绘画 Lv.${requirement.drawLevel}`);
+      missing.push(i18n.global.t("activity.missing.drawLevel", { level: requirement.drawLevel }));
     }
     if (gameLevel < (requirement.gameLevel ?? 0)) {
-      missing.push(`游戏 Lv.${requirement.gameLevel}`);
+      missing.push(i18n.global.t("activity.missing.gameLevel", { level: requirement.gameLevel }));
     }
     if (affectionLevel < (requirement.affectionLevel ?? 0)) {
-      missing.push(`亲密度 Lv.${requirement.affectionLevel}`);
+      missing.push(i18n.global.t("activity.missing.affectionLevel", { level: requirement.affectionLevel }));
     }
     return missing;
   };

@@ -1,0 +1,107 @@
+import zhCN from './zh-CN';
+import content from '../content-zh-TW';
+
+export default {
+  ...zhCN,
+  content,
+  app: {
+    name: 'Petmate',
+  },
+  wheel: {
+    home: '首頁',
+    shop: '商店',
+    activity: '活動',
+    chat: '聊天',
+    language: '語言',
+    quit: '退出 Petmate',
+    back: '返回',
+    close: '關閉',
+  },
+  nav: {
+    sections: {
+      main: '主要功能',
+      manage: '管理',
+      system: '系統',
+    },
+    home: '首頁',
+    shop: '商店',
+    activity: '活動',
+    commission: '委託',
+    wish: '心願',
+    chat: '聊天',
+    wardrobe: '衣櫥',
+    dataRecovery: '恢復資料',
+    settings: '設定',
+  },
+  settings: {
+    title: '設定',
+    modelSize: '模型大小',
+    focusMode: '專注模式',
+    onTop: '置於最上層',
+    language: '語言',
+    languageDescription: '選擇應用程式介面語言',
+  },
+  language: {
+    title: '語言設定',
+    options: {
+      simplifiedChinese: '簡體中文',
+      traditionalChinese: '繁體中文',
+      english: 'English',
+    },
+    changed: '語言已切換',
+    saveFailed: '語言儲存失敗，請稍後再試',
+  },
+  common: {
+    confirm: '確定', cancel: '取消', close: '關閉', later: '稍後', back: '返回',
+    previousPage: '上一頁', nextPage: '下一頁', search: '搜尋', none: '無',
+    requirement: '要求', consume: '消耗', reward: '獎勵', effect: '效果', source: '獲得方式',
+    blackMarket: '黑市', activity: '活動', hours: '小時', minutes: '分鐘', seconds: '秒', petmate: '尤美', unexpectedError: '出了點小差錯~',
+  },
+  attributes: {
+    hungry: '飽食度', energy: '精力', emotion: '心情', health: '健康', cash: '金幣', exp: '經驗',
+    gameExp: '遊戲經驗', singExp: '唱歌經驗', drawExp: '繪畫經驗', affectionExp: '親密度經驗',
+    level: 'Petmate Lv.', singLevel: '唱歌 Lv.', drawLevel: '繪畫 Lv.', gameLevel: '遊戲 Lv.', affectionLevel: '親密度 Lv.',
+  },
+  activity: {
+    grades: { sing: '唱歌', draw: '繪畫', game: '遊戲' }, claimReward: '領取獎勵',
+    active: '{petmate}正在{activity}', completed: '{petmate}已完成{activity}', idle: '{petmate}目前沒有進行任何活動', lockedTitle: '解鎖條件:',
+    sections: {
+      study: { name: '學習', description: '每一篇鼓舞詩章，都是時代的遠航' },
+      work: { name: '工作', description: '真正的工作，在於把每一份付出，都變成你未來版圖上的一座新城。' },
+      entertainment: { name: '娛樂', description: '休憩是為下一次偉大的遠征積蓄最充沛的能量' },
+    },
+    messages: { locked: '活動尚未解鎖', alreadyActive: '目前角色已有活動', startSuccess: '活動開始成功', startFailed: '活動開始失敗', cancelSuccess: '活動取消成功', claimSuccess: '領取獎勵成功', claimFailed: '領取獎勵失敗' },
+    modal: { startTitle: '是否開始活動「{activity}」？', cancelTitle: '是否取消活動「{activity}」？', duration: '本次活動耗時{duration}', cancelTip: '取消活動後，活動獎勵將不會發放' },
+    popover: { locked: '活動尚未解鎖', requirement: '要求', consume: '消耗', reward: '獎勵' },
+    missing: { level: '等級 Lv.{level}', singLevel: '唱歌 Lv.{level}', drawLevel: '繪畫 Lv.{level}', gameLevel: '遊戲 Lv.{level}', affectionLevel: '親密度 Lv.{level}' },
+  },
+  chat: {
+    title: '{petmate} Chat', avatarAlt: '{petmate}頭像', downloadPreparing: '正在準備下載', downloading: '正在下載', cancelPreparing: '取消準備', cancelDownload: '取消下載 {progress}%', redownloadModel: '重新下載模型', downloadModel: '下載本地模型', downloadProgress: '模型下載 {progress}%', localAiNotInstalled: '本地 AI 未安裝', loadingLocalModel: '正在載入本地大型模型', ready: '本地 AI · {backend}', unloadingLocalModel: '正在卸載本地模型', startupFailed: '本地 AI 啟動失敗', closed: '本地 AI 已關閉', downloadPlaceholder: '模型下載中 {progress}%…', clickDownload: '請先點擊上方的「下載本地模型」', modelLoading: '模型載入中，請稍候…', modelFailed: '本地模型啟動失敗，請查看上方提示', openSwitch: '請先開啟上方的「本地 AI」開關', prompt: '和尤美聊聊天吧ヾ(≧▽≦*)o', toggleFailed: '切換本地模型失敗', downloadFailed: '模型下載失敗', replyFailed: '本地模型沒有成功完成回覆。請確認上方開關顯示「本地 AI」，並查看啟動錯誤提示。', genericError: '出現了一些問題，請稍後再試。',
+  },
+  item: {
+    confirm: '確定', cancel: '取消', buyFashion: '確認購買此時裝', purchasedGain: '購買後獲得', usedGain: '使用後獲得以下效果', purpose: '用途', permanentUnlock: '永久解鎖，可前往衣櫥實裝', cannotUse: '不能在背包中直接使用', noEffect: '無', useCountZero: '使用物品數量不能為0', buyCountZero: '購買物品數量不能為0', buySuccess: '購買成功', buyFailed: '購買失敗', useSuccess: '使用成功', useFailed: '使用失敗', requirement: '要求', source: '獲得方式', blackMarket: '黑市', activity: '活動',
+  },
+  buff: {
+    effect: '效果', remaining: '剩{seconds}秒', effects: {
+      expGainRate: '經驗獲取倍率{change}', gameExpGainRate: '遊戲經驗獲取倍率{change}', singExpGainRate: '唱歌經驗獲取倍率{change}', drawExpGainRate: '繪畫經驗獲取倍率{change}', affectionExpGainRate: '親密度經驗獲取倍率{change}', energyCostRate: '精力消耗倍率{change}', hungryCostRate: '飽食度消耗倍率{change}', healthCostRate: '健康消耗倍率{change}', emotionCostRate: '心情消耗倍率{change}', cashCostRate: '金幣消耗倍率{change}', energyGainRate: '精力恢復倍率{change}', hungryGainRate: '飽食度恢復倍率{change}', healthGainRate: '健康恢復倍率{change}', emotionGainRate: '心情恢復倍率{change}', spendingTimeRate: '消耗時間倍率{change}', cashGainRate: '金幣獲取倍率{change}',
+    },
+  },
+  shop: {
+    title: '歡迎來到黑市', sortDefault: '預設排序', sortLevelAsc: '按等級升冪', sortLevelDesc: '按等級降冪', sortPriceAsc: '按價格升冪', sortPriceDesc: '按價格降冪', keywordPlaceholder: '請輸入商品關鍵字', search: '搜尋', categories: { limit: '限時', fashion: '時裝', food: '食物', medicine: '藥品', gift: '禮物', drink: '飲料' }, modalTitle: '請選擇購買數量',
+  },
+  home: {
+    selectTitle: '選擇稱號', hunger: '飽食度', energy: '精力', emotion: '心情', health: '健康', previousPage: '上一頁', nextPage: '下一頁', categories: { food: '食物', medicine: '藥品', gift: '禮物', drink: '飲料', limit: '限時', others: '其他' }, modalTitle: '請選擇使用數量', cannotUse: '該物品不能在背包中直接使用', titles: { holidayCraftsperson: '假日小工匠', dawnGuardian: '曙光守護者', winningDuo: '假期連勝搭檔' },
+  },
+  wardrobe: { applying: '實裝中', current: '目前實裝', available: '可實裝', equipped: '已實裝', equip: '實裝', fetchFailed: '取得衣櫥失敗', equipSuccess: '實裝成功', equipFailed: '實裝失敗', skins: { classic: '經典長裙套裝', labor: '五一短裙套裝' } },
+  wish: { title: '{petmate} Wish', affection: '好感', completed: '已完成', doing: '進行中', list: '心願列表', count: '{count} 個心願', empty: '暫無心願', emptySubtitle: '快去多和它互動吧！', deadline: '截止：{time}', progress: '完成進度', claim: '領取獎勵', claimed: '已領取', activityRequirements: '活動要求', itemRequirements: '物品要求', rewards: '心願獎勵', affectionReward: '好感度', missing: '心願不存在', claimSuccess: '領取獎勵成功', statuses: { doing: '進行中', finished: '領取獎勵', claimed: '已領取', failed: '已失敗', timeout: '已過期' } },
+  commission: {
+    holiday: '五一勞動節', title: '節日委託', delivery: '交付', reward: '獎勵', deadline: '截止時間 {date}', modalKicker: '節日委託', deliveryCount: '交付次數', max: '最大 {count}', later: '稍後', expired: '已截止', pending: '待交付', deliverable: '可交付 {count} 次', delivering: '交付中...', deliver: '交付', givePetmate: '交給尤美', givePetmateCount: '交給尤美 ×{count}', alreadyExpired: '已經截止', remainingDaysHours: '還剩 {days} 天 {hours} 小時', remainingHoursMinutes: '還剩 {hours} 小時 {minutes} 分鐘', remainingMinutes: '還剩 {minutes} 分鐘', checkBag: '請檢查背包', completed: '委託完成', submitFailed: '委託提交失敗', rewardReveal: '委託完成', takeReward: '收下獎勵', rewardTypes: { cash: '金', item: '物', animation: '動', title: '稱' }, cashName: '{amount} 金幣', cashDescription: '委託禮盒裡閃閃發亮的金幣。', itemDescription: '獲得 {count} 個{name}。',
+    definitions: { tool: { name: '工具尋禮', description: '勞動節到了！把這份精心準備的豪華工具箱交給尤美，她會非常開心的～' }, parasol: { name: '洋傘贈禮', description: '五一陽光正好，送上這把蕾絲遮陽傘，讓尤美在節日裡也能優雅出行！' }, gaming: { name: '電競贈禮', description: '假期電競時刻！戴上兔尾耳機，和尤美一起度過快樂的勞動節假期～' } },
+    items: { toolbox: '豪華工具箱', parasol: '蕾絲遮陽傘', headphones: '兔尾耳機' }, rewards: { randomSupplies: { name: '隨機補給', description: '可能開出食物、飲料、禮物或限時補給。' }, randomCash: { name: '隨機金幣', description: '禮盒裡會附帶一筆隨機金幣。' }, laborKick: { name: '勞動節踢人動畫', description: '尤美換上勞動節造型，使出元氣滿滿的一腳。' }, craftsperson: { name: '假日小工匠', description: '把勞動節的心意認真送到的人。' }, guardian: { name: '曙光守護者', description: '替尤美撐起晴天小傘的人。' }, winningDuo: { name: '假期連勝搭檔', description: '和尤美一起打滿假期快樂的人。' } }, errors: { expired: '這個委託已經截止啦', invalidCount: '交付次數不合法' },
+  },
+  notifications: { system: '系統訊息', wishGenerated: '{petmate}生成了一個心願，快去看看吧', activityCompletedTitle: '活動完成', activityCompleted: '{petmate}的活動已完成，快去領取獎勵吧！', wishCompleted: '{petmate}完成了心願：{wish}，快去看看吧' },
+  dataRecovery: { button: '點擊恢復資料', heading: '說明', description: '資料只能恢復到v0.5.1之前的最新一個版本（不包括v0.5.1），因此請慎點這個按鈕！！！在整個過程中，需要保持連線狀態，點擊以後重啟Petmate即可。背包中沒有物品／沒有心願是正常現象，因為從v0.5.1開始重新設計了物品和心願', recovering: '正在恢復資料，請不要離開...', success: '恢復資料成功，現在繼續愉快地玩耍吧～', failed: '恢復資料失敗，請稍後再試～' },
+  log: { item: '物品日誌', activity: '活動日誌', sampleItem: '隨機掉落了[金幣] + 10' },
+  avatar: { accompaniedOneDay: '(已陪伴一天)' },
+  petmate: { hungryDialog: '尤美真的.....真的.....好餓....' },
+} as const;

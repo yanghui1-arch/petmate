@@ -1,0 +1,97 @@
+import zhCN from './zh-CN';
+import content from '../content-en-US';
+
+export default {
+  ...zhCN,
+  content,
+  app: {
+    name: 'Petmate',
+  },
+  wheel: {
+    home: 'Home',
+    shop: 'Shop',
+    activity: 'Activities',
+    chat: 'Chat',
+    language: 'Language',
+    quit: 'Quit Petmate',
+    back: 'Back',
+    close: 'Close',
+  },
+  nav: {
+    sections: {
+      main: 'Main',
+      manage: 'Manage',
+      system: 'System',
+    },
+    home: 'Home',
+    shop: 'Shop',
+    activity: 'Activities',
+    commission: 'Commissions',
+    wish: 'Wishes',
+    chat: 'Chat',
+    wardrobe: 'Wardrobe',
+    dataRecovery: 'Data recovery',
+    settings: 'Settings',
+  },
+  settings: {
+    title: 'Settings',
+    modelSize: 'Model size',
+    focusMode: 'Focus mode',
+    onTop: 'Always on top',
+    language: 'Language',
+    languageDescription: 'Choose the application language',
+  },
+  language: {
+    title: 'Language settings',
+    options: {
+      simplifiedChinese: 'Simplified Chinese',
+      traditionalChinese: 'Traditional Chinese',
+      english: 'English',
+    },
+    changed: 'Language changed',
+    saveFailed: 'Could not save the language. Please try again later.',
+  },
+  common: {
+    confirm: 'Confirm', cancel: 'Cancel', close: 'Close', later: 'Later', back: 'Back', previousPage: 'Previous', nextPage: 'Next', search: 'Search', none: 'None', requirement: 'Requirements', consume: 'Cost', reward: 'Rewards', effect: 'Effects', source: 'Source', blackMarket: 'Black market', activity: 'Activity', hours: 'hours', minutes: 'minutes', seconds: 'seconds', petmate: 'Youmei', unexpectedError: 'Something went wrong~',
+  },
+  attributes: {
+    hungry: 'Hunger', energy: 'Energy', emotion: 'Mood', health: 'Health', cash: 'Coins', exp: 'EXP', gameExp: 'Game EXP', singExp: 'Singing EXP', drawExp: 'Drawing EXP', affectionExp: 'Affection EXP', level: 'Petmate Lv.', singLevel: 'Singing Lv.', drawLevel: 'Drawing Lv.', gameLevel: 'Game Lv.', affectionLevel: 'Affection Lv.',
+  },
+  activity: {
+    grades: { sing: 'Singing', draw: 'Drawing', game: 'Gaming' }, claimReward: 'Claim reward', active: '{petmate} is doing {activity}', completed: '{petmate} completed {activity}', idle: '{petmate} has no active activity', lockedTitle: 'Unlock requirements:',
+    sections: { study: { name: 'Study', description: 'Every inspiring verse is a voyage into a new era.' }, work: { name: 'Work', description: 'Real work turns every effort into a new city on the map of your future.' }, entertainment: { name: 'Entertainment', description: 'Rest gathers the energy for your next great expedition.' } },
+    messages: { locked: 'Activity is locked', alreadyActive: 'This character already has an active activity', startSuccess: 'Activity started', startFailed: 'Could not start activity', cancelSuccess: 'Activity cancelled', claimSuccess: 'Reward claimed', claimFailed: 'Could not claim reward' },
+    modal: { startTitle: 'Start “{activity}”?', cancelTitle: 'Cancel “{activity}”?', duration: 'Duration: {duration}', cancelTip: 'Cancelling the activity will forfeit its reward' },
+    popover: { locked: 'Activity is locked', requirement: 'Requirements', consume: 'Cost', reward: 'Rewards' },
+    missing: { level: 'Level Lv.{level}', singLevel: 'Singing Lv.{level}', drawLevel: 'Drawing Lv.{level}', gameLevel: 'Gaming Lv.{level}', affectionLevel: 'Affection Lv.{level}' },
+  },
+  chat: {
+    title: '{petmate} Chat', avatarAlt: '{petmate} avatar', downloadPreparing: 'Preparing download', downloading: 'Downloading', cancelPreparing: 'Cancel preparation', cancelDownload: 'Cancel download {progress}%', redownloadModel: 'Download model again', downloadModel: 'Download local model', downloadProgress: 'Model download {progress}%', localAiNotInstalled: 'Local AI is not installed', loadingLocalModel: 'Loading local model', ready: 'Local AI · {backend}', unloadingLocalModel: 'Unloading local model', startupFailed: 'Local AI failed to start', closed: 'Local AI is off', downloadPlaceholder: 'Model downloading {progress}%…', clickDownload: 'Click “Download local model” above first', modelLoading: 'Loading model, please wait…', modelFailed: 'Local model failed to start. Check the notice above.', openSwitch: 'Turn on the “Local AI” switch above first', prompt: 'Chat with Youmei ヾ(≧▽≦*)o', toggleFailed: 'Could not switch the local model', downloadFailed: 'Model download failed', replyFailed: 'The local model did not complete a reply. Confirm that “Local AI” is shown above and check the startup notice.', genericError: 'Something went wrong. Please try again later.',
+  },
+  item: {
+    confirm: 'Confirm', cancel: 'Cancel', buyFashion: 'Confirm purchase of this outfit', purchasedGain: 'Granted after purchase', usedGain: 'Effects gained after use', purpose: 'Purpose', permanentUnlock: 'Permanently unlocked; equip it from the wardrobe', cannotUse: 'This item cannot be used directly from the package', noEffect: 'None', useCountZero: 'The use quantity cannot be 0', buyCountZero: 'The purchase quantity cannot be 0', buySuccess: 'Purchase successful', buyFailed: 'Purchase failed', useSuccess: 'Item used', useFailed: 'Item use failed', requirement: 'Requirements', source: 'Source', blackMarket: 'Black market', activity: 'Activity',
+  },
+  buff: {
+    effect: 'Effects', remaining: '{seconds}s remaining', effects: {
+      expGainRate: 'EXP gain rate{change}', gameExpGainRate: 'Game EXP gain rate{change}', singExpGainRate: 'Singing EXP gain rate{change}', drawExpGainRate: 'Drawing EXP gain rate{change}', affectionExpGainRate: 'Affection EXP gain rate{change}', energyCostRate: 'Energy cost rate{change}', hungryCostRate: 'Hunger cost rate{change}', healthCostRate: 'Health cost rate{change}', emotionCostRate: 'Mood cost rate{change}', cashCostRate: 'Coin cost rate{change}', energyGainRate: 'Energy recovery rate{change}', hungryGainRate: 'Hunger recovery rate{change}', healthGainRate: 'Health recovery rate{change}', emotionGainRate: 'Mood recovery rate{change}', spendingTimeRate: 'Time cost rate{change}', cashGainRate: 'Coin gain rate{change}',
+    },
+  },
+  shop: {
+    title: 'Welcome to the black market', sortDefault: 'Default sort', sortLevelAsc: 'Level: low to high', sortLevelDesc: 'Level: high to low', sortPriceAsc: 'Price: low to high', sortPriceDesc: 'Price: high to low', keywordPlaceholder: 'Search products', search: 'Search', categories: { limit: 'Limited', fashion: 'Outfits', food: 'Food', medicine: 'Medicine', gift: 'Gifts', drink: 'Drinks' }, modalTitle: 'Choose purchase quantity',
+  },
+  home: {
+    selectTitle: 'Choose title', hunger: 'Hunger', energy: 'Energy', emotion: 'Mood', health: 'Health', previousPage: 'Previous', nextPage: 'Next', categories: { food: 'Food', medicine: 'Medicine', gift: 'Gifts', drink: 'Drinks', limit: 'Limited', others: 'Other' }, modalTitle: 'Choose use quantity', cannotUse: 'This item cannot be used directly from the package', titles: { holidayCraftsperson: 'Holiday Craftsperson', dawnGuardian: 'Dawn Guardian', winningDuo: 'Holiday Winning Duo' },
+  },
+  wardrobe: { applying: 'Equipping', current: 'Currently equipped', available: 'Available', equipped: 'Equipped', equip: 'Equip', fetchFailed: 'Could not load wardrobe', equipSuccess: 'Equipped successfully', equipFailed: 'Could not equip', skins: { classic: 'Classic long dress set', labor: 'May Day short dress set' } },
+  wish: { title: '{petmate} Wish', affection: 'Affection', completed: 'Completed', doing: 'In progress', list: 'Wish list', count: '{count} wishes', empty: 'No wishes yet', emptySubtitle: 'Spend more time with Youmei!', deadline: 'Deadline: {time}', progress: 'Progress', claim: 'Claim reward', claimed: 'Claimed', activityRequirements: 'Activity requirements', itemRequirements: 'Item requirements', rewards: 'Wish rewards', affectionReward: 'Affection', missing: 'Wish not found', claimSuccess: 'Reward claimed', statuses: { doing: 'In progress', finished: 'Claim reward', claimed: 'Claimed', failed: 'Failed', timeout: 'Expired' } },
+  commission: {
+    holiday: 'May Day', title: 'Holiday commissions', delivery: 'Deliver', reward: 'Rewards', deadline: 'Deadline: {date}', modalKicker: 'Holiday commission', deliveryCount: 'Delivery count', max: 'Max {count}', later: 'Later', expired: 'Expired', pending: 'Pending delivery', deliverable: 'Deliver {count} time(s)', delivering: 'Delivering...', deliver: 'Deliver', givePetmate: 'Give to Youmei', givePetmateCount: 'Give to Youmei ×{count}', alreadyExpired: 'Expired', remainingDaysHours: '{days}d {hours}h remaining', remainingHoursMinutes: '{hours}h {minutes}m remaining', remainingMinutes: '{minutes}m remaining', checkBag: 'Check your package', completed: 'Commission completed', submitFailed: 'Commission submission failed', rewardReveal: 'Commission completed', takeReward: 'Collect rewards', rewardTypes: { cash: 'Coin', item: 'Item', animation: 'Motion', title: 'Title' }, cashName: '{amount} coins', cashDescription: 'Shiny coins from the commission gift box.', itemDescription: 'Received {count} {name}.',
+    definitions: { tool: { name: 'Tool gift', description: 'May Day is here! Give Youmei this carefully prepared deluxe toolbox to make her happy.' }, parasol: { name: 'Parasol gift', description: 'The May Day sun is lovely. Give Youmei this lace parasol so she can travel in style.' }, gaming: { name: 'Gaming gift', description: 'Holiday gaming time! Put on the bunny-ear headphones and enjoy May Day with Youmei.' } },
+    items: { toolbox: 'Deluxe toolbox', parasol: 'Lace parasol', headphones: 'Bunny-ear headphones' }, rewards: { randomSupplies: { name: 'Random supplies', description: 'May contain food, drinks, gifts, or limited supplies.' }, randomCash: { name: 'Random coins', description: 'The gift box includes a random amount of coins.' }, laborKick: { name: 'May Day kick animation', description: 'Youmei puts on her May Day outfit and delivers an energetic kick.' }, craftsperson: { name: 'Holiday Craftsperson', description: 'Someone who delivers their May Day kindness with care.' }, guardian: { name: 'Dawn Guardian', description: 'Someone who holds up a sunny parasol for Youmei.' }, winningDuo: { name: 'Holiday Winning Duo', description: 'Someone who fills the holiday with winning fun alongside Youmei.' } }, errors: { expired: 'This commission has expired', invalidCount: 'Invalid delivery count' },
+  },
+  notifications: { system: 'System message', wishGenerated: '{petmate} created a wish. Go take a look!', activityCompletedTitle: 'Activity complete', activityCompleted: '{petmate} finished an activity. Go claim the reward!', wishCompleted: '{petmate} completed the wish “{wish}”. Go take a look!' },
+  dataRecovery: { button: 'Recover data', heading: 'Notice', description: 'Data can only be recovered to the latest version before v0.5.1 (not including v0.5.1). Use this button carefully! Keep the app connected to the internet, then restart Petmate after recovery. An empty package or wish list is expected because these systems were redesigned from v0.5.1.', recovering: 'Recovering data, please do not leave...', success: 'Data recovered. Enjoy Petmate!', failed: 'Data recovery failed. Please try again later.' },
+  log: { item: 'Item log', activity: 'Activity log', sampleItem: 'Random drop: [Coins] + 10' },
+  avatar: { accompaniedOneDay: '(Together for one day)' },
+  petmate: { hungryDialog: 'Youmei is really.....really.....so hungry....' },
+} as const;

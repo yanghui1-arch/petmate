@@ -3,7 +3,7 @@ import { PlayerInfo } from "../main/types/player";
 import { Item, ItemType } from "../main/types/item";
 import { Wish } from "../main/types/wish"
 import { ActivityInfo } from "../main/types/activity";
-import { SettingConfig } from "./settings";
+import { SettingConfig } from "../types/config";
 import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "./llm";
 import { WindowEvent, WindowInfo } from "../main/window-monitor";
 import { CommissionCompletionResult, PlayerResourceState } from "../main/types/player-resource";
@@ -37,7 +37,7 @@ interface IElectronAPI {
   // set && update && add
   setChatLLMConfig: (config: ChatLLMConfig) => Promise<Response<ChatLLMConfig>>;
   setTTSLLMConfig: (config: TTSLLMConfig) => Promise<Response<TTSLLMConfig>>;
-  updateSettings: (settings: Partial<SettingConfig>) => Promise<Response<void>>;
+  updateSettings: (settings: Partial<SettingConfig>) => Promise<Response<SettingConfig>>;
   addTTSVoice: (voice: TTSVoice) => Promise<Response<void>>;
   setChatPrompt: (prompt: string) => Promise<Response<void>>;
   saveChatMessages: () => Promise<Response<void>>;

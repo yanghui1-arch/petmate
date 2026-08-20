@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Commission } from '../types/commission'
 import type { CommissionCompletionResult, PlayerResourceState } from '@main/types/player-resource'
 import toolGiftImage from '../assets/image/special_activity/labor-2026/工具寻礼贴图.png'
@@ -10,8 +11,8 @@ const LABOR_DAY_DEADLINE = new Date('2026-05-15T23:59:59+08:00')
 const LABOR_KICK_REWARD = {
     id: 'youmei-angry-kick-labor-2026',
     type: 'animation' as const,
-    name: '劳动节踢人动画',
-    description: '尤美换上劳动节造型，使出元气满满的一脚。',
+    name: 'commission.rewards.laborKick.name',
+    description: 'commission.rewards.laborKick.description',
     imageUrl: laborKickPreviewImage,
 }
 
@@ -34,97 +35,97 @@ const isPlayerResourcesLoaded = ref(false)
 const HOLIDAY_COMMISSION_DEFS: Omit<Commission, 'status'>[] = [
     {
         id: 'labor-2026-tool',
-        name: '工具寻礼',
-        description: '劳动节到啦！把这份精心准备的豪华工具箱交给尤美，她会非常开心的~',
+        name: 'commission.definitions.tool.name',
+        description: 'commission.definitions.tool.description',
         imageUrl: toolGiftImage,
         deadline: LABOR_DAY_DEADLINE,
         category: 'holiday',
         requirements: [
-            { itemId: 24, itemName: '豪华工具箱', itemUrl: 'limit/mayday-luxury-toolbox', count: 1 },
+            { itemId: 24, itemName: 'commission.items.toolbox', itemUrl: 'limit/mayday-luxury-toolbox', count: 1 },
         ],
         rewards: [
             {
                 id: 'labor-2026-random-supplies',
                 type: 'item',
-                name: '随机补给',
-                description: '可能开出食物、饮料、礼物或限时补给。',
+                name: 'commission.rewards.randomSupplies.name',
+                description: 'commission.rewards.randomSupplies.description',
             },
             {
                 id: 'labor-2026-random-cash',
                 type: 'cash',
-                name: '随机金币',
-                description: '礼盒里会附带一笔随机金币。',
+                name: 'commission.rewards.randomCash.name',
+                description: 'commission.rewards.randomCash.description',
             },
             LABOR_KICK_REWARD,
             {
                 id: 'labor-2026-holiday-craftsperson',
                 type: 'title',
-                name: '假日小工匠',
-                description: '把劳动节的心意认真送到的人。',
+                name: 'commission.rewards.craftsperson.name',
+                description: 'commission.rewards.craftsperson.description',
             },
         ],
     },
     {
         id: 'labor-2026-parasol',
-        name: '洋伞赠礼',
-        description: '五一阳光正好，送上这把蕾丝遮阳伞，让尤美在节日里也能优雅出行！',
+        name: 'commission.definitions.parasol.name',
+        description: 'commission.definitions.parasol.description',
         imageUrl: parasolImage,
         deadline: LABOR_DAY_DEADLINE,
         category: 'holiday',
         requirements: [
-            { itemId: 23, itemName: '蕾丝遮阳伞', itemUrl: 'limit/mayday-lace-parasol', count: 1 },
+            { itemId: 23, itemName: 'commission.items.parasol', itemUrl: 'limit/mayday-lace-parasol', count: 1 },
         ],
         rewards: [
             {
                 id: 'labor-2026-random-supplies',
                 type: 'item',
-                name: '随机补给',
-                description: '可能开出食物、饮料、礼物或限时补给。',
+                name: 'commission.rewards.randomSupplies.name',
+                description: 'commission.rewards.randomSupplies.description',
             },
             {
                 id: 'labor-2026-random-cash',
                 type: 'cash',
-                name: '随机金币',
-                description: '礼盒里会附带一笔随机金币。',
+                name: 'commission.rewards.randomCash.name',
+                description: 'commission.rewards.randomCash.description',
             },
             LABOR_KICK_REWARD,
             {
                 id: 'labor-2026-sunny-guardian',
                 type: 'title',
-                name: '曙光守护者',
-                description: '替尤美撑起晴天小伞的人。',
+                name: 'commission.rewards.guardian.name',
+                description: 'commission.rewards.guardian.description',
             },
         ],
     },
     {
         id: 'labor-2026-gaming',
-        name: '电竞赠礼',
-        description: '假期电竞时刻！带上兔尾耳机，和尤美一起度过快乐的劳动节假期~',
+        name: 'commission.definitions.gaming.name',
+        description: 'commission.definitions.gaming.description',
         imageUrl: gamingImage,
         deadline: LABOR_DAY_DEADLINE,
         category: 'holiday',
         requirements: [
-            { itemId: 22, itemName: '兔尾耳机', itemUrl: 'limit/mayday-bunny-headphones', count: 1 },
+            { itemId: 22, itemName: 'commission.items.headphones', itemUrl: 'limit/mayday-bunny-headphones', count: 1 },
         ],
         rewards: [
             {
                 id: 'labor-2026-random-supplies',
                 type: 'item',
-                name: '随机补给',
-                description: '可能开出食物、饮料、礼物或限时补给。',
+                name: 'commission.rewards.randomSupplies.name',
+                description: 'commission.rewards.randomSupplies.description',
             },
             {
                 id: 'labor-2026-random-cash',
                 type: 'cash',
-                name: '随机金币',
-                description: '礼盒里会附带一笔随机金币。',
+                name: 'commission.rewards.randomCash.name',
+                description: 'commission.rewards.randomCash.description',
             },
             LABOR_KICK_REWARD,
             {
                 id: 'labor-2026-winning-duo',
                 type: 'title',
-                name: '假期连胜搭子',
-                description: '和尤美一起打满假期快乐的人。',
+                name: 'commission.rewards.winningDuo.name',
+                description: 'commission.rewards.winningDuo.description',
             },
         ],
     },
@@ -156,23 +157,35 @@ const refreshPlayerResources = async () => {
 }
 
 export function useCommission() {
+    const { t } = useI18n()
     startCommissionClock()
     startPlayerResourceListener()
 
     const holidayCommissions = computed<Commission[]>(() => {
         return HOLIDAY_COMMISSION_DEFS.map(c => ({
             ...c,
+            name: t(c.name),
+            description: t(c.description),
+            requirements: c.requirements.map(requirement => ({
+                ...requirement,
+                itemName: t(requirement.itemName),
+            })),
+            rewards: c.rewards.map(reward => ({
+                ...reward,
+                name: t(reward.name),
+                description: t(reward.description),
+            })),
             status: now.value > c.deadline ? 'expired' : 'active',
         }))
     })
 
     const submitCommission = async (commission: Commission, completionCount: number = 1): Promise<{ success: boolean, message: string, result?: CommissionCompletionResult }> => {
         if (commission.status === 'expired') {
-            return { success: false, message: '这个委托已经截止啦' }
+            return { success: false, message: t('commission.errors.expired') }
         }
 
         if (!Number.isInteger(completionCount) || completionCount <= 0) {
-            return { success: false, message: '交付次数不合法' }
+            return { success: false, message: t('commission.errors.invalidCount') }
         }
 
         const requirements = commission.requirements.map(requirement => ({
@@ -183,12 +196,12 @@ export function useCommission() {
         if (response.code === 200 && response.data) {
             playerResources.value = response.data.resources
             isPlayerResourcesLoaded.value = true
-            return { success: true, message: '委托完成', result: response.data }
+            return { success: true, message: t('commission.completed'), result: response.data }
         }
 
         return {
             success: false,
-            message: response.message || '委托提交失败',
+            message: t('commission.submitFailed'),
         }
     }
 

@@ -1,11 +1,14 @@
+import { i18n } from "../i18n";
+
 const WISH_STATUS_MAP = {
-    doing: "进行中",
-    finished: "领取奖励",
-    claimed: "已领取",
-    failed: "已失败",
-    timeout: "已过期",
-}
+    doing: "wish.statuses.doing",
+    finished: "wish.statuses.finished",
+    claimed: "wish.statuses.claimed",
+    failed: "wish.statuses.failed",
+    timeout: "wish.statuses.timeout",
+} as const;
 
 export const convertWishText = (status: string) => {
-    return WISH_STATUS_MAP[status as keyof typeof WISH_STATUS_MAP]
+    const messageKey = WISH_STATUS_MAP[status as keyof typeof WISH_STATUS_MAP];
+    return messageKey ? i18n.global.t(messageKey) : status;
 }

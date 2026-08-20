@@ -14,14 +14,17 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import type { Commission, CommissionRewardPreview } from "@/types/commission";
 import type { CommissionCompletionResult, CommissionGrantedReward } from "@main/types/player-resource";
 import CommissionBoard from "@/components/commission/CommissionBoard.vue";
 import CommissionRewardReveal from "@/components/commission/CommissionRewardReveal.vue";
 import { useShow } from "@/hooks/useShow";
 import laborKickPreviewImage from "@/assets/models/youmei/animations/angry_kick/labor-skin/10.png";
+import { getItemName } from "@/utils/content";
 
 const { getImageURL } = useShow();
+const { t } = useI18n();
 const completedCommission = ref<Commission | null>(null);
 const rewardPreviews = ref<CommissionRewardPreview[]>([]);
 const isRewardRevealShow = ref(false);
@@ -48,18 +51,19 @@ const mapGrantedReward = (
     return {
       id: reward.id,
       type: "cash",
-      name: reward.name,
+      name: t("commission.cashName", { amount: reward.amount }),
       amount: reward.amount,
-      description: reward.description,
+      description: t("commission.cashDescription"),
     };
   }
   if (reward.type === "item") {
+    const itemName = getItemName({ id: reward.itemId, name: reward.name });
     return {
       id: `${reward.id}-${reward.count}`,
       type: "item",
-      name: `${reward.name} x${reward.count}`,
+      name: `${itemName} x${reward.count}`,
       count: reward.count,
-      description: reward.description,
+      description: t("commission.itemDescription", { count: reward.count, name: itemName }),
       imageUrl: getImageURL("item", reward.itemUrl) ?? undefined,
     };
   }
@@ -67,16 +71,23 @@ const mapGrantedReward = (
     return {
       id: reward.id,
       type: "animation",
-      name: reward.name,
-      description: reward.description,
+      name: t("commission.rewards.laborKick.name"),
+      description: t("commission.rewards.laborKick.description"),
       imageUrl: laborKickPreviewImage,
     };
   }
+  const titleKey = reward.id === "labor-2026-holiday-craftsperson"
+    ? "craftsperson"
+    : reward.id === "labor-2026-sunny-guardian"
+      ? "guardian"
+      : reward.id === "labor-2026-winning-duo"
+        ? "winningDuo"
+        : null;
   return {
     id: reward.id,
     type: "title",
-    name: reward.name,
-    description: reward.description,
+    name: titleKey ? t(`commission.rewards.${titleKey}.name`) : reward.name,
+    description: titleKey ? t(`commission.rewards.${titleKey}.description`) : reward.description,
   };
 };
 </script>

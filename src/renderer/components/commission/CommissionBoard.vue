@@ -2,8 +2,8 @@
   <section class="commission-board">
     <div class="commission-board-header">
       <div class="commission-title-group">
-        <span class="commission-kicker">五一劳动节</span>
-        <span class="commission-title">节日委托</span>
+        <span class="commission-kicker">{{ t("commission.holiday") }}</span>
+        <span class="commission-title">{{ t("commission.title") }}</span>
       </div>
     </div>
 
@@ -34,7 +34,7 @@
 
           <div class="commission-row-detail">
             <div class="commission-detail-group">
-              <span class="detail-label">交付</span>
+              <span class="detail-label">{{ t("commission.delivery") }}</span>
               <span
                 v-for="requirement in commission.requirements"
                 :key="requirement.itemId"
@@ -46,7 +46,7 @@
             </div>
 
             <div class="commission-detail-group">
-              <span class="detail-label">奖励</span>
+              <span class="detail-label">{{ t("commission.reward") }}</span>
               <span
                 v-for="reward in commission.rewards"
                 :key="reward.id"
@@ -71,6 +71,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import type { Commission } from "@/types/commission";
 import type { CommissionCompletionResult } from "@main/types/player-resource";
 import CommissionModal from "./CommissionModal.vue";
@@ -79,6 +80,7 @@ import { usePlayer } from "@/hooks/usePlayer";
 
 const { holidayCommissions, refreshPlayerResources } = useCommission();
 const { playerData } = usePlayer();
+const { t, locale } = useI18n();
 
 const emit = defineEmits<{
   (e: "completed", commission: Commission, result: CommissionCompletionResult): void;
@@ -114,10 +116,15 @@ const handleCompleted = (
 const getOwnedCount = (itemId: number) => playerItemCounts.value[itemId] ?? 0;
 
 const formatDeadline = (date: Date) => {
-  const deadline = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${String(
-    date.getHours()
-  ).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-  return `截止时间 ${deadline}`;
+  const deadline = new Intl.DateTimeFormat(locale.value, {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+  return t("commission.deadline", { date: deadline });
 };
 </script>
 

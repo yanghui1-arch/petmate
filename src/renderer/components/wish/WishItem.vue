@@ -6,7 +6,7 @@
         <span>✨</span>
       </div>
       <div class="wish-item-text">
-        <span class="wish-name">{{ wishItem.name }}</span>
+        <span class="wish-name">{{ getWishName(wishItem) }}</span>
       </div>
       <div class="wish-item-status">
         <span>{{ wishItemStatus }}</span>
@@ -22,6 +22,7 @@
 <script lang="ts" setup>
 import { defineProps } from "vue";
 import { convertWishText } from "../../utils/wish";
+import { getWishName } from "../../utils/content";
 import { Wish } from "../../types/common";
 
 // 暴露wishItemName属性

@@ -9,7 +9,7 @@
       </div>
 
       <div class="commission-modal-info">
-        <div class="commission-modal-kicker">节日委托</div>
+        <div class="commission-modal-kicker">{{ t("commission.modalKicker") }}</div>
         <div class="commission-modal-title">{{ commission.name }}</div>
         <div class="commission-modal-description">
           {{ commission.description }}
@@ -36,7 +36,7 @@
             />
             <div class="commission-requirement-main">
               <span class="commission-requirement-name">{{ requirement.itemName }}</span>
-              <span class="commission-requirement-tip">交付 {{ requirement.count }} × {{ completionCount }} 个</span>
+              <span class="commission-requirement-tip">{{ t("commission.delivery") }} {{ requirement.count }} × {{ completionCount }}</span>
             </div>
             <span class="commission-requirement-count">
               {{ requirement.owned }}/{{ requirement.totalCount }}
@@ -45,7 +45,7 @@
         </div>
 
         <div class="commission-batch-control">
-          <span class="commission-batch-label">交付次数</span>
+          <span class="commission-batch-label">{{ t("commission.deliveryCount") }}</span>
           <div class="commission-batch-stepper">
             <button
               type="button"
@@ -75,14 +75,14 @@
             :disabled="maxCompletionCount <= 0"
             @click="completionCount = maxCompletionCount"
           >
-            最大 {{ maxCompletionCount }}
+            {{ t("commission.max", { count: maxCompletionCount }) }}
           </button>
         </div>
       </div>
 
       <div class="commission-modal-actions">
         <button type="button" class="commission-cancel-btn" @click="closeModal">
-          稍后
+          {{ t("commission.later") }}
         </button>
         <button
           type="button"
@@ -99,6 +99,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import type { Commission } from "@/types/commission";
 import type { CommissionCompletionResult } from "@main/types/player-resource";
 import { useCommission } from "@/hooks/useCommission";
@@ -120,6 +121,7 @@ const emit = defineEmits<{
 const { submitCommission } = useCommission();
 const { refreshPlayerData } = usePlayer();
 const { getImageURL } = useShow();
+const { t } = useI18n();
 
 const isSubmitting = ref(false);
 const completionCount = ref(1);
@@ -172,9 +174,9 @@ const canSubmit = computed(() => {
 
 const statusText = computed(() => {
   if (!props.commission) return "";
-  if (props.commission.status === "expired") return "已截止";
-  if (!hasEnoughRequirements.value) return "待交付";
-  return `可交付 ${completionCount.value} 次`;
+  if (props.commission.status === "expired") return t("commission.expired");
+  if (!hasEnoughRequirements.value) return t("commission.pending");
+  return t("commission.deliverable", { count: completionCount.value });
 });
 
 const statusClass = computed(() => {
@@ -185,25 +187,24 @@ const statusClass = computed(() => {
 });
 
 const submitButtonText = computed(() => {
-  if (isSubmitting.value) return "交付中...";
-  if (!props.commission) return "交付";
-  if (props.commission.status === "expired") return "已截止";
-  if (!hasEnoughRequirements.value) return "交给尤美";
-  return `交给尤美 ×${completionCount.value}`;
+  if (isSubmitting.value) return t("commission.delivering");
+  if (!props.commission) return t("commission.deliver");
+  if (props.commission.status === "expired") return t("commission.expired");
+  if (!hasEnoughRequirements.value) return t("commission.givePetmate");
+  return t("commission.givePetmateCount", { count: completionCount.value });
 });
 
 const deadlineText = computed(() => {
   if (!props.commission) return "";
   const deadline = props.commission.deadline;
-  return `截止时间 ${deadline.getFullYear()}年${deadline.getMonth() + 1}月${deadline.getDate()}日 ${String(
-    deadline.getHours()
-  ).padStart(2, "0")}:${String(deadline.getMinutes()).padStart(2, "0")}`;
+  const date = `${deadline.getFullYear()}-${String(deadline.getMonth() + 1).padStart(2, "0")}-${String(deadline.getDate()).padStart(2, "0")} ${String(deadline.getHours()).padStart(2, "0")}:${String(deadline.getMinutes()).padStart(2, "0")}`;
+  return t("commission.deadline", { date });
 });
 
 const remainingText = computed(() => {
   if (!props.commission) return "";
   const remaining = props.commission.deadline.getTime() - Date.now();
-  if (remaining <= 0) return "已经截止";
+  if (remaining <= 0) return t("commission.alreadyExpired");
 
   const dayMs = 24 * 60 * 60 * 1000;
   const hourMs = 60 * 60 * 1000;
@@ -212,9 +213,9 @@ const remainingText = computed(() => {
   const hours = Math.floor((remaining % dayMs) / hourMs);
   const minutes = Math.floor((remaining % hourMs) / minuteMs);
 
-  if (days > 0) return `还剩 ${days} 天 ${hours} 小时`;
-  if (hours > 0) return `还剩 ${hours} 小时 ${minutes} 分钟`;
-  return `还剩 ${Math.max(minutes, 1)} 分钟`;
+  if (days > 0) return t("commission.remainingDaysHours", { days, hours });
+  if (hours > 0) return t("commission.remainingHoursMinutes", { hours, minutes });
+  return t("commission.remainingMinutes", { minutes: Math.max(minutes, 1) });
 });
 
 watch(
@@ -243,7 +244,7 @@ const handleSubmit = async () => {
   normalizeCompletionCountInput();
 
   if (!hasEnoughRequirements.value) {
-    openMessageModal("fail", "请检查背包");
+    openMessageModal("fail", t("commission.checkBag"));
     return;
   }
 
@@ -260,7 +261,7 @@ const handleSubmit = async () => {
     return;
   }
 
-  openMessageModal("fail", result.message);
+  openMessageModal("fail", result.message || t("commission.submitFailed"));
 };
 
 const decreaseCompletionCount = () => {

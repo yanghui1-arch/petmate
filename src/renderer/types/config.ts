@@ -1,8 +1,4 @@
-export interface SettingConfig {
-    modelSize: number;
-    focusMode: boolean;
-    onTop: boolean;
-}
+export type { AppLocale, SettingConfig } from "../../types/config";
 
 export interface LLMConfig {
     baseURL: string;

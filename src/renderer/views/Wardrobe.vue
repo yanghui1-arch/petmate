@@ -17,7 +17,7 @@
             <img class="skin-thumb" :src="skin.thumbnail" :alt="skin.name" />
             <div class="skin-item-name">{{ skin.name }}</div>
             <div v-if="equippedSkinId === skin.id" class="skin-item-tag">
-              实装中
+              {{ t("wardrobe.applying") }}
             </div>
           </button>
         </div>
@@ -35,7 +35,7 @@
             <div>
               <div class="skin-preview-name">{{ selectedSkin?.name ?? "" }}</div>
               <div class="skin-preview-status">
-                {{ selectedSkinId === equippedSkinId ? "当前实装" : "可实装" }}
+                {{ selectedSkinId === equippedSkinId ? t("wardrobe.current") : t("wardrobe.available") }}
               </div>
             </div>
             <button
@@ -44,7 +44,7 @@
               :disabled="!selectedSkin || selectedSkinId === equippedSkinId || isEquipping"
               @click="equipSelectedSkin"
             >
-              {{ selectedSkinId === equippedSkinId ? "已实装" : "实装" }}
+              {{ selectedSkinId === equippedSkinId ? t("wardrobe.equipped") : t("wardrobe.equip") }}
             </button>
           </div>
         </div>
@@ -55,6 +55,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import type { PlayerResourceState } from "@main/types/player-resource";
 import { openMessageModal } from "@/hooks/useInteract";
 import classicSkinThumb from "@/assets/skins/经典长裙套装.png";
@@ -70,20 +71,21 @@ type SkinViewModel = {
 };
 
 const CLASSIC_SKIN_ID = "youmei-classic-dress";
-const SKIN_CATALOG: SkinViewModel[] = [
+const { t } = useI18n();
+const skinCatalog = computed<SkinViewModel[]>(() => [
   {
     id: CLASSIC_SKIN_ID,
-    name: "经典长裙套装",
+    name: t("wardrobe.skins.classic"),
     thumbnail: classicSkinThumb,
     showImage: classicSkinShow,
   },
   {
     id: "youmei-labor-skirt-2026",
-    name: "五一短裙套装",
+    name: t("wardrobe.skins.labor"),
     thumbnail: laborSkinThumb,
     showImage: laborSkinShow,
   },
-];
+]);
 
 const playerResources = ref<PlayerResourceState | null>(null);
 const selectedSkinId = ref(CLASSIC_SKIN_ID);
@@ -97,7 +99,7 @@ const ownedSkinIds = computed(() => {
 });
 
 const ownedSkins = computed(() =>
-  SKIN_CATALOG.filter((skin) => ownedSkinIds.value.has(skin.id))
+  skinCatalog.value.filter((skin) => ownedSkinIds.value.has(skin.id))
 );
 
 const equippedSkinId = computed(
@@ -122,7 +124,7 @@ const refreshPlayerResources = async () => {
     return;
   }
 
-  openMessageModal("fail", response.message || "获取衣橱失败");
+  openMessageModal("fail", t("wardrobe.fetchFailed"));
 };
 
 const equipSelectedSkin = async () => {
@@ -134,14 +136,14 @@ const equipSelectedSkin = async () => {
     if (response.code === 200 && response.data) {
       playerResources.value = response.data;
       syncSelection();
-      openMessageModal("success", "实装成功");
+      openMessageModal("success", t("wardrobe.equipSuccess"));
       return;
     }
 
-    openMessageModal("fail", response.message || "实装失败");
+    openMessageModal("fail", t("wardrobe.equipFailed"));
   } catch (error) {
     console.error("实装套装失败:", error);
-    openMessageModal("fail", "实装失败");
+    openMessageModal("fail", t("wardrobe.equipFailed"));
   } finally {
     isEquipping.value = false;
   }
