@@ -234,7 +234,7 @@ export default {
     fetchFailed: '获取衣橱失败',
     equipSuccess: '实装成功',
     equipFailed: '实装失败',
-    skins: { classic: '经典长裙套装', labor: '五一短裙套装' },
+    skins: { classic: '经典长裙套装', labor: '五一短裙套装', schoolUniform: '学院制服套装' },
   },
   wish: {
     title: '{petmate} Wish',

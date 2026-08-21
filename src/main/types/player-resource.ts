@@ -15,7 +15,7 @@ export type PlayerTitleResource = {
     acquiredAt: string;
 }
 
-export type PlayerSkinAnimationKey = "classic" | "labor-skin";
+export type PlayerSkinAnimationKey = "classic" | "labor-skin" | "school-uniform";
 
 export type PlayerSkinResource = {
     id: string;

@@ -60,8 +60,10 @@ import type { PlayerResourceState } from "@main/types/player-resource";
 import { openMessageModal } from "@/hooks/useInteract";
 import classicSkinThumb from "@/assets/skins/经典长裙套装.png";
 import laborSkinThumb from "@/assets/skins/五一短裙套装-2026.png";
+import schoolUniformSkinThumb from "@/assets/skins/学院制服套装.png";
 import classicSkinShow from "@/assets/skins/show/经典长裙套装-1.png";
 import laborSkinShow from "@/assets/skins/show/五一短裙套装-2026-1.png";
+import schoolUniformSkinShow from "@/assets/skins/show/学院制服套装-1.png";
 
 type SkinViewModel = {
   id: string;
@@ -84,6 +86,12 @@ const skinCatalog = computed<SkinViewModel[]>(() => [
     name: t("wardrobe.skins.labor"),
     thumbnail: laborSkinThumb,
     showImage: laborSkinShow,
+  },
+  {
+    id: "youmei-school-uniform-2026",
+    name: t("wardrobe.skins.schoolUniform"),
+    thumbnail: schoolUniformSkinThumb,
+    showImage: schoolUniformSkinShow,
   },
 ]);
 

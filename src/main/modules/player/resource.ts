@@ -34,6 +34,7 @@ type EconomicRewardMode = "loss" | "profit" | "special";
 const LABOR_KICK_ANIMATION_ID = "youmei-angry-kick-labor-2026";
 export const CLASSIC_SKIN_ID = "youmei-classic-dress";
 export const LABOR_SKIRT_SKIN_ID = "youmei-labor-skirt-2026";
+export const SCHOOL_UNIFORM_SKIN_ID = "youmei-school-uniform-2026";
 
 const SKIN_DEFINITIONS: Record<string, Omit<PlayerSkinResource, "acquiredAt">> = {
     [CLASSIC_SKIN_ID]: {
@@ -49,6 +50,13 @@ const SKIN_DEFINITIONS: Record<string, Omit<PlayerSkinResource, "acquiredAt">> =
         thumbnail: "skins/五一短裙套装-2026.png",
         showImage: "skins/show/五一短裙套装-2026-1.png",
         animationSkin: "labor-skin"
+    },
+    [SCHOOL_UNIFORM_SKIN_ID]: {
+        id: SCHOOL_UNIFORM_SKIN_ID,
+        name: "学院制服套装",
+        thumbnail: "skins/学院制服套装.png",
+        showImage: "skins/show/学院制服套装-1.png",
+        animationSkin: "school-uniform"
     }
 }
 

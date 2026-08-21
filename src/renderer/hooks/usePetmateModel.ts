@@ -4,6 +4,7 @@ import { ModelStatus } from '../types/model'
 import youmeiDance from '@/assets/models/youmei/youmei-dance.png'
 import youmeiDragClassic from '@/assets/models/youmei/animations/drag/classic.png'
 import youmeiDragLabor from '@/assets/models/youmei/animations/drag/labor.png'
+import youmeiDragSchoolUniform from '@/assets/models/youmei/animations/drag/school-uniform.png'
 import youmeiIdleBlinkClosed from '@/assets/models/youmei/animations/idle/blink/closed.png'
 import youmeiIdleBlinkHalf from '@/assets/models/youmei/animations/idle/blink/half.png'
 import youmeiIdleBlinkMicro25 from '@/assets/models/youmei/animations/idle/blink/micro-25.png'
@@ -22,6 +23,9 @@ import youmeiLaborIdleBlinkNearOpen from '@/assets/models/youmei/animations/idle
 import youmeiLaborIdleBlinkQuarter from '@/assets/models/youmei/animations/idle/labor-skin/blink/quarter.png'
 import youmeiLaborIdleBlinkThreeQuarter from '@/assets/models/youmei/animations/idle/labor-skin/blink/three-quarter.png'
 import youmeiLaborIdleOpen from '@/assets/models/youmei/animations/idle/labor-skin/01.png'
+import youmeiSchoolIdleOpen from '@/assets/models/youmei/animations/idle/school-uniform/01.png'
+import youmeiSchoolIdleBlinkHalf from '@/assets/models/youmei/animations/idle/school-uniform/02.png'
+import youmeiSchoolIdleBlinkClosed from '@/assets/models/youmei/animations/idle/school-uniform/03.png'
 import youmeiDrawBasicClassicBase from '@/assets/models/youmei/animations/activity/draw-basic-stable/classic/base.png'
 import youmeiDrawBasicLaborBase from '@/assets/models/youmei/animations/activity/draw-basic-stable/labor-skin/base.png'
 
@@ -144,10 +148,12 @@ const IDLE_BLINK_RADIUS_Y_RATIO = 0.025
 const LABOR_KICK_ANIMATION_RESOURCE_ID = 'youmei-angry-kick-labor-2026'
 const CLASSIC_SKIN_ID = 'youmei-classic-dress'
 const LABOR_SKIRT_SKIN_ID = 'youmei-labor-skirt-2026'
+const SCHOOL_UNIFORM_SKIN_ID = 'youmei-school-uniform-2026'
 const DRAW_BASIC_ACTIVITY_ID = 1
 
 const classicDragFrameSources = [youmeiDragClassic]
 const laborDragFrameSources = [youmeiDragLabor]
+const schoolUniformDragFrameSources = [youmeiDragSchoolUniform]
 const idleFrameSources = [
     youmeiIdleOpen,
     youmeiIdleBlinkMicro25,
@@ -169,6 +175,11 @@ const laborIdleFrameSources = [
     youmeiLaborIdleBlinkHalf,
     youmeiLaborIdleBlinkThreeQuarter,
     youmeiLaborIdleBlinkClosed
+]
+const schoolUniformIdleFrameSources = [
+    youmeiSchoolIdleOpen,
+    youmeiSchoolIdleBlinkHalf,
+    youmeiSchoolIdleBlinkClosed
 ]
 const angryFrameSources = resolveFrameSources(
     import.meta.glob<string>('../assets/models/youmei/animations/angry/*.png', {
@@ -1568,15 +1579,21 @@ function applyUnlockedAnimationSources(): void {
     const idleSpec = actionSpecs.idle
     if (idleSpec.type === 'sequence') {
         idleSpec.frameSources =
-            equippedSkinId === LABOR_SKIRT_SKIN_ID && laborIdleFrameSources.length > 0
-                ? laborIdleFrameSources
-                : idleFrameSources
+            equippedSkinId === SCHOOL_UNIFORM_SKIN_ID && schoolUniformIdleFrameSources.length > 0
+                ? schoolUniformIdleFrameSources
+                : equippedSkinId === LABOR_SKIRT_SKIN_ID && laborIdleFrameSources.length > 0
+                  ? laborIdleFrameSources
+                  : idleFrameSources
     }
 
     const struggleSpec = actionSpecs.struggle
     if (struggleSpec.type === 'sequence') {
         struggleSpec.frameSources =
-            equippedSkinId === LABOR_SKIRT_SKIN_ID ? laborDragFrameSources : classicDragFrameSources
+            equippedSkinId === SCHOOL_UNIFORM_SKIN_ID
+                ? schoolUniformDragFrameSources
+                : equippedSkinId === LABOR_SKIRT_SKIN_ID
+                  ? laborDragFrameSources
+                  : classicDragFrameSources
     }
 
     const angrySpec = actionSpecs.anger
@@ -1667,7 +1684,9 @@ async function loadAnimationClip(action: ActionName, spec: ActionSpec): Promise<
     const usesAlignedIdleBlink =
         action === 'idle' &&
         spec.type === 'sequence' &&
-        (spec.frameSources === idleFrameSources || spec.frameSources === laborIdleFrameSources)
+        (spec.frameSources === idleFrameSources ||
+            spec.frameSources === laborIdleFrameSources ||
+            spec.frameSources === schoolUniformIdleFrameSources)
 
     const maxVisibleWidth = Math.max(
         ...frames.map((frame) => frame.bounds.right - frame.bounds.left)
@@ -1727,6 +1746,16 @@ function buildAnimationSteps(
             { frameIndex: 3, durationMs: 20 },
             { frameIndex: 2, durationMs: 20 },
             { frameIndex: 1, durationMs: 20 },
+            { frameIndex: 0, durationMs: 720, durationJitterMs: 460 }
+        ]
+    }
+
+    if (usesAlignedIdleBlink && frames.length === 3) {
+        return [
+            { frameIndex: 0, durationMs: 1900, durationJitterMs: 2100 },
+            { frameIndex: 1, durationMs: 70 },
+            { frameIndex: 2, durationMs: 90 },
+            { frameIndex: 1, durationMs: 70 },
             { frameIndex: 0, durationMs: 720, durationJitterMs: 460 }
         ]
     }

@@ -485,5 +485,22 @@
         },
         "effect": {},
         "skinId": "youmei-labor-skirt-2026"
+    },
+    {
+        "id": 26,
+        "name": "学院制服套装",
+        "type": "fashion",
+        "description": "清爽利落的学院制服套装，购买后永久解锁，可前往衣橱实装。",
+        "url": "fashion/学院制服套装.png",
+        "price": 50,
+        "requirement": {
+            "level": 1,
+            "singLevel": 1,
+            "drawLevel": 1,
+            "gameLevel": 1,
+            "affectionLevel": 1
+        },
+        "effect": {},
+        "skinId": "youmei-school-uniform-2026"
     }
 ]
