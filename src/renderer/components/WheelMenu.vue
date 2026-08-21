@@ -163,6 +163,11 @@
       action: () => window.api.openNewWindow('/activity')
     },
     {
+      id: 'school-handbook',
+      title: t('wheel.schoolHandbook'),
+      action: () => window.api.openNewWindow('/school-handbook')
+    },
+    {
       id: 'chat',
       title: t('wheel.chat'),
       action: () => window.api.openNewWindow('/chat')

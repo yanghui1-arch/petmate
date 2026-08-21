@@ -4,6 +4,7 @@ import { SettingConfig } from '../main/settings'
 import { ActivityInfo } from '../main/types/activity'
 import { ItemType } from '../main/types/item'
 import type { PlayerResourceState } from '../main/types/player-resource'
+import type { SchoolHandbookTaskId } from '../main/types/school-handbook'
 import { WindowEvent } from '../main/window-monitor'
 import { LocalAIStatus } from '../main/local-ai'
 
@@ -30,6 +31,7 @@ contextBridge.exposeInMainWorld('api', {
     getChatPrompt: () => ipcRenderer.invoke('get-chat-prompt'),
     getHistoryChatMessages: () => ipcRenderer.invoke('get-history-chat-messages'),
     getPlayerResources: () => ipcRenderer.invoke('get-player-resources'),
+    getSchoolHandbookProgress: (date?: string) => ipcRenderer.invoke('get-school-handbook-progress', date),
     getLocalAIStatus: () => ipcRenderer.invoke('get-local-ai-status'),
 
     // set && update && add
@@ -53,6 +55,8 @@ contextBridge.exposeInMainWorld('api', {
     claimWishReward: (petmateId: number, wishId: string) => ipcRenderer.invoke('claim-wish-reward', petmateId, wishId),
     equipPlayerSkin: (skinId: string) => ipcRenderer.invoke('equip-player-skin', skinId),
     equipPlayerTitle: (titleId: string) => ipcRenderer.invoke('equip-player-title', titleId),
+    recordSchoolHandbookTask: (taskId: SchoolHandbookTaskId, count?: number) => ipcRenderer.invoke('record-school-handbook-task', taskId, count),
+    claimSchoolHandbookReward: (milestoneIdOrStampCount: string | number) => ipcRenderer.invoke('claim-school-handbook-reward', milestoneIdOrStampCount),
     // 克隆音色
     cloneVoice: (url: string) => ipcRenderer.invoke('clone-voice', url),
     // 监听

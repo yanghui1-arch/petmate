@@ -46,6 +46,13 @@ import {
 import { windowMonitor, WindowInfo, WindowEvent } from './window-monitor';
 import { getMainWindow, getPageWindow } from './index';
 import { CommissionCompletionResult, PlayerResourceState } from './types/player-resource';
+import {
+    SchoolHandbookClaimRewardResult,
+    SchoolHandbookProgress,
+    SchoolHandbookTaskCompletionResult,
+    SchoolHandbookTaskId
+} from './types/school-handbook';
+import { schoolHandbookManager } from './modules/school-handbook';
 import * as path from 'path';
 import * as fs from 'fs';
 import axios, { AxiosResponse } from 'axios';
@@ -256,6 +263,62 @@ ipcMain.handle("equip-player-title", (_: IpcMainInvokeEvent, titleId: string): R
     }
 })
 
+ipcMain.handle("get-school-handbook-progress", (_: IpcMainInvokeEvent, date?: string): Response<SchoolHandbookProgress> => {
+    try {
+        return {
+            code: 200,
+            message: "获取开学手册进度成功",
+            data: schoolHandbookManager.getProgress(date ?? new Date())
+        } as Response<SchoolHandbookProgress>;
+    } catch (error) {
+        logger.error(`获取开学手册进度失败: ${error}`);
+        return {
+            code: 400,
+            message: error instanceof Error ? error.message : "获取开学手册进度失败"
+        } as Response<SchoolHandbookProgress>;
+    }
+})
+
+ipcMain.handle(
+    "record-school-handbook-task",
+    (_: IpcMainInvokeEvent, taskId: SchoolHandbookTaskId, count: number = 1): Response<SchoolHandbookTaskCompletionResult> => {
+        try {
+            return {
+                code: 200,
+                message: "记录开学手册任务成功",
+                data: schoolHandbookManager.recordTaskCompletion(taskId, count)
+            } as Response<SchoolHandbookTaskCompletionResult>;
+        } catch (error) {
+            logger.error(`记录开学手册任务失败: ${error}`);
+            return {
+                code: 400,
+                message: error instanceof Error ? error.message : "记录开学手册任务失败"
+            } as Response<SchoolHandbookTaskCompletionResult>;
+        }
+    }
+)
+
+ipcMain.handle(
+    "claim-school-handbook-reward",
+    (_: IpcMainInvokeEvent, milestoneIdOrStampCount: string | number): Response<SchoolHandbookClaimRewardResult> => {
+        try {
+            const result = schoolHandbookManager.claimMilestoneReward(milestoneIdOrStampCount);
+            if (result.playerResources) notifyPlayerResourcesUpdated(result.playerResources);
+            return {
+                code: 200,
+                message: result.newlyClaimed ? "领取开学手册奖励成功" : "开学手册奖励已领取",
+                data: result
+            } as Response<SchoolHandbookClaimRewardResult>;
+        } catch (error) {
+            logger.error(`领取开学手册奖励失败: ${error}`);
+            return {
+                code: 400,
+                message: error instanceof Error ? error.message : "领取开学手册奖励失败"
+            } as Response<SchoolHandbookClaimRewardResult>;
+        }
+    }
+)
+
 /**
  * 完成委托。
  * 先扣除交付材料，再发放本次随机奖励。
@@ -283,6 +346,11 @@ ipcMain.handle("complete-commission", (_: IpcMainInvokeEvent, commissionId: stri
         consumePackageItems(totalRequirements);
         const result = playerResourceManager.completeCommission(commissionId, requirements, completionCount);
         notifyPlayerResourcesUpdated(result.resources);
+        try {
+            schoolHandbookManager.recordCommissionCompletion(completionCount);
+        } catch (error) {
+            logger.error(`记录开学手册委托任务失败: ${error}`);
+        }
 
         return {
             code: 200,

@@ -11,6 +11,7 @@
  */
 
 import { NotEnoughError, NotFoundError } from "../../error";
+import logger from "../../log";
 import { getItemTypes, Item } from "../../types/item";
 import { PackageItemInfo, PlayerInfo } from "../../types/player";
 import { itemManager, playerManager } from "../store"
@@ -22,6 +23,11 @@ import { getMainWindow, getPageWindow } from "../../../main";
 import { calcBuffEffect } from "../utils/calc";
 import { handleCharacterLevelAchievement, handleFiftyAffectionAchievement, handleEmotionAchievement } from "./achieve";
 import { playerResourceManager, SkinAlreadyOwnedError } from "./resource";
+import {
+    SCHOOL_HANDBOOK_BREAKFAST_END_HOUR,
+    SCHOOL_HANDBOOK_BREAKFAST_START_HOUR
+} from "../../types/school-handbook";
+import { schoolHandbookManager } from "../school-handbook";
 
 const UNUSABLE_PACKAGE_ITEM_TYPES = ["ticket", "fashion"];
 
@@ -221,4 +227,16 @@ export function consumeItem(itemId: number, count: number = 1, petmateId: number
     handleFiftyAffectionAchievement(petmate.attrs.affectionExp);
     // 更新心情成就
     handleEmotionAchievement(petmate.attrs.emotion);
+
+    const currentHour = new Date().getHours();
+    const isBreakfastTime = currentHour >= SCHOOL_HANDBOOK_BREAKFAST_START_HOUR &&
+        currentHour < SCHOOL_HANDBOOK_BREAKFAST_END_HOUR;
+    const isFoodOrDrink = getItemTypes(item.type).some(type => type === "food" || type === "drink");
+    if (isBreakfastTime && isFoodOrDrink) {
+        try {
+            schoolHandbookManager.recordBreakfastCompletion();
+        } catch (error) {
+            logger.error(`记录开学手册早餐任务失败: ${error}`);
+        }
+    }
 }

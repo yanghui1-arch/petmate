@@ -13,6 +13,10 @@ import type {
 } from "../../types/player-resource";
 import { itemManager, playerManager } from "../store";
 import { handleOwnedTitleAchievements, handleTitleAchievement } from "./achieve";
+import {
+    SCHOOL_HANDBOOK_DESKMATE_TITLE_ID,
+    SCHOOL_HANDBOOK_FULL_ATTENDANCE_TITLE_ID
+} from "../../types/school-handbook";
 
 type PlayerResourceStoreData = {
     resources: PlayerResourceState;
@@ -59,6 +63,21 @@ const SKIN_DEFINITIONS: Record<string, Omit<PlayerSkinResource, "acquiredAt">> =
         animationSkin: "school-uniform"
     }
 }
+
+const SCHOOL_HANDBOOK_TITLE_RESOURCES: Omit<PlayerTitleResource, "acquiredAt">[] = [
+    {
+        id: SCHOOL_HANDBOOK_FULL_ATTENDANCE_TITLE_ID,
+        name: "九月全勤生",
+        description: "每天都认真完成任务的全勤称谓。",
+        source: "尤美的新学期手册"
+    },
+    {
+        id: SCHOOL_HANDBOOK_DESKMATE_TITLE_ID,
+        name: "尤美的同桌",
+        description: "陪尤美一起迎接新学期的人。",
+        source: "尤美的新学期手册"
+    }
+]
 
 const createDefaultPlayerResources = (): PlayerResourceState => {
     const classicSkin = createSkinResource(CLASSIC_SKIN_ID, "system")
@@ -208,6 +227,52 @@ class PlayerResourceManager {
         }
 
         this.resources.skins.push(createSkinResource(skinId))
+        this.saveResources()
+        return this.getResources()
+    }
+
+    /**
+     * 发放套装奖励时使用。与购买接口不同，重复发放是幂等的，方便活动奖励补发。
+     */
+    grantSkin(skinId: string): PlayerResourceState {
+        this.ensureInit()
+
+        const skinDefinition = SKIN_DEFINITIONS[skinId]
+        if (!skinDefinition) {
+            throw new Error(`未知套装: ${skinId}`)
+        }
+
+        if (this.hasSkin(skinId)) return this.getResources()
+
+        this.resources.skins.push(createSkinResource(skinId))
+        this.saveResources()
+        return this.getResources()
+    }
+
+    /**
+     * 发放称谓奖励时使用。与装备接口分离，并且对重复发放保持幂等。
+     */
+    grantTitle(titleId: string): PlayerResourceState {
+        this.ensureInit()
+
+        const titleDefinition = this.getAllTitleRewards().find(title => title.id === titleId)
+        if (!titleDefinition) {
+            throw new Error(`未知称谓: ${titleId}`)
+        }
+
+        if (this.resources.titles.some(title => title.id === titleId)) {
+            return this.getResources()
+        }
+
+        const resource: PlayerTitleResource = {
+            ...titleDefinition,
+            acquiredAt: new Date().toISOString()
+        }
+        this.resources.titles.push(resource)
+        if (!this.resources.equippedTitleId) {
+            this.resources.equippedTitleId = resource.id
+        }
+        handleTitleAchievement(resource.name)
         this.saveResources()
         return this.getResources()
     }
@@ -434,6 +499,7 @@ class PlayerResourceManager {
         Object.values(COMMISSION_REWARD_BUNDLES).forEach(bundle => {
             bundle.titles.forEach(title => titleMap.set(title.id, title))
         })
+        SCHOOL_HANDBOOK_TITLE_RESOURCES.forEach(title => titleMap.set(title.id, title))
         return [...titleMap.values()]
     }
 
