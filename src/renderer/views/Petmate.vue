@@ -1,9 +1,13 @@
 <template>
     <div class="petmate-container">
         <div ref="petmateContainer" class="petmate-canvas-container"></div>
-        <div v-if="shouldShowHungryDialog" class="hunger-dialog" aria-live="polite">
+        <div v-if="shouldShowHungryDialog" class="pet-dialog hunger-dialog" aria-live="polite">
             <span>{{ hungryDialogVisibleText }}</span>
-            <span v-if="isHungryDialogTyping" class="hunger-dialog-caret"></span>
+            <span v-if="isHungryDialogTyping" class="pet-dialog-caret"></span>
+        </div>
+        <div v-if="shouldShowSleepDialog" class="pet-dialog sleep-dialog" aria-live="polite">
+            <span>{{ sleepDialogVisibleText }}</span>
+            <span v-if="isSleepDialogTyping" class="pet-dialog-caret"></span>
         </div>
         <div class="context-menu" v-if="isShowContextMenu">
             <WheelMenu @closed="closeContextMenu" />
@@ -19,21 +23,29 @@ import { isShowContextMenu, usePetmateModel } from '../hooks/usePetmateModel'
 import { usePlayer } from '../hooks/usePlayer'
 
 const LOW_ATTRIBUTE_RATIO = 0.3
+const LOW_ENERGY_RATIO = 0.1
 const PLAYER_REFRESH_INTERVAL = 30 * 1000
 const HUNGER_DIALOG_TYPE_INTERVAL = 200
+const SLEEP_DIALOG_TYPE_INTERVAL = 120
+const SLEEP_DIALOG_VISIBLE_MS = 2600
 
 const petmateContainer = ref()
 let playerRefreshTimer: ReturnType<typeof setInterval> | null = null
 let hungerDialogTimer: ReturnType<typeof setInterval> | null = null
+let sleepDialogTimer: ReturnType<typeof setInterval> | null = null
+let sleepDialogHideTimer: ReturnType<typeof setTimeout> | null = null
 let stopPlayerDataSync: (() => void) | null = null
 let hasInitializedAttributeBaseline = false
 let lastLowAttributeState = false
 const isAngryByAttribute = ref(false)
 const hungryDialogVisibleText = ref('')
+const sleepDialogVisibleText = ref('')
 const { t } = useI18n()
 const hungerDialogText = computed(() => t('petmate.hungryDialog'))
+const sleepDialogText = computed(() => t('petmate.sleepDialog'))
 
-const { init2D, playIdle, setAngry, setActivity, destroy } = usePetmateModel(petmateContainer)
+const { init2D, playIdle, setAngry, setEnergyLow, setActivity, sleepResponseTick, destroy } =
+    usePetmateModel(petmateContainer)
 const { playerData, initPlayerData, refreshPlayerData, subscribeToPlayerDataSync } = usePlayer()
 
 const currentPetmate = computed(() => playerData.value?.petmates[0])
@@ -48,11 +60,21 @@ const shouldShowHungryDialog = computed(() => {
 
     return attrs.hungry <= attrs.maxHungry * LOW_ATTRIBUTE_RATIO
 })
+const isEnergyLow = computed(() => {
+    const attrs = currentPetmate.value?.attrs
+    if (!attrs) return false
+
+    return attrs.energy < attrs.maxEnergy * LOW_ENERGY_RATIO
+})
 const isHungryDialogTyping = computed(() => {
     return (
         shouldShowHungryDialog.value &&
         hungryDialogVisibleText.value.length < hungerDialogText.value.length
     )
+})
+const shouldShowSleepDialog = computed(() => sleepDialogVisibleText.value.length > 0)
+const isSleepDialogTyping = computed(() => {
+    return sleepDialogVisibleText.value.length < sleepDialogText.value.length
 })
 const hasLowAttribute = computed(() => {
     const attrs = currentPetmate.value?.attrs
@@ -72,6 +94,14 @@ watch(hasLowAttribute, (isLow) => {
     isAngryByAttribute.value = isLow
     setAngry(isLow)
 })
+
+watch(
+    isEnergyLow,
+    (isLow) => {
+        setEnergyLow(isLow)
+    },
+    { immediate: true }
+)
 
 watch(
     activeActivityId,
@@ -94,6 +124,10 @@ watch(
     },
     { immediate: true }
 )
+
+watch(sleepResponseTick, () => {
+    startSleepDialogTypewriter()
+})
 
 onMounted(async () => {
     stopPlayerDataSync = subscribeToPlayerDataSync(() => {
@@ -125,6 +159,7 @@ onUnmounted(() => {
     stopPlayerDataSync?.()
     stopPlayerDataSync = null
     clearHungerDialogTimer()
+    clearSleepDialogTimers()
     destroy()
 })
 
@@ -159,6 +194,40 @@ function clearHungerDialogTimer() {
     clearInterval(hungerDialogTimer)
     hungerDialogTimer = null
 }
+
+function startSleepDialogTypewriter() {
+    clearSleepDialogTimers()
+    sleepDialogVisibleText.value = ''
+
+    let currentIndex = 0
+    sleepDialogTimer = setInterval(() => {
+        currentIndex += 1
+        sleepDialogVisibleText.value = sleepDialogText.value.slice(0, currentIndex)
+
+        if (currentIndex >= sleepDialogText.value.length) {
+            clearSleepDialogTimer()
+            sleepDialogHideTimer = setTimeout(() => {
+                sleepDialogVisibleText.value = ''
+                sleepDialogHideTimer = null
+            }, SLEEP_DIALOG_VISIBLE_MS)
+        }
+    }, SLEEP_DIALOG_TYPE_INTERVAL)
+}
+
+function clearSleepDialogTimer() {
+    if (!sleepDialogTimer) return
+
+    clearInterval(sleepDialogTimer)
+    sleepDialogTimer = null
+}
+
+function clearSleepDialogTimers() {
+    clearSleepDialogTimer()
+    if (!sleepDialogHideTimer) return
+
+    clearTimeout(sleepDialogHideTimer)
+    sleepDialogHideTimer = null
+}
 </script>
 
 <style lang="scss" scoped>
@@ -179,9 +248,9 @@ function clearHungerDialogTimer() {
     overflow: hidden;
 }
 
-.hunger-dialog {
+.pet-dialog {
     position: fixed;
-    top: 0px;
+    top: 0;
     left: 16px;
     z-index: 20;
     max-width: 190px;
@@ -196,7 +265,7 @@ function clearHungerDialogTimer() {
     font-weight: 600;
     line-height: 1.6;
     pointer-events: none;
-    animation: hungerDialogPopIn 0.22s ease-out;
+    animation: petDialogPopIn 0.22s ease-out;
 
     &::after {
         content: '';
@@ -212,17 +281,27 @@ function clearHungerDialogTimer() {
     }
 }
 
-.hunger-dialog-caret {
+.sleep-dialog {
+    right: 16px;
+    left: auto;
+
+    &::after {
+        right: auto;
+        left: 30px;
+    }
+}
+
+.pet-dialog-caret {
     display: inline-block;
     width: 1px;
     height: 1em;
     margin-left: 2px;
     background: #7a3f44;
     vertical-align: -2px;
-    animation: hungerDialogCaretBlink 0.8s steps(1) infinite;
+    animation: petDialogCaretBlink 0.8s steps(1) infinite;
 }
 
-@keyframes hungerDialogPopIn {
+@keyframes petDialogPopIn {
     from {
         opacity: 0;
         transform: translateY(6px) scale(0.96);
@@ -233,7 +312,7 @@ function clearHungerDialogTimer() {
     }
 }
 
-@keyframes hungerDialogCaretBlink {
+@keyframes petDialogCaretBlink {
     0%,
     49% {
         opacity: 1;

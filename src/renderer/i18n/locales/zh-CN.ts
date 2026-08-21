@@ -324,5 +324,8 @@ export default {
     sampleItem: '随机掉落了[金币] + 10',
   },
   avatar: { accompaniedOneDay: '(已陪伴一天)' },
-  petmate: { hungryDialog: '尤美真的.....真的.....好饿....' },
+  petmate: {
+    hungryDialog: '尤美真的.....真的.....好饿....',
+    sleepDialog: '我没有睡……我在思考……(｡•̀ᴗ-)✧',
+  },
 } as const;

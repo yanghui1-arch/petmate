@@ -28,6 +28,16 @@ import youmeiSchoolIdleBlinkHalf from '@/assets/models/youmei/animations/idle/sc
 import youmeiSchoolIdleBlinkClosed from '@/assets/models/youmei/animations/idle/school-uniform/03.png'
 import youmeiDrawBasicClassicBase from '@/assets/models/youmei/animations/activity/draw-basic-stable/classic/base.png'
 import youmeiDrawBasicLaborBase from '@/assets/models/youmei/animations/activity/draw-basic-stable/labor-skin/base.png'
+import youmeiSleepClassicDropTransition from '@/assets/models/youmei/animations/sleep/classic/transitions/04-05.png'
+import youmeiSleepClassicWakeTransition from '@/assets/models/youmei/animations/sleep/classic/transitions/06-07.png'
+import youmeiSleepClassicSettleTransition from '@/assets/models/youmei/animations/sleep/classic/transitions/07-08.png'
+import youmeiSleepSchoolDropTransition from '@/assets/models/youmei/animations/sleep/school-uniform/transitions/04-05.png'
+import youmeiSleepSchoolWakeTransition from '@/assets/models/youmei/animations/sleep/school-uniform/transitions/06-07.png'
+import youmeiSleepSchoolSettleTransition from '@/assets/models/youmei/animations/sleep/school-uniform/transitions/07-08.png'
+import {
+    SleepAnimationPlayer,
+    type SleepAnimationSources
+} from '../utils/sleepAnimationPlayer'
 
 type ActionName =
     | 'idle'
@@ -35,6 +45,8 @@ type ActionName =
     | 'anger'
     | 'angryKick'
     | 'struggle'
+    | 'sleep'
+    | 'sleepResponse'
     | 'drawBasicIntro'
     | 'drawBasicLoop'
     | 'drawBasicOutro'
@@ -92,6 +104,7 @@ type AnimationClip = {
     frameBlendMs: number
     visualScale: number
     loopCount: number
+    loopStartStepIndex: number
     renderScale: number
     anchorY: number
     hasEmbeddedShadow: boolean
@@ -150,6 +163,7 @@ const CLASSIC_SKIN_ID = 'youmei-classic-dress'
 const LABOR_SKIRT_SKIN_ID = 'youmei-labor-skirt-2026'
 const SCHOOL_UNIFORM_SKIN_ID = 'youmei-school-uniform-2026'
 const DRAW_BASIC_ACTIVITY_ID = 1
+const SLEEP_RESUME_FRAME_INDEX = 5
 
 const classicDragFrameSources = [youmeiDragClassic]
 const laborDragFrameSources = [youmeiDragLabor]
@@ -207,6 +221,68 @@ const laborAngryKickFrameSources = resolveFrameSources(
 )
 const classicDrawBasicFrameSources = [youmeiDrawBasicClassicBase]
 const laborDrawBasicFrameSources = [youmeiDrawBasicLaborBase]
+const classicSleepFrameSources = resolveFrameSources(
+    import.meta.glob<string>('../assets/models/youmei/animations/sleep/classic/*.png', {
+        eager: true,
+        import: 'default'
+    })
+)
+const schoolUniformSleepFrameSources = resolveFrameSources(
+    import.meta.glob<string>('../assets/models/youmei/animations/sleep/school-uniform/*.png', {
+        eager: true,
+        import: 'default'
+    })
+)
+const classicSleepResponseFrameSources = [
+    classicSleepFrameSources[6],
+    classicSleepFrameSources[7],
+    classicSleepFrameSources[5]
+].filter((source): source is string => Boolean(source))
+const schoolUniformSleepResponseFrameSources = [
+    schoolUniformSleepFrameSources[6],
+    schoolUniformSleepFrameSources[7],
+    schoolUniformSleepFrameSources[5]
+].filter((source): source is string => Boolean(source))
+const classicSleepAnimationSources: SleepAnimationSources = {
+    intro: [
+        ...classicSleepFrameSources.slice(0, 4),
+        youmeiSleepClassicDropTransition,
+        ...classicSleepFrameSources.slice(4, 5)
+    ],
+    loop: [
+        ...classicSleepFrameSources.slice(5, 6),
+        youmeiSleepClassicWakeTransition,
+        ...classicSleepFrameSources.slice(6, 7),
+        youmeiSleepClassicSettleTransition,
+        ...classicSleepFrameSources.slice(7, 8)
+    ],
+    response: [
+        ...classicSleepFrameSources.slice(6, 7),
+        youmeiSleepClassicSettleTransition,
+        ...classicSleepFrameSources.slice(7, 8),
+        ...classicSleepFrameSources.slice(5, 6)
+    ]
+}
+const schoolUniformSleepAnimationSources: SleepAnimationSources = {
+    intro: [
+        ...schoolUniformSleepFrameSources.slice(0, 4),
+        youmeiSleepSchoolDropTransition,
+        ...schoolUniformSleepFrameSources.slice(4, 5)
+    ],
+    loop: [
+        ...schoolUniformSleepFrameSources.slice(5, 6),
+        youmeiSleepSchoolWakeTransition,
+        ...schoolUniformSleepFrameSources.slice(6, 7),
+        youmeiSleepSchoolSettleTransition,
+        ...schoolUniformSleepFrameSources.slice(7, 8)
+    ],
+    response: [
+        ...schoolUniformSleepFrameSources.slice(6, 7),
+        youmeiSleepSchoolSettleTransition,
+        ...schoolUniformSleepFrameSources.slice(7, 8),
+        ...schoolUniformSleepFrameSources.slice(5, 6)
+    ]
+}
 
 const actionSpecs: Record<ActionName, ActionSpec> = {
     idle: {
@@ -258,6 +334,24 @@ const actionSpecs: Record<ActionName, ActionSpec> = {
         loopCount: Number.POSITIVE_INFINITY,
         skipBlankFrames: false
     },
+    sleep: {
+        type: 'sequence',
+        frameSources: classicSleepFrameSources,
+        frameDurationMs: 560,
+        frameBlendMs: 0,
+        visualScale: 1,
+        loopCount: Number.POSITIVE_INFINITY,
+        skipBlankFrames: false
+    },
+    sleepResponse: {
+        type: 'sequence',
+        frameSources: classicSleepResponseFrameSources,
+        frameDurationMs: 1000,
+        frameBlendMs: 0,
+        visualScale: 1,
+        loopCount: 1,
+        skipBlankFrames: false
+    },
     drawBasicIntro: {
         type: 'sequence',
         frameSources: classicDrawBasicFrameSources,
@@ -290,6 +384,7 @@ const actionSpecs: Record<ActionName, ActionSpec> = {
 const actionNames = Object.keys(actionSpecs) as ActionName[]
 const animationClips = new Map<ActionName, AnimationClip>()
 const imageCache = new Map<string, Promise<HTMLImageElement>>()
+const sleepAnimationPlayer = new SleepAnimationPlayer()
 
 let petMateModelConfig = { scale: 1 }
 let spriteCanvas: HTMLCanvasElement | null = null
@@ -329,6 +424,7 @@ let skirtSwayY = 0
 let skirtSwayVelocityX = 0
 let skirtSwayVelocityY = 0
 let isDragging = false
+let isSleepDragging = false
 let isAngry = false
 let isSystemAudioActive = false
 let activeActivityId: number | null = null
@@ -336,6 +432,7 @@ let activeAction: ActionName | null = null
 let assetLoadGeneration = 0
 let unlockedAnimationResourceIds = new Set<string>()
 let equippedSkinId = CLASSIC_SKIN_ID
+let isEnergyLow = false
 
 const modelState: ModelStatus = {
     walk: false,
@@ -359,6 +456,7 @@ const defaultModelState: ModelStatus = {
 
 /** 是否显示轮盘菜单栏的 flag */
 export const isShowContextMenu = ref(false)
+const sleepResponseTick = ref(0)
 
 export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
     const init2D = async (): Promise<void> => {
@@ -366,6 +464,12 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         await loadAnimationAssets()
         initSpriteContainer(petmateContainer.value)
         initSpriteCanvas()
+        if (spriteContainer) {
+            await sleepAnimationPlayer.initialize(spriteContainer, [
+                classicSleepAnimationSources,
+                schoolUniformSleepAnimationSources
+            ])
+        }
         await initSystemAudioActivity()
         initPlayerResourceListener()
         startAmbientAction()
@@ -393,6 +497,22 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         }
 
         startAmbientAction()
+    }
+
+    const setEnergyLow = (active: boolean) => {
+        const wasEnergyLow = isEnergyLow
+        isEnergyLow = active
+
+        if (isDragging || isAngry || isSystemAudioActive || activeActivityId !== null) return
+
+        if (active) {
+            if (activeAction !== 'sleep' && activeAction !== 'sleepResponse') {
+                startAction('sleep', { standIdle: true }, { force: true })
+            }
+            return
+        }
+
+        if (wasEnergyLow) startAmbientAction()
     }
 
     const setActivity = (activityId: number | null) => {
@@ -424,6 +544,7 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         assetLoadGeneration++
         stopRenderLoop()
         window.api.stopPetmateWindowDrag()
+        sleepAnimationPlayer.destroy()
 
         if (spriteContainer) {
             spriteContainer.removeEventListener('pointerdown', onPointerDown)
@@ -443,7 +564,10 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         activeAction = null
         activeActivityId = null
         isDragging = false
+        isSleepDragging = false
         isSystemAudioActive = false
+        isEnergyLow = false
+        sleepResponseTick.value = 0
         resetDragMotion()
         window.api.removeAllSystemAudioActiveListeners()
         window.api.removeAllPlayerResourcesUpdatedListeners()
@@ -455,7 +579,9 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         modelState: readonly(modelState),
         playIdle,
         setAngry,
+        setEnergyLow,
         setActivity,
+        sleepResponseTick: readonly(sleepResponseTick),
         destroy
     }
 }
@@ -502,7 +628,11 @@ function onPointerUp(event: PointerEvent) {
     const wasDragging = isDragging
     releasePointerCapture(event)
 
-    if (wasDragging) stopDragging()
+    if (wasDragging) {
+        stopDragging()
+    } else {
+        handlePetmateClick()
+    }
 
     activePointerId = null
 }
@@ -520,24 +650,55 @@ function onContextMenu(event: MouseEvent) {
     isShowContextMenu.value = true
 }
 
+function handlePetmateClick() {
+    if (activeAction !== 'sleep' && activeAction !== 'sleepResponse') return
+
+    sleepResponseTick.value++
+}
+
 function beginDragging(event: PointerEvent) {
     if (isDragging) return
 
+    const keepsSleepAnimation = isSleepAction(activeAction)
     resetDragMotion()
     isDragging = true
+    isSleepDragging = keepsSleepAnimation
+    if (keepsSleepAnimation) {
+        sleepResponseTick.value++
+    }
     lastDragPointerScreenX = pointerStartScreenX
     lastDragPointerScreenY = pointerStartScreenY
     updateDragPointerMotion(event)
     window.api.startPetmateWindowDrag()
-    startAction('struggle', { dragging: true })
+    if (!keepsSleepAnimation) {
+        startAction('struggle', { dragging: true })
+    }
 }
 
 function stopDragging() {
+    const wasSleepDragging = isSleepDragging
+    isSleepDragging = false
     window.api.stopPetmateWindowDrag()
     isDragging = false
 
     if (isAngry) {
         startAction('angryKick', { spyBesideWindow: true })
+        resetDragMotion()
+        return
+    }
+
+    if (wasSleepDragging) {
+        if (!isEnergyLow) {
+            startAmbientAction()
+        } else if (activeAction === 'sleepResponse') {
+            startAction(
+                'sleep',
+                { standIdle: true },
+                { force: true, transition: false, startFrameIndex: SLEEP_RESUME_FRAME_INDEX }
+            )
+        } else {
+            updateModelState({ standIdle: true })
+        }
         resetDragMotion()
         return
     }
@@ -621,6 +782,10 @@ function isDrawBasicAction(action: ActionName): boolean {
     return action === 'drawBasicIntro' || action === 'drawBasicLoop' || action === 'drawBasicOutro'
 }
 
+function isSleepAction(action: ActionName | null): action is 'sleep' | 'sleepResponse' {
+    return action === 'sleep' || action === 'sleepResponse'
+}
+
 function startAmbientAction() {
     if (isDragging) return
 
@@ -641,13 +806,18 @@ function startAmbientAction() {
         return
     }
 
+    if (isEnergyLow) {
+        startAction('sleep', { standIdle: true })
+        return
+    }
+
     startAction('idle', { standIdle: true })
 }
 
 function startAction(
     action: ActionName,
     state: Partial<ModelStatus>,
-    options: { force?: boolean; transition?: boolean } = {}
+    options: { force?: boolean; transition?: boolean; startFrameIndex?: number } = {}
 ) {
     if (!options.force && activeAction === action) return
 
@@ -676,18 +846,48 @@ function startAction(
     }
 
     activeAction = action
-    activePlayback = createPlayback(clip)
+    activePlayback = createPlayback(clip, options.startFrameIndex)
     lastAnimationTime = now
     updateModelState(state)
+    syncSleepAnimation(action, options.startFrameIndex)
     renderScene(now)
 }
 
-function createPlayback(clip: AnimationClip): Playback {
+function syncSleepAnimation(action: ActionName, startFrameIndex?: number): void {
+    if (!isSleepAction(action)) {
+        sleepAnimationPlayer.hide()
+        if (spriteCanvas) spriteCanvas.style.visibility = 'visible'
+        return
+    }
+
+    const sourceSet =
+        equippedSkinId === SCHOOL_UNIFORM_SKIN_ID
+            ? schoolUniformSleepAnimationSources
+            : classicSleepAnimationSources
+    const phase =
+        action === 'sleepResponse'
+            ? 'response'
+            : startFrameIndex === SLEEP_RESUME_FRAME_INDEX
+              ? 'loop'
+              : 'intro'
+    const isPlaying = sleepAnimationPlayer.play(phase, sourceSet)
+
+    if (spriteCanvas) spriteCanvas.style.visibility = isPlaying ? 'hidden' : 'visible'
+}
+
+function createPlayback(clip: AnimationClip, startFrameIndex?: number): Playback {
+    const requestedStepIndex =
+        startFrameIndex === undefined
+            ? 0
+            : clip.steps.findIndex((step) => step.frameIndex === startFrameIndex)
+    const stepIndex = requestedStepIndex >= 0 ? requestedStepIndex : 0
+    const step = clip.steps[stepIndex] ?? clip.steps[0]
+
     return {
         clip,
-        stepIndex: 0,
+        stepIndex,
         stepElapsedMs: 0,
-        stepDurationMs: resolveStepDuration(clip.steps[0]),
+        stepDurationMs: resolveStepDuration(step),
         completedLoops: 0,
         totalElapsedMs: 0
     }
@@ -743,7 +943,7 @@ function advancePlayback(deltaMs: number) {
                 return
             }
 
-            playback.stepIndex = 0
+            playback.stepIndex = playback.clip.loopStartStepIndex
         }
 
         playback.stepDurationMs = resolveStepDuration(playback.clip.steps[playback.stepIndex])
@@ -753,6 +953,17 @@ function advancePlayback(deltaMs: number) {
 function handleActionCompleted(action: ActionName) {
     if (action === 'angryKick' && isAngry && !isDragging) {
         startAction('anger', { spyBesideWindow: true })
+        return
+    }
+
+    if (action === 'sleepResponse') {
+        if (!isDragging) {
+            startAction(
+                'sleep',
+                { standIdle: true },
+                { force: true, transition: false, startFrameIndex: SLEEP_RESUME_FRAME_INDEX }
+            )
+        }
         return
     }
 
@@ -776,11 +987,22 @@ function handleActionCompleted(action: ActionName) {
 function renderScene(now: number) {
     if (!spriteCanvas || !spriteCanvasContext || !activePlayback) return
 
+    const currentPose = getRenderPose(activePlayback)
+    if (isSleepAction(activeAction) && sleepAnimationPlayer.isVisible) {
+        spriteCanvas.style.visibility = 'hidden'
+        sleepAnimationPlayer.setPose(
+            currentPose.clip.renderScale,
+            currentPose.frame.sourceHeight - currentPose.clip.anchorY,
+            currentPose.motion
+        )
+        return
+    }
+
+    spriteCanvas.style.visibility = 'visible'
     syncCanvasResolution()
     const context = spriteCanvasContext
     context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
-    const currentPose = getRenderPose(activePlayback)
     drawGroundShadow(context, currentPose, 1)
 
     let currentOpacity = 1
@@ -800,7 +1022,11 @@ function renderScene(now: number) {
 
 function getRenderPose(playback: Playback): RenderPose {
     const step = playback.clip.steps[playback.stepIndex]
-    const nextStep = playback.clip.steps[(playback.stepIndex + 1) % playback.clip.steps.length]
+    const nextStepIndex =
+        playback.stepIndex + 1 < playback.clip.steps.length
+            ? playback.stepIndex + 1
+            : playback.clip.loopStartStepIndex
+    const nextStep = playback.clip.steps[nextStepIndex]
     const isFinalStep =
         Number.isFinite(playback.clip.loopCount) &&
         playback.completedLoops + 1 >= playback.clip.loopCount &&
@@ -862,6 +1088,17 @@ function getMotionTransform(playback: Playback): MotionTransform {
         }
         case 'struggle':
             return { x: 0, y: -2.6, rotation: 0, scaleX: 1, scaleY: 1 }
+        case 'sleep':
+        case 'sleepResponse': {
+            const breath = Math.sin(seconds * Math.PI * 0.52)
+            return {
+                ...neutral,
+                y: -Math.max(breath, 0) * 0.22,
+                rotation: Math.sin(seconds * 0.38) * 0.0008,
+                scaleX: 1 - breath * 0.0004,
+                scaleY: 1 + breath * 0.0012
+            }
+        }
         case 'drawBasicIntro': {
             const progress = smoothStep(getPlaybackProgress(playback))
             return { ...neutral, x: -32 * (1 - progress) }
@@ -1596,6 +1833,23 @@ function applyUnlockedAnimationSources(): void {
                   : classicDragFrameSources
     }
 
+    const sleepFrameSources =
+        equippedSkinId === SCHOOL_UNIFORM_SKIN_ID && schoolUniformSleepFrameSources.length > 0
+            ? schoolUniformSleepFrameSources
+            : classicSleepFrameSources
+    const sleepResponseFrameSources =
+        equippedSkinId === SCHOOL_UNIFORM_SKIN_ID && schoolUniformSleepResponseFrameSources.length > 0
+            ? schoolUniformSleepResponseFrameSources
+            : classicSleepResponseFrameSources
+    const sleepSpec = actionSpecs.sleep
+    if (sleepSpec.type === 'sequence') {
+        sleepSpec.frameSources = sleepFrameSources
+    }
+    const sleepResponseSpec = actionSpecs.sleepResponse
+    if (sleepResponseSpec.type === 'sequence') {
+        sleepResponseSpec.frameSources = sleepResponseFrameSources
+    }
+
     const angrySpec = actionSpecs.anger
     if (angrySpec.type === 'sequence') {
         angrySpec.frameSources = getCurrentSkinAngryFrameSources()
@@ -1644,6 +1898,8 @@ async function reloadSkinDependentAnimations(): Promise<void> {
         'anger',
         'angryKick',
         'struggle',
+        'sleep',
+        'sleepResponse',
         'drawBasicIntro',
         'drawBasicLoop',
         'drawBasicOutro'
@@ -1669,6 +1925,8 @@ async function reloadSkinDependentAnimations(): Promise<void> {
                 ? { standIdle: true }
                 : activeAction === 'struggle'
                   ? { dragging: true }
+                  : activeAction === 'sleep' || activeAction === 'sleepResponse'
+                    ? { standIdle: true }
                   : isDrawBasicAction(activeAction)
                     ? { sitting: true }
                     : { spyBesideWindow: true }
@@ -1707,6 +1965,7 @@ async function loadAnimationClip(action: ActionName, spec: ActionSpec): Promise<
         frameBlendMs: spec.frameBlendMs,
         visualScale: spec.visualScale,
         loopCount: spec.loopCount,
+        loopStartStepIndex: action === 'sleep' ? 5 : 0,
         renderScale,
         anchorY: Math.max(...frames.map((frame) => frame.bounds.bottom)),
         hasEmbeddedShadow: spec.type === 'sequence' && !isDrawBasicAction(action),
@@ -1720,6 +1979,27 @@ function buildAnimationSteps(
     frameDurationMs: number,
     usesAlignedIdleBlink: boolean
 ): AnimationStep[] {
+    if (action === 'sleep') {
+        return [
+            { frameIndex: 0, durationMs: 720 },
+            { frameIndex: 1, durationMs: 420 },
+            { frameIndex: 2, durationMs: 480 },
+            { frameIndex: 3, durationMs: 520 },
+            { frameIndex: 4, durationMs: 760 },
+            { frameIndex: 5, durationMs: 8000 },
+            { frameIndex: 6, durationMs: 1100 },
+            { frameIndex: 7, durationMs: 3000 }
+        ]
+    }
+
+    if (action === 'sleepResponse') {
+        return [
+            { frameIndex: 0, durationMs: 900 },
+            { frameIndex: 1, durationMs: 1200 },
+            { frameIndex: 2, durationMs: 2400 }
+        ]
+    }
+
     if (action !== 'idle') {
         return frames.map((_, frameIndex) => ({ frameIndex, durationMs: frameDurationMs }))
     }
@@ -1942,6 +2222,7 @@ function initSpriteCanvas() {
     spriteCanvas.style.pointerEvents = 'none'
     spriteCanvas.style.userSelect = 'none'
     spriteCanvas.style.imageRendering = 'auto'
+    spriteCanvas.style.visibility = 'visible'
     spriteContainer.appendChild(spriteCanvas)
     spriteCanvasContext = spriteCanvas.getContext('2d', { alpha: true })
     syncCanvasResolution(true)

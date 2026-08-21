@@ -93,5 +93,8 @@ export default {
   dataRecovery: { button: 'Recover data', heading: 'Notice', description: 'Data can only be recovered to the latest version before v0.5.1 (not including v0.5.1). Use this button carefully! Keep the app connected to the internet, then restart Petmate after recovery. An empty package or wish list is expected because these systems were redesigned from v0.5.1.', recovering: 'Recovering data, please do not leave...', success: 'Data recovered. Enjoy Petmate!', failed: 'Data recovery failed. Please try again later.' },
   log: { item: 'Item log', activity: 'Activity log', sampleItem: 'Random drop: [Coins] + 10' },
   avatar: { accompaniedOneDay: '(Together for one day)' },
-  petmate: { hungryDialog: 'Youmei is really.....really.....so hungry....' },
+  petmate: {
+    hungryDialog: 'Youmei is really.....really.....so hungry....',
+    sleepDialog: 'I was not sleeping... I was thinking... (｡•̀ᴗ-)✧',
+  },
 } as const;

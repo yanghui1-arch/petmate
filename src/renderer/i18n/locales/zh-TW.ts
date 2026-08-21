@@ -103,5 +103,8 @@ export default {
   dataRecovery: { button: '點擊恢復資料', heading: '說明', description: '資料只能恢復到v0.5.1之前的最新一個版本（不包括v0.5.1），因此請慎點這個按鈕！！！在整個過程中，需要保持連線狀態，點擊以後重啟Petmate即可。背包中沒有物品／沒有心願是正常現象，因為從v0.5.1開始重新設計了物品和心願', recovering: '正在恢復資料，請不要離開...', success: '恢復資料成功，現在繼續愉快地玩耍吧～', failed: '恢復資料失敗，請稍後再試～' },
   log: { item: '物品日誌', activity: '活動日誌', sampleItem: '隨機掉落了[金幣] + 10' },
   avatar: { accompaniedOneDay: '(已陪伴一天)' },
-  petmate: { hungryDialog: '尤美真的.....真的.....好餓....' },
+  petmate: {
+    hungryDialog: '尤美真的.....真的.....好餓....',
+    sleepDialog: '我沒有睡……我在思考……(｡•̀ᴗ-)✧',
+  },
 } as const;
