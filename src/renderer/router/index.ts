@@ -12,6 +12,7 @@ import Settings from '@/views/Settings.vue'
 import Chat from '@/views/Chat.vue'
 import DataRecovery from '@/views/DataRecovery.vue'
 import Wardrobe from '@/views/Wardrobe.vue'
+import SchoolHandbook from '@/views/SchoolHandbook.vue'
 
 // meta属性可以为每个路由设置一些自定义属性，在.vue文件中引入useRoute()，通过route.meta.xxx就可以实现一些针对不同页面的逻辑
 const routes = [
@@ -20,6 +21,7 @@ const routes = [
   { path: '/home', name: 'Home', component: Home },
   { path: '/shop', name: 'Shop', component: Shop },
   { path: '/activity', name: 'Activity', component: Activity },
+  { path: '/school-handbook', name: 'SchoolHandbook', component: SchoolHandbook },
   { path: '/commission', name: 'Commission', component: Commission },
   { path: '/wardrobe', name: 'Wardrobe', component: Wardrobe },
   { path: '/wish', name: 'Wish', component: Wish },

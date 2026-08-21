@@ -7,6 +7,12 @@ import { SettingConfig } from "../types/config";
 import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "./llm";
 import { WindowEvent, WindowInfo } from "../main/window-monitor";
 import { CommissionCompletionResult, PlayerResourceState } from "../main/types/player-resource";
+import {
+  SchoolHandbookClaimRewardResult,
+  SchoolHandbookProgress,
+  SchoolHandbookTaskCompletionResult,
+  SchoolHandbookTaskId
+} from "../main/types/school-handbook";
 import { LocalAIStatus } from "../main/local-ai";
 /**
  * 与主进程通信的接口
@@ -32,6 +38,7 @@ interface IElectronAPI {
   getChatPrompt: () => Promise<Response<string>>;
   getHistoryChatMessages: () => Promise<Response<HistoryChatMessage[]>>;
   getPlayerResources: () => Promise<Response<PlayerResourceState>>;
+  getSchoolHandbookProgress: (date?: string) => Promise<Response<SchoolHandbookProgress>>;
   getLocalAIStatus: () => Promise<Response<LocalAIStatus>>;
 
   // set && update && add
@@ -56,6 +63,8 @@ interface IElectronAPI {
   claimWishReward: (petmateId: number, wishId: string) => Promise<Response<boolean>>;
   equipPlayerSkin: (skinId: string) => Promise<Response<PlayerResourceState>>;
   equipPlayerTitle: (titleId: string) => Promise<Response<PlayerResourceState>>;
+  recordSchoolHandbookTask: (taskId: SchoolHandbookTaskId, count?: number) => Promise<Response<SchoolHandbookTaskCompletionResult>>;
+  claimSchoolHandbookReward: (milestoneIdOrStampCount: string | number) => Promise<Response<SchoolHandbookClaimRewardResult>>;
 
   // 克隆音色
   cloneVoice: (url: string) => Promise<Response<string>>;

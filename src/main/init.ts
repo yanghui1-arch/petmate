@@ -6,6 +6,7 @@ import { finishActivity } from "./modules/player/act";
 import { wishHandler } from "./modules/wish";
 import { activityManager, buffManager, itemManager, playerManager, prefabWishManager } from './modules/store'
 import { playerResourceManager } from './modules/player/resource'
+import { schoolHandbookManager } from './modules/school-handbook'
 import { greenworksManager } from './greenworks'
 import { initSettings } from "./settings";
 import { app } from "electron";
@@ -30,6 +31,7 @@ export function appInit(): void {
     buffManager.initBuff()
     prefabWishManager.initPrefabWish()
     playerResourceManager.initPlayerResource()
+    schoolHandbookManager.initSchoolHandbook()
 
     // 初始化玩家数据的状态
     initPlayerDataStatus()
