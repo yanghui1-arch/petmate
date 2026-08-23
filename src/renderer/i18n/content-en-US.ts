@@ -38,6 +38,7 @@ export default {
     23: { name: 'Lace parasol', description: 'A May Day event ticket for designated activities or draws. Cannot be used directly from the package.' },
     24: { name: 'Deluxe toolbox', description: 'A May Day event ticket for designated activities or draws. Cannot be used directly from the package.' },
     25: { name: 'May Day short dress set', description: 'An energetic May Day outfit. Permanently unlocked after purchase and available in the wardrobe.' },
+    26: { name: 'Academy uniform set', description: 'A polished academy uniform. Permanently unlocked after purchase and available in the wardrobe.' },
   },
   buffs: {
     0: { name: 'Energized', description: 'Energy recovery +10%, hunger recovery +10%, energy cost -10%, hunger cost -10%' },

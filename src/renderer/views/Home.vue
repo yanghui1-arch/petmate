@@ -240,6 +240,8 @@ import avator from "../assets/image/youmei-avatar.png";
 import holidayCraftspersonTitleImage from "../assets/title/假日小工匠.png";
 import winningDuoTitleImage from "../assets/title/假期连胜搭子.png";
 import dawnGuardianTitleImage from "../assets/title/曙光守护者.png";
+import fullAttendanceTitleImage from "../assets/image/special_activity/school-2026/titles/school-handbook-title-september-perfect-attendance.png";
+import deskMateTitleImage from "../assets/image/special_activity/school-2026/titles/school-handbook-title-desk-mate.png";
 
 type TitleViewModel = {
   id: string;
@@ -266,6 +268,16 @@ const titleCatalog = computed<TitleViewModel[]>(() => [
     id: "labor-2026-winning-duo",
     name: t("home.titles.winningDuo"),
     image: winningDuoTitleImage,
+  },
+  {
+    id: "school-handbook-september-full-attendance",
+    name: "九月全勤生",
+    image: fullAttendanceTitleImage,
+  },
+  {
+    id: "school-handbook-youmei-deskmate",
+    name: "尤美的同桌",
+    image: deskMateTitleImage,
   },
 ]);
 

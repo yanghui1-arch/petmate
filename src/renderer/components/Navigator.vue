@@ -41,6 +41,16 @@
           </router-link>
 
           <router-link
+            to="/school-handbook"
+            class="page-navigator-item"
+            @click="show = false"
+          >
+            <span class="nav-icon">📘</span>
+            <span class="nav-text">{{ t("nav.schoolHandbook") }}</span>
+            <span class="nav-arrow">→</span>
+          </router-link>
+
+          <router-link
             to="/commission"
             class="page-navigator-item"
             @click="show = false"

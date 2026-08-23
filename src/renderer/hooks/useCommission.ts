@@ -27,6 +27,7 @@ const defaultPlayerResources: PlayerResourceState = {
     titles: [],
     equippedTitleId: null,
     commissionCompletionCounts: {},
+    schoolHandbookLimitedItemMissCount: 0,
     completedCommissionIds: [],
 }
 const playerResources = ref<PlayerResourceState>(defaultPlayerResources)

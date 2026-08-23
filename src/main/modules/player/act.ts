@@ -11,6 +11,7 @@ import { wishHandler } from "../wish";
 import { Wish } from "../../types/wish";
 import { handleEntertainmentAchievement, handleCharacterLevelAchievement, handleFiftyAffectionAchievement, handleEmotionAchievement } from "./achieve";
 import { getMainWindow, getPageWindow } from "../../../main";
+import { schoolHandbookManager } from "../school-handbook";
 
 
 /**
@@ -192,6 +193,11 @@ export function claimActivityReward(petmateId: number): boolean {
     handleFiftyAffectionAchievement(petmate.attrs.affectionExp);
     // 更新心情成就
     handleEmotionAchievement(petmate.attrs.emotion);
+    try {
+        schoolHandbookManager.recordActivityCompletion(activity);
+    } catch (error) {
+        logger.error(`记录开学手册活动任务失败: ${error}`);
+    }
     return true;
 }
 

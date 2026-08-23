@@ -1,5 +1,6 @@
 import { PetMate } from "../modules/petmate/petmate";
 import { ItemTypeValue } from "./item";
+import type { SchoolHandbookRewardGrant } from "./school-handbook";
 
 export type PlayerInfo = {
     steamId?: string | null;
@@ -17,4 +18,8 @@ export interface PackageItemInfo {
     description: string;
     url: string;
     count: number;
+}
+
+export type ConsumeItemResult = {
+    rewards?: SchoolHandbookRewardGrant[];
 }
