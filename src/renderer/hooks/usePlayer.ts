@@ -2,6 +2,7 @@ import { ref, readonly } from 'vue'
 import type { Response } from '../../types/response'
 import { PlayerInfo } from '../types/player'
 import { ChatMessage } from '../types/llm'
+import type { ConsumeItemResult } from '@main/types/player'
 
 // 全局状态 - 单个实例共享整个应用
 const playerData = ref<PlayerInfo | null>(null)
@@ -65,20 +66,20 @@ export function usePlayer() {
         itemId: number,
         count: number,
         petmateId: number
-    ): Promise<boolean> => {
+    ): Promise<ConsumeItemResult | null> => {
         try {
             const response = await window.api.consumeItem(itemId, count, petmateId)
             if (response.code === 200) {
                 // 消耗物品后重新获取玩家数据
                 await refreshPlayerData()
-                return true
+                return response.data ?? {}
             } else {
                 throw new Error(response.message || 'Failed to consume item')
             }
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Unknown error occurred'
             console.error('Failed to consume item:', err)
-            return false
+            return null
         }
     }
 

@@ -1,6 +1,6 @@
 import Store from "electron-store";
 import type { PackageItemConsumeRequirement } from "./basic";
-import type { Item } from "../../types/item";
+import { itemHasType, type Item } from "../../types/item";
 import type {
     CommissionCompletionResult,
     CommissionGrantedReward,
@@ -14,9 +14,14 @@ import type {
 import { itemManager, playerManager } from "../store";
 import { handleOwnedTitleAchievements, handleTitleAchievement } from "./achieve";
 import {
+    SCHOOL_HANDBOOK_CRUMPLED_HOMEWORK_ITEM_ID,
     SCHOOL_HANDBOOK_DESKMATE_TITLE_ID,
-    SCHOOL_HANDBOOK_FULL_ATTENDANCE_TITLE_ID
+    SCHOOL_HANDBOOK_FULL_ATTENDANCE_TITLE_ID,
+    SCHOOL_HANDBOOK_LIMITED_ITEM_ITEM_ID,
+    SCHOOL_HANDBOOK_LIMITED_REWARD_ITEM_IDS,
+    SCHOOL_HANDBOOK_SUPPLY_BOX_ITEM_ID
 } from "../../types/school-handbook";
+import type { SchoolHandbookRewardGrant } from "../../types/school-handbook";
 
 type PlayerResourceStoreData = {
     resources: PlayerResourceState;
@@ -88,6 +93,7 @@ const createDefaultPlayerResources = (): PlayerResourceState => {
         titles: [],
         equippedTitleId: null,
         commissionCompletionCounts: {},
+        schoolHandbookLimitedItemMissCount: 0,
         completedCommissionIds: []
     }
 }
@@ -275,6 +281,129 @@ class PlayerResourceManager {
         handleTitleAchievement(resource.name)
         this.saveResources()
         return this.getResources()
+    }
+
+    /**
+     * 发放开学补给箱本体。补给箱会进入背包的“其他”分类，兑换时不会立即打开。
+     */
+    grantSchoolHandbookSupplyBoxes(count: number = 1): void {
+        this.ensureInit()
+
+        if (!Number.isInteger(count) || count <= 0) {
+            throw new Error(`开学补给箱数量不合法: ${count}`)
+        }
+
+        this.grantSchoolHandbookPackageItem(SCHOOL_HANDBOOK_SUPPLY_BOX_ITEM_ID, count, "开学补给箱")
+    }
+
+    /**
+     * 发放开学限定奖励包本体。它同样进入背包的“其他”分类，兑换时再随机开出委托道具。
+     */
+    grantSchoolHandbookLimitedItems(count: number = 1): void {
+        this.ensureInit()
+
+        if (!Number.isInteger(count) || count <= 0) {
+            throw new Error(`开学限定物品数量不合法: ${count}`)
+        }
+
+        this.grantSchoolHandbookPackageItem(SCHOOL_HANDBOOK_LIMITED_ITEM_ITEM_ID, count, "开学限定物品")
+    }
+
+    /**
+     * 打开开学补给箱。补给池复用商店里的普通物品，但排除限时物品、时装和补给箱本身。
+     * 返回值用于使用补给箱后的图片奖励弹窗展示。
+     */
+    openSchoolHandbookSupplyBox(count: number = 1): SchoolHandbookRewardGrant[] {
+        this.ensureInit()
+
+        if (!Number.isInteger(count) || count <= 0) {
+            throw new Error(`开学补给箱开启数量不合法: ${count}`)
+        }
+
+        const itemPool = itemManager
+            .getAllItems()
+            .filter(item => this.isSchoolHandbookSupplyItemAvailable(item))
+        if (!itemPool.length) {
+            throw new Error("开学补给箱没有可用的普通商店物品")
+        }
+
+        const rewards: SchoolHandbookRewardGrant[] = []
+        for (let index = 0; index < count; index += 1) {
+            const selectedItems = pickUnique(itemPool, Math.min(3, itemPool.length))
+            const itemRewards: ItemRewardSpec[] = selectedItems.map(item => ({
+                itemId: item.id,
+                count: this.getSchoolHandbookSupplyItemCount(item)
+            }))
+            const cash = randomInt(200, 500)
+            rewards.push(...this.grantCashAndItems(cash, itemRewards).filter(
+                (reward): reward is SchoolHandbookRewardGrant =>
+                    reward.type === "cash" || reward.type === "item"
+            ))
+        }
+
+        return aggregateGrantedRewards(rewards).filter(
+            (reward): reward is SchoolHandbookRewardGrant =>
+                reward.type === "cash" || reward.type === "item"
+        )
+    }
+
+    /**
+     * 打开开学限定物品。普通道具的基础概率相同，皱巴巴的作业本有 20% 概率；连续 9 次未获得后，第 10 次必定获得。
+     */
+    openSchoolHandbookLimitedItem(count: number = 1): SchoolHandbookRewardGrant[] {
+        this.ensureInit()
+
+        if (!Number.isInteger(count) || count <= 0) {
+            throw new Error(`开学限定物品开启数量不合法: ${count}`)
+        }
+
+        const commonItemIds = SCHOOL_HANDBOOK_LIMITED_REWARD_ITEM_IDS.filter(
+            itemId => itemId !== SCHOOL_HANDBOOK_CRUMPLED_HOMEWORK_ITEM_ID
+        )
+        const rewards: SchoolHandbookRewardGrant[] = []
+
+        for (let index = 0; index < count; index += 1) {
+            const missCount = this.resources.schoolHandbookLimitedItemMissCount
+            const grantsRareItem = missCount >= 9 || Math.random() < 0.2
+            const itemId = grantsRareItem
+                ? SCHOOL_HANDBOOK_CRUMPLED_HOMEWORK_ITEM_ID
+                : pickOne(commonItemIds)
+
+            const [itemReward] = this.grantCashAndItems(0, [{ itemId, count: 1 }]).filter(
+                (reward): reward is SchoolHandbookRewardGrant => reward.type === "item"
+            )
+            if (itemReward) rewards.push(itemReward)
+
+            this.resources.schoolHandbookLimitedItemMissCount = grantsRareItem ? 0 : missCount + 1
+            this.saveResources()
+        }
+
+        return aggregateGrantedRewards(rewards).filter(
+            (reward): reward is SchoolHandbookRewardGrant => reward.type === "item"
+        )
+    }
+
+    private grantSchoolHandbookPackageItem(itemId: number, count: number, itemLabel: string): void {
+        const item = itemManager.getItem(itemId)
+        if (!item) {
+            throw new Error(`${itemLabel}物品不存在: ${itemId}`)
+        }
+
+        const player = playerManager.getPlayer()
+        const packageItem = player.items.find(existingItem => existingItem.id === item.id)
+        if (packageItem) {
+            packageItem.count += count
+        } else {
+            player.items.push({
+                id: item.id,
+                name: item.name,
+                type: item.type,
+                description: item.description,
+                url: item.url,
+                count
+            })
+        }
+        playerManager.updatePlayer(player)
     }
 
     equipSkin(skinId: string): PlayerResourceState {
@@ -538,6 +667,21 @@ class PlayerResourceManager {
         return item !== undefined && item.expired !== true
     }
 
+    private isSchoolHandbookSupplyItemAvailable(item: Item): boolean {
+        return item.id !== SCHOOL_HANDBOOK_SUPPLY_BOX_ITEM_ID &&
+            item.id !== SCHOOL_HANDBOOK_LIMITED_ITEM_ITEM_ID &&
+            !SCHOOL_HANDBOOK_LIMITED_REWARD_ITEM_IDS.includes(item.id as typeof SCHOOL_HANDBOOK_LIMITED_REWARD_ITEM_IDS[number]) &&
+            item.expired !== true &&
+            !itemHasType(item, "limit") &&
+            !itemHasType(item, "fashion")
+    }
+
+    private getSchoolHandbookSupplyItemCount(item: Item): number {
+        if (item.price >= 600) return 1
+        if (item.price >= 200) return randomInt(1, 2)
+        return randomInt(2, 4)
+    }
+
     private ensureInit(): void {
         if (!this.isInit) this.initPlayerResource()
     }
@@ -565,6 +709,7 @@ class PlayerResourceManager {
             titles,
             equippedTitleId,
             commissionCompletionCounts: resources?.commissionCompletionCounts ?? {},
+            schoolHandbookLimitedItemMissCount: normalizeNonNegativeInteger(resources?.schoolHandbookLimitedItemMissCount),
             completedCommissionIds: resources?.completedCommissionIds ?? []
         }
     }
@@ -601,6 +746,7 @@ class PlayerResourceManager {
             titles: resources.titles.map(resource => ({ ...resource })),
             equippedTitleId: resources.equippedTitleId,
             commissionCompletionCounts: { ...resources.commissionCompletionCounts },
+            schoolHandbookLimitedItemMissCount: resources.schoolHandbookLimitedItemMissCount,
             completedCommissionIds: [...resources.completedCommissionIds]
         }
     }
@@ -624,6 +770,10 @@ function normalizeCompletionCount(completionCount: number): number {
     }
 
     return completionCount
+}
+
+function normalizeNonNegativeInteger(value: number | undefined): number {
+    return Number.isInteger(value) && (value ?? 0) >= 0 ? value! : 0
 }
 
 function aggregateGrantedRewards(rewards: CommissionGrantedReward[]): CommissionGrantedReward[] {
@@ -688,6 +838,17 @@ function randomInt(min: number, max: number): number {
 
 function pickOne<T>(items: T[]): T {
     return items[randomInt(0, items.length - 1)]
+}
+
+function pickUnique<T>(items: T[], count: number): T[] {
+    const shuffled = [...items]
+    for (let index = shuffled.length - 1; index > 0; index -= 1) {
+        const swapIndex = randomInt(0, index)
+        const current = shuffled[index]
+        shuffled[index] = shuffled[swapIndex]
+        shuffled[swapIndex] = current
+    }
+    return shuffled.slice(0, Math.max(0, count))
 }
 
 export const playerResourceManager = new PlayerResourceManager()

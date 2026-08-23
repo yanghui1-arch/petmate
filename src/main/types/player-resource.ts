@@ -33,6 +33,7 @@ export type PlayerResourceState = {
     titles: PlayerTitleResource[];
     equippedTitleId: string | null;
     commissionCompletionCounts: Record<string, number>;
+    schoolHandbookLimitedItemMissCount: number;
     /**
      * 旧版本曾用这个字段限制委托只能完成一次。
      * 现在委托可重复交付，保留字段仅用于兼容已存在的存档。

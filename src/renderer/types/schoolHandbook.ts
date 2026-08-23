@@ -1,6 +1,6 @@
 import type {
+  SchoolHandbookBatchProgress,
   SchoolHandbookClaimRewardResult,
-  SchoolHandbookDayProgress,
   SchoolHandbookMilestoneProgress,
   SchoolHandbookProgress,
   SchoolHandbookTaskCompletionResult,
@@ -10,8 +10,8 @@ import type {
 import type { Response } from '../../types/response'
 
 export type {
+  SchoolHandbookBatchProgress,
   SchoolHandbookClaimRewardResult,
-  SchoolHandbookDayProgress,
   SchoolHandbookMilestoneProgress,
   SchoolHandbookProgress,
   SchoolHandbookTaskCompletionResult,
@@ -27,15 +27,3 @@ export type SchoolHandbookApi = Pick<
 export type SchoolHandbookProgressResponse = Response<SchoolHandbookProgress>
 export type SchoolHandbookTaskResponse = Response<SchoolHandbookTaskCompletionResult>
 export type SchoolHandbookRewardResponse = Response<SchoolHandbookClaimRewardResult>
-
-export type SchoolHandbookCalendarDay = {
-  date: string
-  progress: SchoolHandbookDayProgress
-  isCurrent: boolean
-  isFuture: boolean
-}
-
-export type SchoolHandbookViewModel = {
-  progress: SchoolHandbookProgress
-  days: SchoolHandbookCalendarDay[]
-}

@@ -1,5 +1,5 @@
 import { Response } from "../../types/response";
-import { PlayerInfo } from "../main/types/player";
+import { ConsumeItemResult, PlayerInfo } from "../main/types/player";
 import { Item, ItemType } from "../main/types/item";
 import { Wish } from "../main/types/wish"
 import { ActivityInfo } from "../main/types/activity";
@@ -53,7 +53,7 @@ interface IElectronAPI {
   cancelLocalAIModelDownload: () => Promise<Response<LocalAIStatus>>;
 
   // 玩家操作
-  consumeItem: (itemId: number, count: number, petmateId: number) => Promise<Response<void>>;
+  consumeItem: (itemId: number, count: number, petmateId: number) => Promise<Response<ConsumeItemResult | void>>;
   completeCommission: (commissionId: string, requirements: { itemId: number, count: number }[], completionCount?: number) => Promise<Response<CommissionCompletionResult>>;
   buyItem: (itemId: number, count: number) => Promise<Response<Item>>;
   chat: (message: ChatMessage, speak?: boolean) => Promise<Response<void>>;
@@ -64,7 +64,7 @@ interface IElectronAPI {
   equipPlayerSkin: (skinId: string) => Promise<Response<PlayerResourceState>>;
   equipPlayerTitle: (titleId: string) => Promise<Response<PlayerResourceState>>;
   recordSchoolHandbookTask: (taskId: SchoolHandbookTaskId, count?: number) => Promise<Response<SchoolHandbookTaskCompletionResult>>;
-  claimSchoolHandbookReward: (milestoneIdOrStampCount: string | number) => Promise<Response<SchoolHandbookClaimRewardResult>>;
+  claimSchoolHandbookReward: (milestoneIdOrStampCount: string | number, quantity?: number) => Promise<Response<SchoolHandbookClaimRewardResult>>;
 
   // 克隆音色
   cloneVoice: (url: string) => Promise<Response<string>>;

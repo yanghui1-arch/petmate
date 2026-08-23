@@ -13,7 +13,7 @@
 import { NotEnoughError, NotFoundError } from "../../error";
 import logger from "../../log";
 import { getItemTypes, Item } from "../../types/item";
-import { PackageItemInfo, PlayerInfo } from "../../types/player";
+import { ConsumeItemResult, PackageItemInfo, PlayerInfo } from "../../types/player";
 import { itemManager, playerManager } from "../store"
 import { PetMate } from "../petmate/petmate";
 import { Buff } from "../../types/buff";
@@ -25,7 +25,9 @@ import { handleCharacterLevelAchievement, handleFiftyAffectionAchievement, handl
 import { playerResourceManager, SkinAlreadyOwnedError } from "./resource";
 import {
     SCHOOL_HANDBOOK_BREAKFAST_END_HOUR,
-    SCHOOL_HANDBOOK_BREAKFAST_START_HOUR
+    SCHOOL_HANDBOOK_BREAKFAST_START_HOUR,
+    SCHOOL_HANDBOOK_LIMITED_ITEM_ITEM_ID,
+    SCHOOL_HANDBOOK_SUPPLY_BOX_ITEM_ID
 } from "../../types/school-handbook";
 import { schoolHandbookManager } from "../school-handbook";
 
@@ -146,11 +148,10 @@ export function consumePackageItems(requirements: PackageItemConsumeRequirement[
  * @throws 如果petmate的属性不够则抛出NotEnoughError
  * @throws 如果传入的finishedWishes中的愿望的奖励存在未找到的buff，则抛出NotFoundError
  */
-export function consumeItem(itemId: number, count: number = 1, petmateId: number): void {
+export function consumeItem(itemId: number, count: number = 1, petmateId: number): ConsumeItemResult | undefined {
     const player: PlayerInfo = playerManager.getPlayer();
-    const petmate: PetMate | undefined = player.petmates.find(petmate => petmate.id === petmateId);
-    if (!petmate) {
-        throw new NotFoundError(`Petmate不存在: ${petmateId}`);
+    if (!Number.isInteger(count) || count <= 0) {
+        throw new Error(`使用物品数量不合法: ${count}`);
     }
 
     // 检查玩家背包中是否有这个物品
@@ -169,8 +170,33 @@ export function consumeItem(itemId: number, count: number = 1, petmateId: number
     if (!item) {
         throw new NotFoundError(`物品不存在: ${itemId}`);
     }
+
+    if (itemId === SCHOOL_HANDBOOK_SUPPLY_BOX_ITEM_ID || itemId === SCHOOL_HANDBOOK_LIMITED_ITEM_ITEM_ID) {
+        const idx = player.items.findIndex(packageItem => packageItem.id === itemId);
+        if (idx === -1) {
+            throw new NotFoundError(`玩家背包中不存在物品: ${itemId}`);
+        }
+
+        player.items[idx].count -= count;
+        if (player.items[idx].count <= 0) {
+            player.items.splice(idx, 1);
+        }
+        playerManager.updatePlayer(player);
+
+        return {
+            rewards: itemId === SCHOOL_HANDBOOK_LIMITED_ITEM_ITEM_ID
+                ? playerResourceManager.openSchoolHandbookLimitedItem(count)
+                : playerResourceManager.openSchoolHandbookSupplyBox(count)
+        };
+    }
+
     if (getItemTypes(item.type).some(type => UNUSABLE_PACKAGE_ITEM_TYPES.includes(type))) {
         throw new Error(`该物品不能在背包中直接使用: ${itemId}`);
+    }
+
+    const petmate: PetMate | undefined = player.petmates.find(petmate => petmate.id === petmateId);
+    if (!petmate) {
+        throw new NotFoundError(`Petmate不存在: ${petmateId}`);
     }
 
     petmate.updateHungry((item.effect.hungry ?? 0) * count);
@@ -239,4 +265,6 @@ export function consumeItem(itemId: number, count: number = 1, petmateId: number
             logger.error(`记录开学手册早餐任务失败: ${error}`);
         }
     }
+
+    return undefined;
 }

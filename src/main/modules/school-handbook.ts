@@ -3,13 +3,17 @@ import type { ActivityInfo } from "../types/activity"
 import {
     SCHOOL_HANDBOOK_DESKMATE_TITLE_ID,
     SCHOOL_HANDBOOK_FULL_ATTENDANCE_TITLE_ID,
+    SCHOOL_HANDBOOK_LIMITED_ITEM_ITEM_ID,
+    SCHOOL_HANDBOOK_REFRESH_COOLDOWN_MS,
     SCHOOL_HANDBOOK_REQUIRED_TASKS,
+    SCHOOL_HANDBOOK_TASKS_PER_BATCH,
     SCHOOL_HANDBOOK_TASK_IDS,
     SCHOOL_HANDBOOK_TITLE,
+    SchoolHandbookBatchProgress,
+    SchoolHandbookBatchStoreData,
     SchoolHandbookClaimRewardResult,
     SchoolHandbookClaimedReward,
-    SchoolHandbookDayProgress,
-    SchoolHandbookDayStoreData,
+    SchoolHandbookLegacyDayStoreData,
     SchoolHandbookMilestoneProgress,
     SchoolHandbookProgress,
     SchoolHandbookReward,
@@ -26,8 +30,8 @@ import {
 } from "./player/resource"
 
 const SCHOOL_HANDBOOK_STORE_NAME = "school-handbook-store"
-const SCHOOL_HANDBOOK_SCHEMA_VERSION = 1
-const TASK_SELECTION_VERSION = "school-handbook-task-selection-v1"
+const SCHOOL_HANDBOOK_SCHEMA_VERSION = 2
+const TASK_SELECTION_VERSION = "school-handbook-task-selection-v2"
 
 export const SCHOOL_HANDBOOK_TASK_DEFINITIONS: readonly SchoolHandbookTaskDefinition[] = [
     {
@@ -66,37 +70,41 @@ type SchoolHandbookMilestoneDefinition = {
     id: string;
     stampCount: number;
     reward: SchoolHandbookReward;
+    repeatable: boolean;
 }
 
 export const SCHOOL_HANDBOOK_MILESTONES: readonly SchoolHandbookMilestoneDefinition[] = [
     {
         id: "school-handbook-milestone-3",
-        stampCount: 3,
+        stampCount: 1,
+        repeatable: true,
         reward: {
             id: "school-handbook-supply-box",
             type: "supply-box",
             name: "开学补给箱",
-            description: "一份装满新学期小惊喜的补给箱。"
+            description: "一份装满新学期物品的超大补给箱"
         }
     },
     {
         id: "school-handbook-milestone-5",
-        stampCount: 5,
+        stampCount: 1,
+        repeatable: true,
         reward: {
             id: "school-handbook-limited-item",
             type: "limited-item",
             name: "开学限定物品",
-            description: "开学手册限定纪念物，领取记录会永久保存在手册中。"
+            description: "开学手册限定奖励包，打开后可随机获得一件新学期委托道具"
         }
     },
     {
         id: "school-handbook-milestone-7",
-        stampCount: 7,
+        stampCount: 3,
+        repeatable: false,
         reward: {
             id: SCHOOL_HANDBOOK_FULL_ATTENDANCE_TITLE_ID,
             type: "title",
             name: "九月全勤生",
-            description: "每天都认真完成任务的全勤称谓。",
+            description: "解锁「九月全勤生」称谓",
             resources: [{
                 type: "title",
                 id: SCHOOL_HANDBOOK_FULL_ATTENDANCE_TITLE_ID,
@@ -105,18 +113,9 @@ export const SCHOOL_HANDBOOK_MILESTONES: readonly SchoolHandbookMilestoneDefinit
         }
     },
     {
-        id: "school-handbook-milestone-10",
-        stampCount: 10,
-        reward: {
-            id: "school-handbook-special-animation",
-            type: "special-animation",
-            name: "新学期特别表情",
-            description: "一份记录在开学手册中的特别动画/表情奖励。"
-        }
-    },
-    {
         id: "school-handbook-milestone-12",
-        stampCount: 12,
+        stampCount: 5,
+        repeatable: false,
         reward: {
             id: "school-handbook-youmei-desk-bundle",
             type: "resource-bundle",
@@ -146,9 +145,11 @@ const MILESTONE_DEFINITION_MAP = new Map(
     SCHOOL_HANDBOOK_MILESTONES.map(milestone => [milestone.id, milestone])
 )
 
-const createDefaultState = (): SchoolHandbookStoreState => ({
+const createDefaultState = (now: Date = new Date()): SchoolHandbookStoreState => ({
     schemaVersion: SCHOOL_HANDBOOK_SCHEMA_VERSION,
-    days: {},
+    batchSequence: 1,
+    stampCount: 0,
+    currentBatch: createBatchStoreData(1, now),
     claimedRewards: []
 })
 
@@ -166,76 +167,86 @@ export class SchoolHandbookManager {
     initSchoolHandbook(): void {
         if (this.isInit) return
         this.isInit = true
-        this.state = this.normalizeState(this.store.get("state"))
+        this.state = this.normalizeState(this.store.get("state"), new Date())
         this.saveState()
     }
 
-    getProgress(date: Date | string = new Date()): SchoolHandbookProgress {
+    getProgress(at: Date | string = new Date()): SchoolHandbookProgress {
         this.ensureInit()
-        const dateKey = toDateKey(date)
-        const day = this.ensureDay(dateKey)
-        return this.buildProgress(dateKey, day)
+        const now = toDate(at)
+        this.ensureReady(now)
+        return this.buildProgress(now)
     }
 
     recordTaskCompletion(
         taskId: SchoolHandbookTaskId,
         count: number = 1,
-        date: Date | string = new Date()
+        at: Date | string = new Date()
     ): SchoolHandbookTaskCompletionResult {
         this.ensureInit()
         assertTaskId(taskId)
         assertPositiveInteger(count, "任务完成次数")
 
-        const dateKey = toDateKey(date)
-        const day = this.ensureDay(dateKey)
-        const task = day.tasks.find(taskState => taskState.id === taskId)
+        const now = toDate(at)
+        this.ensureReady(now)
+        const batch = this.state.currentBatch
+        if (batch.completedAt) {
+            throw new Error(formatCooldownMessage(batch.nextRefreshAt))
+        }
+
+        const task = batch.tasks.find(taskState => taskState.id === taskId)
         if (!task) {
-            throw new Error(`今日没有任务: ${taskId}`)
+            throw new Error("当前批次没有任务: " + taskId)
         }
 
         const taskDefinition = TASK_DEFINITION_MAP.get(taskId)!
-        const wasStamped = isDayStamped(day)
         task.completedCount = Math.min(taskDefinition.targetCount, task.completedCount + count)
-        const newlyStamped = !wasStamped && isDayStamped(day)
+        const newlyStamped = isBatchComplete(batch)
         if (newlyStamped) {
-            day.stampedAt = new Date().toISOString()
+            const completedAt = now.toISOString()
+            batch.completedAt = completedAt
+            batch.nextRefreshAt = new Date(
+                now.getTime() + SCHOOL_HANDBOOK_REFRESH_COOLDOWN_MS
+            ).toISOString()
+            this.state.stampCount += 1
         }
         this.saveState()
 
-        const progress = this.buildProgress(dateKey, day)
+        const progress = this.buildProgress(now)
         return {
-            task: progress.day.tasks.find(progressTask => progressTask.id === taskId)!,
-            day: progress.day,
+            task: progress.batch.tasks.find(progressTask => progressTask.id === taskId)!,
+            batch: progress.batch,
             newlyStamped,
             progress
         }
     }
 
     /**
-     * 真实行为只在当天抽到对应任务时计入；未抽到的任务不会报错。
-     * 这个入口供活动、委托和早餐行为调用。
+     * 真实行为只在当前批次抽到对应任务时计入。
+     * 批次完成后的冷却期间，行为不会提前消耗下一批任务。
      */
     recordTaskCompletionIfActive(
         taskId: SchoolHandbookTaskId,
         count: number = 1,
-        date: Date | string = new Date()
+        at: Date | string = new Date()
     ): SchoolHandbookProgress {
         this.ensureInit()
         assertTaskId(taskId)
         assertPositiveInteger(count, "任务完成次数")
 
-        const dateKey = toDateKey(date)
-        const day = this.ensureDay(dateKey)
-        if (!day.tasks.some(taskState => taskState.id === taskId)) {
-            return this.buildProgress(dateKey, day)
+        const now = toDate(at)
+        this.ensureReady(now)
+        const batch = this.state.currentBatch
+        if (batch.completedAt || !batch.tasks.some(taskState => taskState.id === taskId)) {
+            return this.buildProgress(now)
         }
 
-        return this.recordTaskCompletion(taskId, count, date).progress
+        return this.recordTaskCompletion(taskId, count, now).progress
     }
 
     recordActivityCompletion(
         activity: Pick<ActivityInfo, "type" | "url">,
-        date: Date | string = new Date()
+        at: Date | string = new Date()
     ): SchoolHandbookProgress {
         const taskIds: SchoolHandbookTaskId[] = []
         if (activity.type === "study") {
@@ -246,177 +257,170 @@ export class SchoolHandbookManager {
             taskIds.push("game")
         }
 
-        let progress = this.getProgress(date)
+        const now = toDate(at)
+        let progress = this.getProgress(now)
         for (const taskId of taskIds) {
-            progress = this.recordTaskCompletionIfActive(taskId, 1, date)
+            if (progress.isCoolingDown) break
+            progress = this.recordTaskCompletionIfActive(taskId, 1, now)
         }
         return progress
     }
 
-    recordBreakfastCompletion(date: Date | string = new Date()): SchoolHandbookProgress {
-        return this.recordTaskCompletionIfActive("breakfast", 1, date)
+    recordBreakfastCompletion(at: Date | string = new Date()): SchoolHandbookProgress {
+        return this.recordTaskCompletionIfActive("breakfast", 1, at)
     }
 
     recordCommissionCompletion(
         count: number = 1,
-        date: Date | string = new Date()
+        at: Date | string = new Date()
     ): SchoolHandbookProgress {
-        return this.recordTaskCompletionIfActive("commission", count, date)
+        return this.recordTaskCompletionIfActive("commission", count, at)
     }
 
     claimMilestoneReward(
         milestoneIdOrStampCount: string | number,
-        date: Date | string = new Date()
+        at: Date | string = new Date(),
+        quantity: number = 1
     ): SchoolHandbookClaimRewardResult {
         this.ensureInit()
         const milestone = resolveMilestone(milestoneIdOrStampCount)
-        const dateKey = toDateKey(date)
-        const day = this.ensureDay(dateKey)
-        const progress = this.buildProgress(dateKey, day)
+        if (!Number.isInteger(quantity) || quantity <= 0) {
+            throw new Error("兑换数量必须是正整数")
+        }
+        const now = toDate(at)
+        const progress = this.getProgress(now)
         const existing = this.state.claimedRewards.find(
             claimedReward => claimedReward.milestoneId === milestone.id
         )
 
-        if (existing) {
-            return {
-                reward: cloneReward(existing.reward),
-                claimedReward: cloneClaimedReward(existing),
-                newlyClaimed: false,
-                progress,
-                playerResources: milestone.reward.resources?.length
-                    ? playerResourceManager.getResources()
-                    : undefined
-            }
+        if (!milestone.repeatable && quantity > 1) {
+            throw new Error("这个奖励不能批量兑换")
         }
 
-        if (progress.stampCount < milestone.stampCount) {
-            throw new Error(`印章数量不足，需要 ${milestone.stampCount} 枚印章`)
+        if (existing && !milestone.repeatable) {
+            throw new Error("这个奖励只能兑换一次")
+        }
+
+        const totalStampCost = milestone.stampCount * quantity
+        if (progress.stampCount < totalStampCost) {
+            throw new Error("印章数量不足，需要 " + totalStampCost + " 枚印章")
         }
 
         let playerResources
-        if (milestone.reward.resources?.length) {
-            for (const resource of milestone.reward.resources) {
-                if (resource.type === "skin") {
-                    playerResourceManager.grantSkin(resource.id)
-                } else {
-                    playerResourceManager.grantTitle(resource.id)
-                }
-            }
-            playerResources = playerResourceManager.getResources()
+        if (milestone.reward.type === "supply-box") {
+            playerResourceManager.grantSchoolHandbookSupplyBoxes(quantity)
         }
+        if (milestone.reward.type === "limited-item") {
+            playerResourceManager.grantSchoolHandbookLimitedItems(quantity)
+        }
+        for (let index = 0; index < quantity; index += 1) {
+            if (milestone.reward.resources?.length) {
+                for (const resource of milestone.reward.resources) {
+                    if (resource.type === "skin") {
+                        playerResourceManager.grantSkin(resource.id)
+                    } else {
+                        playerResourceManager.grantTitle(resource.id)
+                    }
+                }
+                playerResources = playerResourceManager.getResources()
+            }
+        }
+
+        this.state.stampCount -= totalStampCost
 
         const claimedReward: SchoolHandbookClaimedReward = {
             milestoneId: milestone.id,
             stampCount: milestone.stampCount,
             reward: cloneReward(milestone.reward),
-            claimedAt: new Date().toISOString()
+            claimedAt: now.toISOString()
         }
-        this.state.claimedRewards.push(claimedReward)
+        if (!milestone.repeatable) {
+            this.state.claimedRewards.push(claimedReward)
+        }
         this.saveState()
 
         return {
             reward: cloneReward(milestone.reward),
             claimedReward: cloneClaimedReward(claimedReward),
+            quantity,
             newlyClaimed: true,
-            progress: this.buildProgress(dateKey, day),
+            progress: this.buildProgress(now),
             playerResources
         }
     }
 
-    private ensureDay(dateKey: string): SchoolHandbookDayStoreData {
-        const existing = this.state.days[dateKey]
-        const expectedTaskIds = selectTaskIds(dateKey)
-        if (existing && sameTaskSelection(existing.tasks, expectedTaskIds)) {
-            return existing
+    private ensureReady(now: Date): void {
+        const batch = this.state.currentBatch
+        if (!batch) {
+            const sequence = Math.max(1, this.state.batchSequence || 1)
+            this.state.batchSequence = sequence
+            this.state.currentBatch = createBatchStoreData(sequence, now)
+            this.saveState()
+            return
         }
 
-        const previousCounts = new Map(
-            (existing?.tasks ?? []).map(task => [task.id, normalizeTaskCount(task.id, task.completedCount)])
-        )
-        const day: SchoolHandbookDayStoreData = {
-            tasks: expectedTaskIds.map(taskId => ({
-                id: taskId,
-                completedCount: previousCounts.get(taskId) ?? 0
-            }))
+        const nextRefreshAt = batch.nextRefreshAt ? Date.parse(batch.nextRefreshAt) : NaN
+        if (batch.completedAt && Number.isFinite(nextRefreshAt) && now.getTime() >= nextRefreshAt) {
+            const sequence = Math.max(this.state.batchSequence, batch.sequence) + 1
+            this.state.batchSequence = sequence
+            this.state.currentBatch = createBatchStoreData(sequence, now)
+            this.saveState()
         }
-        if (existing?.stampedAt && isDayStamped(day)) {
-            day.stampedAt = existing.stampedAt
-        }
-        this.state.days[dateKey] = day
-        this.saveState()
-        return day
     }
 
-    private buildProgress(dateKey: string, day: SchoolHandbookDayStoreData): SchoolHandbookProgress {
-        const stampCount = Object.values(this.state.days).filter(isDayStamped).length
+    private buildProgress(now: Date): SchoolHandbookProgress {
+        const batch = toBatchProgress(this.state.currentBatch, now)
         const claimedRewards = new Map(
             this.state.claimedRewards.map(claimedReward => [claimedReward.milestoneId, claimedReward])
         )
         const milestones: SchoolHandbookMilestoneProgress[] = SCHOOL_HANDBOOK_MILESTONES.map(milestone => {
             const claimedReward = claimedRewards.get(milestone.id)
+            const claimed = !milestone.repeatable && claimedReward !== undefined
             return {
                 id: milestone.id,
                 stampCount: milestone.stampCount,
                 reward: cloneReward(milestone.reward),
-                claimed: claimedReward !== undefined,
+                repeatable: milestone.repeatable,
+                claimed,
                 claimedAt: claimedReward?.claimedAt ?? null,
-                available: stampCount >= milestone.stampCount && claimedReward === undefined
+                available: this.state.stampCount >= milestone.stampCount && !claimed
             }
         })
 
         return {
             title: SCHOOL_HANDBOOK_TITLE,
-            currentDate: dateKey,
-            day: toDayProgress(dateKey, day),
-            stampCount,
-            stampedDates: Object.entries(this.state.days)
-                .filter(([, dayState]) => isDayStamped(dayState))
-                .map(([storedDate]) => storedDate)
-                .sort(),
-            milestones
+            batch,
+            stampCount: this.state.stampCount,
+            milestones,
+            nextRefreshAt: batch.nextRefreshAt,
+            cooldownRemainingMs: batch.cooldownRemainingMs,
+            isCoolingDown: batch.isCoolingDown
         }
     }
 
-    private normalizeState(stored?: Partial<SchoolHandbookStoreState>): SchoolHandbookStoreState {
-        const state = createDefaultState()
+    private normalizeState(
+        stored: SchoolHandbookStoreData["state"] | undefined,
+        now: Date
+    ): SchoolHandbookStoreState {
+        const state = createDefaultState(now)
         if (!stored || typeof stored !== "object") return state
 
-        if (stored.days && typeof stored.days === "object") {
-            Object.entries(stored.days).forEach(([dateKey, storedDay]) => {
-                if (!isValidDateKey(dateKey) || !storedDay || typeof storedDay !== "object") return
-                const tasks = Array.isArray(storedDay.tasks)
-                    ? storedDay.tasks
-                        .filter(task => task && typeof task === "object" && isTaskId(task.id))
-                        .map(task => ({
-                            id: task.id,
-                            completedCount: normalizeTaskCount(task.id, task.completedCount)
-                        }))
-                    : []
-                const day: SchoolHandbookDayStoreData = { tasks }
-                if (typeof storedDay.stampedAt === "string") day.stampedAt = storedDay.stampedAt
-                state.days[dateKey] = day
-            })
+        state.claimedRewards = normalizeClaimedRewards(stored.claimedRewards)
+        if (stored.currentBatch && typeof stored.currentBatch === "object") {
+            const sequence = normalizeSequence(stored.currentBatch.sequence, stored.batchSequence)
+            state.batchSequence = sequence
+            state.stampCount = normalizeStampCount(stored.stampCount)
+            state.currentBatch = normalizeBatch(stored.currentBatch, sequence, now)
+            return state
         }
 
-        const claimedRewardIds = new Set<string>()
-        if (Array.isArray(stored.claimedRewards)) {
-            stored.claimedRewards.forEach(claimedReward => {
-                if (!claimedReward || typeof claimedReward !== "object") return
-                const milestoneId = claimedReward.milestoneId
-                const milestone = typeof milestoneId === "string"
-                    ? MILESTONE_DEFINITION_MAP.get(milestoneId)
-                    : undefined
-                if (!milestone || claimedRewardIds.has(milestone.id)) return
-                claimedRewardIds.add(milestone.id)
-                state.claimedRewards.push({
-                    milestoneId: milestone.id,
-                    stampCount: milestone.stampCount,
-                    reward: cloneReward(milestone.reward),
-                    claimedAt: typeof claimedReward.claimedAt === "string"
-                        ? claimedReward.claimedAt
-                        : new Date(0).toISOString()
-                })
-            })
+        const legacyDays = stored.days
+        if (legacyDays && typeof legacyDays === "object") {
+            state.stampCount = Object.values(legacyDays)
+                .filter(isLegacyStamped)
+                .length
+            state.batchSequence = Math.max(1, state.stampCount + 1)
+            state.currentBatch = createBatchStoreData(state.batchSequence, now)
         }
 
         return state
@@ -431,9 +435,63 @@ export class SchoolHandbookManager {
     }
 }
 
-function selectTaskIds(dateKey: string): SchoolHandbookTaskId[] {
+function createBatchStoreData(sequence: number, now: Date): SchoolHandbookBatchStoreData {
+    return {
+        id: "school-handbook-batch-" + sequence,
+        sequence,
+        tasks: selectTaskIds(sequence).map(taskId => ({
+            id: taskId,
+            completedCount: 0
+        })),
+        createdAt: now.toISOString()
+    }
+}
+
+function normalizeBatch(
+    stored: Partial<SchoolHandbookBatchStoreData>,
+    fallbackSequence: number,
+    now: Date
+): SchoolHandbookBatchStoreData {
+    const sequence = normalizeSequence(stored.sequence, fallbackSequence)
+    const expectedTaskIds = selectTaskIds(sequence)
+    const previousCounts = new Map(
+        (Array.isArray(stored.tasks) ? stored.tasks : [])
+            .filter(task => task && typeof task === "object" && isTaskId(task.id))
+            .map(task => [task.id, normalizeTaskCount(task.id, task.completedCount)])
+    )
+    const tasks = expectedTaskIds.map(taskId => ({
+        id: taskId,
+        completedCount: previousCounts.get(taskId) ?? 0
+    }))
+    const createdAt = isValidTimestamp(stored.createdAt)
+        ? stored.createdAt!
+        : now.toISOString()
+    let completedAt = isValidTimestamp(stored.completedAt) ? stored.completedAt : undefined
+    let nextRefreshAt = isValidTimestamp(stored.nextRefreshAt) ? stored.nextRefreshAt : undefined
+    if (isBatchComplete({ tasks } as SchoolHandbookBatchStoreData) && !completedAt) {
+        completedAt = now.toISOString()
+    }
+    if (completedAt && !nextRefreshAt) {
+        nextRefreshAt = new Date(
+            Date.parse(completedAt) + SCHOOL_HANDBOOK_REFRESH_COOLDOWN_MS
+        ).toISOString()
+    }
+
+    return {
+        id: typeof stored.id === "string" && stored.id
+            ? stored.id
+            : "school-handbook-batch-" + sequence,
+        sequence,
+        tasks,
+        createdAt,
+        completedAt,
+        nextRefreshAt
+    }
+}
+
+function selectTaskIds(sequence: number): SchoolHandbookTaskId[] {
     const taskIds = [...SCHOOL_HANDBOOK_TASK_IDS]
-    let seed = hashString(`${TASK_SELECTION_VERSION}:${dateKey}`)
+    let seed = hashString(TASK_SELECTION_VERSION + ":" + sequence)
     for (let index = taskIds.length - 1; index > 0; index--) {
         seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
         const swapIndex = seed % (index + 1)
@@ -441,7 +499,7 @@ function selectTaskIds(dateKey: string): SchoolHandbookTaskId[] {
         taskIds[index] = taskIds[swapIndex]
         taskIds[swapIndex] = current
     }
-    return taskIds.slice(0, 3)
+    return taskIds.slice(0, SCHOOL_HANDBOOK_TASKS_PER_BATCH)
 }
 
 function hashString(value: string): number {
@@ -453,27 +511,19 @@ function hashString(value: string): number {
     return hash >>> 0
 }
 
-function toDateKey(date: Date | string): string {
-    if (typeof date === "string") {
-        if (!isValidDateKey(date)) throw new Error(`日期格式不合法: ${date}`)
-        return date
+function toDate(value: Date | string): Date {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return new Date(value.getTime())
     }
-    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
-        throw new Error("日期不合法")
+    if (typeof value === "string") {
+        const parsed = new Date(value)
+        if (!Number.isNaN(parsed.getTime())) return parsed
     }
-    const year = date.getFullYear().toString().padStart(4, "0")
-    const month = (date.getMonth() + 1).toString().padStart(2, "0")
-    const day = date.getDate().toString().padStart(2, "0")
-    return `${year}-${month}-${day}`
+    throw new Error("日期不合法")
 }
 
-function isValidDateKey(value: string): boolean {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
-    const [year, month, day] = value.split("-").map(Number)
-    const date = new Date(year, month - 1, day)
-    return date.getFullYear() === year &&
-        date.getMonth() === month - 1 &&
-        date.getDate() === day
+function isValidTimestamp(value: unknown): value is string {
+    return typeof value === "string" && Number.isFinite(Date.parse(value))
 }
 
 function isTaskId(value: unknown): value is SchoolHandbookTaskId {
@@ -481,11 +531,22 @@ function isTaskId(value: unknown): value is SchoolHandbookTaskId {
 }
 
 function assertTaskId(taskId: unknown): asserts taskId is SchoolHandbookTaskId {
-    if (!isTaskId(taskId)) throw new Error(`未知开学手册任务: ${String(taskId)}`)
+    if (!isTaskId(taskId)) throw new Error("未知开学手册任务: " + String(taskId))
 }
 
 function assertPositiveInteger(value: number, label: string): void {
-    if (!Number.isInteger(value) || value <= 0) throw new Error(`${label}不合法: ${value}`)
+    if (!Number.isInteger(value) || value <= 0) throw new Error(label + "不合法: " + value)
+}
+
+function normalizeSequence(...values: unknown[]): number {
+    const value = values.find(candidate => typeof candidate === "number" && Number.isInteger(candidate) && candidate > 0)
+    return typeof value === "number" ? value : 1
+}
+
+function normalizeStampCount(value: unknown): number {
+    return typeof value === "number" && Number.isFinite(value) && value >= 0
+        ? Math.floor(value)
+        : 0
 }
 
 function normalizeTaskCount(taskId: SchoolHandbookTaskId, count: unknown): number {
@@ -494,20 +555,16 @@ function normalizeTaskCount(taskId: SchoolHandbookTaskId, count: unknown): numbe
     return Math.min(targetCount, Math.floor(count))
 }
 
-function sameTaskSelection(
-    tasks: Array<{ id: SchoolHandbookTaskId; completedCount: number }>,
-    expectedTaskIds: SchoolHandbookTaskId[]
-): boolean {
-    const actualTaskIds = tasks.map(task => task.id).sort()
-    return actualTaskIds.length === expectedTaskIds.length &&
-        actualTaskIds.every((taskId, index) => taskId === [...expectedTaskIds].sort()[index])
+function isBatchComplete(batch: SchoolHandbookBatchStoreData): boolean {
+    return batch.tasks.length === SCHOOL_HANDBOOK_TASKS_PER_BATCH &&
+        batch.tasks.every(task => {
+            const definition = TASK_DEFINITION_MAP.get(task.id)
+            return definition !== undefined && task.completedCount >= definition.targetCount
+        })
 }
 
-function isDayStamped(day: SchoolHandbookDayStoreData): boolean {
-    return day.tasks.filter(task => {
-        const definition = TASK_DEFINITION_MAP.get(task.id)
-        return definition !== undefined && task.completedCount >= definition.targetCount
-    }).length >= SCHOOL_HANDBOOK_REQUIRED_TASKS
+function isLegacyStamped(day: SchoolHandbookLegacyDayStoreData): boolean {
+    return typeof day?.stampedAt === "string" && isValidTimestamp(day.stampedAt)
 }
 
 function toTaskProgress(task: { id: SchoolHandbookTaskId; completedCount: number }): SchoolHandbookTaskProgress {
@@ -520,16 +577,31 @@ function toTaskProgress(task: { id: SchoolHandbookTaskId; completedCount: number
     }
 }
 
-function toDayProgress(dateKey: string, day: SchoolHandbookDayStoreData): SchoolHandbookDayProgress {
-    const tasks = day.tasks.map(toTaskProgress)
+function toBatchProgress(batch: SchoolHandbookBatchStoreData, now: Date): SchoolHandbookBatchProgress {
+    const tasks = batch.tasks.map(toTaskProgress)
+    const nextRefreshAt = batch.nextRefreshAt ?? null
+    const remaining = nextRefreshAt
+        ? Math.max(0, Date.parse(nextRefreshAt) - now.getTime())
+        : 0
+    const completed = Boolean(batch.completedAt) || isBatchComplete(batch)
     return {
-        date: dateKey,
+        id: batch.id,
+        sequence: batch.sequence,
         tasks,
         completedTaskCount: tasks.filter(task => task.completed).length,
         requiredTaskCount: SCHOOL_HANDBOOK_REQUIRED_TASKS,
-        stamped: isDayStamped(day),
-        stampedAt: day.stampedAt ?? null
+        completed,
+        createdAt: batch.createdAt,
+        completedAt: batch.completedAt ?? null,
+        nextRefreshAt,
+        cooldownRemainingMs: remaining,
+        isCoolingDown: completed && remaining > 0
     }
+}
+
+function formatCooldownMessage(nextRefreshAt?: string): string {
+    if (!nextRefreshAt) return "当前批次已经完成"
+    return "当前批次已经完成，下一批任务将在 " + new Date(nextRefreshAt).toLocaleString() + " 刷新"
 }
 
 function resolveMilestone(milestoneIdOrStampCount: string | number): SchoolHandbookMilestoneDefinition {
@@ -543,7 +615,32 @@ function resolveMilestone(milestoneIdOrStampCount: string | number): SchoolHandb
         const milestone = MILESTONE_DEFINITION_MAP.get(milestoneIdOrStampCount)
         if (milestone) return milestone
     }
-    throw new Error(`未知开学手册里程碑: ${String(milestoneIdOrStampCount)}`)
+    throw new Error("未知开学手册里程碑: " + String(milestoneIdOrStampCount))
+}
+
+function normalizeClaimedRewards(
+    storedRewards: SchoolHandbookStoreState["claimedRewards"] | undefined
+): SchoolHandbookClaimedReward[] {
+    const claimedRewardIds = new Set<string>()
+    const claimedRewards: SchoolHandbookClaimedReward[] = []
+    if (!Array.isArray(storedRewards)) return claimedRewards
+
+    storedRewards.forEach(storedReward => {
+        const milestone = typeof storedReward?.milestoneId === "string"
+            ? MILESTONE_DEFINITION_MAP.get(storedReward.milestoneId)
+            : undefined
+        if (!milestone || claimedRewardIds.has(milestone.id)) return
+        claimedRewardIds.add(milestone.id)
+        claimedRewards.push({
+            milestoneId: milestone.id,
+            stampCount: milestone.stampCount,
+            reward: cloneReward(milestone.reward),
+            claimedAt: isValidTimestamp(storedReward.claimedAt)
+                ? storedReward.claimedAt
+                : new Date(0).toISOString()
+        })
+    })
+    return claimedRewards
 }
 
 function cloneReward(reward: SchoolHandbookReward): SchoolHandbookReward {

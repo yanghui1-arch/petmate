@@ -56,7 +56,7 @@ contextBridge.exposeInMainWorld('api', {
     equipPlayerSkin: (skinId: string) => ipcRenderer.invoke('equip-player-skin', skinId),
     equipPlayerTitle: (titleId: string) => ipcRenderer.invoke('equip-player-title', titleId),
     recordSchoolHandbookTask: (taskId: SchoolHandbookTaskId, count?: number) => ipcRenderer.invoke('record-school-handbook-task', taskId, count),
-    claimSchoolHandbookReward: (milestoneIdOrStampCount: string | number) => ipcRenderer.invoke('claim-school-handbook-reward', milestoneIdOrStampCount),
+    claimSchoolHandbookReward: (milestoneIdOrStampCount: string | number, quantity: number = 1) => ipcRenderer.invoke('claim-school-handbook-reward', milestoneIdOrStampCount, quantity),
     // 克隆音色
     cloneVoice: (url: string) => ipcRenderer.invoke('clone-voice', url),
     // 监听

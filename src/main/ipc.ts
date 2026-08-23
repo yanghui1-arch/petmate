@@ -6,7 +6,7 @@ import { ipcMain, IpcMainInvokeEvent, IpcMainEvent, screen, BrowserWindow, app }
 import { shell } from 'electron';
 import { is } from '@electron-toolkit/utils'
 import { playerManager, ServerData } from './modules/store';
-import { PlayerInfo } from './types/player';
+import { ConsumeItemResult, PlayerInfo } from './types/player';
 import { Response } from '../types/response';
 import { consumeItem, consumePackageItems, PackageItemConsumeRequirement } from './modules/player/basic';
 import { playerResourceManager } from './modules/player/resource';
@@ -185,19 +185,20 @@ ipcMain.handle(
  * @param petmateId petmate的id
  * @returns 消耗物品成功或失败
  */
-ipcMain.handle("consume-item", (_: IpcMainInvokeEvent, itemId: number, count: number, petmateId: number): Response<void> => {
+ipcMain.handle("consume-item", (_: IpcMainInvokeEvent, itemId: number, count: number, petmateId: number): Response<ConsumeItemResult | void> => {
     try {
-        consumeItem(itemId, count, petmateId);
+        const result = consumeItem(itemId, count, petmateId);
         return {
             code: 200,
-            message: "消耗物品成功"
-        } as Response<void>;
+            message: "消耗物品成功",
+            data: result
+        } as Response<ConsumeItemResult | void>;
     } catch (error) {
         logger.error(`消耗物品失败: ${error}`);
         return {
             code: 400,
             message: "消耗物品失败"
-        } as Response<void>;
+        } as Response<ConsumeItemResult | void>;
     }
 })
 
@@ -300,9 +301,9 @@ ipcMain.handle(
 
 ipcMain.handle(
     "claim-school-handbook-reward",
-    (_: IpcMainInvokeEvent, milestoneIdOrStampCount: string | number): Response<SchoolHandbookClaimRewardResult> => {
+    (_: IpcMainInvokeEvent, milestoneIdOrStampCount: string | number, quantity: number = 1): Response<SchoolHandbookClaimRewardResult> => {
         try {
-            const result = schoolHandbookManager.claimMilestoneReward(milestoneIdOrStampCount);
+            const result = schoolHandbookManager.claimMilestoneReward(milestoneIdOrStampCount, new Date(), quantity);
             if (result.playerResources) notifyPlayerResourcesUpdated(result.playerResources);
             return {
                 code: 200,
