@@ -501,7 +501,8 @@
             "affectionLevel": 1
         },
         "effect": {},
-        "skinId": "youmei-school-uniform-2026"
+        "skinId": "youmei-school-uniform-2026",
+        "expired": true
     },
     {
         "id": 27,
