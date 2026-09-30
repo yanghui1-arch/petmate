@@ -144,7 +144,7 @@
                 </div>
                 <div class="activity-section-footer">
                   <span class="activity-section-type">{{
-                    t(`activity.sections.${activitySection.type}.name`)
+                    t(`activity.sections.${activitySection.type === "national-day" ? "nationalDay" : activitySection.type}.name`)
                   }}</span>
                   <div class="activity-section-dots">
                     <span></span>
@@ -449,12 +449,12 @@ const activitySectionList = computed<ActivitySection[]>(() => [
     name: t("activity.sections.entertainment.name"),
     description: t("activity.sections.entertainment.description"),
   },
-  // {
-  //   id: 4,
-  //   type: "empty",
-  //   name: "empty",
-  //   description: "最有价值的活动，都在这里了",
-  // },
+  {
+    id: 4,
+    type: "national-day",
+    name: t("activity.sections.nationalDay.name"),
+    description: t("activity.sections.nationalDay.description"),
+  },
 ]);
 
 
@@ -704,6 +704,23 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
       }
     }
   }
+
+  &.activity-theme-national-day {
+    background: linear-gradient(
+      135deg,
+      rgba(208, 45, 58, 0.3) 0%,
+      rgba(255, 190, 70, 0.12) 100%
+    );
+    border: 1px solid rgba(255, 200, 90, 0.45);
+    box-shadow: inset 0 0 28px rgba(180, 20, 35, 0.16);
+
+    .activity-section-icon {
+      background: rgba(205, 40, 55, 0.28);
+      &::before {
+        background: #ffd56a;
+      }
+    }
+  }
   .activity-section-content {
     height: 100%;
     display: flex;
@@ -754,6 +771,10 @@ const activityContentAnimationEnd = (event: AnimationEvent) => {
 
         &.entertainment::before {
           mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21,6H3A2,2 0 0,0 1,8V16A2,2 0 0,0 3,18H21A2,2 0 0,0 23,16V8A2,2 0 0,0 21,6M21,16H3V8H21M6,15H8V13H10V11H8V9H6V11H4V13H6M14.5,12A1.5,1.5 0 0,1 16,13.5A1.5,1.5 0 0,1 14.5,15A1.5,1.5 0 0,1 13,13.5A1.5,1.5 0 0,1 14.5,12M18.5,9A1.5,1.5 0 0,1 20,10.5A1.5,1.5 0 0,1 18.5,12A1.5,1.5 0 0,1 17,10.5A1.5,1.5 0 0,1 18.5,9Z'/%3E%3C/svg%3E");
+        }
+
+        &.national-day::before {
+          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 3h2v18H4V3m2 1h13l-3 4 3 4H6V4m0 13h13l-3 2 3 2H6v-4Z'/%3E%3C/svg%3E");
         }
       }
     }

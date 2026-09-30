@@ -48,9 +48,7 @@ import { getMainWindow, getPageWindow } from './index';
 import { CommissionCompletionResult, PlayerResourceState } from './types/player-resource';
 import {
     SchoolHandbookClaimRewardResult,
-    SchoolHandbookProgress,
-    SchoolHandbookTaskCompletionResult,
-    SchoolHandbookTaskId
+    SchoolHandbookProgress
 } from './types/school-handbook';
 import { schoolHandbookManager } from './modules/school-handbook';
 import * as path from 'path';
@@ -281,25 +279,6 @@ ipcMain.handle("get-school-handbook-progress", (_: IpcMainInvokeEvent, date?: st
 })
 
 ipcMain.handle(
-    "record-school-handbook-task",
-    (_: IpcMainInvokeEvent, taskId: SchoolHandbookTaskId, count: number = 1): Response<SchoolHandbookTaskCompletionResult> => {
-        try {
-            return {
-                code: 200,
-                message: "记录开学手册任务成功",
-                data: schoolHandbookManager.recordTaskCompletion(taskId, count)
-            } as Response<SchoolHandbookTaskCompletionResult>;
-        } catch (error) {
-            logger.error(`记录开学手册任务失败: ${error}`);
-            return {
-                code: 400,
-                message: error instanceof Error ? error.message : "记录开学手册任务失败"
-            } as Response<SchoolHandbookTaskCompletionResult>;
-        }
-    }
-)
-
-ipcMain.handle(
     "claim-school-handbook-reward",
     (_: IpcMainInvokeEvent, milestoneIdOrStampCount: string | number, quantity: number = 1): Response<SchoolHandbookClaimRewardResult> => {
         try {
@@ -347,12 +326,6 @@ ipcMain.handle("complete-commission", (_: IpcMainInvokeEvent, commissionId: stri
         consumePackageItems(totalRequirements);
         const result = playerResourceManager.completeCommission(commissionId, requirements, completionCount);
         notifyPlayerResourcesUpdated(result.resources);
-        try {
-            schoolHandbookManager.recordCommissionCompletion(completionCount);
-        } catch (error) {
-            logger.error(`记录开学手册委托任务失败: ${error}`);
-        }
-
         return {
             code: 200,
             message: "委托完成",

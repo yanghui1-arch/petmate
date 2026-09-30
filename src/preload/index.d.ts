@@ -9,9 +9,7 @@ import { WindowEvent, WindowInfo } from "../main/window-monitor";
 import { CommissionCompletionResult, PlayerResourceState } from "../main/types/player-resource";
 import {
   SchoolHandbookClaimRewardResult,
-  SchoolHandbookProgress,
-  SchoolHandbookTaskCompletionResult,
-  SchoolHandbookTaskId
+  SchoolHandbookProgress
 } from "../main/types/school-handbook";
 import { LocalAIStatus } from "../main/local-ai";
 /**
@@ -63,7 +61,6 @@ interface IElectronAPI {
   claimWishReward: (petmateId: number, wishId: string) => Promise<Response<boolean>>;
   equipPlayerSkin: (skinId: string) => Promise<Response<PlayerResourceState>>;
   equipPlayerTitle: (titleId: string) => Promise<Response<PlayerResourceState>>;
-  recordSchoolHandbookTask: (taskId: SchoolHandbookTaskId, count?: number) => Promise<Response<SchoolHandbookTaskCompletionResult>>;
   claimSchoolHandbookReward: (milestoneIdOrStampCount: string | number, quantity?: number) => Promise<Response<SchoolHandbookClaimRewardResult>>;
 
   // 克隆音色

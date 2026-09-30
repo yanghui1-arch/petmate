@@ -4,7 +4,6 @@ import { SettingConfig } from '../main/settings'
 import { ActivityInfo } from '../main/types/activity'
 import { ItemType } from '../main/types/item'
 import type { PlayerResourceState } from '../main/types/player-resource'
-import type { SchoolHandbookTaskId } from '../main/types/school-handbook'
 import { WindowEvent } from '../main/window-monitor'
 import { LocalAIStatus } from '../main/local-ai'
 
@@ -55,7 +54,6 @@ contextBridge.exposeInMainWorld('api', {
     claimWishReward: (petmateId: number, wishId: string) => ipcRenderer.invoke('claim-wish-reward', petmateId, wishId),
     equipPlayerSkin: (skinId: string) => ipcRenderer.invoke('equip-player-skin', skinId),
     equipPlayerTitle: (titleId: string) => ipcRenderer.invoke('equip-player-title', titleId),
-    recordSchoolHandbookTask: (taskId: SchoolHandbookTaskId, count?: number) => ipcRenderer.invoke('record-school-handbook-task', taskId, count),
     claimSchoolHandbookReward: (milestoneIdOrStampCount: string | number, quantity: number = 1) => ipcRenderer.invoke('claim-school-handbook-reward', milestoneIdOrStampCount, quantity),
     // 克隆音色
     cloneVoice: (url: string) => ipcRenderer.invoke('clone-voice', url),

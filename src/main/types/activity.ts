@@ -27,6 +27,7 @@ export type Reward = {
     health?: number;
     emotion?: number;
     cash?: number;
+    nationalDayStamps?: number;
 }
 
 /**
@@ -44,7 +45,7 @@ export type Consume = {
 
 export type ActivityInfo = {
     id: number;
-    type: "work" | "study" | "entertainment";
+    type: "work" | "study" | "entertainment" | "national-day";
     name: string;
     url: string;
     description: string;

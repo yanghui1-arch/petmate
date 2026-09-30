@@ -276,6 +276,24 @@ export abstract class PetMate {
         return undefined;
     }
 
+    addBuffUntil(buff: Buff, endTime: Date): ActiveBuff | undefined {
+        if (this.attrs.buffs.length >= this.attrs.maxBuffs || endTime.getTime() <= Date.now()) {
+            return undefined;
+        }
+        const activeBuff: ActiveBuff = {
+            id: uuidv4(),
+            buff,
+            endTime: new Date(endTime.getTime())
+        };
+        setTimeout(() => {
+            if (this.attrs.buffs.some(current => current.id === activeBuff.id)) {
+                this.removeBuff(activeBuff.id);
+            }
+        }, Math.max(0, endTime.getTime() - Date.now()));
+        this.attrs.buffs.push(activeBuff);
+        return activeBuff;
+    }
+
     /**
      * 增加多个Buff
      * @param buffs 需要增加的Buff列表

@@ -501,14 +501,15 @@
             "affectionLevel": 1
         },
         "effect": {},
-        "skinId": "youmei-school-uniform-2026"
+        "skinId": "youmei-school-uniform-2026",
+        "expired": true
     },
     {
         "id": 27,
-        "name": "开学补给箱",
+        "name": "国庆大礼包",
         "type": "others",
         "description": "打开后可获得商店里的普通物品和金币（不含限时物品与时装）。",
-        "url": "others/school-handbook-supply-box.png",
+        "url": "others/national-day-gift-package.png",
         "price": 0,
         "requirement": {
             "level": 1,
@@ -521,9 +522,9 @@
     },
     {
         "id": 28,
-        "name": "开学限定物品",
+        "name": "国庆限定物品",
         "type": "others",
-        "description": "开学手册限定奖励包，打开后可随机获得一件新学期委托道具。",
+        "description": "国庆庆典限定奖励包，打开后可随机获得一件庆典物品。",
         "url": "others/school-handbook-limited-item.png",
         "price": 0,
         "requirement": {
@@ -539,7 +540,7 @@
         "id": 29,
         "name": "帆布书包",
         "type": ["others", "ticket"],
-        "description": "适合装下新学期用品的帆布书包，可用于新学期委托交付。",
+        "description": "适合装下庆典物品的帆布书包。",
         "url": "others/school-handbook-canvas-backpack.png",
         "price": 0,
         "requirement": {
@@ -555,7 +556,7 @@
         "id": 30,
         "name": "笔记本",
         "type": ["others", "ticket"],
-        "description": "记录新学期计划与灵感的笔记本，可用于新学期委托交付。",
+        "description": "记录庆典计划与灵感的笔记本。",
         "url": "others/school-handbook-notebook.png",
         "price": 0,
         "requirement": {
@@ -571,7 +572,7 @@
         "id": 31,
         "name": "文具盒",
         "type": ["others", "ticket"],
-        "description": "收纳笔和小文具的文具盒，可用于新学期委托交付。",
+        "description": "收纳笔和小文具的文具盒。",
         "url": "others/school-handbook-pencil-case.png",
         "price": 0,
         "requirement": {
@@ -587,7 +588,7 @@
         "id": 32,
         "name": "营养补给包",
         "type": ["others", "ticket"],
-        "description": "装满能量小食与饮品的营养补给包，可用于新学期委托交付。",
+        "description": "装满能量小食与饮品的营养补给包。",
         "url": "others/school-handbook-nutrition-pack.png",
         "price": 0,
         "requirement": {
@@ -603,7 +604,7 @@
         "id": 33,
         "name": "绘画用品",
         "type": ["others", "ticket"],
-        "description": "为绘画活动准备的用品组合，可用于新学期委托交付。",
+        "description": "为绘画活动准备的用品组合。",
         "url": "others/school-handbook-art-supplies.png",
         "price": 0,
         "requirement": {
@@ -619,7 +620,7 @@
         "id": 34,
         "name": "游戏耳机",
         "type": ["others", "ticket"],
-        "description": "陪伴游戏时光的游戏耳机，可用于新学期委托交付。",
+        "description": "陪伴游戏时光的游戏耳机。",
         "url": "others/school-handbook-gaming-headset.png",
         "price": 0,
         "requirement": {
@@ -635,7 +636,7 @@
         "id": 35,
         "name": "游戏手柄",
         "type": ["others", "ticket"],
-        "description": "适合新学期娱乐时光的游戏手柄，可用于新学期委托交付。",
+        "description": "适合庆典娱乐时光的游戏手柄。",
         "url": "others/school-handbook-game-controller.png",
         "price": 0,
         "requirement": {
@@ -651,7 +652,7 @@
         "id": 36,
         "name": "皱巴巴的作业本",
         "type": ["others", "ticket"],
-        "description": "被揉皱过的作业本，仍然能看出新学期留下的痕迹。",
+        "description": "被揉皱过的活动记录本，仍然能看出庆典留下的痕迹。",
         "url": "others/school-handbook-crumpled-homework.png",
         "price": 0,
         "requirement": {
