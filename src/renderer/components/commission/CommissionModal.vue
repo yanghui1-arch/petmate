@@ -499,7 +499,7 @@ function normalizeCompletionCountInput() {
     font-size: 16px;
 
     &:disabled {
-      cursor: not-allowed;
+      --game-cursor: var(--cursor-default);
       color: rgba(255, 255, 255, 0.32);
     }
   }
@@ -523,7 +523,7 @@ function normalizeCompletionCountInput() {
   background: linear-gradient(135deg, #fff8e1, #ffd6e7);
 
   &:disabled {
-    cursor: not-allowed;
+    --game-cursor: var(--cursor-default);
     opacity: 0.55;
   }
 }
@@ -559,7 +559,7 @@ function normalizeCompletionCountInput() {
   background: linear-gradient(135deg, #ff7675, #6bc8d9);
 
   &:disabled {
-    cursor: not-allowed;
+    --game-cursor: var(--cursor-default);
     filter: grayscale(0.55) brightness(0.78);
   }
 }

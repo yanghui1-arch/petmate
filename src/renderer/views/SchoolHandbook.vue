@@ -603,7 +603,7 @@ onMounted(() => void loadHandbook())
   border-radius: 9px;
   color: $font-muted-light;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025));
-  cursor: pointer;
+  --game-cursor: var(--cursor-pointer);
   font: inherit;
   font-size: 12px;
   transition: color 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
@@ -719,7 +719,7 @@ onMounted(() => void loadHandbook())
   border-radius: 50%;
   color: $font-muted-light;
   background: rgba(255, 255, 255, 0.06);
-  cursor: help;
+  --game-cursor: var(--cursor-default);
   font-size: 15px;
   font-weight: 700;
   line-height: 1;
@@ -1078,7 +1078,7 @@ onMounted(() => void loadHandbook())
   }
 
   &.clickable {
-    cursor: pointer;
+    --game-cursor: var(--cursor-pointer);
 
     &:focus-visible {
       outline: 2px solid $color-pink-100;
@@ -1087,7 +1087,7 @@ onMounted(() => void loadHandbook())
   }
 
   &.busy {
-    cursor: wait;
+    --game-cursor: var(--cursor-default);
     opacity: 0.72;
   }
 }
@@ -1271,7 +1271,7 @@ onMounted(() => void loadHandbook())
   border: 0;
   color: $font-light;
   background: transparent;
-  cursor: pointer;
+  --game-cursor: var(--cursor-pointer);
   font-size: 17px;
 
   &:hover:not(:disabled) {
@@ -1279,7 +1279,7 @@ onMounted(() => void loadHandbook())
   }
 
   &:disabled {
-    cursor: not-allowed;
+    --game-cursor: var(--cursor-default);
     opacity: 0.35;
   }
 }
@@ -1339,7 +1339,7 @@ onMounted(() => void loadHandbook())
   padding: 0 18px;
   overflow: hidden;
   border-radius: 8px;
-  cursor: pointer;
+  --game-cursor: var(--cursor-pointer);
   font: inherit;
   font-size: 12px;
   font-weight: 700;
@@ -1359,7 +1359,7 @@ onMounted(() => void loadHandbook())
   }
 
   &:disabled {
-    cursor: not-allowed;
+    --game-cursor: var(--cursor-default);
     opacity: 0.48;
   }
 }
@@ -1558,7 +1558,7 @@ onMounted(() => void loadHandbook())
   color: $font-light;
   background: linear-gradient(135deg, rgba($color-pink-100, 0.9), rgba($color-pink-100, 0.58));
   box-shadow: 0 7px 18px rgba($color-pink-100, 0.18);
-  cursor: pointer;
+  --game-cursor: var(--cursor-pointer);
   font-size: 13px;
   font-weight: 700;
   transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
