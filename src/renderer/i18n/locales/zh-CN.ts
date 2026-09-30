@@ -6,6 +6,8 @@ export default {
   },
   content,
   wheel: {
+    title: 'Petmate 转盘菜单',
+    character: '角色',
     home: '主页',
     shop: '商店',
     activity: '活动',

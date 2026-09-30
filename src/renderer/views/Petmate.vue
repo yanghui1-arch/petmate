@@ -1,6 +1,10 @@
 <template>
     <div class="petmate-container">
-        <div ref="petmateContainer" class="petmate-canvas-container"></div>
+        <div
+            ref="petmateContainer"
+            class="petmate-canvas-container"
+            :style="isShowContextMenu ? { transform: 'translate(calc(50vw - 150px), calc(50vh - 150px))' } : undefined"
+        ></div>
         <div v-if="shouldShowHungryDialog" class="pet-dialog hunger-dialog" aria-live="polite">
             <span>{{ hungryDialogVisibleText }}</span>
             <span v-if="isHungryDialogTyping" class="pet-dialog-caret"></span>
@@ -18,7 +22,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import WheelMenu from '../components/WheelMenu.vue'
+import WheelMenu from '../components/WheelMenuZhuanpan.vue'
 import { isShowContextMenu, usePetmateModel } from '../hooks/usePetmateModel'
 import { usePlayer } from '../hooks/usePlayer'
 
