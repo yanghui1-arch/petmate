@@ -2,7 +2,7 @@ import { NotEnoughError, NotFoundError } from "../../error";
 import { activityManager, buffManager, playerManager } from "../store";
 import { PetMate } from "../petmate/petmate";
 import { calcBuffEffect } from "../utils/calc";
-import { ActiveBuff, Buff, BuffEffect } from "../../types/buff";
+import { ActiveBuff, Buff, BuffEffect, NATIONAL_DAY_ACTIVITY_BUFF_IDS, NATIONAL_DAY_LOGIN_BUFF_ID } from "../../types/buff";
 import logger from "../../log";
 import { ActivityInfo, Reward } from "../../types/activity";
 import { notActivityPetmateStatus } from "../../types/petmate";
@@ -12,6 +12,8 @@ import { Wish } from "../../types/wish";
 import { handleEntertainmentAchievement, handleCharacterLevelAchievement, handleFiftyAffectionAchievement, handleEmotionAchievement } from "./achieve";
 import { getMainWindow, getPageWindow } from "../../../main";
 import { schoolHandbookManager } from "../school-handbook";
+import { playerResourceManager } from "./resource";
+import { NATIONAL_DAY_ACTIVITY_TITLE_ID } from "../../types/school-handbook";
 
 
 /**
@@ -149,8 +151,15 @@ export function claimActivityReward(petmateId: number): boolean {
     petmate.addAffectionExp(reward.affectionExp ?? 0);
     player.cash += ((reward.cash ?? 0) * buffEffect.cashGainRate);
 
+    if (reward.nationalDayStamps) {
+        schoolHandbookManager.addStamps(reward.nationalDayStamps);
+    }
+    if (activity.type === "national-day" && Math.random() < 0.3) {
+        playerResourceManager.grantTitle(NATIONAL_DAY_ACTIVITY_TITLE_ID);
+    }
+
     // 尝试获取buff
-    const toPickBuffs: Buff[] = getBuffThroughAct(petmate);
+    const toPickBuffs: Buff[] = getBuffThroughAct(petmate, activity.type === "national-day");
     const validToPickBuffsNum: number = petmate.attrs.maxBuffs - petmate.getActiveBuffs().length;
     const validToPickBuffs: Buff[] = toPickBuffs.slice(0, validToPickBuffsNum);
     const newBuffs: ActiveBuff[] | undefined = petmate.addBuffs(validToPickBuffs);
@@ -193,11 +202,6 @@ export function claimActivityReward(petmateId: number): boolean {
     handleFiftyAffectionAchievement(petmate.attrs.affectionExp);
     // 更新心情成就
     handleEmotionAchievement(petmate.attrs.emotion);
-    try {
-        schoolHandbookManager.recordActivityCompletion(activity);
-    } catch (error) {
-        logger.error(`记录开学手册活动任务失败: ${error}`);
-    }
     return true;
 }
 
@@ -237,15 +241,18 @@ export function cancelActivity(petmateId: number): boolean {
  * @returns 获取到的buff
  * @throws 如果petmate不存在则抛出NotFoundError
  */
-export function getBuffThroughAct(petmate: PetMate): Buff[] {
-    const allAvailableBuffs: Buff[] = buffManager.getAllBuffs();
+export function getBuffThroughAct(petmate: PetMate, isNationalDayActivity = false): Buff[] {
+    const allAvailableBuffs: Buff[] = buffManager.getAllBuffs().filter(buff => {
+        if (isNationalDayActivity) return NATIONAL_DAY_ACTIVITY_BUFF_IDS.includes(buff.id as typeof NATIONAL_DAY_ACTIVITY_BUFF_IDS[number]);
+        return !NATIONAL_DAY_ACTIVITY_BUFF_IDS.includes(buff.id as typeof NATIONAL_DAY_ACTIVITY_BUFF_IDS[number]) && buff.id !== NATIONAL_DAY_LOGIN_BUFF_ID;
+    });
     const random = Math.random();
 
     const petmateActiveBuffs: ActiveBuff[] = petmate.attrs.buffs;
     const toPickBuffs: Buff[] = [];
 
     // 如果随机数小于概率，则获取buff
-    if (random < GET_BUFF_PROB_THROUGH_ACT) {
+    if (random < GET_BUFF_PROB_THROUGH_ACT && allAvailableBuffs.length > 0) {
         for (let i = 0; i < GET_BUFF_NUM_THROUGH_ACT; i++) {
             let retryTimes = RETRY_TIMES_GET_BUFF_THROUGH_ACT;
             // 给retryTimes机会，如果retryTimes次都是已经到了叠加上限的buff，则就没Buff了

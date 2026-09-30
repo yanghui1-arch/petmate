@@ -70,5 +70,8 @@ const DEFAULT_BUFF_EFFECT: BuffEffect = {
     cashGainRate: 1
 };
 
+export const NATIONAL_DAY_LOGIN_BUFF_ID = 4;
+export const NATIONAL_DAY_ACTIVITY_BUFF_IDS = [5, 6, 7] as const;
+
 export type { Buff, BuffEffect, ActiveBuff };
 export { DEFAULT_BUFF_EFFECT };

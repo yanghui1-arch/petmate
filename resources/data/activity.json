@@ -211,5 +211,83 @@
             "level": 5
         },
         "rewardSummary": "大量的钱会滋生身体和精神上的疾病QWQ"
+    },
+    {
+        "id": 10,
+        "type": "national-day",
+        "name": "国庆出游",
+        "url": "national-day-2026/national-day-travel.png",
+        "description": "沿着山河风景出发，留下国庆假期的足迹",
+        "reward": {
+            "emotion": 40,
+            "nationalDayStamps": 10
+        },
+        "consume": {
+            "energy": 20,
+            "hungry": 20,
+            "spendingTime": 1800
+        },
+        "requirement": {
+            "level": 1
+        },
+        "rewardSummary": "心情大幅提升，获得 10 枚国庆纪念章"
+    },
+    {
+        "id": 11,
+        "type": "national-day",
+        "name": "景区打卡",
+        "url": "national-day-2026/national-day-scenic-checkin.png",
+        "description": "在山水之间打卡，把美景装进相册",
+        "reward": {
+            "emotion": 25,
+            "exp": 120,
+            "nationalDayStamps": 10
+        },
+        "consume": {
+            "spendingTime": 1800
+        },
+        "requirement": {
+            "level": 1
+        },
+        "rewardSummary": "心情和经验提升，获得 10 枚国庆纪念章"
+    },
+    {
+        "id": 12,
+        "type": "national-day",
+        "name": "逛吃美食街",
+        "url": "national-day-2026/national-day-food-street.png",
+        "description": "穿梭灯火市集，尝遍假日里的热闹滋味",
+        "reward": {
+            "hungry": 60,
+            "emotion": 20,
+            "nationalDayStamps": 15
+        },
+        "consume": {
+            "cash": 100,
+            "spendingTime": 1800
+        },
+        "requirement": {
+            "level": 1
+        },
+        "rewardSummary": "饱食度大幅提升，获得 15 枚国庆纪念章"
+    },
+    {
+        "id": 13,
+        "type": "national-day",
+        "name": "宅家七天乐",
+        "url": "national-day-2026/national-day-home.png",
+        "description": "窝在家里享受悠闲假期，慢慢恢复状态",
+        "reward": {
+            "energy": 60,
+            "emotion": 20,
+            "nationalDayStamps": 10
+        },
+        "consume": {
+            "spendingTime": 1800
+        },
+        "requirement": {
+            "level": 1
+        },
+        "rewardSummary": "精力大幅提升，获得 10 枚国庆纪念章"
     }
 ]

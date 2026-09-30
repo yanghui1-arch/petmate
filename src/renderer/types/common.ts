@@ -137,7 +137,7 @@ export interface ActiveBuff {
 // 活动
 export interface ActivityInfo {
     id: number;
-    type: "work" | "study" | "entertainment";
+    type: "work" | "study" | "entertainment" | "national-day";
     name: string;
     url: string;
     description: string;
@@ -158,6 +158,7 @@ export interface Reward {
     health: number;
     emotion: number;
     cash: number;
+    nationalDayStamps?: number;
 }
 
 export interface Consume {

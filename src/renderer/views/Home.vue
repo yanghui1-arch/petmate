@@ -240,8 +240,11 @@ import avator from "../assets/image/youmei-avatar.png";
 import holidayCraftspersonTitleImage from "../assets/title/假日小工匠.png";
 import winningDuoTitleImage from "../assets/title/假期连胜搭子.png";
 import dawnGuardianTitleImage from "../assets/title/曙光守护者.png";
-import fullAttendanceTitleImage from "../assets/image/special_activity/school-2026/titles/school-handbook-title-september-perfect-attendance.png";
-import deskMateTitleImage from "../assets/image/special_activity/school-2026/titles/school-handbook-title-desk-mate.png";
+import legacyFullAttendanceTitleImage from "../assets/image/special_activity/school-2026/titles/school-handbook-title-september-perfect-attendance.png";
+import legacyDeskMateTitleImage from "../assets/image/special_activity/school-2026/titles/school-handbook-title-desk-mate.png";
+import fullAttendanceTitleImage from "../assets/image/special_activity/national-day-2026/national-day-title-fellow-traveler.png";
+import deskMateTitleImage from "../assets/image/special_activity/national-day-2026/national-day-title-mountain-witness.png";
+import nationalDayGrandCelebrationTitleImage from "../assets/image/special_activity/national-day-2026/national-day-title-grand-celebration.png";
 
 type TitleViewModel = {
   id: string;
@@ -272,12 +275,27 @@ const titleCatalog = computed<TitleViewModel[]>(() => [
   {
     id: "school-handbook-september-full-attendance",
     name: "九月全勤生",
-    image: fullAttendanceTitleImage,
+    image: legacyFullAttendanceTitleImage,
   },
   {
     id: "school-handbook-youmei-deskmate",
     name: "尤美的同桌",
+    image: legacyDeskMateTitleImage,
+  },
+  {
+    id: "national-day-fellow-traveler",
+    name: "国庆同游者",
+    image: fullAttendanceTitleImage,
+  },
+  {
+    id: "national-day-mountain-witness",
+    name: "山河见证者",
     image: deskMateTitleImage,
+  },
+  {
+    id: "national-day-grand-celebration",
+    name: "盛世庆华章",
+    image: nationalDayGrandCelebrationTitleImage,
   },
 ]);
 
@@ -404,7 +422,7 @@ const packagePageRef = ref<CarouselInst | null>(null);
 const packagePageList = computed(() => {
   const allItems = playerData.value?.items || [];
   const filteredPackageItems = allItems.filter(
-    (item) => getPrimaryItemType(item.type) === packageCurrType.value
+    (item) => canUseItemFromPackage(item) && getPrimaryItemType(item.type) === packageCurrType.value
   );
   return executePackageItemPage([...filteredPackageItems], packagePageSize.value);
 });
