@@ -322,7 +322,7 @@ onMounted(() => {
   }
 
   &:disabled {
-    cursor: default;
+    --game-cursor: var(--cursor-default);
     opacity: 0.56;
     box-shadow: none;
   }

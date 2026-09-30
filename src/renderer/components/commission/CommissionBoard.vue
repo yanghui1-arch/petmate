@@ -182,7 +182,7 @@ const formatDeadline = (date: Date) => {
   background: $content-bgc;
   box-shadow: 0 8px 22px rgba(35, 30, 31, 0.26);
   text-align: left;
-  cursor: pointer;
+  --game-cursor: var(--cursor-pointer);
   position: relative;
   overflow: hidden;
   isolation: isolate;

@@ -582,7 +582,7 @@ const showModal = (item: PackageItemInfo) => {
         overflow: hidden;
       }
       .home-player-title-slot-clickable {
-        cursor: pointer;
+        --game-cursor: var(--cursor-pointer);
         transition: transform 0.18s ease, filter 0.18s ease;
 
         &:hover {
@@ -733,7 +733,7 @@ const showModal = (item: PackageItemInfo) => {
       background: linear-gradient(135deg, $item-bg-start 0%, $item-bg-end 100%);
       box-shadow: 0 2px 8px 0 rgba(253, 203, 110, 0.15);
       &.package-item-unusable {
-        cursor: not-allowed;
+        --game-cursor: var(--cursor-default);
         opacity: 0.85;
       }
       .package-item-num {
@@ -813,7 +813,7 @@ const showModal = (item: PackageItemInfo) => {
   }
 
   &:disabled {
-    cursor: default;
+    --game-cursor: var(--cursor-default);
   }
 }
 

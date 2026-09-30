@@ -583,7 +583,7 @@ const cancel = () => {
   color: $font-light;
   background: linear-gradient(135deg, rgba($color-pink-100, 0.92), rgba($color-pink-100, 0.58));
   box-shadow: 0 7px 18px rgba($color-pink-100, 0.18);
-  cursor: pointer;
+  --game-cursor: var(--cursor-pointer);
   font-size: 13px;
   font-weight: 700;
   transition: transform 160ms ease, box-shadow 160ms ease;
