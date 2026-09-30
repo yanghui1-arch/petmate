@@ -51,6 +51,7 @@
           </router-link>
 
           <router-link
+            v-if="false"
             to="/commission"
             class="page-navigator-item"
             @click="show = false"
