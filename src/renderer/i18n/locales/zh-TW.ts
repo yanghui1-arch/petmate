@@ -8,6 +8,8 @@ export default {
     name: 'Petmate',
   },
   wheel: {
+    title: 'Petmate 轉盤選單',
+    character: '角色',
     home: '首頁',
     shop: '商店',
     activity: '活動',

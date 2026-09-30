@@ -8,6 +8,8 @@ export default {
     name: 'Petmate',
   },
   wheel: {
+    title: 'Petmate radial menu',
+    character: 'Character',
     home: 'Home',
     shop: 'Shop',
     activity: 'Activities',
