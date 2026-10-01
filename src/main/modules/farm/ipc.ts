@@ -8,13 +8,8 @@ import { backupSummary, captureGameSaves, listAutomaticBackup, loadBackupFile, m
 import { freezeGameWrites, gameWritesFrozen } from '../save/coordinator'
 import { writeJsonAtomic } from '../save/files'
 import { playerChanges, playerManager } from '../store'
-import { FarmService } from './service'
+import { farmAssistant, farmService as service } from './runtime'
 
-const service = new FarmService(
-  { read: () => playerManager.getFarmSnapshot(), commit: snapshot => playerManager.commitFarmSnapshot(snapshot) },
-  { wall: () => Date.now(), monotonic: () => performance.now() },
-  randomUUID
-)
 const selectedBackups = new Map<string, { path: string; checksum: string }>()
 
 const result = <T>(action: () => T): Response<T> => {
@@ -34,7 +29,9 @@ playerChanges.on('changed', () => {
 
 ipcMain.handle('farm-get', (): Response<FarmView> => result(() => service.getView()))
 ipcMain.handle('farm-preview', (_event, operation: FarmOperation): Response<FarmPreview> => result(() => service.preview(operation)))
-ipcMain.handle('farm-execute', (_event, command: FarmCommand): Response<FarmResult> => result(() => service.execute(command)))
+ipcMain.handle('farm-execute', (_event, command: FarmCommand): Response<FarmResult> => result(() => { farmAssistant.manualActivity(); return service.execute(command) }))
+ipcMain.handle('farm-assistant-get', () => result(() => farmAssistant.getStatus()))
+ipcMain.handle('farm-manual-activity', () => result(() => farmAssistant.manualActivity()))
 ipcMain.handle('farm-checkpoint', (): Response<void> => result(() => service.checkpoint()))
 
 function currentOwner(): string | null {

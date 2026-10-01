@@ -1,5 +1,5 @@
-import type { FarmFeedback, FarmOperation, FarmPlant, FarmState, PlacedDecoration } from '../../types/farm'
-import { farmCatalog, farmLevel, getCrop, getDecoration, getOrder, orderCash, unlockedPlots } from './catalog'
+import type { FarmFeedback, FarmOperation, FarmPlant, FarmState } from '../../types/farm'
+import { farmCatalog, farmLevel, getCrop, getOrder, orderCash, unlockedPlots } from './catalog'
 
 export const ORDER_WAIT_MS = 30 * 60_000
 export const TUTORIAL_MS = 5 * 60_000
@@ -11,7 +11,7 @@ export function createFarm(now: number, id: () => string): FarmState {
   return {
     version: 1, tutorialRemaining: 6, exp: 0, lastWallTime: now,
     plots: Array.from({ length: 12 }, (_, index) => ({ id: index, plant: null })),
-    seeds: { wheat: 6, carrot: 6 }, produce: {}, decorations: {}, harvests: {}, placed: [],
+    seeds: { wheat: 6, carrot: 6 }, produce: {}, harvests: {},
     orders: ['wheat-small', 'carrot-small', 'wheat-carrot'].map(templateId => ({ instanceId: id(), templateId }))
   }
 }
@@ -53,18 +53,7 @@ export function eligiblePlots(farm: FarmState, operation: FarmOperation): number
     return operation.type === 'sow' ? !plant : operation.type === 'water' ? !!plant && !plant.watered && plantProgress(plant) < 1 : !!plant && plantProgress(plant) >= 1
   })
 }
-export function decorationCells(placed: PlacedDecoration): string[] {
-  const width = getDecoration(placed.decorationId).width
-  const regionWidth = placed.region === 'bottom' ? 8 : 2
-  const regionHeight = placed.region === 'bottom' ? 1 : 4
-  if (!['left', 'right', 'bottom'].includes(placed.region) || !Number.isInteger(placed.x) || !Number.isInteger(placed.y) || placed.x < 0 || placed.y < 0 || placed.x + width > regionWidth || placed.y >= regionHeight) throw new Error('不能摆放在这个位置')
-  return Array.from({ length: width }, (_, index) => `${placed.region}:${placed.x + index}:${placed.y}`)
-}
-export function assertPlacement(farm: FarmState, placed: PlacedDecoration): void {
-  const occupied = new Set(farm.placed.filter(item => item.instanceId !== placed.instanceId).flatMap(decorationCells))
-  if (decorationCells(placed).some(cell => occupied.has(cell))) throw new Error('位置已被其他装饰占用')
-}
-export function applyOperation(farm: FarmState, cash: number, operation: FarmOperation, now: number, id: () => string): { cash: number; feedback: FarmFeedback } {
+export function applyOperation(farm: FarmState, cash: number, operation: FarmOperation, now: number): { cash: number; feedback: FarmFeedback } {
   const feedback: FarmFeedback = { message: '', items: {}, exp: 0, cashDelta: 0, kind: 'other' }
   const add = (target: Record<string, number>, key: string, count: number) => { target[key] = (target[key] ?? 0) + count }
   const level = farmLevel(farm.exp)
@@ -116,15 +105,6 @@ export function applyOperation(farm: FarmState, cash: number, operation: FarmOpe
       feedback.cashDelta = crop.sell * operation.count
       feedback.message = `出售了 ${operation.count} 个${crop.name}`
     }
-  } else if (operation.type === 'buyDecoration') {
-    positiveInteger(operation.count)
-    const decoration = getDecoration(operation.decorationId)
-    if (decoration.level > level) throw new Error('装饰尚未解锁')
-    const cost = decoration.price * operation.count
-    if (!Number.isSafeInteger(cost) || cost > cash) throw new Error('货币不足')
-    add(farm.decorations, decoration.id, operation.count)
-    feedback.cashDelta = -cost
-    feedback.message = `购买了 ${operation.count} 件${decoration.name}`
   } else if (operation.type === 'deliver' || operation.type === 'discard') {
     const index = farm.orders.findIndex(order => 'instanceId' in order && order.instanceId === operation.instanceId)
     if (index < 0) throw new Error('订单已完成或不存在，请刷新')
@@ -140,27 +120,6 @@ export function applyOperation(farm: FarmState, cash: number, operation: FarmOpe
       feedback.message = '订单已交付，奖励已保存'
     } else feedback.message = '已放弃订单，30 分钟后补充'
     farm.orders[index] = { remainingMs: ORDER_WAIT_MS }
-  } else if (operation.type === 'place' || operation.type === 'move') {
-    let placed: PlacedDecoration
-    if (operation.type === 'place') {
-      const decoration = getDecoration(operation.decorationId)
-      if (decoration.level > level) throw new Error('装饰尚未解锁')
-      if (farm.placed.length >= 12) throw new Error('最多同时摆放 12 件装饰')
-      const used = farm.placed.filter(item => item.decorationId === decoration.id).length
-      if ((farm.decorations[decoration.id] ?? 0) <= used) throw new Error('没有可摆放的装饰')
-      placed = { instanceId: id(), decorationId: decoration.id, region: operation.region, x: operation.x, y: operation.y }
-    } else {
-      const existing = farm.placed.find(item => item.instanceId === operation.instanceId)
-      if (!existing) throw new Error('装饰不存在')
-      placed = { ...existing, region: operation.region, x: operation.x, y: operation.y }
-    }
-    assertPlacement(farm, placed)
-    farm.placed = [...farm.placed.filter(item => item.instanceId !== placed.instanceId), placed]
-    feedback.message = '布置已保存'
-  } else if (operation.type === 'reclaim') {
-    if (!farm.placed.some(item => item.instanceId === operation.instanceId)) throw new Error('装饰不存在')
-    farm.placed = farm.placed.filter(item => item.instanceId !== operation.instanceId)
-    feedback.message = '装饰已收回仓库'
   } else throw new Error('不支持的农场操作')
   const newCash = cash + feedback.cashDelta
   if (!Number.isFinite(newCash) || newCash < 0 || newCash > Number.MAX_SAFE_INTEGER) throw new Error('货币数值超出范围')
@@ -169,12 +128,13 @@ export function applyOperation(farm: FarmState, cash: number, operation: FarmOpe
 }
 export function validateFarm(value: unknown): asserts value is FarmState {
   const farm = value as FarmState
+  if (farm?.assistant !== undefined && (!farm.assistant || typeof farm.assistant !== 'object' || !Number.isInteger(farm.assistant.successfulActions) || farm.assistant.successfulActions < 0 || farm.assistant.successfulActions >= 6 || !Number.isFinite(farm.assistant.restUntil) || farm.assistant.restUntil < 0 || !Number.isFinite(farm.assistant.lastManualAt) || farm.assistant.lastManualAt < 0)) throw new Error('农场助手状态无效')
   const nonnegative = (number: number) => Number.isSafeInteger(number) && number >= 0
   if (!farm || farm.version !== 1 || !nonnegative(farm.exp) || !nonnegative(farm.tutorialRemaining) || farm.tutorialRemaining > 6 || !nonnegative(farm.lastWallTime)) throw new Error('农场存档格式无效')
   if (!Array.isArray(farm.plots) || farm.plots.length !== 12) throw new Error('地块存档无效')
   const cropIds = new Set(farmCatalog.crops.map(crop => crop.id))
-  for (const name of ['seeds', 'produce', 'harvests', 'decorations'] as const) {
-    const allowed = name === 'decorations' ? new Set(farmCatalog.decorations.map(item => item.id)) : cropIds
+  for (const name of ['seeds', 'produce', 'harvests'] as const) {
+    const allowed = cropIds
     if (!farm[name] || Array.isArray(farm[name]) || Object.entries(farm[name]).some(([key, count]) => !allowed.has(key) || !nonnegative(count))) throw new Error('仓库存档无效')
   }
   farm.plots.forEach((plot, index) => {
@@ -193,17 +153,5 @@ export function validateFarm(value: unknown): asserts value is FarmState {
       if (typeof order.instanceId !== 'string' || !order.instanceId || instances.has(order.instanceId) || templates.has(order.templateId) || getOrder(order.templateId).level > farmLevel(farm.exp)) throw new Error('订单记录无效')
       instances.add(order.instanceId); templates.add(order.templateId)
     } else if (!Number.isFinite(order.remainingMs) || order.remainingMs < 0 || order.remainingMs > ORDER_WAIT_MS) throw new Error('补单时间无效')
-  }
-  if (!Array.isArray(farm.placed) || farm.placed.length > 12) throw new Error('装饰记录无效')
-  const occupied = new Set<string>()
-  const placedIds = new Set<string>()
-  for (const decoration of farm.placed) {
-    if (!decoration.instanceId || placedIds.has(decoration.instanceId) || getDecoration(decoration.decorationId).level > farmLevel(farm.exp)) throw new Error('装饰编号无效')
-    placedIds.add(decoration.instanceId)
-    for (const cell of decorationCells(decoration)) {
-      if (occupied.has(cell)) throw new Error('装饰占地冲突')
-      occupied.add(cell)
-    }
-    if (farm.placed.filter(item => item.decorationId === decoration.decorationId).length > (farm.decorations[decoration.decorationId] ?? 0)) throw new Error('装饰所有权无效')
   }
 }

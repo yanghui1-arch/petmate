@@ -3,382 +3,236 @@ import Phaser from 'phaser'
 import { plantStage } from '../../main/modules/farm/rules'
 import type { FarmView } from '../../main/types/farm'
 import {
-    cropSprites,
-    decorationSprites,
-    sceneSprites,
-    statusSprites,
-    toolSprites,
-    youmeiSprites
-} from '../assets/farm'
-import grass from '../assets/farm/grass-bed.png'
-import meadow from '../assets/farm/meadow-scene.png'
-import soil from '../assets/farm/soil-bed.png'
-import type { FarmLayout, FarmRect, FarmTarget, FarmTool } from './farmSceneModel'
+    atlas,
+    background,
+    cropFrames,
+    cropImages,
+    cursorHotspots,
+    iconFrames,
+    icons
+} from '../assets/farm-game'
+import type { FarmHover, FarmLayout, FarmTarget } from './farmSceneModel'
 import {
-    cellRect,
-    decorationWidth,
     farmLayout,
+    fieldFrame,
     hitFarm,
-    placementAllowed,
-    plotIssue
+    plantingSlots,
+    plotMode,
+    plotPosition
 } from './farmSceneModel'
-
-export type FarmSceneState = {
-    view: FarmView
-    tool: FarmTool
-    selected: number | null
-    enabled: boolean
-    action: 'idle' | 'plant' | 'water' | 'harvest' | 'walk'
-    frame: number
-    labels: { empty: string; stages: string[]; crops: Record<string, string> }
-}
+export type FarmSceneState = { view: FarmView; enabled: boolean }
 export type FarmSceneEvents = {
     target: (_target: FarmTarget, _right: boolean) => void
+    hover: (_hover: FarmHover) => void
     ready: () => void
     error: (_message: string) => void
+    progress?: (_progress: number) => void
 }
-
 /** Visuals and input only: this scene never owns inventory or writes a save. */
 export class FarmScene extends Phaser.Scene {
     private state: FarmSceneState
     private callbacks: FarmSceneEvents
     private world?: Phaser.GameObjects.Container
-    private hover?: Phaser.GameObjects.Graphics
-    private cursor?: Phaser.GameObjects.Container
-    private companion?: Phaser.GameObjects.Image
+    private field?: Phaser.GameObjects.Container
+    private cursor?: Phaser.GameObjects.Image
+    private beds: Phaser.GameObjects.Image[] = []
+    private plants: { image: Phaser.GameObjects.Image; plot: number }[] = []
     private layout!: FarmLayout
     private pointerPosition: { x: number; y: number } | null = null
-
     constructor(state: FarmSceneState, callbacks: FarmSceneEvents) {
         super('farm')
         this.state = state
         this.callbacks = callbacks
     }
     preload() {
-        const textures = {
-            meadow,
-            soil,
-            grass,
-            hut: sceneSprites.hut,
-            tree: sceneSprites.tree,
-            ready: statusSprites.ready,
-            seeds: toolSprites.seeds,
-            water: toolSprites.water,
-            ...Object.fromEntries(
-                Object.entries(cropSprites).map(([id, url]) => [`crop-${id}`, url])
-            ),
-            ...Object.fromEntries(
-                Object.entries(decorationSprites).map(([id, url]) => [`decor-${id}`, url])
-            ),
-            'youmei-idle': youmeiSprites.idleAndWater,
-            'youmei-water': youmeiSprites.idleAndWater,
-            'youmei-plant': youmeiSprites.plant,
-            'youmei-harvest': youmeiSprites.harvest,
-            'youmei-walk': youmeiSprites.walk
-        }
-        for (const [key, url] of Object.entries(textures)) this.load.image(key, url)
+        this.load.on('progress', (value: number) => this.callbacks.progress?.(value))
+        this.load.image('background', background)
+        this.load.image('atlas', atlas)
+        this.load.image('icons', icons)
+        for (const [id, url] of Object.entries(cropImages)) this.load.image(id, url)
         this.load.on('loaderror', (file: Phaser.Loader.File) =>
-            this.callbacks.error(`Asset: ${file.key}`)
+            this.callbacks.error('Asset: ' + file.key)
         )
     }
     create() {
-        for (const id of Object.keys(cropSprites)) this.addFrames(`crop-${id}`, 4)
-        for (const action of ['idle', 'water', 'plant', 'harvest', 'walk'])
-            this.addFrames(`youmei-${action}`, 2)
+        const texture = this.textures.get('atlas'),
+            source = texture.getSourceImage() as HTMLImageElement
+        for (const [key, rect] of Object.entries({
+            soil: [0.003, 0.023, 0.243, 0.127],
+            grass: [0.252, 0.018, 0.247, 0.129]
+        }))
+            texture.add(
+                key,
+                0,
+                Math.round(rect[0] * source.width),
+                Math.round(rect[1] * source.height),
+                Math.round(rect[2] * source.width),
+                Math.round(rect[3] * source.height)
+            )
+        iconFrames.forEach((rect, i) =>
+            this.textures.get('icons').add(i, 0, ...(rect as [number, number, number, number]))
+        )
+        for (const [id, meta] of Object.entries(cropFrames))
+            meta.stages.forEach((stage, index) =>
+                this.textures
+                    .get(id)
+                    .add(index, 0, ...(stage.rect as [number, number, number, number]))
+            )
         this.world = this.add.container()
-        this.hover = this.add.graphics().setDepth(20)
-        this.cursor = this.add.container().setDepth(30)
+        this.cursor = this.add
+            .image(0, 0, 'icons', 8)
+            .setDepth(100)
+            .setDisplaySize(42, 42)
+            .setOrigin(0.5, 0.5)
+            .setVisible(false)
         this.input.mouse?.disableContextMenu()
         this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+            const event = pointer.event as Event & { pointerType?: string }
+            if (event?.type.startsWith('touch') || event?.pointerType === 'touch') { this.leave(); return }
             this.pointerPosition = { x: pointer.x, y: pointer.y }
             this.drawPointer()
         })
         this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-            if (!this.state.enabled) return
-            const right = pointer.rightButtonDown()
-            if (!right && !pointer.leftButtonDown()) return
-            const arranging = !right && ['place', 'move'].includes(this.state.tool.kind)
-            this.callbacks.target(
-                hitFarm(this.layout, this.state.view, pointer.x, pointer.y, arranging),
-                right
-            )
+            const event = pointer.event as Event & { pointerType?: string }
+            if (event?.type.startsWith('touch') || event?.pointerType === 'touch') this.leave()
+            if (!this.state.enabled || (!pointer.rightButtonDown() && !pointer.leftButtonDown()))
+                return
+            this.callbacks.target(this.hit(pointer.x, pointer.y), pointer.rightButtonDown())
         })
-        this.scale.on('resize', this.resize, this)
-        this.events.once('shutdown', () => this.scale.off('resize', this.resize, this))
+        this.scale.on('resize', this.redraw, this)
+        this.events.once('shutdown', () => this.scale.off('resize', this.redraw, this))
         this.redraw()
-        this.callbacks.ready()
-    }
-    private addFrames(key: string, count: number) {
-        if (!this.textures.exists(key)) return
-        const texture = this.textures.get(key)
-        const image = texture.getSourceImage() as HTMLImageElement
-        const width = image.width / count
-        for (let index = 0; index < count; index++)
-            texture.add(index, 0, index * width, 0, width, image.height)
+        this.game.events.once('postrender', () => this.callbacks.ready())
     }
     updateState(state: FarmSceneState) {
-        const previous = this.state
+        const changed = this.state.view !== state.view
         this.state = state
-        if (!this.world) return
-        if (
-            previous.view !== state.view ||
-            previous.selected !== state.selected ||
-            previous.labels !== state.labels
-        )
-            this.redraw()
-        else {
-            this.updateCompanion()
-            this.drawPointer()
+        if (this.world) {
+            if (changed) this.redraw()
+            else this.drawPointer()
         }
     }
     leave() {
         this.pointerPosition = null
-        this.hover?.clear()
         this.cursor?.setVisible(false)
-        this.game.canvas.style.cursor = 'default'
+        this.beds.forEach((bed, id) => bed.setTint(this.tint(id)).setAlpha(1))
+        this.callbacks.hover(null)
+        this.game.canvas.style.cursor = 'inherit'
     }
-    private resize() {
-        this.redraw()
-    }
-    private image(key: string, rect: FarmRect, contain = false, frame?: number) {
-        const image = this.add.image(rect.x, rect.y, key, frame).setOrigin(0)
-        if (contain) {
-            const scale = Math.min(rect.width / image.width, rect.height / image.height)
-            image
-                .setScale(scale)
-                .setPosition(
-                    rect.x + (rect.width - image.displayWidth) / 2,
-                    rect.y + (rect.height - image.displayHeight) / 2
-                )
-        } else image.setDisplaySize(rect.width, rect.height)
-        this.world!.add(image)
-        return image
+    private tint(id: number) {
+        return this.state.view.farm?.plots[id].plant?.watered ? 0xdcdcdc : 0xffffff
     }
     private redraw() {
         if (!this.world) return
         this.layout = farmLayout(this.scale.width, this.scale.height)
         this.world.removeAll(true)
-        const { width, height, plots } = this.layout
-        const view = this.state.view
-        this.image('meadow', { x: 0, y: 0, width, height })
-        this.image(
-            'hut',
-            {
-                x: width * 0.03,
-                y: height * 0.21,
-                width: Math.max(115, width * 0.19),
-                height: height * 0.23
-            },
-            true
-        )
-        this.image(
-            'tree',
-            { x: width * 0.86, y: height * 0.185, width: width * 0.12, height: height * 0.19 },
-            true
-        )
-        for (const plot of view.farm?.plots ?? []) {
-            const rect = plots[plot.id]
-            const locked = plot.id >= view.unlockedPlots
-            const bed = this.image(locked ? 'grass' : 'soil', {
-                x: rect.x - rect.width * 0.03,
-                y: rect.y - rect.height * 0.08,
-                width: rect.width * 1.06,
-                height: rect.height * 1.16
-            })
-            const shape = this.add
-                .graphics()
-                .fillStyle(0xffffff)
-                .fillRoundedRect(rect.x, rect.y, rect.width, rect.height, 12)
-                .setVisible(false)
-            this.world.add(shape)
-            const mask = shape.createGeometryMask()
-            bed.setMask(mask)
-            bed.once('destroy', () => mask.destroy())
-            if (plot.plant && !locked) {
-                this.image(
-                    `crop-${plot.plant.cropId}`,
-                    {
-                        x: rect.x + rect.width * 0.2,
-                        y: rect.y + rect.height * 0.06,
-                        width: rect.width * 0.6,
-                        height: rect.height * 0.68
-                    },
-                    true,
-                    plantStage(plot.plant)
+        this.beds = []
+        this.plants = []
+        this.world.setPosition(this.layout.x, this.layout.y).setScale(this.layout.scale)
+        this.world.add(this.add.image(0, 0, 'background').setOrigin(0).setDisplaySize(1600, 900))
+        this.field = this.add.container(fieldFrame.x, fieldFrame.y).setScale(fieldFrame.scale)
+        this.world.add(this.field)
+        for (let id = 0; id < 12; id++) {
+            const p = plotPosition(id),
+                locked = id >= this.state.view.unlockedPlots
+            const bed = this.add
+                .image(p.x - 155, p.y - 58, 'atlas', locked ? 'grass' : 'soil')
+                .setOrigin(0)
+                .setDisplaySize(310, 116)
+                .setTint(this.tint(id))
+            this.field.add(bed)
+            this.beds.push(bed)
+            if (locked)
+                this.field.add(
+                    this.add
+                        .text(p.x + 14, p.y + 5, '🔒 Lv.' + (id < 9 ? 3 : 5), {
+                            fontFamily: 'Microsoft YaHei, sans-serif',
+                            fontSize: '16px',
+                            color: '#fffbe4',
+                            backgroundColor: '#56723488',
+                            padding: { x: 8, y: 3 }
+                        })
+                        .setOrigin(0.5, 0)
                 )
-                if (plantStage(plot.plant) === 3)
-                    this.image(
-                        'ready',
-                        { x: rect.x + rect.width - 22, y: rect.y + 2, width: 20, height: 20 },
-                        true
-                    )
-            } else {
-                const mark = this.add
-                    .text(rect.x + rect.width / 2, rect.y + rect.height * 0.4, locked ? '▣' : '+', {
-                        fontSize: locked ? '22px' : '27px',
-                        color: '#fff4c7',
-                        fontFamily: 'Microsoft YaHei, sans-serif',
-                        stroke: '#6f482b',
-                        strokeThickness: 2
-                    })
-                    .setOrigin(0.5)
-                this.world.add(mark)
-            }
-            const label = locked
-                ? `Lv.${plot.id < 9 ? 3 : 5}`
-                : plot.plant
-                  ? `${this.state.labels.crops[plot.plant.cropId]} · ${this.state.labels.stages[plantStage(plot.plant)]}`
-                  : this.state.labels.empty
-            const text = this.add
-                .text(rect.x + rect.width / 2, rect.y + rect.height * 0.86, label, {
-                    fontFamily: 'Microsoft YaHei, sans-serif',
-                    fontSize: width < 760 ? '9px' : '11px',
-                    color: '#fff4d4',
-                    backgroundColor: locked ? '#315b34' : '#442717',
-                    padding: { x: 3, y: 2 }
-                })
-                .setOrigin(0.5)
-            if (text.width > rect.width * 0.94) text.setScale((rect.width * 0.94) / text.width)
-            this.world.add(text)
-            if (this.state.selected === plot.id) {
-                const border = this.add.graphics().lineStyle(2, 0xf6db70, 1)
-                border.strokeRoundedRect(
-                    rect.x + 1,
-                    rect.y + 1,
-                    rect.width - 2,
-                    rect.height - 2,
-                    12
-                )
-                this.world.add(border)
-            }
         }
-        for (const item of view.farm?.placed ?? [])
-            this.image(
-                `decor-${item.decorationId}`,
-                cellRect(this.layout, item, decorationWidth(view, item.decorationId)),
-                true
-            )
-        const companionScale = height < 480 ? 0.7 : width < 760 ? 0.78 : 1
-        this.companion = this.image(
-            `youmei-${this.state.action}`,
-            {
-                x: width * 0.045,
-                y: height * 0.94 - 143 * companionScale,
-                width: 96 * companionScale,
-                height: 143 * companionScale
-            },
-            false,
-            0
-        )
-        this.updateCompanion()
+        const roots = this.state.view
+            .farm!.plots.flatMap((plot) => {
+                if (!plot.plant) return []
+                const p = plotPosition(plot.id),
+                    phase = plantStage(plot.plant),
+                    crop = plot.plant.cropId
+                return plantingSlots.map((slot, index) => ({
+                    x: p.x + slot.x,
+                    y: p.y + slot.y,
+                    crop,
+                    phase,
+                    plot: plot.id,
+                    index
+                }))
+            })
+            .sort((a, b) => a.y - b.y || a.index - b.index)
+        for (const root of roots) {
+            const meta = cropFrames[root.crop].stages[root.phase],
+                [x, y, w, h] = meta.rect
+            const image = this.add
+                .image(root.x, root.y, root.crop, root.phase)
+                .setOrigin((meta.pivot[0] - x) / w, (meta.pivot[1] - y) / h)
+                .setScale(meta.height / h)
+            image.setData({
+                plot: root.plot,
+                slot: root.index,
+                phase: root.phase,
+                rootX: root.x,
+                rootY: root.y
+            })
+            this.field.add(image)
+            this.plants.push({ image, plot: root.plot })
+        }
         this.drawPointer()
     }
-    private updateCompanion() {
-        this.companion?.setTexture(
-            `youmei-${this.state.action}`,
-            this.state.action === 'water' ? 1 : this.state.action === 'idle' ? 0 : this.state.frame
-        )
+    private hit(x: number, y: number): FarmTarget {
+        // Hit opaque plant pixels so transparent sprite padding cannot steal adjacent soil.
+        for (let i = this.plants.length - 1; i >= 0; i--) {
+            const { image, plot } = this.plants[i],
+                bounds = image.getBounds()
+            if (!bounds.contains(x, y)) continue
+            const px = ((x - bounds.x) / bounds.width) * image.frame.width,
+                py = ((y - bounds.y) / bounds.height) * image.frame.height
+            if (this.textures.getPixelAlpha(px, py, image.texture.key, image.frame.name) > 32)
+                return { kind: 'plot', id: plot }
+        }
+        return hitFarm(this.layout, x, y)
     }
     private drawPointer() {
-        if (!this.hover || !this.cursor) return
-        this.hover.clear()
-        this.cursor.removeAll(true).setVisible(false)
-        const tool = this.state.tool
-        const arranging = tool.kind === 'place' || tool.kind === 'move'
-        if (arranging && this.state.enabled) {
-            for (const region of ['left', 'right', 'bottom'] as const) {
-                for (let y = 0; y < (region === 'bottom' ? 1 : 4); y++) {
-                    for (let x = 0; x < (region === 'bottom' ? 8 : 2); x++) {
-                        const rect = cellRect(this.layout, { region, x, y })
-                        this.hover.lineStyle(1, 0xffedaf, 0.7).fillStyle(0x54713e, 0.22)
-                        this.hover.fillRoundedRect(
-                            rect.x + 2,
-                            rect.y + 2,
-                            rect.width - 4,
-                            rect.height - 4,
-                            4
-                        )
-                        this.hover.strokeRoundedRect(
-                            rect.x + 2,
-                            rect.y + 2,
-                            rect.width - 4,
-                            rect.height - 4,
-                            4
-                        )
-                    }
-                }
-            }
-        }
-        const point = this.pointerPosition
-        const canvas = this.game.canvas
-        if (!point || !this.state.enabled || tool.kind === 'inspect') {
-            canvas.style.cursor = 'default'
+        if (!this.cursor || !this.pointerPosition || !this.world) return
+        const { x, y } = this.pointerPosition,
+            target = this.hit(x, y)
+        this.beds.forEach((bed, id) =>
+            bed
+                .setTint(this.tint(id))
+                .setAlpha(
+                    this.state.enabled && target.kind === 'plot' && target.id === id ? 0.94 : 1
+                )
+        )
+        if (!this.state.enabled || target.kind !== 'plot') {
+            this.cursor.setVisible(false)
+            this.callbacks.hover(null)
+            this.game.canvas.style.cursor = 'inherit'
             return
         }
-        canvas.style.cursor = 'none'
-        const target = hitFarm(this.layout, this.state.view, point.x, point.y, arranging)
-        let rect: FarmRect | null = null
-        let valid = false
-        if (arranging && target.kind === 'cell') {
-            rect = cellRect(
-                this.layout,
-                target.cell,
-                decorationWidth(this.state.view, tool.decorationId)
-            )
-            valid = placementAllowed(this.state.view, tool, target.cell)
-        } else if (!arranging && target.kind === 'plot') {
-            rect = this.layout.plots[target.id]
-            valid = !plotIssue(this.state.view, tool, target.id)
+        const mode = plotMode(this.state.view, target.id),
+            p = this.layout.plots[target.id]
+        this.callbacks.hover({ id: target.id, x: p.x, y: p.y })
+        const index = mode === 'sow' ? 8 : mode === 'water' ? 9 : mode === 'harvest' ? 7 : null
+        this.cursor.setVisible(index !== null).setPosition(x, y)
+        if (index !== null) {
+            this.cursor.setFrame(index)
+            this.cursor.setOrigin(cursorHotspots[index].x, cursorHotspots[index].y)
+            this.cursor.setScale(42 / Math.max(this.cursor.frame.width, this.cursor.frame.height))
         }
-        if (rect) {
-            this.hover.lineStyle(3, valid ? 0xf8e58d : 0xd16b50, 1)
-            this.hover.strokeRoundedRect(
-                rect.x + 2,
-                rect.y + 2,
-                rect.width - 4,
-                rect.height - 4,
-                10
-            )
-        }
-        const key =
-            tool.kind === 'sow'
-                ? 'seeds'
-                : tool.kind === 'water'
-                  ? 'water'
-                  : `decor-${tool.decorationId}`
-        const icon = this.add.image(15, 8, key).setOrigin(0)
-        icon.setScale(
-            Math.min((arranging ? 64 : 34) / icon.width, (arranging ? 64 : 34) / icon.height)
-        ).setAlpha(0.9)
-        this.cursor.add(icon)
-        if (tool.kind === 'sow') {
-            const crop = this.add
-                .image(38, 20, `crop-${tool.cropId}`, 3)
-                .setOrigin(0)
-                .setDisplaySize(22, 28)
-            this.cursor.add(crop)
-        }
-        const hint = this.add.text(
-            14,
-            arranging ? 68 : 42,
-            `${valid ? '✓' : '×'}${tool.kind === 'sow' ? ` · ${this.state.view.farm?.seeds[tool.cropId] ?? 0}` : ''}`,
-            {
-                fontSize: '14px',
-                color: '#fff8df',
-                backgroundColor: '#443628',
-                padding: { x: 3, y: 1 }
-            }
-        )
-        this.cursor
-            .add(hint)
-            .setPosition(
-                Math.min(point.x, this.layout.width - 85),
-                Math.min(point.y, this.layout.height - 92)
-            )
-            .setVisible(true)
+        this.game.canvas.style.cursor = index === null ? 'inherit' : 'none'
     }
 }
-
 export function createFarmGame(
     parent: HTMLElement,
     state: FarmSceneState,
@@ -390,15 +244,12 @@ export function createFarmGame(
         parent,
         width: Math.max(1, parent.clientWidth),
         height: Math.max(1, parent.clientHeight),
-        backgroundColor: '#9cb974',
-        pixelArt: true,
+        transparent: true,
         scene: [scene],
-        // ResizeObserver owns the host size. NONE avoids RESIZE reapplying cached
-        // parent bounds when the tool status changes the field height.
         scale: { mode: Phaser.Scale.NONE, autoRound: true },
         input: { keyboard: false },
         audio: { noAudio: true },
-        fps: { target: 30, forceSetTimeOut: false },
+        fps: { target: 30 },
         banner: false
     })
     return { game, scene }

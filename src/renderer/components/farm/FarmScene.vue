@@ -12,10 +12,16 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { FarmScene, FarmSceneState } from '../../game/FarmScene'
-import type { FarmTarget } from '../../game/farmSceneModel'
+import type { FarmHover, FarmTarget } from '../../game/farmSceneModel'
 
 const props = defineProps<{ state: FarmSceneState }>()
-const emit = defineEmits<{ target: [target: FarmTarget, right: boolean] }>()
+const emit = defineEmits<{
+    target: [target: FarmTarget, right: boolean]
+    hover: [hover: FarmHover]
+    progress: [progress: number]
+    ready: []
+    error: [message: string]
+}>()
 const { t } = useI18n()
 const host = ref<HTMLElement | null>(null)
 const error = ref('')
@@ -32,16 +38,23 @@ async function start() {
     scene = null
     ready.value = false
     error.value = ''
+    emit('progress', 0)
     try {
         const { createFarmGame } = await import('../../game/FarmScene')
         if (disposed || token !== generation || !host.value) return
         const created = createFarmGame(host.value, props.state, {
-            target: (target, right) => emit('target', target, right),
+            target: (target, right) => { if (!disposed && token === generation) emit('target', target, right) },
+            hover: (hover) => { if (!disposed && token === generation) emit('hover', hover) },
             ready: () => {
+                if (disposed || token !== generation || error.value) return
                 ready.value = true
+                emit('ready')
             },
+            progress: (value) => { if (!disposed && token === generation) emit('progress', value) },
             error: (message) => {
+                if (disposed || token !== generation) return
                 error.value = message
+                emit('error', message)
             }
         })
         game = created.game
@@ -49,6 +62,7 @@ async function start() {
     } catch (reason) {
         if (!disposed && token === generation)
             error.value = reason instanceof Error ? reason.message : String(reason)
+        if (!disposed && token === generation) emit('error', error.value)
     }
 }
 watch(
@@ -79,7 +93,6 @@ onUnmounted(() => {
 }
 .farm-scene :deep(canvas) {
     display: block;
-    image-rendering: pixelated;
 }
 .scene-error {
     position: absolute;

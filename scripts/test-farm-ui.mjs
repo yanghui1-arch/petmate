@@ -18,8 +18,7 @@ const bundled = await build({
     stdin: {
         contents: `export { default as Farm } from './src/renderer/views/Farm.vue';
       export { FarmService } from './src/main/modules/farm/service.ts';
-      export { assertPlacement } from './src/main/modules/farm/rules.ts';
-      export { farmLayout, cellRect, hitFarm, placementAllowed } from './src/renderer/game/farmSceneModel.ts';
+      export { farmLayout, hitFarm, insidePlot, plantingSlots, plotPosition } from './src/renderer/game/farmSceneModel.ts';
       export { default as zhCN } from './src/renderer/i18n/locales/zh-CN.ts';
       export { default as zhTW } from './src/renderer/i18n/locales/zh-TW.ts';
       export { default as enUS } from './src/renderer/i18n/locales/en-US.ts';`,
@@ -40,12 +39,13 @@ const bundled = await build({
                 builder.onLoad({ filter: /\.vue$/ }, async (args) => {
                     if (basename(args.path) === 'FarmScene.vue')
                         return {
-                            contents: `import { h } from 'vue'; export default { props: ['state'], emits: ['target'],
-            setup(props, { emit }) { return () => h('farm-scene', { state: props.state,
+                            contents: `import { h, onMounted } from 'vue'; export default { props: ['state'], emits: ['target','ready'],
+            setup(props, { emit }) { onMounted(()=>emit('ready')); return () => h('farm-scene', { state: props.state,
               onTarget: (target, right) => emit('target', target, right) }) } };`,
                             loader: 'js'
                         }
-                    const source = await readFile(args.path, 'utf8')
+                    // CSS transitions are verified by the real Electron scene test.
+                    const source = (await readFile(args.path, 'utf8')).replace('<Transition name="farm-loading">', '<div class="test-transition">').replace('</Transition>', '</div>')
                     const { descriptor, errors } = parse(source, { filename: args.path })
                     assert.deepEqual(errors, [], 'the actual component template must parse cleanly')
                     const script = compileScript(descriptor, {
@@ -58,7 +58,7 @@ const bundled = await build({
                         resolveDir: dirname(args.path)
                     }
                 })
-                builder.onLoad({ filter: /\.png$/ }, (args) => ({
+                builder.onLoad({ filter: /\.(png|svg)$/ }, (args) => ({
                     contents: `export default ${JSON.stringify(`/farm-assets/${basename(args.path)}`)}`,
                     loader: 'js'
                 }))
@@ -72,11 +72,11 @@ const {
     zhCN,
     zhTW,
     enUS,
-    assertPlacement,
     farmLayout,
-    cellRect,
     hitFarm,
-    placementAllowed
+    insidePlot,
+    plantingSlots,
+    plotPosition
 } = await import(
     `data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`
 )
@@ -89,7 +89,19 @@ const node = (type, text = '') => ({
     parent: null,
     tagName: type.toUpperCase(),
     addEventListener() {},
-    removeEventListener() {}
+    removeEventListener() {},
+    clientWidth: 1080,
+    clientHeight: 720,
+    focus() {},
+    querySelector() {
+        return { focus() {} }
+    },
+    querySelectorAll() {
+        return []
+    },
+    getBoundingClientRect() {
+        return { x: 20, y: 360, width: 78, height: 78 }
+    }
 })
 const detach = (child) => {
     if (child.parent) {
@@ -135,19 +147,21 @@ const findClass = (name) =>
             .split(' ')
             .includes(name)
     )
+
+const scene = () => walk(root).find((n) => n.type === 'farm-scene')
 const seeds = () => findClass('seed-option')
-const scene = () => walk(root).find((target) => target.type === 'farm-scene')
-const tool = () => scene().props.state.tool
+const buttons = (n) => walk(n).filter((n) => n.type === 'button')
+const button = (n, label) => buttons(n).find((n) => textOf(n).trim() === label)
+const modal = () => findClass('modal')[0]
 const settle = async () => {
-    for (let index = 0; index < 4; index++) {
-        await new Promise((resolve) => setImmediate(resolve))
+    for (let i = 0; i < 5; i++) {
+        await new Promise((r) => setImmediate(r))
         await nextTick()
     }
 }
-const click = async (target) => {
-    assert.ok(target?.props.onClick, 'expected clickable element')
-    if (target.props.disabled) return
-    target.props.onClick({ stopPropagation() {}, preventDefault() {}, target })
+const click = async (n) => {
+    assert.ok(n?.props.onClick, 'clickable target')
+    if (!n.props.disabled) n.props.onClick({ stopPropagation() {}, preventDefault() {} })
     await settle()
 }
 const target = async (value, right = false) => {
@@ -155,104 +169,41 @@ const target = async (value, right = false) => {
     await settle()
 }
 const plot = (id) => target({ kind: 'plot', id })
-const buttons = (within) => walk(within).filter((item) => item.type === 'button')
-const button = (within, label) => buttons(within).find((item) => textOf(item).trim() === label)
-const toolbar = (label) => button(findClass('toolbar')[0], label)
-const modal = () => findClass('modal')[0]
-const close = async () => click(button(modal(), '×'))
-const top = (label) => buttons(findClass('topbar')[0]).find((item) => textOf(item).trim() === label)
-const art = (within) => walk(within).filter((item) => item.props['data-item'])
-
-let now = 1_800_000_000_000
-let sequence = 0
+const close = async () => click(findClass('close-button')[0])
+let now = 1800000000000,
+    sequence = 0,
+    diskFail = false,
+    gate = null,
+    notify,
+    checkpointed = false,
+    unsubscribed = false
 let persisted = { farm: null, cash: 500, revision: 0, receipts: [] }
-let diskFail = false
+const commands = []
 const service = new FarmService(
     {
         read: () => structuredClone(persisted),
         commit: (snapshot) => {
-            if (diskFail) throw new Error('模拟磁盘保存失败')
+            if (diskFail) throw Error('模拟磁盘保存失败')
             persisted = structuredClone(snapshot)
         }
     },
     { wall: () => now, monotonic: () => now },
-    () => `ui-${++sequence}`,
+    () => 'ui-' + ++sequence,
     () => 0
 )
 service.getView()
 persisted.farm.seeds.carrot = 0
-persisted.farm.decorations.barrel = 2
-const fixture = service.getView()
-fixture.level = 4
-fixture.farm.exp = 420
-fixture.farm.decorations = { barrel: 5, bench: 5 }
-fixture.farm.placed = [
-    { instanceId: 'fixture-barrel', decorationId: 'barrel', region: 'bottom', x: 2, y: 0 },
-    { instanceId: 'fixture-bench', decorationId: 'bench', region: 'right', x: 0, y: 1 }
-]
-for (const [width, height] of [
-    [760, 549],
-    [560, 419],
-    [1280, 720]
-]) {
-    const layout = farmLayout(width, height)
-    for (const [id, rect] of layout.plots.entries()) {
-        assert.deepEqual(
-            hitFarm(layout, fixture, rect.x + rect.width / 2, rect.y + rect.height / 2),
-            { kind: 'plot', id }
-        )
-    }
-    for (const region of ['left', 'right', 'bottom']) {
-        for (let y = 0; y < (region === 'bottom' ? 1 : 4); y++) {
-            for (let x = 0; x < (region === 'bottom' ? 8 : 2); x++) {
-                const cell = { region, x, y }
-                const rect = cellRect(layout, cell)
-                assert.deepEqual(
-                    hitFarm(
-                        layout,
-                        fixture,
-                        rect.x + rect.width / 2,
-                        rect.y + rect.height / 2,
-                        true
-                    ),
-                    { kind: 'cell', cell }
-                )
-                for (const decorationId of ['barrel', 'bench']) {
-                    const instanceId = decorationId === 'bench' ? 'fixture-bench' : 'new-instance'
-                    let allowed = true
-                    try {
-                        assertPlacement(fixture.farm, { instanceId, decorationId, ...cell })
-                    } catch {
-                        allowed = false
-                    }
-                    const current =
-                        decorationId === 'bench'
-                            ? { kind: 'move', decorationId, instanceId }
-                            : { kind: 'place', decorationId }
-                    assert.equal(
-                        placementAllowed(fixture, current, cell),
-                        allowed,
-                        'visual occupancy must agree with authoritative rules'
-                    )
-                }
-            }
-        }
-    }
-    assert.deepEqual(hitFarm(layout, fixture, width, height), { kind: 'blank' })
-}
-const commands = []
-const previews = []
-let notify
-let gate = null
-let fail = false
-let unsubscribed = false
-let checkpointed = false
+const previousWindow = globalThis.window,
+    previousDocument = globalThis.document,
+    previousConfirm = globalThis.confirm,
+    previousObserver = globalThis.ResizeObserver
 const listeners = new Map()
-const previousWindow = globalThis.window
-const previousDocument = globalThis.document
-const previousConfirm = globalThis.confirm
+globalThis.document = { hidden: true, activeElement: null }
 globalThis.confirm = () => true
-globalThis.document = { hidden: true }
+globalThis.ResizeObserver = class {
+    observe() {}
+    disconnect() {}
+}
 globalThis.window = {
     addEventListener: (name, fn) => listeners.set(name, fn),
     removeEventListener: (name, fn) => {
@@ -260,25 +211,34 @@ globalThis.window = {
     },
     api: {
         getFarm: async () => ({ code: 200, data: service.getView() }),
-        previewFarm: async (operation) => {
-            previews.push(structuredClone(operation))
-            return { code: 200, data: service.preview(operation) }
-        },
         executeFarm: async (command) => {
             commands.push(structuredClone(command))
             if (gate) await gate
-            if (fail) return { code: 500, message: '模拟提交失败' }
             return { code: 200, data: service.execute(command) }
         },
-        onGameSaveChanged: (callback) => {
-            notify = callback
+        onGameSaveChanged: (fn) => {
+            notify = fn
             return () => {
                 unsubscribed = true
             }
         },
         checkpointFarm: async () => {
             checkpointed = true
-        }
+        },
+        exportFarmBackup: async () => ({ code: 200 }),
+        selectFarmBackup: async () => ({
+            code: 200,
+            data: {
+                token: 'backup-test',
+                createdAt: '2026-10-01',
+                level: 1,
+                cash: 500,
+                scope: 'overall',
+                automatic: false
+            }
+        }),
+        getAutomaticFarmBackup: async () => ({ code: 200, data: null }),
+        restoreFarmBackup: async () => ({ code: 500, message: '模拟恢复失败' })
     }
 }
 const i18n = createI18n({
@@ -295,285 +255,160 @@ try {
     await router.push('/farm')
     app.mount(root)
     await settle()
+    for (const cls of [
+        'topbar',
+        'toolbar',
+        'sidebar',
+        'companion',
+        'decoration-card',
+        'landscape-fill',
+        'coin-plus'
+    ])
+        assert.equal(findClass(cls).length, 0)
     assert.equal(scene().props.state.view.farm.plots.length, 12)
-    assert.equal(buttons(findClass('toolbar')[0]).length, 6)
-    assert.equal(toolbar('种子'), undefined)
-    assert.equal(toolbar('商店'), undefined)
-    assert.equal(findClass('sidebar').length, 0, 'the drawer starts closed')
-    await click(toolbar('农场订单'))
-    assert.equal(findClass('order-card').length, 3)
-    await click(findClass('drawer-close')[0])
-    assert.equal(findClass('sidebar').length, 0)
-    await plot(0)
-    assert.equal(seeds().length, 6, 'viewing an empty plot opens the seed drawer')
-    await target({ kind: 'blank' })
-    assert.equal(findClass('sidebar').length, 0, 'clicking the scene outside the drawer closes it')
-    await plot(0)
-    listeners.get('keydown')({ key: 'Escape' })
-    await settle()
-    assert.equal(findClass('sidebar').length, 0)
-    await click(toolbar('浇水'))
-    assert.equal(tool().kind, 'water', 'water can be equipped even when every plot is empty')
-    assert.equal(commands.length, 0)
-    assert.equal(findClass('notice').length, 0)
-    assert.equal(findClass('tool-status').length, 0, 'watering has no operation instruction bar')
-    assert.equal(button(root, '全部浇水'), undefined)
-    await click(toolbar('浇水'))
-    await click(top('仓库'))
-    assert.equal(art(modal()).length, 6, 'all six seed cards have real art')
-    assert.equal(button(modal(), '批量种'), undefined)
-    assert.match(textOf(modal()), /5 分钟/)
-    assert.match(textOf(modal()), /教学剩余 6 次/)
-    const initial = structuredClone(persisted)
-    await click(button(modal(), '播种'))
-    assert.equal(tool().kind, 'sow')
-    assert.equal(findClass('tool-status').length, 0, 'sowing has no operation instruction bar')
-    assert.equal(findClass('sidebar').length, 0)
-    assert.equal(findClass('overlay').length, 0)
-    assert.equal(commands.length, 0, 'equipping a seed without selected land sends no IPC')
-    assert.deepEqual(persisted, initial)
+    for (const [w, h] of [
+        [800, 600],
+        [1080, 720],
+        [1800, 900]
+    ]) {
+        const layout = farmLayout(w, h)
+        assert.ok(layout.x <= 0 && layout.y <= 0)
+        assert.ok(layout.x + 1600 * layout.scale >= w && layout.y + 900 * layout.scale >= h)
+        layout.plots.forEach((p, id) =>
+            assert.deepEqual(hitFarm(layout, p.x, p.y), { kind: 'plot', id })
+        )
+        assert.deepEqual(hitFarm(layout, 0, 0), { kind: 'blank' })
+    }
+    for (let id = 0; id < 12; id++)
+        for (const slot of plantingSlots)
+            assert.ok(
+                insidePlot(
+                    { x: plotPosition(id).x + slot.x, y: plotPosition(id).y + slot.y },
+                    plotPosition(id)
+                )
+            )
     await plot(6)
-    assert.equal(commands.length, 0, 'locked target is never replaced with the first empty plot')
-
-    let release
-    gate = new Promise((resolve) => {
-        release = resolve
-    })
+    assert.equal(seeds().length, 0)
+    assert.equal(commands.length, 0)
     await plot(2)
+    assert.equal(seeds().length, 6)
+    assert.equal(seeds()[1].props.disabled, true)
+    assert.equal(scene().props.state.enabled, false, 'picker blocks underlying scene')
+    assert.equal(button(root, '全部浇水'), undefined)
+    let release
+    gate = new Promise((r) => {
+        release = r
+    })
+    await click(seeds()[0])
     assert.deepEqual(commands[0].operation, { type: 'sow', cropId: 'wheat', plotIds: [2] })
-    assert.equal(scene().props.state.enabled, false)
     await plot(3)
-    assert.equal(commands.length, 1, 'repeated clicks during commit cannot submit twice')
+    await click(seeds()[0])
+    assert.equal(commands.length, 1)
     gate = null
     release()
     await settle()
     assert.equal(persisted.farm.seeds.wheat, 5)
     assert.equal(persisted.farm.tutorialRemaining, 5)
-    assert.equal(tool().kind, 'sow', 'sowing stays equipped for consecutive clicks')
-    assert.equal(findClass('sidebar').length, 0, 'sowing never opens the drawer')
+    assert.equal(seeds().length, 0)
     await plot(2)
-    assert.equal(commands.length, 1, 'occupied plot remains unchanged')
-    await plot(3)
-    assert.equal(persisted.farm.seeds.wheat, 4)
-    assert.deepEqual(commands.at(-1).operation.plotIds, [3])
-    await target({ kind: 'blank' }, true)
-    assert.equal(tool().kind, 'inspect')
-
-    await click(toolbar('浇水'))
-    const waterStart = commands.length
-    assert.equal(tool().kind, 'water')
-    assert.equal(commands.length, waterStart, 'equipping water never runs a batch')
-    await plot(0)
-    await plot(6)
-    assert.equal(commands.length, waterStart)
-    await plot(2)
-    assert.deepEqual(commands.at(-1).operation, { type: 'water', plotIds: [2] })
     assert.equal(persisted.farm.plots[2].plant.watered, true)
+    const waterRequests = commands.length
     await plot(2)
-    assert.equal(commands.length, waterStart + 1)
-    await plot(3)
-    assert.equal(persisted.farm.plots[3].plant.watered, true)
-    assert.equal(tool().kind, 'water')
-    assert.equal(findClass('sidebar').length, 0, 'consecutive watering never opens the drawer')
-    await click(toolbar('浇水'))
-    assert.equal(tool().kind, 'inspect')
-    await plot(2)
-    assert.equal(findClass('sidebar').length, 1, 'viewing a planted crop opens the detail drawer')
-    assert.ok(button(findClass('plot-detail')[0], '已浇水').props.disabled)
-    await click(findClass('drawer-close')[0])
-
+    assert.equal(commands.length, waterRequests, 'watered crop does not send another transaction')
     now += 300000
     notify()
     await settle()
-    await click(toolbar('浇水'))
-    const matureWater = commands.length
     await plot(2)
-    assert.equal(commands.length, matureWater)
-    await click(toolbar('一键收获2'))
-    assert.equal(persisted.farm.produce.wheat, 6)
     assert.equal(persisted.farm.plots[2].plant, null)
-    assert.equal(tool().kind, 'inspect')
+    assert.equal(persisted.farm.produce.wheat, 3)
     await plot(2)
     assert.equal(seeds().length, 6)
-    assert.match(textOf(seeds()[0]), /5 分钟/)
-    assert.match(textOf(seeds()[0]), /教学剩余 4 次/)
-    const sidebarStart = commands.length
-    await click(seeds()[0])
-    assert.equal(
-        commands.length,
-        sidebarStart,
-        'sidebar selection equips instead of sowing the old selection'
-    )
-    assert.equal(tool().kind, 'sow')
-    assert.equal(findClass('sidebar').length, 0, 'equipping the selected seed closes the drawer')
-    await plot(1)
-    assert.deepEqual(commands.at(-1).operation.plotIds, [1])
-
-    await plot(0)
-    const beforeFail = structuredClone(persisted)
-    fail = true
-    await plot(4)
-    assert.deepEqual(persisted, beforeFail)
-    assert.equal(tool().kind, 'sow', 'temporary failure leaves an eligible tool for retry')
-    fail = false
-    diskFail = true
-    await plot(4)
-    assert.deepEqual(persisted, beforeFail)
-    assert.equal(tool().kind, 'inspect', 'save failure clears executable tools')
-    await plot(5)
-    assert.equal(seeds().length, 6)
-    assert.ok(seeds().every((item) => item.props.disabled))
-    diskFail = false
-    notify()
-    await settle()
-    assert.equal(seeds()[0].props.disabled, false)
-    persisted.farm.seeds.wheat = 1
-    notify()
-    await settle()
-    await click(seeds()[0])
-    await plot(4)
-    assert.equal(persisted.farm.seeds.wheat, 0)
-    assert.equal(tool().kind, 'inspect', 'last seed consumption exits tool')
-    persisted.farm.seeds.wheat = 2
-    notify()
-    await settle()
-    await click(top('仓库'))
-    assert.equal(button(modal(), '批量种'), undefined)
-    await click(button(modal(), '播种'))
-    await plot(2)
-    await plot(3)
-    assert.deepEqual(commands.at(-1).operation, { type: 'sow', cropId: 'wheat', plotIds: [3] })
-    assert.equal(persisted.farm.seeds.wheat, 0)
-    assert.ok(previews.some((operation) => operation.type === 'harvest'))
-    assert.ok(
-        previews.every((operation) => operation.type !== 'sow'),
-        'the UI has no batch sow preview'
-    )
-    await click(toolbar('浇水'))
     listeners.get('keydown')({ key: 'Escape' })
     await settle()
-    assert.equal(tool().kind, 'inspect')
-
-    await click(toolbar('布置'))
-    assert.equal(findClass('decoration-card').length, 10)
-    assert.equal(art(modal()).length, 10)
-    await click(findClass('decoration-card')[0])
-    assert.equal(tool().kind, 'place')
-    assert.equal(findClass('overlay').length, 0)
-    const decorStart = commands.length
-    await target({ kind: 'plot', id: 0 })
-    assert.equal(tool().kind, 'inspect')
-    assert.equal(commands.length, decorStart, 'non-cell click cancels placement without a command')
-    await click(toolbar('布置'))
-    await click(findClass('decoration-card')[0])
-    await target({ kind: 'cell', cell: { region: 'bottom', x: 0, y: 0 } })
-    assert.equal(persisted.farm.placed.length, 1)
-    assert.equal(tool().kind, 'inspect')
-    assert.equal(persisted.farm.decorations.barrel, 2)
-    const instanceId = persisted.farm.placed[0].instanceId
-    await target({ kind: 'decoration', instanceId })
-    assert.equal(tool().kind, 'move')
-    await target({ kind: 'blank' })
-    assert.equal(tool().kind, 'inspect')
-    assert.equal(persisted.farm.placed[0].x, 0)
-    await target({ kind: 'decoration', instanceId })
-    fail = true
-    await target({ kind: 'cell', cell: { region: 'bottom', x: 2, y: 0 } })
-    assert.equal(persisted.farm.placed[0].x, 0)
-    assert.equal(tool().kind, 'move')
-    fail = false
-    await target({ kind: 'cell', cell: { region: 'bottom', x: 2, y: 0 } })
-    assert.equal(persisted.farm.placed[0].x, 2)
-    await click(toolbar('布置'))
-    await click(findClass('decoration-card')[0])
-    const occupiedStart = commands.length
-    await target({ kind: 'cell', cell: { region: 'bottom', x: 2, y: 0 } })
-    assert.equal(commands.length, occupiedStart)
-    assert.equal(tool().kind, 'inspect')
-    fail = true
-    await target({ kind: 'decoration', instanceId }, true)
-    assert.equal(persisted.farm.placed.length, 1)
-    fail = false
-    gate = new Promise((resolve) => {
-        release = resolve
-    })
-    await target({ kind: 'decoration', instanceId }, true)
-    const reclaimStart = commands.length
-    await target({ kind: 'decoration', instanceId }, true)
-    assert.equal(commands.length, reclaimStart)
-    gate = null
-    release()
-    await settle()
-    assert.equal(persisted.farm.placed.length, 0)
-    assert.equal(
-        persisted.farm.decorations.barrel,
-        2,
-        'reclaim retains ownership, never creates another item'
-    )
-
-    // Two-cell boundary, move and occupancy behaviour through the real service.
-    persisted.farm.exp = 420
-    persisted.farm.decorations.bench = 1
+    assert.equal(seeds().length, 0)
+    await click(findClass('orders-entry')[0])
+    assert.equal(findClass('order-card').length, 3)
+    assert.ok(findClass('order-need').length >= 3)
+    await click(button(modal(), '交付'))
+    assert.equal(persisted.farm.produce.wheat, 0)
+    assert.equal(persisted.cash, 508)
+    await close()
+    assert.equal(textOf(findClass('store-entry')[0]).includes('508'), false)
+    await click(findClass('store-entry')[0])
+    assert.equal(textOf(findClass('store-balance')[0]).includes('508'), true)
+    assert.equal(findClass('item-card').length, 6)
+    await click(button(modal(), '◈ 4 · 购买'))
+    assert.equal(textOf(findClass('store-balance')[0]).includes('508'), true)
+    await click(button(modal(), '5'))
+    await click(findClass('trade-confirm')[0])
+    assert.equal(persisted.cash, 488)
+    assert.equal(textOf(findClass('store-balance')[0]).includes('488'), true)
+    assert.equal(persisted.farm.seeds.wheat, 10)
+    assert.equal(findClass('item-card').length, 6)
+    await close()
+    const before = structuredClone(persisted)
+    await plot(0)
+    diskFail = true
+    await click(seeds()[0])
+    assert.deepEqual(persisted, before, 'disk failure cannot consume seed or tutorial allowance')
+    assert.ok(findClass('save-error').length)
+    assert.equal(scene().props.state.enabled, false)
+    diskFail = false
+    await click(button(root, '重试'))
+    assert.equal(scene().props.state.view.saveError, null)
+    await plot(0)
+    await target({ kind: 'blank' }, true)
+    assert.equal(seeds().length, 0)
+    persisted.farm.produce.carrot = 4
     notify()
     await settle()
-    await click(toolbar('布置'))
-    await click(findClass('decoration-card')[3])
-    const edgeStart = commands.length
-    await target({ kind: 'cell', cell: { region: 'left', x: 1, y: 0 } })
-    assert.equal(commands.length, edgeStart)
-    assert.equal(tool().kind, 'inspect')
-    await click(toolbar('布置'))
-    await click(findClass('decoration-card')[3])
-    await target({ kind: 'cell', cell: { region: 'left', x: 0, y: 0 } })
-    assert.equal(persisted.farm.placed[0].decorationId, 'bench')
-
-    await click(top('仓库'))
+    await click(findClass('backpack-entry')[0])
+    assert.equal(findClass('tabs')[0].children.filter((n) => n.type === 'button').length, 2)
     await click(button(modal(), '作物'))
-    assert.equal(art(modal()).length, 6)
-    await click(button(modal(), '出售'))
-    assert.equal(art(modal())[0].props['data-item'], 'wheat')
+    await click(button(findClass('item-card')[1], '出售'))
+    const beforeWarning = commands.length
+    await click(findClass('trade-confirm')[0])
+    assert.equal(commands.length, beforeWarning)
+    await click(findClass('trade-confirm')[0])
+    assert.equal(persisted.farm.produce.carrot, 3)
     await close()
-    await click(top('仓库'))
-    await click(button(modal(), '装饰'))
-    assert.equal(art(modal()).length, 10)
-    await close()
-    await click(findClass('cash')[0])
-    assert.equal(art(modal()).length, 6)
-    await click(button(modal(), '购买'))
-    assert.equal(art(modal())[0].props['data-item'], 'wheat')
-    await close()
-    await click(findClass('cash')[0])
-    await click(button(modal(), '装饰'))
-    assert.equal(art(modal()).length, 10)
-    await click(button(modal(), '购买'))
-    assert.equal(art(modal())[0].props['data-item'], 'barrel')
-    await close()
-    await click(toolbar('图鉴'))
-    assert.equal(art(modal()).length, 30, 'six mature images plus all 24 growth frames')
-    for (const locale of ['en-US', 'zh-TW', 'zh-CN']) {
+    for (const locale of ['zh-CN', 'zh-TW', 'en-US']) {
         i18n.global.locale.value = locale
         await settle()
-        assert.doesNotMatch(textOf(root), /farm\./)
-        assert.equal(scene().props.state.labels.stages.length, 4)
+        await click(findClass('codex-entry')[0])
+        assert.equal(walk(modal()).filter((n) => n.props['data-item']).length, 30)
+        assert.equal(textOf(root).includes('farm.'), false)
+        await close()
+        assert.equal(findClass('settings-button').length, 0)
+        assert.equal(findClass('exit-button').length, 1)
+        assert.equal(textOf(root).includes('farm.'), false)
     }
+    i18n.global.locale.value = 'zh-CN'
+    await settle()
+    assert.equal(findClass('backup-summary').length, 0)
+    assert.equal(textOf(root).includes('备份与恢复'), false)
+    persisted.cash = 900
+    notify()
+    await settle()
+    assert.equal(textOf(findClass('store-entry')[0]).includes('900'), false)
+    await click(findClass('store-entry')[0])
+    assert.equal(textOf(findClass('store-balance')[0]).includes('900'), true)
     await close()
-    await click(toolbar('浇水'))
-    await click(toolbar('农场订单'))
-    assert.equal(findClass('sidebar').length, 1)
-    await click(top('仓库'))
-    assert.equal(findClass('sidebar').length, 0, 'other panels close the drawer')
-    assert.equal(tool().kind, 'inspect', 'opening a panel clears the tool')
-    await close()
+    await new Promise((r) => setTimeout(r, 2100))
+    await settle()
+    assert.equal(findClass('notice').length, 0)
+    assert.equal(findClass('plot-feedback').length, 0)
+    app.unmount()
+    await settle()
+    assert.equal(listeners.size, 0)
+    assert.ok(checkpointed && unsubscribed)
     console.log(
-        'farm UI: on-demand drawers, no sow/water bars or batch buttons, single targets, harvest all, cancellation, busy/failure/depletion, direct decor/move/right reclaim, all panel art and three locales: passed'
+        'Actual Vue + farm service: direct planting/watering/harvest, duplicate blocking, failed-save rollback, real trade/orders, illustrated panels, locales, backup errors and cleanup: passed'
     )
 } finally {
     app.unmount()
     globalThis.window = previousWindow
     globalThis.document = previousDocument
     globalThis.confirm = previousConfirm
+    globalThis.ResizeObserver = previousObserver
 }
-assert.ok(
-    unsubscribed && checkpointed && !listeners.size,
-    'unmount removes subscription and key listener and checkpoints'
-)

@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell, Tray } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, powerMonitor, screen, shell, Tray } from 'electron'
+import { farmAssistant, startFarmAssistant } from './modules/farm/runtime'
 import * as path from 'path'
 import './restore-preflight'
 import './ipc'
@@ -253,6 +254,9 @@ app.whenReady().then(async () => {
 
     // 创建窗口
     createWindow()
+    startFarmAssistant()
+    powerMonitor.on('suspend', () => farmAssistant.suspend(true))
+    powerMonitor.on('resume', () => farmAssistant.suspend(false))
     startSystemAudioActivityMonitor()
     startWishGeneration(0)
     startOnlineAttributeDecay()
@@ -270,6 +274,7 @@ ipcMain.on('quit-app', () => {
 })
 
 app.on('before-quit', () => {
+    farmAssistant.stop()
     localAIManager.cancelModelDownload()
     void localAIManager.stop()
     stopPetmateWindowDrag()

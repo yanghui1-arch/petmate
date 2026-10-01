@@ -11,11 +11,6 @@ export function getCrop(id: string) {
   if (!crop) throw new Error('未找到作物')
   return crop
 }
-export function getDecoration(id: string) {
-  const decoration = farmCatalog.decorations.find(entry => entry.id === id)
-  if (!decoration) throw new Error('未找到装饰')
-  return decoration
-}
 export function getOrder(id: string) {
   const order = farmCatalog.orders.find(entry => entry.id === id)
   if (!order) throw new Error('未找到订单模板')

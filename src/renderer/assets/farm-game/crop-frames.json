@@ -1,0 +1,158 @@
+{
+    "wheat": {
+        "file": "crop-wheat-single.png",
+        "sheet": [2172, 724],
+        "stages": [
+            {
+                "rect": [120, 382, 241, 271],
+                "pivot": [249, 646],
+                "height": 24
+            },
+            {
+                "rect": [569, 153, 414, 500],
+                "pivot": [779, 646],
+                "height": 46
+            },
+            {
+                "rect": [1085, 21, 501, 633],
+                "pivot": [1333, 648],
+                "height": 78
+            },
+            {
+                "rect": [1661, 13, 483, 641],
+                "pivot": [1907, 647],
+                "height": 106
+            }
+        ]
+    },
+    "carrot": {
+        "file": "crop-carrot-single.png",
+        "sheet": [2172, 724],
+        "stages": [
+            {
+                "rect": [158, 490, 225, 180],
+                "pivot": [272, 664],
+                "height": 20
+            },
+            {
+                "rect": [618, 265, 345, 402],
+                "pivot": [813, 660],
+                "height": 40
+            },
+            {
+                "rect": [1070, 124, 497, 549],
+                "pivot": [1321, 666],
+                "height": 62
+            },
+            {
+                "rect": [1607, 20, 537, 655],
+                "pivot": [1869, 669],
+                "height": 86
+            }
+        ]
+    },
+    "potato": {
+        "file": "crop-potato-single.png",
+        "sheet": [2172, 724],
+        "stages": [
+            {
+                "rect": [140, 450, 281, 172],
+                "pivot": [287, 615],
+                "height": 20
+            },
+            {
+                "rect": [588, 204, 447, 419],
+                "pivot": [810, 616],
+                "height": 40
+            },
+            {
+                "rect": [1115, 106, 460, 517],
+                "pivot": [1348, 616],
+                "height": 62
+            },
+            {
+                "rect": [1638, 42, 471, 593],
+                "pivot": [1888, 620],
+                "height": 86
+            }
+        ]
+    },
+    "tomato": {
+        "file": "crop-tomato-single.png",
+        "sheet": [2172, 724],
+        "stages": [
+            {
+                "rect": [130, 480, 293, 177],
+                "pivot": [268, 653],
+                "height": 20
+            },
+            {
+                "rect": [621, 209, 376, 449],
+                "pivot": [814, 654],
+                "height": 40
+            },
+            {
+                "rect": [1095, 51, 451, 614],
+                "pivot": [1317, 661],
+                "height": 68
+            },
+            {
+                "rect": [1625, 22, 514, 645],
+                "pivot": [1873, 663],
+                "height": 90
+            }
+        ]
+    },
+    "strawberry": {
+        "file": "crop-strawberry-single.png",
+        "sheet": [2172, 724],
+        "stages": [
+            {
+                "rect": [85, 378, 307, 193],
+                "pivot": [242, 565],
+                "height": 18
+            },
+            {
+                "rect": [521, 211, 487, 374],
+                "pivot": [755, 578],
+                "height": 32
+            },
+            {
+                "rect": [1042, 147, 527, 451],
+                "pivot": [1303, 591],
+                "height": 44
+            },
+            {
+                "rect": [1586, 82, 530, 532],
+                "pivot": [1865, 588],
+                "height": 58
+            }
+        ]
+    },
+    "pumpkin": {
+        "file": "crop-pumpkin-single.png",
+        "sheet": [2172, 724],
+        "stages": [
+            {
+                "rect": [57, 426, 365, 178],
+                "pivot": [243, 597],
+                "height": 18
+            },
+            {
+                "rect": [519, 256, 447, 352],
+                "pivot": [749, 601],
+                "height": 30
+            },
+            {
+                "rect": [1025, 190, 543, 416],
+                "pivot": [1315, 599],
+                "height": 46
+            },
+            {
+                "rect": [1605, 82, 557, 557],
+                "pivot": [1885, 611],
+                "height": 65
+            }
+        ]
+    }
+}

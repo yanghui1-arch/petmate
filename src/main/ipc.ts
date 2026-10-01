@@ -60,6 +60,7 @@ import { Youmei } from './modules/petmate/youmei';
 import { greenworksManager } from './greenworks';
 import { localAIManager, LocalAIStatus } from './local-ai';
 import './modules/farm/ipc';
+import { farmWindowSize, fixedFarmWindow, observeFarmWorkArea } from './modules/farm/window';
 
 /**
  * 初始化设置数据
@@ -1189,12 +1190,14 @@ ipcMain.handle("open-new-window", (_: IpcMainInvokeEvent, route: string, width: 
         }
 
         const farm = route === '/farm';
+        const farmSize = farmWindowSize(screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workAreaSize);
         const newWindow = new BrowserWindow({
-            width: farm ? 1080 : width,
-            height: farm ? 720 : height,
-            minWidth: farm ? 800 : width,
-            minHeight: farm ? 600 : height,
-            resizable: farm,
+            width: farm ? farmSize.width : width,
+            height: farm ? farmSize.height : height,
+            minWidth: farm ? farmSize.width : width,
+            minHeight: farm ? farmSize.height : height,
+            resizable: false,
+            ...(farm ? fixedFarmWindow : {}),
             frame: false,
             transparent: false,
             alwaysOnTop: false,
@@ -1211,6 +1214,7 @@ ipcMain.handle("open-new-window", (_: IpcMainInvokeEvent, route: string, width: 
         newWindow.once('ready-to-show', () => {
             newWindow.show();
         });
+        observeFarmWorkArea(newWindow, screen);
 
         // 加载指定路由的页面
         if (is.dev) {
@@ -1241,13 +1245,19 @@ ipcMain.handle('resize-page-for-route', (event: IpcMainInvokeEvent, route: strin
         const window = BrowserWindow.fromWebContents(event.sender);
         if (!window || window === getMainWindow()) throw new Error('页面窗口不存在');
         if (route === '/farm') {
-            window.setMinimumSize(800, 600);
-            window.setResizable(true);
-            window.setSize(1080, 720);
+            const size = farmWindowSize(screen.getDisplayMatching(window.getBounds()).workAreaSize);
+            window.setMinimumSize(1, 1);
+            window.setSize(size.width, size.height);
+            window.setMinimumSize(size.width, size.height);
+            window.setResizable(false);
+            window.setMaximizable(false);
+            window.setFullScreenable(false);
         } else {
             window.setMinimumSize(400, 580);
             window.setSize(400, 580);
             window.setResizable(false);
+            window.setMaximizable(true);
+            window.setFullScreenable(true);
         }
         window.center();
         return { code: 200 };

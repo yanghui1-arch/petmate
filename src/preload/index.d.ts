@@ -1,7 +1,7 @@
 import { Response } from "../../types/response";
 import { LocalAIStatus } from "../main/local-ai";
 import { ActivityInfo } from "../main/types/activity";
-import type { BackupPreview, FarmCommand, FarmOperation, FarmPreview, FarmResult, FarmView } from '../main/types/farm';
+import type { BackupPreview, FarmAssistantEvent, FarmAssistantStatus, FarmCommand, FarmOperation, FarmPreview, FarmResult, FarmView } from '../main/types/farm';
 import { Item, ItemType } from "../main/types/item";
 import { ConsumeItemResult, PlayerInfo } from "../main/types/player";
 import { CommissionCompletionResult, PlayerResourceState } from "../main/types/player-resource";
@@ -42,6 +42,10 @@ interface IElectronAPI {
   getSchoolHandbookProgress: (date?: string) => Promise<Response<SchoolHandbookProgress>>;
   getLocalAIStatus: () => Promise<Response<LocalAIStatus>>;
   getFarm: () => Promise<Response<FarmView>>;
+  getFarmAssistant: () => Promise<Response<FarmAssistantStatus>>;
+  farmManualActivity: () => Promise<Response<void>>;
+  onFarmAssistantState: (callback: (status: FarmAssistantStatus) => void) => () => void;
+  onFarmAssistantEvent: (callback: (event: FarmAssistantEvent) => void) => () => void;
   previewFarm: (operation: FarmOperation) => Promise<Response<FarmPreview>>;
   executeFarm: (command: FarmCommand) => Promise<Response<FarmResult>>;
   checkpointFarm: () => Promise<Response<void>>;

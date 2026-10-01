@@ -1,241 +1,238 @@
 <template>
-    <main class="farm" v-if="view">
-        <header class="topbar">
-            <button class="back" @click="goBack">← {{ t('farm.back') }}</button>
-            <div class="title">
-                <strong>{{ t('farm.title') }}</strong
-                ><button class="level-link" @click="openPanel('level')">{{ levelText }}</button>
-            </div>
-            <img class="exp-icon" :src="statusSprites.experience" alt="" />
-            <div class="experience"><div :style="{ width: `${experiencePercent}%` }"></div></div>
-            <button class="cash" :disabled="busy" @click="openPanel('store')">
-                <img class="top-icon" :src="toolSprites.store" alt="" />{{ t('farm.store') }} ·
-                {{ view.cash }}
+    <div class="farm-shell" :style="{ '--game-cursor': `url(${gameArrow}) 4 3, default`, '--loading-background': `url(${background})` }" @pointerdown.capture="manualActivity" @keydown.capture="manualActivity">
+    <main v-if="view?.farm" ref="host" class="farm" @contextmenu.prevent="dismiss">
+        <div class="window-drag" aria-hidden="true"></div>
+        <section class="field" aria-label="农场场景">
+            <farm-scene :key="sceneKey" :state="sceneState" @target="sceneTarget" @hover="sceneHover" @progress="assetLoaded" @ready="sceneLoaded" @error="sceneFailure = $event" />
+        </section>
+        <button class="profile" :aria-label="t('farm.level')" @click="openPanel('level')">
+            <span class="portrait"><img :src="youmeiAvatar" alt="" /></span>
+            <span class="profile-content"
+                ><strong>{{ t('farm.title') }}</strong>
+                <span class="experience"
+                    ><i :style="{ width: experiencePercent + '%' }"></i
+                    ><span>{{ experienceText }}</span></span
+                > </span
+            ><span class="level-star">{{ view.level }}</span>
+        </button>
+        <div class="top-actions">
+            <button class="store-entry" :aria-label="t('farm.store')" @click="openPanel('store')">
+                <farm-icon :index="5" /><strong>{{ t('farm.store') }}</strong>
             </button>
-            <button @click="openPanel('warehouse')">
-                <img class="top-icon" :src="statusSprites.warehouse" alt="" />{{
-                    t('farm.warehouse')
-                }}
+            <button
+                v-if="farmSettingsVisible"
+                class="settings-button"
+                :aria-label="t('farm.settings')"
+                @click="openPanel('settings')"
+            >
+                <farm-icon :index="6" />
             </button>
-            <button class="close" @click="windowClose">×</button>
-        </header>
-
-        <div class="body">
-            <section class="field" aria-label="农场场景">
-                <div class="skyline" v-if="tool.kind !== 'place' && tool.kind !== 'move'">
-                    <span>{{ t('farm.greeting') }}</span>
-                </div>
-                <farm-scene :state="sceneState" @target="sceneTarget" />
-                <div class="companion">
-                    <span v-if="bubble">{{ bubble }}</span>
-                </div>
-                <div
-                    class="tool-status"
-                    v-if="tool.kind === 'place' || tool.kind === 'move'"
-                    role="status"
-                >
-                    <span>{{ toolText }}</span>
-                    <button :disabled="busy" :title="t('farm.cancelHint')" @click="cancelTool">
-                        {{ t('farm.cancelTool') }}
-                    </button>
-                </div>
-            </section>
-
-            <aside class="sidebar" v-if="drawerOpen" :aria-label="drawerTitle">
-                <header class="drawer-header">
-                    <h2>{{ drawerTitle }}</h2>
-                    <button
-                        class="drawer-close"
-                        :aria-label="t('farm.closeDrawer')"
-                        @click="closeDrawer"
-                    >
-                        ×
-                    </button>
-                </header>
-                <section v-if="side === 'orders'" class="orders">
-                    <article
-                        v-for="(order, index) in view.farm!.orders"
-                        :key="index"
-                        class="order-card"
-                    >
-                        <template v-if="'templateId' in order">
-                            <strong>{{ t('farm.orderNumber', { number: index + 1 }) }}</strong>
-                            <p
-                                v-for="(count, crop) in orderDefinition(order.templateId)
-                                    .requirements"
-                                :key="crop"
-                            >
-                                {{ cropName(String(crop)) }}
-                                {{ view.farm!.produce[String(crop)] || 0 }}/{{ count }}
-                            </p>
-                            <small
-                                >◈ {{ orderCash(order.templateId) }} · +{{
-                                    orderDefinition(order.templateId).exp
-                                }}
-                                EXP</small
-                            >
-                            <div class="card-actions">
-                                <button
-                                    :disabled="!canDeliver(order.templateId) || busy"
-                                    @click="run({ type: 'deliver', instanceId: order.instanceId })"
-                                >
-                                    {{ t('farm.deliver') }}</button
-                                ><button
-                                    :disabled="busy"
-                                    @click="run({ type: 'discard', instanceId: order.instanceId })"
-                                >
-                                    {{ t('farm.discard') }}
-                                </button>
-                            </div>
-                        </template>
-                        <template v-else
-                            ><strong>{{ t('farm.restocking') }}</strong>
-                            <p>{{ formatTime(order.remainingMs) }}</p></template
-                        >
-                    </article>
-                </section>
-                <section v-else class="plot-detail">
-                    <template v-if="selectedPlot === null"
-                        ><p>{{ t('farm.choosePlot') }}</p></template
-                    >
-                    <template v-else-if="view.farm!.plots[selectedPlot].plant">
-                        <h3>{{ cropName(view.farm!.plots[selectedPlot].plant!.cropId) }}</h3>
-                        <p>{{ stageLabel(view.farm!.plots[selectedPlot].plant!) }}</p>
-                        <p>
-                            {{ t('farm.remaining') }}
-                            {{ remainingTime(view.farm!.plots[selectedPlot].plant!) }}
-                        </p>
-                        <p>
-                            {{ t('farm.expectedYield') }} ×{{
-                                cropDefinition(view.farm!.plots[selectedPlot].plant!.cropId).yield
-                            }}
-                        </p>
-                        <button
-                            v-if="stage(view.farm!.plots[selectedPlot].plant!) === 3"
-                            :disabled="busy"
-                            @click="plotAction('harvest')"
-                        >
-                            {{ t('farm.harvest') }}
-                        </button>
-                        <button
-                            v-else
-                            :disabled="busy || view.farm!.plots[selectedPlot].plant!.watered"
-                            @click="plotAction('water')"
-                        >
-                            {{
-                                view.farm!.plots[selectedPlot].plant!.watered
-                                    ? t('farm.watered')
-                                    : t('farm.water')
-                            }}
-                        </button>
-                    </template>
-                    <template v-else>
-                        <h3>{{ t('farm.selectSeed') }}</h3>
-                        <p v-if="view.saveError" class="seed-error" role="alert">
-                            {{ view.saveError }}
-                        </p>
-                        <div class="seed-list">
-                            <button
-                                v-for="crop in view.catalog.crops"
-                                :key="crop.id"
-                                class="seed-option"
-                                :disabled="
-                                    busy ||
-                                    !!view.saveError ||
-                                    crop.level > view.level ||
-                                    !view.farm!.seeds[crop.id]
-                                "
-                                @click="sow(crop.id)"
-                            >
-                                <farm-item-art
-                                    class="seed-icon"
-                                    :id="crop.id"
-                                    kind="seed"
-                                    :muted="crop.level > view.level"
-                                />
-                                <span class="seed-info">
-                                    <strong
-                                        >{{ cropName(crop.id) }}
-                                        <span>×{{ view.farm!.seeds[crop.id] || 0 }}</span></strong
-                                    >
-                                    <small v-if="crop.level > view.level"
-                                        >Lv.{{ crop.level }} · {{ t('farm.locked') }}</small
-                                    >
-                                    <template v-else>
-                                        <small
-                                            >{{ seedMinutes(crop.id) }}
-                                            {{ t('farm.minutes') }}</small
-                                        >
-                                        <small
-                                            v-if="
-                                                crop.id === 'wheat' &&
-                                                view.farm!.tutorialRemaining > 0
-                                            "
-                                            >{{
-                                                t('farm.tutorialRemaining', {
-                                                    count: view.farm!.tutorialRemaining
-                                                })
-                                            }}</small
-                                        >
-                                    </template>
-                                </span>
-                                <span class="seed-action">{{
-                                    busy
-                                        ? t('farm.submitting')
-                                        : crop.level > view.level
-                                          ? t('farm.locked')
-                                          : !view.farm!.seeds[crop.id]
-                                            ? t('farm.noSeeds')
-                                            : t('farm.sow')
-                                }}</span>
-                            </button>
-                        </div>
-                        <button class="seed-shop" @click="openSeedShop">
-                            <img :src="toolSprites.store" alt="" />{{ t('farm.store') }}
-                        </button>
-                    </template>
-                </section>
-            </aside>
+            <button v-else class="exit-button" :aria-label="t('farm.closeWindow')" @click="windowClose">×</button>
         </div>
-
-        <nav class="toolbar">
-            <button
-                :disabled="busy || !!view.saveError"
-                :class="{ active: tool.kind === 'water' }"
-                @click="equipWater"
-            >
-                <img :src="toolSprites.water" alt="" />{{ t('farm.water') }}
+        <nav class="side-actions" :aria-label="t('farm.title')">
+            <button class="game-button orders-entry" @click="openPanel('orders')">
+                <span class="entry-art"
+                    ><farm-icon :index="1" /><span v-if="deliverable" class="badge">{{
+                        deliverable
+                    }}</span></span
+                ><strong>{{ t('farm.ordersShort') }}</strong>
             </button>
             <button
-                :disabled="busy || !!view.saveError"
-                :class="{ 'has-ready': matureCount > 0 }"
-                @click="harvestAll"
+                ref="backpack"
+                class="game-button backpack-entry"
+                @click="openPanel('warehouse')"
             >
-                <img :src="toolSprites.harvest" alt="" />{{ t('farm.harvestAll')
-                }}<span v-if="matureCount">{{ matureCount }}</span>
+                <span class="entry-art"><farm-icon :index="2" /></span
+                ><strong>{{ t('farm.backpack') }}</strong>
             </button>
-            <button @click="showOrders">
-                <img :src="toolSprites.orders" alt="" />{{ t('farm.orders') }}
-            </button>
-            <button :disabled="busy" @click="openPanel('decorate')">
-                <img :src="toolSprites.decorate" alt="" />{{ t('farm.decorate') }}
-            </button>
-            <button :disabled="busy" @click="openPanel('codex')">
-                <img :src="toolSprites.codex" alt="" />{{ t('farm.codex') }}
-            </button>
-            <button :disabled="busy" @click="openPanel('backup')">
-                <img :src="toolSprites.backup" alt="" />{{ t('farm.backup') }}
+            <button class="game-button codex-entry" @click="openPanel('codex')">
+                <span class="entry-art"><farm-icon :index="3" /></span
+                ><strong>{{ t('farm.codex') }}</strong>
             </button>
         </nav>
-        <div class="notice" v-if="notice" role="status" aria-live="polite">{{ notice }}</div>
-
-        <div class="overlay" v-if="panel" @click.self="panel = null">
-            <section class="modal">
+        <aside
+            v-if="hovered !== null && !panel && seedTarget === null"
+            ref="tooltip"
+            class="tooltip"
+            role="tooltip"
+            :style="popoverPosition(hovered, 232, 154)"
+        >
+            <template v-if="hovered >= view.unlockedPlots"
+                ><strong>{{ t('farm.locked') }}</strong>
+                <p>{{ t('farm.unlockAt', { level: hovered < 9 ? 3 : 5 }) }}</p></template
+            >
+            <template v-else-if="hoverPlant">
+                <strong>{{ cropName(hoverPlant.cropId) }}</strong>
+                <p>
+                    {{ t('farm.stage' + plantStage(hoverPlant)) }} · {{ remainingTime(hoverPlant) }}
+                </p>
+                <div class="growth">
+                    <i :style="{ width: plantProgress(hoverPlant) * 100 + '%' }"></i>
+                </div>
+                <p>
+                    {{ t('farm.expectedYield') }} ×{{ cropDefinition(hoverPlant.cropId).yield }} ·
+                    {{ t(hoverPlant.watered ? 'farm.watered' : 'farm.notWatered') }}
+                </p> </template
+            ><template v-else
+                ><strong>{{ t('farm.empty') }}</strong></template
+            >
+        </aside>
+        <section
+            v-if="seedTarget !== null"
+            ref="seedPicker"
+            class="seed-picker"
+            :style="popoverPosition(seedTarget, 338, 330)"
+            role="dialog"
+            :aria-label="t('farm.selectSeed')"
+            @contextmenu.prevent.stop="dismiss"
+        >
+            <header>
+                <strong>{{ t('farm.selectSeed') }}</strong
+                ><button class="close-button" :aria-label="t('farm.closePanel')" @click="dismiss">
+                    ×
+                </button>
+            </header>
+            <div class="seed-grid">
+                <button
+                    v-for="crop in view.catalog.crops"
+                    :key="crop.id"
+                    class="seed-option"
+                    :data-crop="crop.id"
+                    :disabled="
+                        busy ||
+                        !!view.saveError ||
+                        crop.level > view.level ||
+                        !view.farm.seeds[crop.id]
+                    "
+                    @click="sow(crop.id)"
+                >
+                    <farm-item-art :id="crop.id" :muted="crop.level > view.level" />
+                    <strong>{{ cropName(crop.id) }}</strong
+                    ><span>×{{ view.farm.seeds[crop.id] || 0 }}</span>
+                    <small>{{
+                        crop.level > view.level
+                            ? t('farm.unlockAt', { level: crop.level })
+                            : seedMinutes(crop.id) + ' ' + t('farm.minutes')
+                    }}</small>
+                </button>
+            </div>
+            <small v-if="view.farm.tutorialRemaining">{{
+                t('farm.tutorialRemaining', { count: view.farm.tutorialRemaining })
+            }}</small>
+            <button class="action-button secondary" @click="openPanel('store')">
+                {{ t('farm.restockSeeds') }}
+            </button>
+        </section>
+        <div class="effects" aria-hidden="true">
+            <div
+                v-for="effect in effects"
+                :key="effect.id"
+                class="plot-feedback"
+                :style="{ left: effect.x + 'px', top: effect.y + 'px' }"
+            >
+                {{ effect.text }}
+            </div>
+            <farm-item-art
+                v-for="fly in flights"
+                :key="fly.id"
+                class="harvest-flight"
+                :id="fly.crop"
+                :style="{
+                    left: fly.x + 'px',
+                    top: fly.y + 'px',
+                    '--fly-x': fly.dx + 'px',
+                    '--fly-y': fly.dy + 'px'
+                }"
+            />
+        </div>
+        <div v-if="notice" class="notice" role="status" aria-live="polite">{{ notice }}</div>
+        <div v-if="view.saveError || loadError" class="save-error" role="alert">
+            {{ view.saveError || loadError }}
+            <button :disabled="busy" @click="refresh()">{{ t('farm.retry') }}</button>
+        </div>
+        <div v-if="panel" class="overlay" @click.self="dismiss" @contextmenu.prevent="dismiss">
+            <section
+                ref="dialog"
+                class="modal"
+                role="dialog"
+                aria-modal="true"
+                :aria-label="panelTitle"
+            >
                 <header>
                     <h2>{{ panelTitle }}</h2>
-                    <button @click="panel = null">×</button>
+                    <div class="modal-header-actions">
+                        <span v-if="panel === 'store' || panel === 'buy'" class="store-balance" :aria-label="t('attributes.cash') + ' ' + view.cash">◈ {{ view.cash }}</span>
+                        <button
+                            class="close-button"
+                            :aria-label="t('farm.closePanel')"
+                            @click="dismiss"
+                        >
+                            ×
+                        </button>
+                    </div>
                 </header>
-                <template v-if="panel === 'warehouse'">
+                <template v-if="panel === 'orders'">
+                    <p class="assistant-status" role="status">{{ t('farm.assistantStates.' + assistantStatus.state) }}<span v-if="assistantOrderNumber"> · {{ t('farm.orderNumber', { number: assistantOrderNumber }) }}</span></p>
+                    <div class="order-list">
+                        <article
+                            v-for="(order, index) in view.farm.orders"
+                            :key="index"
+                            class="order-card"
+                        >
+                            <template v-if="'templateId' in order">
+                                <h3>{{ t('farm.orderNumber', { number: index + 1 }) }}</h3>
+                                <div
+                                    class="order-need"
+                                    v-for="(required, crop) in orderDefinition(order.templateId)
+                                        .requirements"
+                                    :key="crop"
+                                >
+                                    <farm-item-art :id="String(crop)" /><strong>{{
+                                        cropName(String(crop))
+                                    }}</strong
+                                    ><span
+                                        :class="{
+                                            enough:
+                                                (view.farm.produce[String(crop)] || 0) >= required
+                                        }"
+                                        >{{ view.farm.produce[String(crop)] || 0 }}/{{
+                                            required
+                                        }}</span
+                                    >
+                                </div>
+                                <p>
+                                    ◈ {{ orderCash(order.templateId) }} · +{{
+                                        orderDefinition(order.templateId).exp
+                                    }}
+                                    EXP
+                                </p>
+                                <div class="card-actions">
+                                    <button
+                                        class="action-button"
+                                        :disabled="!canDeliver(order.templateId) || blocked"
+                                        @click="
+                                            run({ type: 'deliver', instanceId: order.instanceId })
+                                        "
+                                    >
+                                        {{ t('farm.deliver') }}</button
+                                    ><button
+                                        class="action-button secondary"
+                                        :disabled="blocked"
+                                        @click="
+                                            run({ type: 'discard', instanceId: order.instanceId })
+                                        "
+                                    >
+                                        {{ t('farm.discard') }}
+                                    </button>
+                                </div> </template
+                            ><template v-else
+                                ><h3>{{ t('farm.restocking') }}</h3>
+                                <p>{{ formatTime(order.remainingMs) }}</p></template
+                            >
+                        </article>
+                    </div>
+                </template>
+                <template v-else-if="panel === 'warehouse'">
                     <div class="tabs">
                         <button
                             v-for="tab in warehouseTabs"
@@ -243,268 +240,194 @@
                             :class="{ active: warehouseTab === tab }"
                             @click="warehouseTab = tab"
                         >
-                            {{ t(`farm.${tab}`) }}
+                            {{ t('farm.' + tab) }}
                         </button>
                     </div>
-                    <div class="item-list" v-if="warehouseTab === 'seeds'">
+                    <div class="item-list">
                         <article
                             v-for="crop in view.catalog.crops"
                             :key="crop.id"
-                            class="illustrated-card"
+                            class="item-card"
                         >
-                            <farm-item-art
-                                :id="crop.id"
-                                kind="seed"
-                                :muted="crop.level > view.level"
-                            />
-                            <strong>{{ cropName(crop.id) }}</strong
-                            ><span>×{{ view.farm!.seeds[crop.id] || 0 }}</span
-                            ><small
-                                >{{ seedMinutes(crop.id) }} {{ t('farm.minutes') }} · Lv.{{
-                                    crop.level
-                                }}</small
-                            ><small v-if="crop.id === 'wheat' && view.farm!.tutorialRemaining > 0">
+                            <farm-item-art :id="crop.id" :muted="crop.level > view.level" /><span
+                                class="quantity"
+                                >×{{ view.farm[warehouseTab][crop.id] || 0 }}</span
+                            >
+                            <h3>{{ cropName(crop.id) }}</h3>
+                            <p>
                                 {{
-                                    t('farm.tutorialRemaining', {
-                                        count: view.farm!.tutorialRemaining
-                                    })
-                                }} </small
-                            ><button
+                                    warehouseTab === 'seeds'
+                                        ? seedMinutes(crop.id) + ' ' + t('farm.minutes')
+                                        : '◈ ' + crop.sell + ' / ' + t('farm.each')
+                                }}
+                            </p>
+                            <button
+                                class="action-button"
                                 :disabled="
-                                    !view.farm!.seeds[crop.id] ||
-                                    crop.level > view.level ||
-                                    busy ||
-                                    !!view.saveError
+                                    blocked ||
+                                    (warehouseTab === 'seeds'
+                                        ? crop.level > view.level
+                                        : !view.farm.produce[crop.id])
                                 "
-                                @click="sow(crop.id)"
+                                @click="
+                                    warehouseTab === 'seeds' ? openBuy(crop.id) : openSell(crop.id)
+                                "
                             >
-                                {{ t('farm.sow') }}
-                            </button>
-                        </article>
-                    </div>
-                    <div class="item-list" v-else-if="warehouseTab === 'produce'">
-                        <article
-                            v-for="crop in view.catalog.crops"
-                            :key="crop.id"
-                            class="illustrated-card"
-                        >
-                            <farm-item-art
-                                :id="crop.id"
-                                kind="crop"
-                                :muted="crop.level > view.level"
-                            />
-                            <strong>{{ cropName(crop.id) }}</strong
-                            ><span>×{{ view.farm!.produce[crop.id] || 0 }}</span
-                            ><small>◈ {{ crop.sell }} / {{ t('farm.each') }}</small
-                            ><button
-                                :disabled="!view.farm!.produce[crop.id]"
-                                @click="openSell(crop.id)"
-                            >
-                                {{ t('farm.sell') }}
-                            </button>
-                        </article>
-                    </div>
-                    <div class="item-list" v-else>
-                        <article
-                            v-for="item in view.catalog.decorations"
-                            :key="item.id"
-                            class="illustrated-card decoration-stock"
-                            @click="openDecoration(item.id)"
-                        >
-                            <farm-item-art
-                                :id="item.id"
-                                kind="decoration"
-                                :muted="item.level > view.level"
-                            />
-                            <strong>{{ decorationName(item.id) }}</strong
-                            ><span>×{{ view.farm!.decorations[item.id] || 0 }}</span
-                            ><small
-                                >{{ t('farm.placed') }} {{ placedCount(item.id) }} ·
-                                {{ t('farm.available') }} {{ availableDecoration(item.id) }} ·
-                                {{ item.width }}×1</small
-                            ><button
-                                :disabled="!canEquipDecoration(item.id)"
-                                @click.stop="openDecoration(item.id)"
-                            >
-                                {{ t('farm.place') }}
+                                {{
+                                    t(warehouseTab === 'seeds' ? 'farm.restockSeeds' : 'farm.sell')
+                                }}
                             </button>
                         </article>
                     </div>
                 </template>
-                <template v-else-if="panel === 'store'"
-                    ><div class="tabs">
-                        <button
-                            :class="{ active: storeTab === 'seeds' }"
-                            @click="storeTab = 'seeds'"
-                        >
-                            {{ t('farm.seeds') }}</button
-                        ><button
-                            :class="{ active: storeTab === 'decorations' }"
-                            @click="storeTab = 'decorations'"
-                        >
-                            {{ t('farm.decorations') }}
-                        </button>
-                    </div>
+                <template v-else-if="panel === 'store'">
                     <div class="item-list">
-                        <article v-for="item in storeItems" :key="item.id" class="illustrated-card">
-                            <farm-item-art
-                                :id="item.id"
-                                :kind="storeTab === 'seeds' ? 'seed' : 'decoration'"
-                                :muted="item.level > view.level"
-                            />
-                            <strong>{{
-                                storeTab === 'seeds' ? cropName(item.id) : decorationName(item.id)
-                            }}</strong
-                            ><span>◈ {{ item.price }}</span
-                            ><small
-                                >Lv.{{ item.level }} · {{ t('farm.owned') }} ×{{
-                                    storeTab === 'seeds'
-                                        ? view.farm!.seeds[item.id] || 0
-                                        : view.farm!.decorations[item.id] || 0
-                                }}</small
-                            ><button :disabled="item.level > view.level" @click="openBuy(item.id)">
-                                {{ item.level > view.level ? t('farm.locked') : t('farm.buy') }}
-                            </button>
-                        </article>
-                    </div></template
-                >
-                <template v-else-if="panel === 'buy' || panel === 'sell'">
-                    <farm-item-art
-                        class="trade-art"
-                        :id="panel === 'sell' ? sellCrop : buyId"
-                        :kind="
-                            panel === 'sell' ? 'crop' : storeTab === 'seeds' ? 'seed' : 'decoration'
-                        "
-                    />
-                    <p>
-                        {{
-                            panel === 'buy'
-                                ? storeTab === 'seeds'
-                                    ? cropName(buyId)
-                                    : decorationName(buyId)
-                                : cropName(sellCrop)
-                        }}
-                    </p>
-                    <div class="quantities">
-                        <button v-for="value in [1, 5, 10]" :key="value" @click="count = value">
-                            {{ value }}</button
-                        ><button
-                            v-if="panel === 'sell'"
-                            @click="count = view.farm!.produce[sellCrop] || 0"
-                        >
-                            {{ t('farm.all') }}</button
-                        ><input v-model.number="count" type="number" min="1" />
-                    </div>
-                    <p v-if="panel === 'sell' && orderNeeds(sellCrop) && !sellWarningShown">
-                        {{ t('farm.sellWarning') }}
-                    </p>
-                    <button
-                        :disabled="busy || !Number.isSafeInteger(count) || count < 1"
-                        @click="confirmTrade"
-                    >
-                        {{ t('farm.confirm') }} · ◈ {{ tradeTotal }}
-                    </button></template
-                >
-                <template v-else-if="panel === 'codex'"
-                    ><div class="item-list">
                         <article
                             v-for="crop in view.catalog.crops"
                             :key="crop.id"
-                            class="illustrated-card"
+                            class="item-card"
                         >
-                            <farm-item-art
-                                :id="crop.id"
-                                kind="crop"
-                                :muted="crop.level > view.level"
-                            />
-                            <strong>{{ cropName(crop.id) }}</strong
-                            ><span>{{
+                            <farm-item-art :id="crop.id" :muted="crop.level > view.level" />
+                            <h3>{{ cropName(crop.id) }}</h3>
+                            <p>
+                                {{ seedMinutes(crop.id) }} {{ t('farm.minutes') }} ·
+                                {{ t('farm.owned') }} ×{{ view.farm.seeds[crop.id] || 0 }}
+                            </p>
+                            <button
+                                class="action-button"
+                                :disabled="blocked || crop.level > view.level"
+                                @click="openBuy(crop.id)"
+                            >
+                                {{
+                                    crop.level > view.level
+                                        ? t('farm.unlockAt', { level: crop.level })
+                                        : '◈ ' + crop.price + ' · ' + t('farm.buy')
+                                }}
+                            </button>
+                        </article>
+                    </div>
+                </template>
+                <template v-else-if="panel === 'buy' || panel === 'sell'">
+                    <div class="trade-details">
+                        <farm-item-art :id="tradeCrop" />
+                        <div>
+                            <h3>{{ cropName(tradeCrop) }}</h3>
+                            <p>
+                                {{ t('farm.owned') }} ×{{
+                                    panel === 'buy'
+                                        ? view.farm.seeds[tradeCrop] || 0
+                                        : view.farm.produce[tradeCrop] || 0
+                                }}
+                            </p>
+                            <p>◈ {{ tradePrice }} / {{ t('farm.each') }}</p>
+                        </div>
+                    </div>
+                    <div class="quantities">
+                        <button
+                            :disabled="blocked || count <= 1"
+                            @click="count = Math.max(1, count - 1)"
+                        >
+                            −</button
+                        ><input
+                            v-model.number="count"
+                            type="number"
+                            min="1"
+                            :max="tradeMaximum"
+                            :disabled="blocked"
+                            :aria-label="t('farm.tradeQuantity')"
+                        /><button :disabled="blocked || count >= tradeMaximum" @click="count++">
+                            +</button
+                        ><button
+                            v-for="value in [1, 5, 10]"
+                            :key="value"
+                            :disabled="blocked || value > tradeMaximum"
+                            @click="count = value"
+                        >
+                            {{ value }}
+                        </button>
+                    </div>
+                    <p v-if="panel === 'sell' && orderNeeds(tradeCrop)">
+                        {{ t('farm.sellWarning') }}
+                    </p>
+                    <button
+                        class="action-button trade-confirm"
+                        :disabled="
+                            blocked ||
+                            !Number.isSafeInteger(count) ||
+                            count < 1 ||
+                            count > tradeMaximum
+                        "
+                        @click="confirmTrade"
+                    >
+                        {{ t('farm.confirm') }} · ◈ {{ tradePrice * count }}
+                    </button>
+                </template>
+                <template v-else-if="panel === 'codex'">
+                    <div class="item-list">
+                        <article
+                            v-for="crop in view.catalog.crops"
+                            :key="crop.id"
+                            class="item-card"
+                        >
+                            <farm-item-art :id="crop.id" :muted="crop.level > view.level" />
+                            <h3>{{ cropName(crop.id) }}</h3>
+                            <span class="codex-label">{{
                                 crop.level > view.level
-                                    ? t('farm.notUnlocked')
-                                    : view.farm!.harvests[crop.id] || 0
+                                    ? t('farm.unlockAt', { level: crop.level })
+                                    : view.farm.harvests[crop.id]
                                       ? t('farm.lit')
                                       : t('farm.notHarvested')
-                            }}</span
-                            ><small
-                                >{{ crop.minutes }} {{ t('farm.minutes') }} ·
-                                {{ t('farm.harvested') }} ×{{
-                                    view.farm!.harvests[crop.id] || 0
-                                }}</small
-                            >
+                            }}</span>
+                            <p>{{ t('farm.cropDescriptions.' + crop.id) }}</p>
+                            <p>
+                                {{ crop.minutes }} {{ t('farm.minutes') }} ·
+                                {{ t('farm.harvested') }} ×{{ view.farm.harvests[crop.id] || 0 }}
+                            </p>
                             <div class="crop-stages">
                                 <div v-for="phase in [0, 1, 2, 3]" :key="phase">
                                     <farm-item-art
                                         :id="crop.id"
                                         :stage="phase"
-                                        :muted="
-                                            crop.level > view.level || !view.farm!.harvests[crop.id]
-                                        "
-                                    /><small>{{ t(`farm.stage${phase}`) }}</small>
+                                        :muted="crop.level > view.level"
+                                    /><small>{{ t('farm.stage' + phase) }}</small>
                                 </div>
                             </div>
-                            <p>{{ crop.description }}</p>
                         </article>
+                    </div>
+                </template>
+                <template v-else-if="panel === 'level'"
+                    ><div class="level-display">Lv.{{ view.level }} · {{ experienceText }}</div>
+                    <div class="unlock-list">
+                        <p v-for="(_, index) in view.catalog.levels" :key="index">
+                            <strong
+                                >Lv.{{ index + 1 }} · {{ view.catalog.levels[index] }} EXP</strong
+                            ><span>{{ unlockText(index + 1) }}</span>
+                        </p>
                     </div></template
                 >
-                <template v-else-if="panel === 'level'">
-                    <p>{{ t('farm.totalExperience') }}：{{ view.farm!.exp }} EXP</p>
-                    <p v-if="view.level === 10">{{ t('farm.maxLevel') }}</p>
-                    <p v-else>
-                        {{ t('farm.nextLevel') }}：{{ view.catalog.levels[view.level] }} EXP
-                    </p>
-                    <div class="item-list">
-                        <article v-for="(threshold, index) in view.catalog.levels" :key="index">
-                            <strong>Lv.{{ index + 1 }}</strong>
-                            <span>{{ threshold }} EXP</span>
-                            <small>{{
-                                index + 1 <= view.level ? t('farm.unlocked') : t('farm.locked')
-                            }}</small>
-                            <small>{{ unlockText(index + 1) }}</small>
-                        </article>
-                    </div>
-                </template>
-                <template v-else-if="panel === 'decorate'">
-                    <p>{{ t('farm.decorationHint') }}</p>
-                    <div class="decoration-list">
-                        <button
-                            v-for="item in view.catalog.decorations"
-                            :key="item.id"
-                            class="decoration-card"
-                            :disabled="!canEquipDecoration(item.id)"
-                            @click="openDecoration(item.id)"
-                        >
-                            <farm-item-art
-                                :id="item.id"
-                                kind="decoration"
-                                :muted="!canEquipDecoration(item.id)"
-                            />
-                            <strong>{{ decorationName(item.id) }}</strong>
-                            <small
-                                >{{ t('farm.available') }} ×{{ availableDecoration(item.id) }} ·
-                                {{ item.width }}×1</small
-                            >
-                            <small v-if="item.level > view.level"
-                                >Lv.{{ item.level }} · {{ t('farm.locked') }}</small
-                            >
-                            <small v-else-if="!availableDecoration(item.id)">{{
-                                t('farm.noDecorations')
-                            }}</small>
-                            <small v-else-if="view.farm!.placed.length >= 12">{{
-                                t('farm.decorationLimit')
-                            }}</small>
-                        </button>
-                    </div>
-                </template>
+                <template v-else-if="panel === 'settings'"
+                    ><div class="settings-list">
+                        <button @click="openPanel('backup')">{{ t('farm.backup') }}</button
+                        ><button @click="goBack">{{ t('farm.back') }}</button
+                        ><button @click="windowClose">{{ t('farm.closeWindow') }}</button>
+                    </div></template
+                >
                 <template v-else-if="panel === 'backup'"
                     ><p>{{ t('farm.backupScope') }}</p>
-                    <button @click="exportBackup">{{ t('farm.exportBackup') }}</button
-                    ><button @click="selectBackup">{{ t('farm.selectBackup') }}</button
-                    ><button @click="automaticBackup">{{ t('farm.lastAutomatic') }}</button>
+                    <div class="settings-list">
+                        <button :disabled="busy" @click="exportBackup">
+                            {{ t('farm.exportBackup') }}</button
+                        ><button :disabled="busy" @click="selectBackup">
+                            {{ t('farm.selectBackup') }}</button
+                        ><button :disabled="busy" @click="automaticBackup">
+                            {{ t('farm.lastAutomatic') }}
+                        </button>
+                    </div>
                     <div v-if="backupPreview" class="backup-summary">
                         <p>{{ backupPreview.createdAt }}</p>
                         <p>Lv.{{ backupPreview.level }} · ◈ {{ backupPreview.cash }}</p>
                         <p>{{ backupPreview.scope }}</p>
-                        <button :disabled="busy" @click="restoreBackup">
+                        <button class="action-button" :disabled="busy" @click="restoreBackup">
                             {{ t('farm.restoreConfirm') }}
                         </button>
                     </div></template
@@ -512,75 +435,112 @@
             </section>
         </div>
     </main>
-    <main v-else class="loading">
-        {{ loadError || t('farm.loading')
-        }}<button v-if="loadError" @click="refresh()">{{ t('farm.retry') }}</button>
-    </main>
+    <Transition name="farm-loading">
+        <section v-if="!sceneReady || loadError || sceneFailure" class="game-loading" :aria-busy="!loadError && !sceneFailure">
+            <button class="exit-button loading-exit" :aria-label="t('farm.closeWindow')" @click="windowClose">×</button>
+            <div class="loading-card" role="status" aria-live="polite">
+                <h1>{{ t('farm.title') }}</h1>
+                <p>{{ loadError || sceneFailure || t(!dataReady ? 'farm.loadingData' : sceneReady ? 'farm.loadingReady' : 'farm.loadingArt') }}</p>
+                <progress :value="loadingProgress" max="100" :aria-label="t('farm.loading')"></progress>
+                <strong>{{ loadingProgress }}%</strong>
+                <button v-if="loadError || sceneFailure" @click="retryLoading">{{ t('farm.retry') }}</button>
+            </div>
+        </section>
+    </Transition>
+    </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { plantProgress, plantStage } from '../../main/modules/farm/rules'
-import type { BackupPreview, FarmOperation, FarmPlant, FarmView } from '../../main/types/farm'
-import { statusSprites, toolSprites } from '../assets/farm'
+import type { BackupPreview, FarmAssistantStatus, FarmOperation, FarmPlant, FarmView } from '../../main/types/farm'
+import { farmSettingsVisible } from '../../shared/farmExperience'
+import { background } from '../assets/farm-game'
+import gameArrow from '../assets/farm-game/game-arrow.svg'
+import youmeiAvatar from '../assets/image/youmei-avatar.png'
+import FarmIcon from '../components/farm/FarmIcon.vue'
 import FarmItemArt from '../components/farm/FarmItemArt.vue'
 import FarmScene from '../components/farm/FarmScene.vue'
 import type { FarmSceneState } from '../game/FarmScene'
-import type { FarmCell, FarmTarget, FarmTool } from '../game/farmSceneModel'
-import { placementAllowed, plotIssue } from '../game/farmSceneModel'
-
-const { t } = useI18n()
-const router = useRouter()
-const view = ref<FarmView | null>(null)
-const loadError = ref('')
-const notice = ref('')
-const bubble = ref('')
-const youmeiAction = ref<'idle' | 'water' | 'plant' | 'harvest' | 'walk'>('idle')
-const youmeiFrame = ref(0)
-const busy = ref(false)
+import type { FarmHover, FarmTarget } from '../game/farmSceneModel'
+import { farmLayout, plotMode } from '../game/farmSceneModel'
+const { t } = useI18n(),
+    router = useRouter()
+const sceneKey = ref(0), sceneReady = ref(false), sceneFailure = ref(''), assetProgress = ref(0), dataReady = ref(false)
+const assistantStatus = ref<FarmAssistantStatus>({ state: 'waitingPlayer' })
+let stopAssistantState: (() => void) | undefined, lastManualIntent = -Infinity
+const loadingProgress = computed(() => sceneReady.value && dataReady.value && !loadError.value && !sceneFailure.value ? 100 : Math.min(99, Math.round((dataReady.value ? 20 : 0) + assetProgress.value * 70)))
+function assetLoaded(value: number) { assetProgress.value = Math.max(assetProgress.value, value) }
+function sceneLoaded() { sceneReady.value = true }
+function retryLoading() { sceneReady.value = false; dataReady.value = false; sceneFailure.value = ''; assetProgress.value = 0; sceneKey.value++; void refresh() }
+function manualActivity() {
+    if (disposed || Date.now() - lastManualIntent < 250) return
+    lastManualIntent = Date.now()
+    void window.api.farmManualActivity?.().catch(() => {})
+}
+const host = ref<HTMLElement | null>(null),
+    dialog = ref<HTMLElement | null>(null),
+    backpack = ref<HTMLElement | null>(null)
+const seedPicker = ref<HTMLElement | null>(null),
+    tooltip = ref<HTMLElement | null>(null)
+const view = ref<FarmView | null>(null),
+    loadError = ref(''),
+    notice = ref(''),
+    busy = ref(false)
 const panel = ref<
-    'warehouse' | 'store' | 'buy' | 'sell' | 'codex' | 'level' | 'decorate' | 'backup' | null
+    | 'orders'
+    | 'warehouse'
+    | 'store'
+    | 'buy'
+    | 'sell'
+    | 'codex'
+    | 'level'
+    | 'settings'
+    | 'backup'
+    | null
 >(null)
-const side = ref<'orders' | 'plot'>('orders')
-const drawerOpen = ref(false)
-const warehouseTab = ref<'seeds' | 'produce' | 'decorations'>('seeds')
-const warehouseTabs = ['seeds', 'produce', 'decorations'] as const
-const storeTab = ref<'seeds' | 'decorations'>('seeds')
-const selectedPlot = ref<number | null>(null)
-const selectedEmptyPlot = computed(() => {
-    const v = view.value
-    const id = selectedPlot.value
-    return !!v?.farm && id !== null && id < v.unlockedPlots && !v.farm.plots[id]?.plant
-})
-const drawerTitle = computed(() =>
-    t(
-        side.value === 'orders'
-            ? 'farm.orders'
-            : selectedEmptyPlot.value
-              ? 'farm.seeds'
-              : 'farm.plotDetail'
-    )
-)
-const tool = ref<FarmTool>({ kind: 'inspect' })
-const buyId = ref('')
-const sellCrop = ref('')
-const count = ref(1)
-const sellWarningShown = ref(false)
+const warehouseTab = ref<'seeds' | 'produce'>('seeds'),
+    warehouseTabs = ['seeds', 'produce'] as const
+const seedTarget = ref<number | null>(null),
+    hovered = ref<number | null>(null)
+const width = ref(1280),
+    height = ref(720),
+    tradeCrop = ref(''),
+    count = ref(1),
+    sellWarningShown = ref(false)
 const backupPreview = ref<BackupPreview | null>(null)
-let timer: ReturnType<typeof setInterval> | null = null
-let frameTimer: ReturnType<typeof setInterval> | null = null
-let actionTimer: ReturnType<typeof setTimeout> | null = null
-let bubbleTimer: ReturnType<typeof setTimeout> | null = null
-let noticeTimer: ReturnType<typeof setTimeout> | null = null
-let unsubscribe: (() => void) | null = null
-let bubbleUntil = 0
-
-const levelText = computed(() =>
-    view.value?.level === 10 ? 'Lv.10 · 满级' : `Lv.${view.value?.level ?? 1}`
+const effects = ref<{ id: string; x: number; y: number; text: string }[]>([])
+const flights = ref<{ id: string; crop: string; x: number; y: number; dx: number; dy: number }[]>(
+    []
 )
+const effectTimers = new Set<ReturnType<typeof setTimeout>>()
+let interval: ReturnType<typeof setInterval> | undefined,
+    noticeTimer: ReturnType<typeof setTimeout> | undefined,
+    hoverTimer: ReturnType<typeof setTimeout> | undefined
+let hoverCandidate: number | null = null,
+    unsubscribe: (() => void) | undefined,
+    observer: ResizeObserver | undefined,
+    loadSequence = 0,
+    disposed = false,
+    lastFocused: HTMLElement | null = null
+const blocked = computed(() => busy.value || !!view.value?.saveError)
+const sceneState = computed<FarmSceneState>(() => ({
+    view: view.value!,
+    enabled: sceneReady.value && dataReady.value && !loadError.value && !sceneFailure.value && !blocked.value && !panel.value && seedTarget.value === null
+}))
+const assistantOrderNumber = computed(() => (view.value?.farm?.orders.findIndex(o => 'instanceId' in o && o.instanceId === assistantStatus.value.orderId) ?? -1) + 1)
+const hoverPlant = computed(() =>
+    hovered.value === null ? null : view.value?.farm?.plots[hovered.value].plant
+)
+const cropDefinition = (id: string) => view.value!.catalog.crops.find((c) => c.id === id)!
+const cropName = (id: string) => t('farm.crops.' + id)
+const seedMinutes = (id: string) =>
+    id === 'wheat' && (view.value?.farm?.tutorialRemaining ?? 0) > 0
+        ? 5
+        : cropDefinition(id).minutes
 const experiencePercent = computed(() => {
     const v = view.value
     if (!v) return 0
@@ -589,310 +549,179 @@ const experiencePercent = computed(() => {
         high = v.catalog.levels[v.level]
     return Math.max(0, Math.min(100, ((v.farm!.exp - low) / (high - low)) * 100))
 })
-const matureCount = computed(
-    () =>
-        view.value?.farm?.plots.filter((plot) => plot.plant && plantStage(plot.plant) === 3)
-            .length ?? 0
-)
-const panelTitle = computed(() => (panel.value ? t(`farm.${panel.value}`) : ''))
-const storeItems = computed(() =>
-    storeTab.value === 'seeds'
-        ? (view.value?.catalog.crops ?? [])
-        : (view.value?.catalog.decorations ?? [])
-)
-const tradeTotal = computed(() => {
+const experienceText = computed(() => {
     const v = view.value
-    if (!v) return 0
-    const item =
-        panel.value === 'sell'
-            ? v.catalog.crops.find((c) => c.id === sellCrop.value)
-            : storeTab.value === 'seeds'
-              ? v.catalog.crops.find((c) => c.id === buyId.value)
-              : v.catalog.decorations.find((d) => d.id === buyId.value)
-    return (
-        (panel.value === 'sell' && item && 'sell' in item ? item.sell : (item?.price ?? 0)) *
-        count.value
-    )
+    if (!v) return ''
+    return v.level === 10
+        ? t('farm.maxLevel')
+        : v.farm!.exp -
+              v.catalog.levels[v.level - 1] +
+              '/' +
+              (v.catalog.levels[v.level] - v.catalog.levels[v.level - 1])
 })
-const cropDefinition = (id: string) => view.value!.catalog.crops.find((c) => c.id === id)!
-const seedMinutes = (id: string) =>
-    id === 'wheat' && (view.value?.farm?.tutorialRemaining ?? 0) > 0
-        ? 5
-        : cropDefinition(id).minutes
-const cropName = (id: string) => t(`farm.crops.${id}`)
-const decorationName = (id: string) => t(`farm.decorNames.${id}`)
-const unlockText = (level: number) => {
-    const crops =
-        view.value?.catalog.crops
-            .filter((crop) => crop.level === level)
-            .map((crop) => cropName(crop.id)) ?? []
-    const decorations =
-        view.value?.catalog.decorations
-            .filter((item) => item.level === level)
-            .map((item) => decorationName(item.id)) ?? []
-    const plots =
-        level === 1
-            ? [t('farm.plotCount', { count: 6 })]
-            : level === 3
-              ? [t('farm.plotCount', { count: 9 })]
-              : level === 5
-                ? [t('farm.plotCount', { count: 12 })]
-                : []
-    return [...crops, ...decorations, ...plots].join(' · ')
-}
+const panelTitle = computed(() =>
+    panel.value ? t('farm.' + (panel.value === 'warehouse' ? 'backpack' : panel.value)) : ''
+)
 const orderDefinition = (id: string) => view.value!.catalog.orders.find((o) => o.id === id)!
 const orderCash = (id: string) =>
     Math.ceil(
         Object.entries(orderDefinition(id).requirements).reduce(
-            (total, [crop, n]) => total + n * cropDefinition(crop).sell,
+            (n, [crop, qty]) => n + qty * cropDefinition(crop).sell,
             0
         ) * 1.25
     )
 const canDeliver = (id: string) =>
     Object.entries(orderDefinition(id).requirements).every(
-        ([crop, n]) => (view.value!.farm!.produce[crop] || 0) >= n
+        ([crop, qty]) => (view.value!.farm!.produce[crop] || 0) >= qty
     )
+const deliverable = computed(
+    () =>
+        view.value?.farm?.orders.filter((o) => 'templateId' in o && canDeliver(o.templateId))
+            .length ?? 0
+)
 const orderNeeds = (crop: string) =>
     view.value?.farm?.orders.some(
         (o) => 'templateId' in o && orderDefinition(o.templateId).requirements[crop]
     ) ?? false
-const placedCount = (id: string) =>
-    view.value?.farm?.placed.filter((item) => item.decorationId === id).length ?? 0
-const stage = (plant: FarmPlant) => plantStage(plant)
-const stageLabel = (plant: FarmPlant) => t(`farm.stage${stage(plant)}`)
+const tradePrice = computed(() =>
+    tradeCrop.value
+        ? panel.value === 'sell'
+            ? cropDefinition(tradeCrop.value).sell
+            : cropDefinition(tradeCrop.value).price
+        : 0
+)
+const tradeMaximum = computed(() =>
+    panel.value === 'sell'
+        ? view.value?.farm?.produce[tradeCrop.value] || 0
+        : Math.floor((view.value?.cash || 0) / (tradePrice.value || 1))
+)
 const formatTime = (ms: number) =>
     ms <= 0
         ? t('farm.ready')
         : ms >= 3600000
-          ? `${Math.ceil(ms / 3600000)} ${t('farm.hours')}`
-          : `${Math.ceil(ms / 60000)} ${t('farm.minutes')}`
+          ? Math.ceil(ms / 3600000) + ' ' + t('farm.hours')
+          : Math.ceil(ms / 60000) + ' ' + t('farm.minutes')
 const remainingTime = (plant: FarmPlant) =>
     formatTime(Math.max(0, plant.durationMs * (1 - plantProgress(plant))))
-const sceneLabels = computed(() => ({
-    empty: t('farm.empty'),
-    stages: [0, 1, 2, 3].map((phase) => t(`farm.stage${phase}`)),
-    crops: Object.fromEntries(
-        (view.value?.catalog.crops ?? []).map((crop) => [crop.id, cropName(crop.id)])
+const unlockText = (level: number) =>
+    [
+        ...view.value!.catalog.crops.filter((c) => c.level === level).map((c) => cropName(c.id)),
+        ...([1, 3, 5].includes(level)
+            ? [t('farm.plotCount', { count: level === 1 ? 6 : level === 3 ? 9 : 12 })]
+            : [])
+    ].join(' · ')
+function popoverPosition(id: number, w: number, h: number) {
+    const element = w === 338 ? seedPicker.value : tooltip.value
+    w = element?.offsetWidth || w
+    h = element?.offsetHeight || h
+    const p = farmLayout(width.value, height.value).plots[id]
+    const left = Math.max(
+        12,
+        Math.min(width.value - Math.min(w, width.value - 24) - 12, p.x - w / 2)
     )
-}))
-const sceneState = computed<FarmSceneState>(() => ({
-    view: view.value!,
-    tool: tool.value,
-    selected: selectedPlot.value,
-    enabled: !busy.value && !panel.value,
-    action: youmeiAction.value,
-    frame: youmeiFrame.value,
-    labels: sceneLabels.value
-}))
-const toolText = computed(() => {
-    const current = tool.value
-    if (current.kind === 'place' || current.kind === 'move')
-        return t(current.kind === 'move' ? 'farm.moveTool' : 'farm.placeTool', {
-            name: decorationName(current.decorationId)
-        })
-    return ''
-})
-function cancelTool() {
-    tool.value = { kind: 'inspect' }
+    const top = p.y - h - 60 >= 12 ? p.y - h - 60 : Math.min(height.value - h - 12, p.y + 45)
+    return { left: left + 'px', top: Math.max(12, top) + 'px' }
 }
-function closeDrawer() {
-    drawerOpen.value = false
+function hideHover() {
+    if (hoverTimer) clearTimeout(hoverTimer)
+    hoverTimer = undefined
+    hoverCandidate = null
+    hovered.value = null
+}
+function sceneHover(value: FarmHover) {
+    if (!value || blocked.value || panel.value || seedTarget.value !== null) {
+        hideHover()
+        return
+    }
+    if (hoverCandidate === value.id) return
+    hideHover()
+    hoverCandidate = value.id
+    hoverTimer = setTimeout(() => {
+        hovered.value = value.id
+    }, 250)
+}
+function dismiss() {
+    seedTarget.value = null
+    panel.value = null
+    hideHover()
 }
 function openPanel(name: NonNullable<typeof panel.value>) {
+    if (!farmSettingsVisible && (name === 'settings' || name === 'backup')) return
     if (busy.value) return
-    cancelTool()
-    closeDrawer()
+    seedTarget.value = null
+    hideHover()
     panel.value = name
 }
-function showOrders() {
-    if (busy.value) return
-    cancelTool()
-    side.value = 'orders'
-    drawerOpen.value = true
-}
-function equipWater() {
-    if (busy.value || view.value?.saveError) return
-    panel.value = null
-    closeDrawer()
-    tool.value = tool.value.kind === 'water' ? { kind: 'inspect' } : { kind: 'water' }
-}
-const availableDecoration = (id: string) =>
-    Math.max(0, (view.value?.farm?.decorations[id] ?? 0) - placedCount(id))
-const canEquipDecoration = (id: string) =>
-    !busy.value &&
-    !view.value?.saveError &&
-    availableDecoration(id) > 0 &&
-    (view.value?.farm?.placed.length ?? 12) < 12 &&
-    (view.value?.catalog.decorations.find((item) => item.id === id)?.level ?? Infinity) <=
-        (view.value?.level ?? 0)
-watch(panel, (value) => {
+watch(panel, async (value, previous) => {
     if (value) {
-        cancelTool()
-        closeDrawer()
-    }
+        if (!previous) lastFocused = document.activeElement as HTMLElement
+        await nextTick()
+        dialog.value?.querySelector<HTMLElement>('button')?.focus()
+    } else lastFocused?.focus()
 })
-watch(view, (value) => {
-    const current = tool.value
-    if (!value?.farm || value.saveError) {
-        cancelTool()
-        return
-    }
+watch(view, (v) => {
     if (
-        current.kind === 'sow' &&
-        (!(value.farm.seeds[current.cropId] > 0) ||
-            cropDefinition(current.cropId).level > value.level)
-    ) {
-        cancelTool()
-        showNotice(t('farm.noSeeds'))
-    } else if (
-        current.kind === 'place' &&
-        !canEquipDecorationAfterRefresh(current.decorationId, value)
+        seedTarget.value !== null &&
+        (!v?.farm ||
+            seedTarget.value >= v.unlockedPlots ||
+            v.farm.plots[seedTarget.value].plant ||
+            v.saveError)
     )
-        cancelTool()
-    else if (
-        current.kind === 'move' &&
-        !value.farm.placed.some((item) => item.instanceId === current.instanceId)
-    )
-        cancelTool()
+        seedTarget.value = null
 })
-function canEquipDecorationAfterRefresh(id: string, value: FarmView) {
-    return (
-        !!value.farm &&
-        availableDecoration(id) > 0 &&
-        value.farm.placed.length < 12 &&
-        (value.catalog.decorations.find((item) => item.id === id)?.level ?? Infinity) <= value.level
-    )
-}
-async function sceneTarget(target: FarmTarget, right: boolean) {
-    if (busy.value || panel.value || !view.value) return
-    if (right) {
-        cancelTool()
-        closeDrawer()
-        if (target.kind === 'decoration')
-            await run({ type: 'reclaim', instanceId: target.instanceId })
-        return
-    }
-    const current = tool.value
-    if (current.kind === 'place' || current.kind === 'move') {
-        if (target.kind !== 'cell' || !placementAllowed(view.value, current, target.cell)) {
-            cancelTool()
-            showNotice(t('farm.placementCancelled'))
-        } else await placeDecoration(target.cell, current)
-        return
-    }
-    if (target.kind === 'plot') {
-        if (current.kind === 'sow' || current.kind === 'water') {
-            const issue = plotIssue(view.value, current, target.id)
-            if (issue) {
-                showNotice(t(`farm.${issue}`))
-                return
-            }
-            selectedPlot.value = target.id
-            side.value = 'plot'
-            await run(
-                current.kind === 'sow'
-                    ? { type: 'sow', cropId: current.cropId, plotIds: [target.id] }
-                    : { type: 'water', plotIds: [target.id] }
-            )
-        } else selectPlot(target.id)
-    } else if (current.kind === 'inspect') {
-        if (target.kind === 'decoration') openPlaced(target.instanceId)
-        else closeDrawer()
-    }
-}
-function onKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
-        cancelTool()
-        closeDrawer()
-        panel.value = null
-    }
-}
-function harvestAll() {
-    if (!busy.value) {
-        cancelTool()
-        plotAction('harvest', true)
-    }
-}
-function playAction(action: typeof youmeiAction.value) {
-    youmeiAction.value = action
-    if (actionTimer) clearTimeout(actionTimer)
-    actionTimer = setTimeout(() => {
-        youmeiAction.value = 'idle'
-    }, 1900)
-}
-function openSeedShop() {
-    if (busy.value) return
-    cancelTool()
-    closeDrawer()
-    storeTab.value = 'seeds'
-    panel.value = 'store'
-}
-function openSell(id: string) {
-    if (busy.value) return
-    sellCrop.value = id
-    count.value = 1
-    sellWarningShown.value = false
-    panel.value = 'sell'
-}
-function openBuy(id: string) {
-    if (busy.value) return
-    buyId.value = id
-    count.value = 1
-    panel.value = 'buy'
-}
-function openDecoration(id: string) {
-    if (!canEquipDecoration(id)) return
-    panel.value = null
-    closeDrawer()
-    tool.value = { kind: 'place', decorationId: id }
-}
-function openPlaced(id: string) {
-    if (busy.value || view.value?.saveError) return
-    const item = view.value?.farm?.placed.find((item) => item.instanceId === id)
-    if (item) {
-        closeDrawer()
-        tool.value = { kind: 'move', decorationId: item.decorationId, instanceId: id }
-    }
-}
-function speak(message: string) {
-    if (Date.now() < bubbleUntil) return
-    bubble.value = message
-    bubbleUntil = Date.now() + 60000
-    if (bubbleTimer) clearTimeout(bubbleTimer)
-    bubbleTimer = setTimeout(() => {
-        bubble.value = ''
-    }, 4000)
-}
-async function refresh(force = false) {
-    if (busy.value && !force) return
-    try {
-        const response = await window.api.getFarm()
-        if (response.code === 200 && response.data) {
-            const earlier = view.value
-            const newlyMature = response.data.farm?.plots.some((plot, index) => {
-                if (!plot.plant || plantStage(plot.plant) !== 3) return false
-                const old = earlier?.farm?.plots[index].plant
-                return !old || (old.plantedAt === plot.plant.plantedAt && plantStage(old) < 3)
-            })
-            view.value = response.data
-            loadError.value = ''
-            if (newlyMature) speak(t('farm.matureBubble'))
-        } else loadError.value = response.message || t('farm.loadFailed')
-    } catch (error) {
-        loadError.value = error instanceof Error ? error.message : t('farm.loadFailed')
-    }
-}
 function showNotice(message: string) {
     notice.value = message
     if (noticeTimer) clearTimeout(noticeTimer)
     noticeTimer = setTimeout(() => {
         notice.value = ''
-        noticeTimer = null
+        noticeTimer = undefined
     }, 2000)
 }
+async function refresh() {
+    if (busy.value || disposed) return
+    const token = ++loadSequence
+    try {
+        const response = await window.api.getFarm()
+        if (disposed || busy.value || token !== loadSequence) return
+        if (response.code === 200 && response.data) {
+            view.value = response.data
+            loadError.value = ''
+            dataReady.value = true
+        } else { dataReady.value = false; loadError.value = response.message || t('farm.loadFailed') }
+    } catch (error) {
+        if (!disposed && token === loadSequence) {
+            dataReady.value = false
+            loadError.value = error instanceof Error ? error.message : t('farm.loadFailed')
+        }
+    }
+}
+function feedbackAt(plot: number, text: string, crop?: string) {
+    const p = farmLayout(width.value, height.value).plots[plot],
+        id = crypto.randomUUID()
+    effects.value.push({ id, x: p.x, y: p.y - 35, text })
+    if (crop && backpack.value) {
+        const r = backpack.value.getBoundingClientRect()
+        flights.value.push({
+            id,
+            crop,
+            x: p.x,
+            y: p.y - 30,
+            dx: r.x + r.width / 2 - p.x,
+            dy: r.y + r.height / 2 - p.y + 30
+        })
+    }
+    const timer = setTimeout(() => {
+        effects.value = effects.value.filter((e) => e.id !== id)
+        flights.value = flights.value.filter((f) => f.id !== id)
+        effectTimers.delete(timer)
+    }, 1350)
+    effectTimers.add(timer)
+}
 async function run(operation: FarmOperation): Promise<boolean> {
-    if (!view.value || busy.value || view.value.saveError) return false
+    if (!view.value || blocked.value) return false
     busy.value = true
+    ++loadSequence
+    hideHover()
     const before = view.value.level
     try {
         const response = await window.api.executeFarm({
@@ -900,135 +729,159 @@ async function run(operation: FarmOperation): Promise<boolean> {
             expectedRevision: view.value.revision,
             operation
         })
+        if (disposed) return false
         if (response.code !== 200 || !response.data) {
             showNotice(response.message || t('farm.failed'))
-            await refresh(true)
             return false
         }
         view.value = response.data.view
-        if (operation.type === 'sow') playAction('plant')
-        else if (operation.type === 'water') playAction('water')
-        else if (operation.type === 'harvest') playAction('harvest')
-        const feedback = response.data.feedback
-        const gains = Object.entries(feedback.items).map(
-            ([crop, count]) => `${cropName(crop)}×${count}`
-        )
-        if (feedback.exp) gains.push(`+${feedback.exp} EXP`)
-        if (feedback.cashDelta)
-            gains.push(`◈ ${feedback.cashDelta > 0 ? '+' : ''}${feedback.cashDelta}`)
-        if (response.data.view.level > before) gains.push(`Lv.${response.data.view.level}`)
-        showNotice([feedback.message, ...gains].join(' · '))
-        if (operation.type === 'sow') speak(t('farm.sowBubble'))
-        else if (operation.type === 'water') speak(t('farm.waterBubble'))
-        else if (operation.type === 'harvest') speak(t('farm.harvestBubble'))
+        const f = response.data.feedback
+        if ('plotIds' in operation) {
+            const text =
+                operation.type === 'sow'
+                    ? t('farm.sown')
+                    : operation.type === 'water'
+                      ? t('farm.watered')
+                      : Object.entries(f.items)
+                            .map(([crop, n]) => cropName(crop) + ' ×' + n)
+                            .join(' · ')
+            feedbackAt(
+                operation.plotIds[0],
+                text,
+                operation.type === 'harvest' ? Object.keys(f.items)[0] : undefined
+            )
+            if (response.data.view.level > before)
+                showNotice(t('farm.levelUp', { level: response.data.view.level }))
+        } else {
+            const label =
+                operation.type === 'buySeed'
+                    ? 'farm.bought'
+                    : operation.type === 'sell'
+                      ? 'farm.sold'
+                      : operation.type === 'deliver'
+                        ? 'farm.delivered'
+                        : 'farm.orderDiscarded'
+            showNotice(
+                t(label) +
+                    (f.cashDelta ? ' · ◈ ' + (f.cashDelta > 0 ? '+' : '') + f.cashDelta : '') +
+                    (f.exp ? ' · +' + f.exp + ' EXP' : '')
+            )
+        }
         return true
     } catch (error) {
-        showNotice(error instanceof Error ? error.message : t('farm.failed'))
-        await refresh(true)
+        if (!disposed) showNotice(error instanceof Error ? error.message : t('farm.failed'))
         return false
     } finally {
         busy.value = false
+        if (!disposed) void refresh()
     }
 }
-function selectPlot(id: number) {
-    if (!view.value || busy.value || id >= view.value.unlockedPlots) return
-    playAction('walk')
-    selectedPlot.value = id
-    side.value = 'plot'
-    drawerOpen.value = true
+async function sceneTarget(target: FarmTarget, right: boolean) {
+    if (right) {
+        dismiss()
+        return
+    }
+    if (blocked.value || panel.value) return
+    if (target.kind === 'blank') {
+        dismiss()
+        return
+    }
+    if (seedTarget.value !== null) return
+    const mode = plotMode(view.value!, target.id)
+    if (mode === 'locked') {
+        showNotice(t('farm.unlockAt', { level: target.id < 9 ? 3 : 5 }))
+        return
+    }
+    if (mode === 'sow') {
+        hideHover()
+        seedTarget.value = target.id
+    } else if (mode === 'water' || mode === 'harvest')
+        await run({ type: mode, plotIds: [target.id] })
 }
-function plotAction(type: 'water' | 'harvest', batch = false) {
-    if (!view.value || busy.value || view.value.saveError) return
-    if (!batch && selectedPlot.value === null) return
-    const ids = batch
-        ? view.value.farm!.plots.filter((p) => p.id < view.value!.unlockedPlots).map((p) => p.id)
-        : [selectedPlot.value!]
-    void previewAndRun({ type, plotIds: ids })
+async function sow(cropId: string) {
+    if (
+        seedTarget.value === null ||
+        blocked.value ||
+        !view.value?.farm?.seeds[cropId] ||
+        cropDefinition(cropId).level > view.value.level
+    )
+        return
+    const id = seedTarget.value
+    if (await run({ type: 'sow', cropId, plotIds: [id] })) seedTarget.value = null
 }
-async function previewAndRun(operation: FarmOperation) {
-    if (busy.value || view.value?.saveError) return
+function openBuy(id: string) {
+    if (busy.value) return
+    tradeCrop.value = id
+    count.value = 1
+    openPanel('buy')
+}
+function openSell(id: string) {
+    if (busy.value) return
+    tradeCrop.value = id
+    count.value = 1
+    sellWarningShown.value = false
+    openPanel('sell')
+}
+async function confirmTrade() {
+    if (
+        blocked.value ||
+        !Number.isSafeInteger(count.value) ||
+        count.value < 1 ||
+        count.value > tradeMaximum.value
+    )
+        return
+    const selling = panel.value === 'sell'
+    if (selling && orderNeeds(tradeCrop.value) && !sellWarningShown.value) {
+        sellWarningShown.value = true
+        showNotice(t('farm.sellWarning'))
+        return
+    }
+    if (
+        await run({
+            type: selling ? 'sell' : 'buySeed',
+            cropId: tradeCrop.value,
+            count: count.value
+        })
+    )
+        openPanel(selling ? 'warehouse' : 'store')
+}
+async function backupAction(
+    action: () => Promise<{ code: number; message?: string; data?: BackupPreview | null }>,
+    preview = false
+) {
+    if (busy.value) return
     busy.value = true
-    let approved: FarmOperation | null = null
     try {
-        const preview = await window.api.previewFarm(operation)
-        if (preview.code !== 200 || !preview.data) {
-            showNotice(preview.message || t('farm.failed'))
-            return
-        }
-        if (!preview.data.eligible) {
-            showNotice(t('farm.noEligible'))
-            return
-        }
-        approved = preview.data.operation
+        const r = await action()
+        if (r.code !== 200) showNotice(r.message || t('farm.failed'))
+        else if (preview) backupPreview.value = r.data || null
+        else showNotice(t('farm.exported'))
     } catch (error) {
         showNotice(error instanceof Error ? error.message : t('farm.failed'))
     } finally {
         busy.value = false
     }
-    if (approved) await run(approved)
 }
-function sow(cropId: string) {
-    if (
-        !view.value ||
-        busy.value ||
-        view.value.saveError ||
-        !view.value.farm?.seeds[cropId] ||
-        cropDefinition(cropId).level > view.value.level
-    )
-        return
-    panel.value = null
-    closeDrawer()
-    tool.value = { kind: 'sow', cropId }
+function exportBackup() {
+    void backupAction(() => window.api.exportFarmBackup())
 }
-function confirmTrade() {
-    if (panel.value === 'buy') {
-        void run(
-            storeTab.value === 'seeds'
-                ? { type: 'buySeed', cropId: buyId.value, count: count.value }
-                : { type: 'buyDecoration', decorationId: buyId.value, count: count.value }
-        )
-    } else if (panel.value === 'sell') {
-        if (orderNeeds(sellCrop.value) && !sellWarningShown.value) {
-            sellWarningShown.value = true
-            showNotice(t('farm.sellWarning'))
-            return
-        }
-        void run({ type: 'sell', cropId: sellCrop.value, count: count.value })
-    }
+function selectBackup() {
+    void backupAction(() => window.api.selectFarmBackup(), true)
 }
-async function placeDecoration(
-    cell: FarmCell,
-    current: Extract<FarmTool, { kind: 'place' | 'move' }>
-) {
-    const success = await run(
-        current.kind === 'move'
-            ? { type: 'move', instanceId: current.instanceId, ...cell }
-            : { type: 'place', decorationId: current.decorationId, ...cell }
-    )
-    if (success) cancelTool()
-}
-async function exportBackup() {
-    const r = await window.api.exportFarmBackup()
-    showNotice(r.code === 200 ? t('farm.exported') : r.message || t('farm.failed'))
-}
-async function selectBackup() {
-    const r = await window.api.selectFarmBackup()
-    if (r.code === 200) backupPreview.value = r.data || null
-    else showNotice(r.message || t('farm.failed'))
-}
-async function automaticBackup() {
-    const r = await window.api.getAutomaticFarmBackup()
-    if (r.code === 200) backupPreview.value = r.data || null
-    else showNotice(r.message || t('farm.failed'))
+function automaticBackup() {
+    void backupAction(() => window.api.getAutomaticFarmBackup(), true)
 }
 async function restoreBackup() {
-    if (!backupPreview.value || !confirm(t('farm.restoreWarning'))) return
+    if (busy.value || !backupPreview.value || !confirm(t('farm.restoreWarning'))) return
     busy.value = true
-    const r = await window.api.restoreFarmBackup(backupPreview.value.token)
-    if (r.code !== 200) {
+    try {
+        const r = await window.api.restoreFarmBackup(backupPreview.value.token)
+        showNotice(r.code === 200 ? t('farm.restarting') : r.message || t('farm.failed'))
+        if (r.code !== 200) busy.value = false
+    } catch (error) {
         busy.value = false
-        showNotice(r.message || t('farm.failed'))
-    } else showNotice(t('farm.restarting'))
+        showNotice(error instanceof Error ? error.message : t('farm.failed'))
+    }
 }
 function goBack() {
     void router.push('/home')
@@ -1036,626 +889,779 @@ function goBack() {
 function windowClose() {
     window.api.closeWindow()
 }
+function onKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+        dismiss()
+        return
+    }
+    if (event.key === 'Tab' && panel.value && dialog.value) {
+        const nodes = Array.from(
+                dialog.value.querySelectorAll<HTMLElement>(
+                    'button:not(:disabled),input:not(:disabled)'
+                )
+            ),
+            first = nodes[0],
+            last = nodes.at(-1)
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault()
+            last?.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault()
+            first?.focus()
+        }
+    }
+}
 onMounted(() => {
+    manualActivity()
+    stopAssistantState = window.api.onFarmAssistantState?.(value => { assistantStatus.value = value })
+    void window.api.getFarmAssistant?.().then(r => { if (!disposed && r.code === 200 && r.data) assistantStatus.value = r.data }).catch(() => {})
     window.addEventListener('keydown', onKeydown)
+    window.addEventListener('blur', hideHover)
+    observer = new ResizeObserver(() => {
+        if (host.value) {
+            width.value = host.value.clientWidth
+            height.value = host.value.clientHeight
+            hideHover()
+        }
+    })
+    watch(
+        host,
+        (el) => {
+            if (el) {
+                width.value = el.clientWidth
+                height.value = el.clientHeight
+                observer?.observe(el)
+            }
+        },
+        { immediate: true }
+    )
     void refresh()
-    timer = setInterval(() => {
+    interval = setInterval(() => {
         if (!document.hidden) void refresh()
-    }, 10000)
-    frameTimer = setInterval(() => {
-        if (!document.hidden) youmeiFrame.value = 1 - youmeiFrame.value
-    }, 450)
+    }, 1000)
     unsubscribe = window.api.onGameSaveChanged(() => {
         void refresh()
     })
 })
 onUnmounted(() => {
+    stopAssistantState?.()
+    disposed = true
+    ++loadSequence
     window.removeEventListener('keydown', onKeydown)
-    cancelTool()
-    if (timer) clearInterval(timer)
-    if (frameTimer) clearInterval(frameTimer)
-    if (actionTimer) clearTimeout(actionTimer)
-    if (bubbleTimer) clearTimeout(bubbleTimer)
+    window.removeEventListener('blur', hideHover)
+    hideHover()
+    if (interval) clearInterval(interval)
     if (noticeTimer) clearTimeout(noticeTimer)
+    effectTimers.forEach(clearTimeout)
+    observer?.disconnect()
     unsubscribe?.()
-    void window.api.checkpointFarm()
+    void window.api.checkpointFarm().catch(() => {})
 })
 </script>
 
 <style scoped>
+.farm-shell { position: relative; width: 100%; height: 100vh; overflow: hidden; cursor: var(--game-cursor); }
+.farm-shell :deep(button), .farm-shell :deep(button:disabled) { cursor: var(--game-cursor) !important; }
+.farm-shell :deep(input) { cursor: text; }
+.exit-button { width: 58px; height: 58px; border: 3px solid #b77945; border-radius: 50%; background: #fff1d0; color: #68452f; font-size: 36px; line-height: 1; }
+.game-loading { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; background: linear-gradient(#4c743849, #2e563894), var(--loading-background) center/cover; }
+.loading-exit { position: absolute; right: 20px; top: 24px; }
+.loading-card { width: min(440px, calc(100% - 40px)); padding: 26px; border: 3px solid #b77945; border-radius: 25px; background: #fff2dbeF; color: #68452f; text-align: center; }
+.loading-card progress { display: block; width: 100%; height: 20px; accent-color: #87ac4b; margin-bottom: 10px; }
+.loading-card button { display: block; margin: 12px auto 0; padding: 8px 20px; border-radius: 12px; }
+.farm-loading-leave-active { transition: opacity .25s; pointer-events: none; }
+.farm-loading-leave-to { opacity: 0; }
+.assistant-status { padding: 8px 12px; border-radius: 12px; background: #dfebc8; }
 .farm {
+    --ink: #664329;
+    position: relative;
     height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background: #e7dfc3;
-    color: #443628;
-    font-family: 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif;
+    width: 100%;
     overflow: hidden;
+    color: var(--ink);
+    font-family: 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif;
+    background: #80b86a;
+    user-select: none;
 }
-.farm,
 .farm * {
     box-sizing: border-box;
 }
+.farm button,
+.farm input {
+    font: inherit;
+}
 .farm button {
     cursor: pointer;
-    border: 2px solid #8b7354;
-    background: #fff9e6;
-    color: #473929;
-    border-radius: 5px;
-    font: inherit;
-    padding: 5px 10px;
+    color: inherit;
 }
 .farm button:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
+    cursor: default;
+    opacity: 0.55;
 }
-.farm button:hover:not(:disabled) {
-    background: #f1e5bc;
-}
-.topbar {
-    z-index: 3;
-    flex: none;
-    height: 78px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 22px;
-    background: #f7efd5;
-    border-bottom: 3px solid #ae9469;
-    box-shadow: 0 3px 0 #d3bb83;
-}
-.topbar > button {
-    min-height: 40px;
-    white-space: nowrap;
-}
-.topbar .title {
-    display: flex;
-    flex-direction: column;
-    min-width: 152px;
-}
-.title strong {
-    font-size: 24px;
-}
-.title span {
-    font-size: 12px;
-}
-.experience {
-    width: 165px;
-    height: 13px;
-    background: #c9b996;
-    border: 1px solid #886f50;
-    border-radius: 8px;
-    overflow: hidden;
-}
-.exp-icon,
-.top-icon {
-    width: 23px;
-    height: 23px;
-    object-fit: contain;
-    image-rendering: pixelated;
-}
-.topbar button:has(.top-icon) {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-.experience div {
-    height: 100%;
-    background: #8caf55;
-}
-.cash {
-    margin-left: auto;
-}
-.topbar .close {
-    font-size: 24px;
-    padding: 0 9px;
-}
-.body {
-    position: relative;
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    overflow: hidden;
+.farm button:focus-visible,
+.farm input:focus-visible {
+    outline: 3px solid #ffe376;
+    outline-offset: 3px;
 }
 .field {
-    flex: 1;
-    position: relative;
-    min-width: 0;
-    overflow: hidden;
-    background: #9cb974;
-    isolation: isolate;
-}
-.field::after {
-    content: '';
     position: absolute;
-    inset: 20% 0 0;
-    z-index: -1;
-    background: rgb(125 153 93 / 7.5%);
-    pointer-events: none;
-}
-.skyline {
-    position: absolute;
-    z-index: 2;
-    left: 24px;
-    top: 18px;
-    color: #456d64;
-    font-size: 16px;
-    text-shadow: 1px 1px rgb(252 251 225 / 85%);
-    pointer-events: none;
-}
-.topbar .level-link {
-    border: 0;
-    background: transparent;
-    padding: 0;
-    text-align: left;
-    font-size: 12px;
-}
-.companion {
-    position: absolute;
-    z-index: 3;
-    left: 4.5%;
-    bottom: 6%;
-    width: 96px;
-    height: 143px;
-    pointer-events: none;
-}
-.companion span {
-    position: absolute;
-    left: 70px;
-    bottom: 115px;
-    width: 160px;
-    background: #fff9e9;
-    border: 2px solid #987e56;
-    padding: 5px;
-    border-radius: 8px;
-    font-size: 11px;
-}
-.sidebar {
-    position: absolute;
-    z-index: 4;
-    top: 0;
-    bottom: 0;
-    right: 0;
-    width: 320px;
-    max-width: calc(100% - 24px);
-    background: #f3e7c9;
-    border-left: 3px solid #ae9469;
-    overflow: auto;
-    box-shadow: -6px 0 18px rgb(58 48 26 / 18%);
-    animation: farm-drawer-open 180ms ease-out;
-}
-.drawer-header {
-    position: sticky;
-    z-index: 1;
-    top: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px;
-    background: #f3e7c9;
-    border-bottom: 1px solid #c9b68c;
-}
-.drawer-header h2 {
-    margin: 0;
-    font-size: 18px;
-}
-@keyframes farm-drawer-open {
-    from {
-        transform: translateX(100%);
-    }
-    to {
-        transform: translateX(0);
-    }
-}
-@media (prefers-reduced-motion: reduce) {
-    .sidebar {
-        animation: none;
-    }
-}
-.tabs {
-    display: flex;
-    gap: 6px;
-    padding: 9px;
-}
-.tabs .active {
-    background: #bfd398;
-}
-.orders,
-.plot-detail {
-    padding: 0 12px;
-}
-.plot-detail h3 {
-    margin: 12px 0 6px;
-    font-size: 17px;
-}
-.seed-error {
-    font-size: 12px;
-    color: #933e28;
-}
-.seed-list {
-    display: grid;
-    gap: 6px;
-}
-.farm .seed-option {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    min-height: 58px;
-    padding: 7px;
-    text-align: left;
-    border-color: #c3aa7d;
-}
-.farm .seed-option:disabled {
-    opacity: 0.65;
-}
-.seed-icon {
-    flex: none;
-    width: 40px;
-    height: 40px;
-    background-size: 400% 100%;
-    background-position: right center;
-    background-repeat: no-repeat;
-    image-rendering: pixelated;
-}
-.seed-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-.seed-info strong {
-    display: flex;
-    justify-content: space-between;
-    gap: 4px;
-    font-size: 13px;
-}
-.seed-info strong span,
-.seed-info small {
-    font-size: 11px;
-    font-weight: normal;
-}
-.seed-action {
-    flex: none;
-    font-size: 11px;
-}
-.farm .seed-shop {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    width: 100%;
-    margin: 12px 0;
-}
-.seed-shop img {
-    width: 24px;
-    height: 24px;
-    object-fit: contain;
-    image-rendering: pixelated;
-}
-.order-card {
-    padding: 13px;
-    margin: 8px 0 10px;
-    background: #fff9e9;
-    border: 2px solid #c3aa7d;
-    border-radius: 6px;
-}
-.order-card strong {
-    display: block;
-    margin-bottom: 7px;
-    font-size: 17px;
-}
-.order-card p {
-    margin: 4px 0;
-    font-size: 13px;
-}
-.order-card small {
-    font-size: 13px;
-}
-.card-actions {
-    display: flex;
-    gap: 5px;
-    margin-top: 6px;
-}
-.card-actions button {
-    font-size: 11px !important;
-    padding: 3px 5px !important;
-}
-.toolbar {
-    z-index: 3;
-    flex: none;
-    height: 94px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    background: #ead8ad;
-    border-top: 3px solid #ad9367;
-    padding: 8px 12px;
-}
-.toolbar button {
-    font-size: 14px !important;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 90px;
-    height: 73px;
-    gap: 2px;
-}
-.toolbar button.has-ready {
-    border-color: #d6a741;
-    background: #fff1bc;
-}
-.toolbar button.has-ready span {
-    position: absolute;
-    right: 2px;
-    top: 1px;
-    font-size: 10px;
-    font-weight: bold;
-}
-.toolbar img {
-    display: block;
-    width: 29px;
-    height: 29px;
-    object-fit: contain;
-    image-rendering: pixelated;
-}
-.notice {
-    position: fixed;
-    top: 16px;
-    max-width: calc(100% - 32px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: #fff8dc;
-    border: 2px solid #9f8858;
-    padding: 7px 14px;
-    z-index: 6;
-    text-align: center;
-    overflow-wrap: anywhere;
-    pointer-events: none;
-}
-.overlay {
-    position: fixed;
     inset: 0;
-    background: #2f2b25a9;
+}
+.window-drag {
+    position: absolute;
+    top: 0;
+    left: 340px;
+    right: 280px;
+    height: 48px;
+    z-index: 2;
+    -webkit-app-region: drag;
+}
+.profile {
+    position: absolute;
+    left: 18px;
+    top: 16px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    border: 0;
+    background: none;
+    padding: 0;
+    height: 88px;
+    z-index: 3;
+}
+.portrait {
+    position: relative;
+    z-index: 2;
+    width: 88px;
+    height: 88px;
+    border: 5px solid #fff6dc;
+    border-radius: 50%;
+    background: #efd5a4;
+    overflow: hidden;
+    box-shadow: 0 3px 0 #a16e3e;
+}
+.portrait img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.profile-content {
+    margin-left: -16px;
+    padding: 10px 16px 11px 28px;
+    background: linear-gradient(#fff6d9, #efd5a4);
+    border: 3px solid #b77945;
+    border-radius: 0 30px 30px 0;
+    box-shadow: 0 3px 0 #895a33;
+    min-width: 220px;
+    text-align: left;
+}
+.profile-content > strong {
+    display: block;
+    font-size: 16px;
+    letter-spacing: 2px;
+    margin: 0 0 7px 14px;
+}
+.experience {
+    position: relative;
+    display: block;
+    height: 23px;
+    width: 180px;
+    background: #a5774e;
+    border: 2px solid #b98a54;
+    border-radius: 14px;
+    overflow: hidden;
+}
+.experience i {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: linear-gradient(#c7ed77, #83b73f);
+    border-radius: 12px;
+    transition: width 0.5s;
+}
+.experience > span {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #fff9e7;
+    font-size: 13px;
+    font-weight: 800;
+    text-shadow: 0 1px 2px #6f4c30;
+}
+.level-star {
+    position: absolute;
+    left: 73px;
+    top: 40px;
+    width: 43px;
+    height: 43px;
+    display: grid;
+    place-items: center;
+    background: #ffd259;
+    clip-path: polygon(
+        50% 0,
+        65% 25%,
+        94% 18%,
+        87% 48%,
+        100% 70%,
+        72% 79%,
+        65% 100%,
+        43% 88%,
+        18% 98%,
+        16% 70%,
+        0 51%,
+        22% 34%,
+        25% 9%
+    );
+    font-size: 22px;
+    font-weight: 900;
+    z-index: 3;
+}
+.top-actions {
+    position: absolute;
+    top: 24px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 3;
+}
+.store-entry {
+    display: flex;
+    align-items: center;
+    height: 57px;
+    gap: 12px;
+    border: 3px solid #b77945;
+    border-radius: 28px;
+    background: linear-gradient(#fff6d9, #efd5a4);
+    box-shadow: 0 3px 0 #895a33;
+    padding: 0 16px 0 0;
+}
+.store-entry .farm-icon {
+    width: 57px;
+    height: 57px;
+    margin-left: -7px;
+}
+.store-entry strong {
+    font-size: 25px;
+    min-width: 52px;
+    text-align: center;
+}
+.settings-button {
+    width: 58px;
+    height: 58px;
+    border: 0;
+    background: none;
+    padding: 0;
+}
+.side-actions {
+    position: absolute;
+    left: 20px;
+    top: 25%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    z-index: 3;
+}
+.game-button {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 3px;
+    border: 0;
+    background: none;
+    padding: 0;
+    color: #fff9e6 !important;
+    min-width: 78px;
+}
+.entry-art {
+    position: relative;
+    display: block;
+    width: 78px;
+    height: 78px;
+}
+.game-button strong {
+    font-size: 21px;
+    text-shadow:
+        0 2px 1px #714b24,
+        2px 0 1px #714b24,
+        -2px 0 1px #714b24,
+        0 -1px 1px #714b24,
+        0 4px 7px #36552d;
+}
+.game-button:hover .entry-art {
+    transform: translateY(-3px);
+    filter: brightness(1.08);
+}
+.badge {
+    position: absolute;
+    right: 0;
+    top: 0;
+    min-width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    padding: 0 5px;
+    background: #ed684c;
+    color: #fff9e6;
+    border: 2px solid #fff4ca;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 900;
+}
+.tooltip,
+.seed-picker {
+    position: absolute;
     z-index: 5;
+    border: 1px solid #d6c797;
+    border-radius: 15px;
+    background: rgb(255 249 225 / 90%);
+    box-shadow: 0 6px 20px #384e3033;
 }
-.modal {
-    width: min(600px, 90vw);
-    max-height: 85vh;
+.tooltip {
+    width: 232px;
+    padding: 13px 15px;
+    pointer-events: none;
+    font-size: 12px;
+}
+.tooltip strong {
+    font-size: 15px;
+}
+.tooltip p {
+    margin: 8px 0 0;
+}
+.growth {
+    height: 5px;
+    margin-top: 8px;
+    border-radius: 4px;
+    background: #d6d6bd;
+    overflow: hidden;
+}
+.growth i {
+    display: block;
+    height: 100%;
+    background: #91b74a;
+}
+.seed-picker {
+    width: 338px;
+    max-width: calc(100% - 24px);
+    padding: 10px;
+    max-height: calc(100vh - 24px);
     overflow: auto;
-    background: #f8eed5;
-    border: 5px solid #a78652;
-    box-shadow: 8px 8px #3c3325;
-    padding: 15px;
 }
+.seed-picker header,
 .modal header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 16px;
+}
+.close-button {
+    border: 0;
+    border-radius: 50%;
+    background: #eddbb5;
+    color: #84532c;
+    width: 34px;
+    height: 34px;
+    flex: none;
+    font-size: 23px !important;
+}
+.seed-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin: 8px 0;
+}
+.seed-option {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px;
+    border: 1px solid #e4d4ad;
+    border-radius: 10px;
+    background: #fff9e6;
+    min-width: 0;
+    font-size: 12px !important;
+}
+.seed-option .item-art {
+    width: 48px;
+    height: 55px;
+}
+.seed-option span {
+    position: absolute;
+    right: 4px;
+    top: 5px;
+    font-size: 10px;
+}
+.seed-option small {
+    font-size: 10px;
+}
+.seed-picker > .action-button {
+    width: 100%;
+    margin-top: 8px;
+}
+.overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    background: #24402b70;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+.modal {
+    width: min(720px, 100%);
+    max-height: calc(100vh - 40px);
+    overflow: auto;
+    background: linear-gradient(#fff7dd, #f5e7c1);
+    border: 4px solid #b77945;
+    border-radius: 24px;
+    box-shadow:
+        0 7px 0 #7f512d,
+        0 20px 60px #172c3750;
+    padding: 22px;
+}
+.modal header {
+    position: sticky;
+    top: -22px;
+    z-index: 1;
+    background: #fff7dd;
+    padding: 10px 0;
+    margin-top: -10px;
+}
+.modal-header-actions { display: flex; align-items: center; gap: 12px; }
+.store-balance {
+    padding: 6px 12px;
+    border: 2px solid #d4a65d;
+    border-radius: 999px;
+    background: #fff1c5;
+    color: #754520;
+    font-size: 18px;
+    font-weight: 900;
+    white-space: nowrap;
 }
 .modal h2 {
-    margin: 0 0 10px;
+    margin: 0;
+    font-size: 24px;
 }
 .item-list {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    max-height: 55vh;
-    overflow: auto;
-}
-.item-list article {
-    background: #fff9e9;
-    border: 2px solid #d4c6a7;
-    padding: 7px;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 4px;
-}
-.item-list small,
-.item-list p {
-    grid-column: 1/-1;
-}
-.item-list button {
-    font-size: 11px !important;
-}
-.quantities {
-    display: flex;
-    gap: 6px;
-}
-.quantities input {
-    width: 85px;
-}
-.backup-summary {
-    border-top: 2px solid #c4b18d;
-    margin-top: 13px;
-}
-.loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
-    background: #e7dfc3;
+    margin-top: 14px;
 }
-@media (max-width: 1000px) {
-    .sidebar {
-        width: 280px;
-    }
-    .topbar {
-        gap: 8px;
-        padding: 8px 12px;
-    }
-    .topbar .title {
-        min-width: 126px;
-    }
-    .title strong {
-        font-size: 20px;
-    }
-    .experience {
-        width: 95px;
-    }
-    .companion {
-        transform: scale(0.78);
-        transform-origin: bottom left;
-    }
-    .toolbar {
-        gap: 5px;
-    }
-    .toolbar button {
-        padding: 5px !important;
-        width: 70px;
-        font-size: 11px !important;
-    }
-}
-@media (max-height: 690px) {
-    .topbar {
-        height: 64px;
-    }
-    .toolbar {
-        height: 78px;
-    }
-    .toolbar button {
-        height: 62px;
-    }
-    .toolbar img {
-        width: 24px;
-        height: 24px;
-    }
-    .companion {
-        transform: scale(0.7);
-        transform-origin: bottom left;
-    }
-    .order-card {
-        padding: 8px 10px;
-        margin: 6px 0;
-    }
-}
-</style>
-
-<style scoped>
-.tool-status {
-    position: absolute;
-    z-index: 3;
-    top: 16px;
-    left: 18px;
-    width: max-content;
-    max-width: calc(100% - 36px);
+.item-card {
+    position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 6px 8px;
-    background: rgb(255 248 224 / 94%);
-    font-size: 12px;
-    border: 1px solid #ad9367;
-    border-radius: 6px;
-    box-shadow: 0 2px 0 rgb(79 62 35 / 12%);
-    pointer-events: none;
-}
-.tool-status > span {
-    flex: 1 1 180px;
+    background: #fff9e9;
+    border: 1px solid #dfc797;
+    border-radius: 16px;
+    padding: 15px;
+    gap: 7px;
     min-width: 0;
-    overflow-wrap: anywhere;
 }
-.tool-status > button {
-    flex: none;
-    padding: 4px 8px;
-    white-space: nowrap;
-    pointer-events: auto;
+.item-card > .item-art {
+    width: 82px;
+    height: 88px;
 }
-.toolbar button.active {
-    background: #bfd398;
-    border-color: #698348;
+.item-card h3 {
+    margin: 0;
+    font-size: 16px;
 }
-.item-list .illustrated-card {
-    grid-template-columns: 76px minmax(0, 1fr) auto;
-    align-items: center;
+.item-card p {
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: center;
+    margin: 0;
 }
-.illustrated-card > .item-art {
-    grid-column: 1;
-    grid-row: 1 / 4;
+.item-card .quantity {
+    position: absolute;
+    right: 10px;
+    top: 8px;
+    font-weight: 700;
 }
-.illustrated-card > strong {
-    grid-column: 2;
+.action-button,
+.settings-list button,
+.tabs button,
+.quantities button {
+    padding: 8px 14px;
+    border: 1px solid #678b36;
+    border-radius: 12px;
+    background: linear-gradient(#b9d575, #8db34b);
+    box-shadow: 0 2px 0 #587b31;
+    font-weight: 700;
 }
-.illustrated-card > span:not(.item-art) {
-    grid-column: 3;
+.action-button.secondary,
+.tabs button,
+.quantities button,
+.settings-list button {
+    background: #f3e2b8;
+    border-color: #bf9d69;
+    box-shadow: 0 2px 0 #b88b53;
 }
-.item-list .illustrated-card > small {
-    grid-column: 2 / -1;
+.item-card > .action-button {
+    width: 100%;
+    margin-top: auto;
+    font-size: 12px;
 }
-.illustrated-card > button {
-    grid-column: 2 / -1;
+.tabs,
+.quantities,
+.card-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 12px 0;
 }
-.illustrated-card > p,
+.tabs .active {
+    background: #abc868;
+    border-color: #65863c;
+}
 .crop-stages {
-    grid-column: 1 / -1;
-}
-.crop-stages {
+    width: 100%;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 3px;
-    border-top: 1px solid #ddd0b0;
+    gap: 2px;
+    border-top: 1px solid #e4d4ad;
     padding-top: 7px;
 }
 .crop-stages > div {
     display: flex;
-    align-items: center;
     flex-direction: column;
-    min-width: 0;
+    align-items: center;
 }
 .crop-stages .item-art {
-    width: 42px;
-    height: 56px;
+    width: 38px;
+    height: 48px;
 }
 .crop-stages small {
     font-size: 10px;
     text-align: center;
 }
-.decoration-list {
+.codex-label {
+    font-size: 11px;
+    color: #638136;
+}
+.order-list {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    gap: 12px;
+    margin-top: 12px;
 }
-.farm .decoration-card {
+.order-card {
+    border: 1px solid #dfc797;
+    border-radius: 15px;
+    background: #fff9e9;
+    padding: 14px;
+    font-size: 12px;
+}
+.order-card h3 {
+    margin: 0 0 8px;
+}
+.order-need {
     display: flex;
     align-items: center;
+    gap: 5px;
+    margin: 5px 0;
+}
+.order-need .item-art {
+    width: 40px;
+    height: 44px;
+}
+.order-need strong {
+    flex: 1;
+}
+.order-need .enough {
+    color: #6c983c;
+}
+.card-actions .action-button {
+    padding: 6px 10px;
+    font-size: 12px;
+}
+.trade-details {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 25px;
+    margin: 20px 0;
+}
+.trade-details .item-art {
+    width: 120px;
+    height: 130px;
+}
+.quantities {
+    justify-content: center;
+    align-items: center;
+}
+.quantities input {
+    width: 75px;
+    padding: 8px;
+    border: 1px solid #bfa476;
+    border-radius: 8px;
+    text-align: center;
+    background: #fff9e6;
+}
+.trade-confirm {
+    display: block;
+    margin: 20px auto 8px;
+}
+.unlock-list p {
+    display: flex;
     flex-direction: column;
     gap: 5px;
-    min-width: 0;
-    padding: 9px;
+    padding: 12px;
+    border-bottom: 1px solid #dec69f;
+    font-size: 13px;
 }
-.decoration-card small {
-    font-size: 11px;
+.level-display {
+    text-align: center;
+    font-size: 24px;
+    padding: 20px;
 }
-.trade-art {
-    width: 96px;
-    height: 104px;
+.settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 24px 0;
 }
-@media (max-width: 850px) {
+.backup-summary {
+    border-top: 1px solid #dec69f;
+    padding-top: 12px;
+}
+.notice {
+    position: absolute;
+    z-index: 20;
+    top: 110px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: calc(100% - 32px);
+    border: 1px solid #d8bc80;
+    border-radius: 16px;
+    background: #fff5d9ee;
+    box-shadow: 0 5px 15px #355a3033;
+    padding: 10px 20px;
+    font-size: 13px;
+    text-align: center;
+    pointer-events: none;
+}
+.save-error {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: calc(100% - 32px);
+    z-index: 6;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: #fff5d9ee;
+    color: #923d2b;
+    font-size: 12px;
+}
+.effects {
+    position: absolute;
+    inset: 0;
+    z-index: 7;
+    pointer-events: none;
+}
+.plot-feedback {
+    position: absolute;
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff8cc;
+    text-shadow:
+        0 2px #704925,
+        1px 0 #704925,
+        -1px 0 #704925;
+    animation: feedback 1.3s ease-out forwards;
+    white-space: nowrap;
+}
+.harvest-flight {
+    position: absolute;
+    width: 46px;
+    height: 55px;
+    animation: flight 0.95s ease-in forwards;
+}
+.loading {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: #f5e7c1;
+    color: #664329;
+}
+@keyframes feedback {
+    from {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+    to {
+        transform: translate(-50%, -55px);
+        opacity: 0;
+    }
+}
+@keyframes flight {
+    from {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: translate(var(--fly-x), var(--fly-y)) scale(0.4);
+        opacity: 0;
+    }
+}
+@media (max-width: 900px) {
+    .profile {
+        transform: scale(0.75);
+        transform-origin: top left;
+    }
+    .top-actions {
+        top: 18px;
+        right: 14px;
+        gap: 9px;
+        transform: scale(0.85);
+        transform-origin: top right;
+    }
+    .side-actions {
+        left: 12px;
+        gap: 16px;
+    }
+    .entry-art {
+        width: 58px;
+        height: 58px;
+    }
+    .game-button strong {
+        font-size: 16px;
+    }
+    .game-button {
+        min-width: 60px;
+    }
+    .item-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .order-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
     .modal {
-        width: 92vw;
+        padding: 16px;
     }
-    .experience {
-        width: 65px;
+    .modal header {
+        top: -16px;
     }
-    .topbar {
-        gap: 5px;
+    .notice {
+        top: 90px;
     }
-    .topbar > button {
-        padding: 5px 7px;
-        font-size: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .plot-feedback,
+    .harvest-flight {
+        animation: none;
     }
-    .topbar .title {
-        min-width: 110px;
+    .experience i {
+        transition: none;
     }
 }
 </style>

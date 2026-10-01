@@ -8,18 +8,6 @@
     { "id": "pumpkin", "name": "南瓜", "level": 5, "minutes": 720, "price": 60, "yield": 3, "sell": 38, "exp": 48, "description": "圆滚滚的南瓜，适合睡一觉后回来收获。" }
   ],
   "levels": [0, 40, 160, 420, 900, 1700, 2900, 4500, 6600, 9300],
-  "decorations": [
-    { "id": "barrel", "name": "木桶", "level": 1, "price": 50, "width": 1 },
-    { "id": "flowerpot", "name": "花盆", "level": 2, "price": 80, "width": 1 },
-    { "id": "fence", "name": "围栏段", "level": 3, "price": 50, "width": 1 },
-    { "id": "bench", "name": "长椅", "level": 4, "price": 150, "width": 2 },
-    { "id": "scarecrow", "name": "稻草人", "level": 5, "price": 200, "width": 1 },
-    { "id": "sign", "name": "木路牌", "level": 6, "price": 120, "width": 1 },
-    { "id": "lantern", "name": "小灯笼", "level": 7, "price": 180, "width": 1 },
-    { "id": "flowerbox", "name": "花箱", "level": 8, "price": 240, "width": 2 },
-    { "id": "mailbox", "name": "邮箱", "level": 9, "price": 300, "width": 1 },
-    { "id": "memorial", "name": "纪念摆件", "level": 10, "price": 500, "width": 1 }
-  ],
   "orders": [
     { "id": "wheat-small", "level": 1, "requirements": { "wheat": 3 }, "exp": 15, "size": 1 },
     { "id": "carrot-small", "level": 1, "requirements": { "carrot": 3 }, "exp": 15, "size": 1 },

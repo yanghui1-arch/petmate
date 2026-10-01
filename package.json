@@ -20,6 +20,7 @@
     "test:local-ai": "node scripts/test-local-ai.mjs",
     "test:model-download": "node scripts/test-model-download.mjs",
     "test:farm": "node scripts/test-farm.mjs",
+    "test:farm-assistant": "node scripts/test-farm-assistant.mjs",
     "test:farm-ui": "node scripts/test-farm-ui.mjs",
     "test:farm-scene": "node scripts/test-farm-scene.mjs",
     "test:save-recovery": "node scripts/test-save-recovery.mjs",

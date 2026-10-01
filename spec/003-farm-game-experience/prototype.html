@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>尤美农场 · 卡通交互原型</title>
+        <link rel="stylesheet" href="prototype.css" />
+        <script src="crop-art.js" defer></script>
+        <script src="prototype.js" defer></script>
+    </head>
+    <body>
+        <main id="game" aria-label="尤美农场交互原型">
+            <div id="world" class="world">
+                <div class="landscape" aria-hidden="true"></div>
+                <div id="plots" aria-hidden="true"></div>
+                <div id="crop-layer" aria-hidden="true"></div>
+                <svg id="hitareas" class="hitareas" viewBox="0 0 1600 900" aria-label="种植地块">
+                    <g id="plot-targets"></g>
+                </svg>
+            </div>
+
+            <button id="profile" class="profile" aria-label="查看农场等级">
+                <span class="portrait"
+                    ><img src="../../src/renderer/assets/image/youmei-avatar.png" alt=""
+                /></span>
+                <span class="profile-content"
+                    ><strong>尤美农场</strong
+                    ><span class="experience"><i id="exp-fill"></i><span id="exp-text"></span></span
+                ></span>
+                <span class="level-star" id="level-number">3</span>
+            </button>
+            <div class="top-actions">
+                <button id="coins" class="coin-counter" aria-label="打开农场商店">
+                    <span class="ui-art" data-icon="5"></span><strong id="cash">702</strong>
+                </button>
+                <button id="settings" class="round-button settings-button" aria-label="农场设置">
+                    <span class="ui-art" data-icon="6"></span>
+                </button>
+            </div>
+            <nav class="side-actions" aria-label="农场经营">
+                <button id="orders" class="game-button">
+                    <span class="entry-art"
+                        ><span class="ui-art" data-icon="1"></span
+                        ><span id="order-badge" class="badge" hidden></span></span
+                    ><strong>订单</strong>
+                </button>
+                <button id="backpack" class="game-button">
+                    <span class="entry-art"><span class="ui-art" data-icon="2"></span></span
+                    ><strong>背包</strong>
+                </button>
+                <button id="codex" class="game-button">
+                    <span class="entry-art"><span class="ui-art" data-icon="3"></span></span
+                    ><strong>图鉴</strong>
+                </button>
+            </nav>
+
+            <section
+                id="seed-picker"
+                class="seed-picker"
+                aria-label="选择要种植的种子"
+                hidden
+            ></section>
+            <aside id="tooltip" class="tooltip" role="tooltip" hidden></aside>
+            <div id="cursor" class="game-cursor" aria-hidden="true" hidden><span></span></div>
+            <div id="effects" aria-hidden="true"></div>
+            <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+            <div id="overlay" class="overlay" hidden>
+                <section
+                    id="panel"
+                    class="panel"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="panel-title"
+                ></section>
+            </div>
+            <span class="prototype-note">交互原型 · 体验进度不会保存</span>
+        </main>
+    </body>
+</html>

@@ -4,7 +4,7 @@ import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from '../main/llm'
 import { LocalAIStatus } from '../main/local-ai'
 import { SettingConfig } from '../main/settings'
 import { ActivityInfo } from '../main/types/activity'
-import type { FarmCommand, FarmOperation } from '../main/types/farm'
+import type { FarmAssistantEvent, FarmAssistantStatus, FarmCommand, FarmOperation } from '../main/types/farm'
 import { ItemType } from '../main/types/item'
 import type { PlayerResourceState } from '../main/types/player-resource'
 import type { SchoolHandbookTaskId } from '../main/types/school-handbook'
@@ -36,6 +36,10 @@ contextBridge.exposeInMainWorld('api', {
     getSchoolHandbookProgress: (date?: string) => ipcRenderer.invoke('get-school-handbook-progress', date),
     getLocalAIStatus: () => ipcRenderer.invoke('get-local-ai-status'),
     getFarm: () => ipcRenderer.invoke('farm-get'),
+    getFarmAssistant: () => ipcRenderer.invoke('farm-assistant-get'),
+    farmManualActivity: () => ipcRenderer.invoke('farm-manual-activity'),
+    onFarmAssistantState: (callback: (status: FarmAssistantStatus) => void) => { const listener = (_event: IpcRendererEvent, status: FarmAssistantStatus) => callback(status); ipcRenderer.on('farm-assistant-state', listener); return () => ipcRenderer.removeListener('farm-assistant-state', listener) },
+    onFarmAssistantEvent: (callback: (event: FarmAssistantEvent) => void) => { const listener = (_event: IpcRendererEvent, event: FarmAssistantEvent) => callback(event); ipcRenderer.on('farm-assistant-event', listener); return () => ipcRenderer.removeListener('farm-assistant-event', listener) },
     previewFarm: (operation: FarmOperation) => ipcRenderer.invoke('farm-preview', operation),
     executeFarm: (command: FarmCommand) => ipcRenderer.invoke('farm-execute', command),
     checkpointFarm: () => ipcRenderer.invoke('farm-checkpoint'),

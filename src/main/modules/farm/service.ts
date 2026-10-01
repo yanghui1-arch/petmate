@@ -1,4 +1,4 @@
-import type { FarmCommand, FarmOperation, FarmPreview, FarmResult, FarmSnapshot, FarmView } from '../../types/farm'
+import type { FarmAssistantMetadata, FarmCommand, FarmOperation, FarmPreview, FarmResult, FarmSnapshot, FarmView } from '../../types/farm'
 import { farmCatalog, farmLevel, getCrop, unlockedPlots } from './catalog'
 import { applyOperation, clone, createFarm, eligiblePlots, growFarm, plantStage, validateFarm } from './rules'
 
@@ -110,7 +110,16 @@ export class FarmService {
     }
   }
 
-  execute(command: FarmCommand): FarmResult {
+  get storageError(): string | null { return this.saveError }
+
+  recordManualActivity(): void {
+    const snapshot = this.project()
+    snapshot.farm!.assistant = { ...snapshot.farm!.assistant, successfulActions: 0, restUntil: 0, lastManualAt: this.clock.wall() }
+    this.persist(snapshot)
+    this.anchor(snapshot)
+  }
+
+  execute(command: FarmCommand, assistant?: FarmAssistantMetadata): FarmResult {
     if (!command || typeof command.requestId !== 'string' || !command.requestId || command.requestId.length > 120 || !Number.isSafeInteger(command.expectedRevision) || !command.operation) throw new Error('农场请求无效')
     const fingerprint = JSON.stringify(command.operation)
     const durable = this.current()
@@ -125,8 +134,10 @@ export class FarmService {
       this.persist(durable)
     }
     const snapshot = this.project()
-    const outcome = applyOperation(snapshot.farm!, snapshot.cash, command.operation, this.clock.wall(), this.id)
+    const outcome = applyOperation(snapshot.farm!, snapshot.cash, command.operation, this.clock.wall())
     snapshot.cash = outcome.cash
+    snapshot.farm!.assistant = assistant ?? { ...snapshot.farm!.assistant, successfulActions: 0, restUntil: 0, lastManualAt: this.clock.wall() }
+    validateFarm(snapshot.farm)
     snapshot.revision++
     snapshot.receipts = [...snapshot.receipts, { requestId: command.requestId, fingerprint, feedback: outcome.feedback }].slice(-128)
     this.persist(snapshot)
