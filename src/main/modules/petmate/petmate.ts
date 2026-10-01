@@ -276,8 +276,8 @@ export abstract class PetMate {
         return undefined;
     }
 
-    addBuffUntil(buff: Buff, endTime: Date): ActiveBuff | undefined {
-        if (this.attrs.buffs.length >= this.attrs.maxBuffs || endTime.getTime() <= Date.now()) {
+    addBuffUntil(buff: Buff, endTime: Date, bypassLimit: boolean = false): ActiveBuff | undefined {
+        if ((!bypassLimit && this.attrs.buffs.length >= this.attrs.maxBuffs) || endTime.getTime() <= Date.now()) {
             return undefined;
         }
         const activeBuff: ActiveBuff = {

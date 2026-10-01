@@ -12,6 +12,7 @@ import {
   SchoolHandbookProgress
 } from "../main/types/school-handbook";
 import { LocalAIStatus } from "../main/local-ai";
+import type { VersionReminderState } from "../main/types/version-reminder";
 /**
  * 与主进程通信的接口
  * 所有方法都返回Promise
@@ -23,6 +24,9 @@ interface IElectronAPI {
 
   // get && show
   getCurrentPlayerData: () => Promise<Response<PlayerInfo>>;
+  getVersionReminder: () => Promise<Response<VersionReminderState>>;
+  acknowledgeVersionReminder: () => Promise<Response<VersionReminderState>>;
+  dismissVersionReward: () => Promise<Response<VersionReminderState>>;
   showActivities: (type: ActivityInfo["type"]) => Promise<Response<ActivityInfo[]>>;
   showItems: (type: ItemType) => Promise<Response<Item[]>>;
   getItemInfo: (itemIds: number[]) => Promise<Response<Item[]>>;

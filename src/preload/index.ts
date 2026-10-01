@@ -17,6 +17,9 @@ contextBridge.exposeInMainWorld('api', {
 
     // get && show
     getCurrentPlayerData: () => ipcRenderer.invoke('get-current-player-data'),
+    getVersionReminder: () => ipcRenderer.invoke('get-version-reminder'),
+    acknowledgeVersionReminder: () => ipcRenderer.invoke('acknowledge-version-reminder'),
+    dismissVersionReward: () => ipcRenderer.invoke('dismiss-reward-version-reminder'),
     getChatLLMConfig: () => ipcRenderer.invoke('get-chat-llm-config'),
     getTTSLLMConfig: () => ipcRenderer.invoke('get-tts-config'),
     showActivities: (type: ActivityInfo['type']) => ipcRenderer.invoke('show-activities', type),

@@ -57,6 +57,25 @@ import axios, { AxiosResponse } from 'axios';
 import { Youmei } from './modules/petmate/youmei';
 import { greenworksManager } from './greenworks';
 import { localAIManager, LocalAIStatus } from './local-ai';
+import { getVersionReminderState, acknowledgeVersionReminder, dismissVersionReward } from './modules/version-reminder';
+import type { VersionReminderState } from './types/version-reminder';
+
+for (const action of ['get', 'acknowledge', 'dismiss-reward'] as const) {
+    ipcMain.handle(`${action}-version-reminder`, (): Response<VersionReminderState> => {
+        try {
+            const player = playerManager.getPlayer();
+            const state = getVersionReminderState(player);
+            const grantOnReturn = action === 'get' && !state.announcementPending
+                && state.eventActive && !player.versionReminder?.nationalDayRewardGrantedAt;
+            if (action === 'acknowledge' || grantOnReturn) playerManager.updatePlayer(acknowledgeVersionReminder(player));
+            if (action === 'dismiss-reward') playerManager.updatePlayer(dismissVersionReward(player));
+            return { code: 200, data: getVersionReminderState(playerManager.getPlayer()) };
+        } catch (error) {
+            logger.error(`版本提醒操作失败 (${action}): ${error}`);
+            return { code: 400, message: '版本提醒操作失败，请重试' };
+        }
+    });
+}
 
 /**
  * 初始化设置数据
