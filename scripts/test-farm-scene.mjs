@@ -171,7 +171,7 @@ async function pointer(kind, value, right = false) {
   await sleep(140);
 }
 
-async function screenshot(name) {const page=await window.webContents.capturePage();const directory=name==='farm-actual-loading.png'?'004-farm-pet-assistant':'003-farm-game-experience';writeFileSync(join("D:/TSFile/petmate/spec",directory,name),page.toPNG())}
+async function screenshot(name) {const directory=process.env.FARM_SCENE_SCREENSHOT_DIR;if(!directory)return;const page=await window.webContents.capturePage();writeFileSync(join(directory,name),page.toPNG())}
 async function clickNative(selector) {
  const point=await js('(()=>{const r=document.querySelector('+JSON.stringify(selector)+').getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()');
  window.webContents.sendInputEvent({type:'mouseMove',...point});await sleep(70);
