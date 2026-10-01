@@ -12,7 +12,7 @@ import type {
     PlayerTitleResource
 } from "../../types/player-resource";
 import { itemManager, playerManager } from "../store";
-import { handleOwnedTitleAchievements, handleTitleAchievement } from "./achieve";
+import { handleOwnedTitleAchievements, handleSchoolUniformAchievement } from "./achieve";
 import {
     SCHOOL_HANDBOOK_CRUMPLED_HOMEWORK_ITEM_ID,
     SCHOOL_HANDBOOK_DESKMATE_TITLE_ID,
@@ -222,8 +222,11 @@ class PlayerResourceManager {
 
         const stored = (this.store as any).get("resources") as PlayerResourceState | undefined
         this.resources = this.normalizeResources(stored)
-        handleOwnedTitleAchievements(this.resources.titles.map(title => title.name))
         this.saveResources()
+        handleOwnedTitleAchievements(this.resources.titles.map(title => title.name))
+        if (this.resources.equippedSkinId === SCHOOL_UNIFORM_SKIN_ID) {
+            handleSchoolUniformAchievement()
+        }
     }
 
     getResources(): PlayerResourceState {
@@ -287,6 +290,7 @@ class PlayerResourceManager {
         }
 
         if (this.resources.titles.some(title => title.id === titleId)) {
+            handleOwnedTitleAchievements(this.resources.titles.map(title => title.name))
             return this.getResources()
         }
 
@@ -298,8 +302,8 @@ class PlayerResourceManager {
         if (!this.resources.equippedTitleId) {
             this.resources.equippedTitleId = resource.id
         }
-        handleTitleAchievement(resource.name)
         this.saveResources()
+        handleOwnedTitleAchievements(this.resources.titles.map(title => title.name))
         return this.getResources()
     }
 
@@ -454,6 +458,9 @@ class PlayerResourceManager {
 
         this.resources.equippedSkinId = skinId
         this.saveResources()
+        if (skinId === SCHOOL_UNIFORM_SKIN_ID) {
+            handleSchoolUniformAchievement()
+        }
         return this.getResources()
     }
 
@@ -646,7 +653,7 @@ class PlayerResourceManager {
         if (!this.resources.equippedTitleId) {
             this.resources.equippedTitleId = resource.id
         }
-        handleTitleAchievement(resource.name)
+        handleOwnedTitleAchievements(this.resources.titles.map(title => title.name))
 
         return {
             id: resource.id,

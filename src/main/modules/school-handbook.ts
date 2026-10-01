@@ -188,6 +188,14 @@ export class SchoolHandbookManager {
         this.isInit = true
         this.state = this.normalizeState(this.store.get("state"), new Date())
         this.saveState()
+
+        // Exchange receipts and wardrobe resources live in separate stores.
+        const claimedUniform = this.state.claimedRewards.some(
+            reward => reward.milestoneId === "school-handbook-milestone-school-uniform"
+        )
+        if (claimedUniform && !playerResourceManager.hasSkin(SCHOOL_UNIFORM_SKIN_ID)) {
+            playerResourceManager.grantSkin(SCHOOL_UNIFORM_SKIN_ID)
+        }
     }
 
     getProgress(at: Date | string = new Date()): SchoolHandbookProgress {

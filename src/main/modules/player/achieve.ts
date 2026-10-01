@@ -89,8 +89,13 @@ const TITLE_NAME_TO_STEAM_ACHIEVEMENT: Record<string, string> = {
 export function handleTitleAchievement(titleName: string) {
     const achievement = TITLE_NAME_TO_STEAM_ACHIEVEMENT[titleName]
     if (!achievement) return
+    activateConfiguredAchievement(achievement)
+}
+
+function activateConfiguredAchievement(achievement: string) {
+    if (!greenworksManager.isReady()) return
     if (!greenworksManager.getAchievementNames().includes(achievement)) {
-        logger.warn(`Achievement: ${achievement} is not configured in Steam, title: ${titleName}`)
+        logger.warn(`Achievement: ${achievement} is not configured in Steam`)
         return
     }
 
@@ -111,6 +116,13 @@ export function handleTitleAchievement(titleName: string) {
  */
 export function handleOwnedTitleAchievements(titleNames: string[]) {
     Array.from(new Set(titleNames)).forEach(handleTitleAchievement)
+    if (["山河见证者", "国庆同游者", "盛世庆华章"].every(titleName => titleNames.includes(titleName))) {
+        activateConfiguredAchievement(achievements.ACH_COLLECT_ALL_NATIONAL_CW)
+    }
+}
+
+export function handleSchoolUniformAchievement() {
+    activateConfiguredAchievement(achievements.ACH_SCOOL_CLOTH_26)
 }
 
 /**

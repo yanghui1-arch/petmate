@@ -189,7 +189,7 @@ const petmateAttribute = computed(() => {
   return currentActivePetmate.value?.attrs;
 });
 
-const shopCurrType = ref<ItemType>("limit" as ItemType);
+const shopCurrType = ref<ItemType>("fashion" as ItemType);
 const shopPageNum = ref(0);
 const shopCurrPage = ref(1);
 const shopPageSize = ref(3);
@@ -282,7 +282,6 @@ const handleSearch = () => {
 };
 
 const shopTypeList = computed(() => [
-  { name: "limit" as ItemType, icon: "⏰", label: t("shop.categories.limit") },
   { name: "fashion" as ItemType, icon: "👗", label: t("shop.categories.fashion") },
   { name: "food" as ItemType, icon: "🍔", label: t("shop.categories.food") },
   { name: "medicine" as ItemType, icon: "💊", label: t("shop.categories.medicine") },
