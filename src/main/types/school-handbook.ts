@@ -1,13 +1,16 @@
-import type { CommissionGrantedReward, PlayerResourceState } from "./player-resource"
+import type { CommissionGrantedReward, PlayerAnimationResource, PlayerResourceState } from "./player-resource"
 
-export const SCHOOL_HANDBOOK_TITLE = "尤美的新学期手册"
+export const SCHOOL_HANDBOOK_TITLE = "尤美的国庆庆典"
 export const SCHOOL_HANDBOOK_REQUIRED_TASKS = 3
 export const SCHOOL_HANDBOOK_TASKS_PER_BATCH = 3
 export const SCHOOL_HANDBOOK_REFRESH_COOLDOWN_MS = 2 * 60 * 60 * 1000
 export const SCHOOL_HANDBOOK_BREAKFAST_START_HOUR = 5
 export const SCHOOL_HANDBOOK_BREAKFAST_END_HOUR = 11
-export const SCHOOL_HANDBOOK_FULL_ATTENDANCE_TITLE_ID = "school-handbook-september-full-attendance"
-export const SCHOOL_HANDBOOK_DESKMATE_TITLE_ID = "school-handbook-youmei-deskmate"
+// Keep the exported names for save compatibility; these IDs now point to the
+// two National Day titles shown in the celebration exchange.
+export const SCHOOL_HANDBOOK_FULL_ATTENDANCE_TITLE_ID = "national-day-fellow-traveler"
+export const SCHOOL_HANDBOOK_DESKMATE_TITLE_ID = "national-day-mountain-witness"
+export const NATIONAL_DAY_ACTIVITY_TITLE_ID = "national-day-grand-celebration"
 export const SCHOOL_HANDBOOK_SUPPLY_BOX_ITEM_ID = 27
 export const SCHOOL_HANDBOOK_LIMITED_ITEM_ITEM_ID = 28
 export const SCHOOL_HANDBOOK_LIMITED_REWARD_ITEM_IDS = [29, 30, 31, 32, 33, 34, 35, 36] as const
@@ -53,6 +56,13 @@ export type SchoolHandbookPlayerResourceReward = {
     type: "skin" | "title";
     id: string;
     name: string;
+} | {
+    type: "animation";
+    id: string;
+    name: string;
+    action: PlayerAnimationResource["action"];
+    skin: string;
+    previewFrame: string;
 }
 
 export type SchoolHandbookRewardType =

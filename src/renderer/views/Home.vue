@@ -201,6 +201,7 @@
       :petmateId="currentPetmateID"
       type="use"
     />
+    <VersionReminder />
     <n-modal v-model:show="isTitleModalShow" transform-origin="center">
       <div class="title-select-modal">
         <button
@@ -227,6 +228,7 @@ import Pagedot from "@/components/Pagedot.vue";
 import BuffPopover from "@/components/buff/BuffPopover.vue";
 import ItemPopover from "@/components/item/ItemPopover.vue";
 import ItemModal from "@/components/item/ItemModal.vue";
+import VersionReminder from "@/components/VersionReminder.vue";
 import type { CarouselInst } from "naive-ui";
 import type { PlayerResourceState } from "@main/types/player-resource";
 import { canUseItemFromPackage, executePackageItemPage } from "../utils/item";
@@ -240,8 +242,11 @@ import avator from "../assets/image/youmei-avatar.png";
 import holidayCraftspersonTitleImage from "../assets/title/假日小工匠.png";
 import winningDuoTitleImage from "../assets/title/假期连胜搭子.png";
 import dawnGuardianTitleImage from "../assets/title/曙光守护者.png";
-import fullAttendanceTitleImage from "../assets/image/special_activity/school-2026/titles/school-handbook-title-september-perfect-attendance.png";
-import deskMateTitleImage from "../assets/image/special_activity/school-2026/titles/school-handbook-title-desk-mate.png";
+import legacyFullAttendanceTitleImage from "../assets/image/special_activity/school-2026/titles/school-handbook-title-september-perfect-attendance.png";
+import legacyDeskMateTitleImage from "../assets/image/special_activity/school-2026/titles/school-handbook-title-desk-mate.png";
+import fullAttendanceTitleImage from "../assets/image/special_activity/national-day-2026/national-day-title-fellow-traveler.png";
+import deskMateTitleImage from "../assets/image/special_activity/national-day-2026/national-day-title-mountain-witness.png";
+import nationalDayGrandCelebrationTitleImage from "../assets/image/special_activity/national-day-2026/national-day-title-grand-celebration.png";
 
 type TitleViewModel = {
   id: string;
@@ -272,12 +277,27 @@ const titleCatalog = computed<TitleViewModel[]>(() => [
   {
     id: "school-handbook-september-full-attendance",
     name: "九月全勤生",
-    image: fullAttendanceTitleImage,
+    image: legacyFullAttendanceTitleImage,
   },
   {
     id: "school-handbook-youmei-deskmate",
     name: "尤美的同桌",
+    image: legacyDeskMateTitleImage,
+  },
+  {
+    id: "national-day-fellow-traveler",
+    name: "国庆同游者",
+    image: fullAttendanceTitleImage,
+  },
+  {
+    id: "national-day-mountain-witness",
+    name: "山河见证者",
     image: deskMateTitleImage,
+  },
+  {
+    id: "national-day-grand-celebration",
+    name: "盛世庆华章",
+    image: nationalDayGrandCelebrationTitleImage,
   },
 ]);
 
@@ -404,7 +424,7 @@ const packagePageRef = ref<CarouselInst | null>(null);
 const packagePageList = computed(() => {
   const allItems = playerData.value?.items || [];
   const filteredPackageItems = allItems.filter(
-    (item) => getPrimaryItemType(item.type) === packageCurrType.value
+    (item) => canUseItemFromPackage(item) && getPrimaryItemType(item.type) === packageCurrType.value
   );
   return executePackageItemPage([...filteredPackageItems], packagePageSize.value);
 });
@@ -564,7 +584,7 @@ const showModal = (item: PackageItemInfo) => {
         overflow: hidden;
       }
       .home-player-title-slot-clickable {
-        cursor: pointer;
+        --game-cursor: var(--cursor-pointer);
         transition: transform 0.18s ease, filter 0.18s ease;
 
         &:hover {
@@ -715,7 +735,7 @@ const showModal = (item: PackageItemInfo) => {
       background: linear-gradient(135deg, $item-bg-start 0%, $item-bg-end 100%);
       box-shadow: 0 2px 8px 0 rgba(253, 203, 110, 0.15);
       &.package-item-unusable {
-        cursor: not-allowed;
+        --game-cursor: var(--cursor-default);
         opacity: 0.85;
       }
       .package-item-num {
@@ -795,7 +815,7 @@ const showModal = (item: PackageItemInfo) => {
   }
 
   &:disabled {
-    cursor: default;
+    --game-cursor: var(--cursor-default);
   }
 }
 

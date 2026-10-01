@@ -17,6 +17,8 @@ const ACH_FIFTY_AFFECTION = "ACH_FIFTY_AFFECTION"                        // 温�
 const ACH_51_GAME_PARTNER = "ACH_51_GAME_PARTNER"                        // 假期连胜搭子 获得称谓
 const ACH_51_LABOR = "ACH_51_LABOR"                                      // 假日小工匠 获得称谓
 const ACH_SUNSHINE_PROTECTOR = "ACH_SUNSHINE_PROTECTOR"                  // 曙光守护者 获得称谓
+const ACH_SCOOL_CLOTH_26 = "ACH_SCOOL_CLOTH_26"                          // 十月校园制服 获得并更换校园制服
+const ACH_COLLECT_ALL_NATIONAL_CW = "ACH_COLLECT_ALL_NATIONAL_CW"        // 国庆快乐 集齐三个国庆称谓
 
 export const achievements = {
     ACH_FIRST_OPEN,
@@ -38,4 +40,6 @@ export const achievements = {
     ACH_51_GAME_PARTNER,
     ACH_51_LABOR,
     ACH_SUNSHINE_PROTECTOR,
+    ACH_SCOOL_CLOTH_26,
+    ACH_COLLECT_ALL_NATIONAL_CW,
 }

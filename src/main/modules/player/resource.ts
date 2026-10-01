@@ -13,11 +13,12 @@ import type {
     PlayerTitleResource
 } from "../../types/player-resource";
 import { itemManager, playerManager } from "../store";
-import { handleOwnedTitleAchievements, handleTitleAchievement } from "./achieve";
+import { handleOwnedTitleAchievements, handleSchoolUniformAchievement } from "./achieve";
 import {
     SCHOOL_HANDBOOK_CRUMPLED_HOMEWORK_ITEM_ID,
     SCHOOL_HANDBOOK_DESKMATE_TITLE_ID,
     SCHOOL_HANDBOOK_FULL_ATTENDANCE_TITLE_ID,
+    NATIONAL_DAY_ACTIVITY_TITLE_ID,
     SCHOOL_HANDBOOK_LIMITED_ITEM_ITEM_ID,
     SCHOOL_HANDBOOK_LIMITED_REWARD_ITEM_IDS,
     SCHOOL_HANDBOOK_SUPPLY_BOX_ITEM_ID
@@ -42,6 +43,7 @@ type ItemRewardPoolEntry = {
 type EconomicRewardMode = "loss" | "profit" | "special";
 
 const LABOR_KICK_ANIMATION_ID = "youmei-angry-kick-labor-2026";
+export const SCHOOL_DANCE_ANIMATION_ID = "youmei-school-dance-2026";
 export const CLASSIC_SKIN_ID = "youmei-classic-dress";
 export const LABOR_SKIRT_SKIN_ID = "youmei-labor-skirt-2026";
 export const SCHOOL_UNIFORM_SKIN_ID = "youmei-school-uniform-2026";
@@ -72,16 +74,34 @@ const SKIN_DEFINITIONS: Record<string, Omit<PlayerSkinResource, "acquiredAt">> =
 
 const SCHOOL_HANDBOOK_TITLE_RESOURCES: Omit<PlayerTitleResource, "acquiredAt">[] = [
     {
-        id: SCHOOL_HANDBOOK_FULL_ATTENDANCE_TITLE_ID,
+        id: "school-handbook-september-full-attendance",
         name: "九月全勤生",
         description: "每天都认真完成任务的全勤称谓。",
         source: "尤美的新学期手册"
     },
     {
-        id: SCHOOL_HANDBOOK_DESKMATE_TITLE_ID,
+        id: "school-handbook-youmei-deskmate",
         name: "尤美的同桌",
         description: "陪尤美一起迎接新学期的人。",
         source: "尤美的新学期手册"
+    },
+    {
+        id: SCHOOL_HANDBOOK_FULL_ATTENDANCE_TITLE_ID,
+        name: "国庆同游者",
+        description: "和尤美一起走过国庆假期的纪念称谓。",
+        source: "尤美的国庆庆典"
+    },
+    {
+        id: SCHOOL_HANDBOOK_DESKMATE_TITLE_ID,
+        name: "山河见证者",
+        description: "与尤美一起见证锦绣山河的人。",
+        source: "尤美的国庆庆典"
+    },
+    {
+        id: NATIONAL_DAY_ACTIVITY_TITLE_ID,
+        name: "盛世庆华章",
+        description: "在国庆限时活动中收获的特别纪念称谓。",
+        source: "国庆限时活动"
     }
 ]
 
@@ -203,8 +223,11 @@ class PlayerResourceManager {
 
         const stored = (this.store as any).get("resources") as PlayerResourceState | undefined
         this.resources = this.normalizeResources(stored)
-        handleOwnedTitleAchievements(this.resources.titles.map(title => title.name))
         this.saveResources()
+        handleOwnedTitleAchievements(this.resources.titles.map(title => title.name))
+        if (this.resources.equippedSkinId === SCHOOL_UNIFORM_SKIN_ID) {
+            handleSchoolUniformAchievement()
+        }
     }
 
     getResources(): PlayerResourceState {
@@ -268,6 +291,7 @@ class PlayerResourceManager {
         }
 
         if (this.resources.titles.some(title => title.id === titleId)) {
+            handleOwnedTitleAchievements(this.resources.titles.map(title => title.name))
             return this.getResources()
         }
 
@@ -279,53 +303,71 @@ class PlayerResourceManager {
         if (!this.resources.equippedTitleId) {
             this.resources.equippedTitleId = resource.id
         }
-        handleTitleAchievement(resource.name)
+        this.saveResources()
+        handleOwnedTitleAchievements(this.resources.titles.map(title => title.name))
+        return this.getResources()
+    }
+
+    /**
+     * 发放活动动画奖励时使用。重复发放保持幂等，方便活动奖励补发。
+     */
+    grantAnimation(animation: Omit<PlayerAnimationResource, "acquiredAt">): PlayerResourceState {
+        this.ensureInit()
+
+        if (this.resources.animationResources.some(resource => resource.id === animation.id)) {
+            return this.getResources()
+        }
+
+        this.resources.animationResources.push({
+            ...animation,
+            acquiredAt: new Date().toISOString()
+        })
         this.saveResources()
         return this.getResources()
     }
 
     /**
-     * 发放开学补给箱本体。补给箱会进入背包的“其他”分类，兑换时不会立即打开。
+     * 发放国庆大礼包本体。礼包会进入背包的“其他”分类，兑换时不会立即打开。
      */
     grantSchoolHandbookSupplyBoxes(count: number = 1): void {
         this.ensureInit()
 
         if (!Number.isInteger(count) || count <= 0) {
-            throw new Error(`开学补给箱数量不合法: ${count}`)
+            throw new Error(`国庆大礼包数量不合法: ${count}`)
         }
 
-        this.grantSchoolHandbookPackageItem(SCHOOL_HANDBOOK_SUPPLY_BOX_ITEM_ID, count, "开学补给箱")
+        this.grantSchoolHandbookPackageItem(SCHOOL_HANDBOOK_SUPPLY_BOX_ITEM_ID, count, "国庆大礼包")
     }
 
     /**
-     * 发放开学限定奖励包本体。它同样进入背包的“其他”分类，兑换时再随机开出委托道具。
+     * 发放国庆限定奖励包本体。它同样进入背包的“其他”分类，兑换时再随机开出委托道具。
      */
     grantSchoolHandbookLimitedItems(count: number = 1): void {
         this.ensureInit()
 
         if (!Number.isInteger(count) || count <= 0) {
-            throw new Error(`开学限定物品数量不合法: ${count}`)
+            throw new Error(`国庆限定物品数量不合法: ${count}`)
         }
 
-        this.grantSchoolHandbookPackageItem(SCHOOL_HANDBOOK_LIMITED_ITEM_ITEM_ID, count, "开学限定物品")
+        this.grantSchoolHandbookPackageItem(SCHOOL_HANDBOOK_LIMITED_ITEM_ITEM_ID, count, "国庆限定物品")
     }
 
     /**
-     * 打开开学补给箱。补给池复用商店里的普通物品，但排除限时物品、时装和补给箱本身。
+     * 打开国庆大礼包。补给池复用商店里的普通物品，但排除限时物品、时装和礼包本身。
      * 返回值用于使用补给箱后的图片奖励弹窗展示。
      */
     openSchoolHandbookSupplyBox(count: number = 1): SchoolHandbookRewardGrant[] {
         this.ensureInit()
 
         if (!Number.isInteger(count) || count <= 0) {
-            throw new Error(`开学补给箱开启数量不合法: ${count}`)
+            throw new Error(`国庆大礼包开启数量不合法: ${count}`)
         }
 
         const itemPool = itemManager
             .getAllItems()
             .filter(item => this.isSchoolHandbookSupplyItemAvailable(item))
         if (!itemPool.length) {
-            throw new Error("开学补给箱没有可用的普通商店物品")
+            throw new Error("国庆大礼包没有可用的普通商店物品")
         }
 
         const rewards: SchoolHandbookRewardGrant[] = []
@@ -349,13 +391,13 @@ class PlayerResourceManager {
     }
 
     /**
-     * 打开开学限定物品。普通道具的基础概率相同，皱巴巴的作业本有 20% 概率；连续 9 次未获得后，第 10 次必定获得。
+     * 打开国庆限定物品。普通道具的基础概率相同，皱巴巴的作业本有 20% 概率；连续 9 次未获得后，第 10 次必定获得。
      */
     openSchoolHandbookLimitedItem(count: number = 1): SchoolHandbookRewardGrant[] {
         this.ensureInit()
 
         if (!Number.isInteger(count) || count <= 0) {
-            throw new Error(`开学限定物品开启数量不合法: ${count}`)
+            throw new Error(`国庆限定物品开启数量不合法: ${count}`)
         }
 
         const commonItemIds = SCHOOL_HANDBOOK_LIMITED_REWARD_ITEM_IDS.filter(
@@ -417,6 +459,9 @@ class PlayerResourceManager {
 
         this.resources.equippedSkinId = skinId
         this.saveResources()
+        if (skinId === SCHOOL_UNIFORM_SKIN_ID) {
+            handleSchoolUniformAchievement()
+        }
         return this.getResources()
     }
 
@@ -609,7 +654,7 @@ class PlayerResourceManager {
         if (!this.resources.equippedTitleId) {
             this.resources.equippedTitleId = resource.id
         }
-        handleTitleAchievement(resource.name)
+        handleOwnedTitleAchievements(this.resources.titles.map(title => title.name))
 
         return {
             id: resource.id,

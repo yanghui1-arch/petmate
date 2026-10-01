@@ -7,7 +7,6 @@ import { ActivityInfo } from '../main/types/activity'
 import type { FarmAssistantEvent, FarmAssistantStatus, FarmCommand, FarmOperation } from '../main/types/farm'
 import { ItemType } from '../main/types/item'
 import type { PlayerResourceState } from '../main/types/player-resource'
-import type { SchoolHandbookTaskId } from '../main/types/school-handbook'
 import { WindowEvent } from '../main/window-monitor'
 
 /**
@@ -20,6 +19,9 @@ contextBridge.exposeInMainWorld('api', {
 
     // get && show
     getCurrentPlayerData: () => ipcRenderer.invoke('get-current-player-data'),
+    getVersionReminder: () => ipcRenderer.invoke('get-version-reminder'),
+    acknowledgeVersionReminder: () => ipcRenderer.invoke('acknowledge-version-reminder'),
+    dismissVersionReward: () => ipcRenderer.invoke('dismiss-reward-version-reminder'),
     getChatLLMConfig: () => ipcRenderer.invoke('get-chat-llm-config'),
     getTTSLLMConfig: () => ipcRenderer.invoke('get-tts-config'),
     showActivities: (type: ActivityInfo['type']) => ipcRenderer.invoke('show-activities', type),
@@ -70,7 +72,6 @@ contextBridge.exposeInMainWorld('api', {
     claimWishReward: (petmateId: number, wishId: string) => ipcRenderer.invoke('claim-wish-reward', petmateId, wishId),
     equipPlayerSkin: (skinId: string) => ipcRenderer.invoke('equip-player-skin', skinId),
     equipPlayerTitle: (titleId: string) => ipcRenderer.invoke('equip-player-title', titleId),
-    recordSchoolHandbookTask: (taskId: SchoolHandbookTaskId, count?: number) => ipcRenderer.invoke('record-school-handbook-task', taskId, count),
     claimSchoolHandbookReward: (milestoneIdOrStampCount: string | number, quantity: number = 1) => ipcRenderer.invoke('claim-school-handbook-reward', milestoneIdOrStampCount, quantity),
     // 克隆音色
     cloneVoice: (url: string) => ipcRenderer.invoke('clone-voice', url),

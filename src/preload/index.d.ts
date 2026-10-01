@@ -7,14 +7,13 @@ import { ConsumeItemResult, PlayerInfo } from "../main/types/player";
 import { CommissionCompletionResult, PlayerResourceState } from "../main/types/player-resource";
 import {
   SchoolHandbookClaimRewardResult,
-  SchoolHandbookProgress,
-  SchoolHandbookTaskCompletionResult,
-  SchoolHandbookTaskId
+  SchoolHandbookProgress
 } from "../main/types/school-handbook";
 import { Wish } from "../main/types/wish"
 import { WindowEvent, WindowInfo } from "../main/window-monitor";
 import { SettingConfig } from "../types/config";
 import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "./llm";
+import type { VersionReminderState } from "../main/types/version-reminder";
 /**
  * 与主进程通信的接口
  * 所有方法都返回Promise
@@ -26,6 +25,9 @@ interface IElectronAPI {
 
   // get && show
   getCurrentPlayerData: () => Promise<Response<PlayerInfo>>;
+  getVersionReminder: () => Promise<Response<VersionReminderState>>;
+  acknowledgeVersionReminder: () => Promise<Response<VersionReminderState>>;
+  dismissVersionReward: () => Promise<Response<VersionReminderState>>;
   showActivities: (type: ActivityInfo["type"]) => Promise<Response<ActivityInfo[]>>;
   showItems: (type: ItemType) => Promise<Response<Item[]>>;
   getItemInfo: (itemIds: number[]) => Promise<Response<Item[]>>;
@@ -77,7 +79,6 @@ interface IElectronAPI {
   claimWishReward: (petmateId: number, wishId: string) => Promise<Response<boolean>>;
   equipPlayerSkin: (skinId: string) => Promise<Response<PlayerResourceState>>;
   equipPlayerTitle: (titleId: string) => Promise<Response<PlayerResourceState>>;
-  recordSchoolHandbookTask: (taskId: SchoolHandbookTaskId, count?: number) => Promise<Response<SchoolHandbookTaskCompletionResult>>;
   claimSchoolHandbookReward: (milestoneIdOrStampCount: string | number, quantity?: number) => Promise<Response<SchoolHandbookClaimRewardResult>>;
 
   // 克隆音色

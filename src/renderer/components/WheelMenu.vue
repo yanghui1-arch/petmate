@@ -372,7 +372,7 @@
     .center-circle-transparent {
     fill: transparent;
     stroke-width: 2;
-    cursor: pointer;
+    --game-cursor: var(--cursor-pointer);
     transition: all 0.2s ease;
     animation: centerAppear 0.3s ease-out forwards;
     animation-delay: 0.1s;
@@ -386,7 +386,7 @@
     fill: rgba(180, 140, 90, 1);
     stroke: rgba(180, 140, 90, 1);
     stroke-width: 2;
-    cursor: pointer;
+    --game-cursor: var(--cursor-pointer);
     transition: all 0.2s ease;
     animation: centerAppear 0.3s ease-out forwards;
     animation-delay: 0.1s;
@@ -404,7 +404,7 @@
     fill: rgba(94, 80, 80, 0.7);
     stroke: rgba(245, 248, 250, 0.95); // Same as background color
     stroke-width: 2; // This creates the uniform gap
-    cursor: pointer;
+    --game-cursor: var(--cursor-pointer);
     transition: all 0.2s ease;
     transform-origin: center;
     animation: sectorOpen 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
@@ -604,7 +604,7 @@
     fill: rgb(92, 71, 45);;
     text-anchor: middle;
     dominant-baseline: central;
-    cursor: pointer;
+    --game-cursor: var(--cursor-pointer);
     transition: all 0.2s ease;
     pointer-events: all;
     animation: contentAppear 0.3s ease-out forwards;

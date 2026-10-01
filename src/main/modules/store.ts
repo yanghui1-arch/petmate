@@ -12,7 +12,7 @@ import { ActivityInfo } from '../types/activity'
 import { DEFAULT_YOUMEI_ATTRIBUTE, Youmei } from './petmate/youmei'
 import { readJsonFile } from './utils/file'
 import { NotEnoughError, NotFoundError } from '../error'
-import { Buff } from '../types/buff'
+import { Buff, NATIONAL_DAY_LOGIN_BUFF_ID } from '../types/buff'
 import { PrefabWish } from '../types/wish'
 import activityFilePath from '../../../resources/data/activity.json?commonjs-external&asset'
 import buffFilePath from '../../../resources/data/buff.json?commonjs-external&asset'
@@ -26,6 +26,8 @@ import { assertGameWritable } from './save/coordinator'
 import { writeJsonAtomic } from './save/files'
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { isNationalDayActive } from './version-reminder';
+import { NATIONAL_DAY_END } from '../types/version-reminder';
 
 export const playerChanges = new EventEmitter()
 
@@ -78,6 +80,28 @@ class PlayerManager {
     private isInit: boolean = false;
     private initialization: Promise<void> | null = null;
     private ready = false;
+
+    private ensureNationalDayLoginBuff(): void {
+        const now = new Date()
+        const nationalDayEnd = new Date(NATIONAL_DAY_END)
+        const loginBuff = buffManager.getBuff(NATIONAL_DAY_LOGIN_BUFF_ID)
+        if (!loginBuff) return
+
+        let changed = false
+        this.currentPlayer.petmates.forEach(petmate => {
+            const existing = petmate.attrs.buffs.find(activeBuff => activeBuff.buff.id === NATIONAL_DAY_LOGIN_BUFF_ID)
+            if (!isNationalDayActive(now.getTime())) {
+                if (existing) {
+                    petmate.removeBuff(existing.id)
+                    changed = true
+                }
+                return
+            }
+            // The login gift remains available even when all ordinary buff slots are occupied.
+            if (!existing && petmate.addBuffUntil(loginBuff, nationalDayEnd, true)) changed = true
+        })
+        if (changed) this.savePlayer()
+    }
 
     constructor() {
         this.store = new Store<PlayerStoreData>({
@@ -238,6 +262,7 @@ class PlayerManager {
      * 获取玩家信息
      */
     getPlayer(): PlayerInfo {
+        this.ensureNationalDayLoginBuff()
         return { ...this.currentPlayer }
     }
 

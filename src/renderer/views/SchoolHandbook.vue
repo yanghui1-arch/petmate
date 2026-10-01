@@ -19,11 +19,6 @@
               <div class="rules-popover">
                 <strong>{{ t('schoolHandbook.rulesTitle') }}</strong>
                 <p>{{ t('schoolHandbook.rules') }}</p>
-                <ul>
-                  <li>{{ t('schoolHandbook.ruleRefreshDescription') }}</li>
-                  <li>{{ t('schoolHandbook.ruleOfflineDescription') }}</li>
-                  <li>{{ t('schoolHandbook.ruleStampDescription') }}</li>
-                </ul>
               </div>
             </n-popover>
           </div>
@@ -52,125 +47,8 @@
           </n-button>
         </div>
 
-        <div class="handbook-game-tabs" role="tablist" :aria-label="t('schoolHandbook.title')">
-          <button
-            id="school-handbook-tasks-tab"
-            class="game-tab"
-            :class="{ active: activeTab === 'tasks' }"
-            type="button"
-            role="tab"
-            :aria-selected="activeTab === 'tasks'"
-            aria-controls="school-handbook-tasks-panel"
-            @click="activeTab = 'tasks'"
-          >
-            <span class="game-tab-mark" aria-hidden="true"></span>
-            <span class="game-tab-label">{{ t('schoolHandbook.batchTab') }}</span>
-          </button>
-          <button
-            id="school-handbook-rewards-tab"
-            class="game-tab"
-            :class="{ active: activeTab === 'rewards' }"
-            type="button"
-            role="tab"
-            :aria-selected="activeTab === 'rewards'"
-            aria-controls="school-handbook-rewards-panel"
-            @click="activeTab = 'rewards'"
-          >
-            <span class="game-tab-mark" aria-hidden="true"></span>
-            <span class="game-tab-label">{{ t('schoolHandbook.rewardsTab') }}</span>
-          </button>
-        </div>
-
-        <div class="handbook-tab-panels">
-          <section
-            v-if="activeTab === 'tasks'"
-            id="school-handbook-tasks-panel"
-            class="handbook-tab-panel"
-            role="tabpanel"
-            aria-labelledby="school-handbook-tasks-tab"
-          >
-            <section class="batch-panel">
-              <div class="panel-heading">
-                <div>
-                  <h2>{{ isCoolingDown ? t('schoolHandbook.batchCompleteTitle') : t('schoolHandbook.batchTitle') }}</h2>
-                  <p v-if="!isCoolingDown">{{ t('schoolHandbook.allTaskRequired') }}</p>
-                  <p v-else>{{ t('schoolHandbook.batchCompleteDescription') }}</p>
-                </div>
-                <div class="batch-counter">
-                  <strong>{{ completedTaskCount }}</strong>
-                  <span>/ {{ requiredTaskCount }}</span>
-                  <small>{{ t('schoolHandbook.tasksComplete') }}</small>
-                </div>
-              </div>
-
-              <div v-if="isCoolingDown" class="cooldown-panel">
-                <div class="cooldown-copy">
-                  <span class="cooldown-label">{{ t('schoolHandbook.cooldownTitle') }}</span>
-                  <strong>{{ formattedCooldown }}</strong>
-                </div>
-              </div>
-
-              <div v-else class="task-grid">
-                <article
-                  v-for="(task, taskIndex) in currentTasks"
-                  :key="task.id"
-                  class="task-card"
-                  :class="{ completed: task.completed }"
-                >
-                  <div class="task-card-topline">
-                    <span class="task-number">{{ String(taskIndex + 1).padStart(2, '0') }}</span>
-                    <span v-if="task.completed" class="task-complete-mark" :aria-label="t('schoolHandbook.done')">✓</span>
-                  </div>
-                  <h3>{{ task.name }}</h3>
-                  <p>{{ task.description }}</p>
-                  <div class="task-card-footer">
-                    <div
-                      class="task-progress"
-                      :aria-label="`${task.completedCount}/${task.targetCount}`"
-                    >
-                      <div
-                        class="task-progress-track"
-                        role="progressbar"
-                        :aria-valuenow="task.completedCount"
-                        aria-valuemin="0"
-                        :aria-valuemax="task.targetCount"
-                      >
-                        <span
-                          class="task-progress-fill"
-                          :style="{ width: `${taskProgressPercentage(task)}%` }"
-                        ></span>
-                      </div>
-                      <span class="task-progress-count">{{ task.completedCount }}/{{ task.targetCount }}</span>
-                    </div>
-                    <span v-if="task.completed" class="task-done">{{ t('schoolHandbook.done') }}</span>
-                  </div>
-                </article>
-              </div>
-
-              <div class="batch-progress-footer">
-                <div class="batch-progress-copy">
-                  <span>{{ t('schoolHandbook.taskProgress', { completed: completedTaskCount, total: requiredTaskCount }) }}</span>
-                  <span>{{ isCoolingDown ? t('schoolHandbook.stampHintComplete') : t('schoolHandbook.stampHintAll') }}</span>
-                </div>
-                <n-progress
-                  type="line"
-                  :percentage="batchProgressPercentage"
-                  :show-indicator="false"
-                  :height="8"
-                  color="#e28fac"
-                  rail-color="rgba(255, 255, 255, 0.12)"
-                />
-              </div>
-            </section>
-          </section>
-
-          <section
-            v-else
-            id="school-handbook-rewards-panel"
-            class="handbook-tab-panel"
-            role="tabpanel"
-            aria-labelledby="school-handbook-rewards-tab"
-          >
+        <section class="handbook-tab-panels">
+          <section class="handbook-tab-panel">
             <section class="rewards-panel">
               <div class="reward-shop-header">
                 <div class="reward-balance">
@@ -199,9 +77,20 @@
                 >
                   <div class="reward-card-visual">
                     <img
+                      v-if="!isDanceVideoReward(reward.reward.id)"
                       class="reward-image"
                       :src="rewardImageById(reward.reward.id)"
                       :alt="reward.reward.name"
+                    />
+                    <video
+                      v-else
+                      class="reward-image reward-video"
+                      :src="schoolDanceVideo"
+                      :aria-label="reward.reward.name"
+                      autoplay
+                      muted
+                      loop
+                      playsinline
                     />
                     <span class="reward-limit">
                       {{ reward.repeatable ? t('schoolHandbook.repeatable') : t('schoolHandbook.oneTimeOnly') }}
@@ -222,7 +111,7 @@
               </div>
             </section>
           </section>
-        </div>
+        </section>
       </section>
     </div>
 
@@ -238,8 +127,19 @@
           <div class="reward-confirm-heading">
             <div class="reward-confirm-art">
               <img
+                v-if="!isDanceVideoReward(rewardConfirm.reward.id)"
                 :src="rewardImageById(rewardConfirm.reward.id)"
                 :alt="rewardConfirm.reward.name"
+              />
+              <video
+                v-else
+                class="reward-video"
+                :src="schoolDanceVideo"
+                :aria-label="rewardConfirm.reward.name"
+                autoplay
+                muted
+                loop
+                playsinline
               />
             </div>
             <div class="reward-confirm-copy">
@@ -330,12 +230,29 @@
             :class="`reward-reveal-art-${rewardReveal.reward.type}`"
           >
             <img
+              v-if="!isDanceVideoReward(rewardReveal.reward.id)"
               :src="rewardImageById(rewardReveal.reward.id)"
               :alt="rewardReveal.reward.name"
+            />
+            <video
+              v-else
+              class="reward-video"
+              :src="schoolDanceVideo"
+              :aria-label="rewardReveal.reward.name"
+              autoplay
+              muted
+              loop
+              playsinline
             />
           </div>
           <strong class="reward-reveal-name">{{ rewardRevealName }}</strong>
           <p>{{ rewardReveal.reward.description }}</p>
+          <p
+            v-if="isDanceVideoReward(rewardReveal.reward.id)"
+            class="reward-reveal-dance-hint"
+          >
+            {{ t('schoolHandbook.rewardDanceHint') }}
+          </p>
           <p
             v-if="rewardRevealIsInventoryItem"
             class="reward-reveal-inventory-hint"
@@ -345,8 +262,55 @@
           <span v-if="rewardRevealQuantity > 1" class="reward-reveal-quantity">
             {{ t('schoolHandbook.rewardBatchCount', { count: rewardRevealQuantity }) }}
           </span>
-          <button type="button" class="reward-reveal-close" @click="closeRewardReveal">
-            {{ t('schoolHandbook.rewardEarnedClose') }}
+          <button
+            type="button"
+            class="reward-reveal-close"
+            :disabled="openingPackage"
+            :aria-busy="openingPackage"
+            @click="handleRewardRevealAction"
+          >
+            {{ rewardRevealIsInventoryItem
+              ? (openingPackage ? t('schoolHandbook.rewardOpening') : t('schoolHandbook.rewardOpen'))
+              : t('schoolHandbook.rewardEarnedClose') }}
+          </button>
+        </div>
+      </div>
+    </Transition>
+
+    <Transition name="reward-reveal">
+      <div
+        v-if="openedPackageRewards.length"
+        class="reward-reveal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        @click.self="closeOpenedPackage"
+      >
+        <div class="reward-reveal-dialog reward-package-dialog">
+          <span class="reward-reveal-new">{{ t('schoolHandbook.rewardNew') }}</span>
+          <div class="reward-reveal-spark reward-reveal-spark-left" aria-hidden="true">✦</div>
+          <div class="reward-reveal-spark reward-reveal-spark-right" aria-hidden="true">✦</div>
+          <div class="reward-reveal-kicker">{{ t('item.supplyBoxRewardKicker') }}</div>
+          <h2>{{ t('item.supplyBoxRewardTitle') }}</h2>
+          <p class="reward-package-description">{{ t('item.supplyBoxRewardDescription') }}</p>
+          <div class="reward-package-list">
+            <div
+              v-for="reward in openedPackageRewards"
+              :key="reward.id"
+              class="reward-package-item"
+            >
+              <div
+                class="reward-package-image"
+                :class="{ 'reward-package-image-cash': reward.type === 'cash' }"
+              >
+                <span v-if="reward.type === 'cash'" aria-hidden="true">🪙</span>
+                <img v-else :src="packageRewardImageURL(reward)" :alt="reward.name" />
+              </div>
+              <span class="reward-package-name">{{ packageRewardName(reward) }}</span>
+              <strong class="reward-package-count">{{ packageRewardAmount(reward) }}</strong>
+            </div>
+          </div>
+          <button type="button" class="reward-reveal-close" @click="closeOpenedPackage">
+            {{ t('item.supplyBoxRewardClose') }}
           </button>
         </div>
       </div>
@@ -355,35 +319,38 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import handbookBadge from '@/assets/image/special_activity/school-2026/school-handbook-badge.png'
-import rewardLimitedItem from '@/assets/image/special_activity/school-2026/school-handbook-reward-limited-item.png'
-import rewardSupplyBundle from '@/assets/image/special_activity/school-2026/school-handbook-reward-supply-bundle.png'
-import fullAttendanceTitleImage from '@/assets/image/special_activity/school-2026/titles/school-handbook-title-september-perfect-attendance.png'
-import schoolUniformFashion from '@/assets/image/item/fashion/学院制服套装.png'
+import handbookBadge from '@/assets/image/special_activity/national-day-2026/national-day-medal.png'
+import rewardSupplyBundle from '@/assets/image/special_activity/national-day-2026/national-day-gift-package.png'
+import schoolUniformImage from '@/assets/image/item/fashion/学院制服套装.png'
+import schoolDanceVideo from '@/assets/models/youmei/animations/dance/school-uniform/dance.webm'
+import fullAttendanceTitleImage from '@/assets/image/special_activity/national-day-2026/national-day-title-fellow-traveler.png'
+import mountainWitnessTitleImage from '@/assets/image/special_activity/national-day-2026/national-day-title-mountain-witness.png'
 import { usePlayer } from '@/hooks/usePlayer'
+import { useShow } from '@/hooks/useShow'
+import type { SchoolHandbookRewardGrant } from '@main/types/school-handbook'
 import type {
   SchoolHandbookApi,
   SchoolHandbookMilestoneProgress,
   SchoolHandbookProgress,
-  SchoolHandbookTaskProgress,
   SchoolHandbookClaimRewardResult,
 } from '@/types/schoolHandbook'
 
 const { t } = useI18n()
-const { refreshPlayerData } = usePlayer()
+const { refreshPlayerData, consumeItem } = usePlayer()
+const { getImageURL } = useShow()
 const api = window.api as SchoolHandbookApi
+const NATIONAL_DAY_GIFT_PACKAGE_ITEM_ID = 27
 
 const rewardImages: Record<string, string> = {
-  'school-handbook-supply-box': rewardSupplyBundle,
-  'school-handbook-limited-item': rewardLimitedItem,
-  'school-handbook-september-full-attendance': fullAttendanceTitleImage,
-  'school-handbook-youmei-desk-bundle': schoolUniformFashion,
+  'school-handbook-national-gift': rewardSupplyBundle,
+  'national-day-school-uniform': schoolUniformImage,
+  'national-day-fellow-traveler': fullAttendanceTitleImage,
+  'national-day-mountain-witness': mountainWitnessTitleImage,
 }
 
 const handbook = ref<SchoolHandbookProgress | null>(null)
-const activeTab = ref('tasks')
 const loading = ref(true)
 const hasLoadedHandbook = ref(false)
 const loadError = ref('')
@@ -393,28 +360,20 @@ const rewardConfirm = ref<SchoolHandbookMilestoneProgress | null>(null)
 const rewardQuantity = ref(1)
 const rewardReveal = ref<SchoolHandbookClaimRewardResult | null>(null)
 const rewardRevealQuantity = ref(1)
-const clock = ref(Date.now())
-let clockTimer: ReturnType<typeof setInterval> | undefined
+const openingPackage = ref(false)
+const openedPackageRewards = ref<SchoolHandbookRewardGrant[]>([])
 
 const stampedCount = computed(() => handbook.value?.stampCount ?? 0)
-const currentBatch = computed(() => handbook.value?.batch ?? null)
-const currentTasks = computed(() => currentBatch.value?.tasks ?? [])
-const completedTaskCount = computed(() => currentBatch.value?.completedTaskCount ?? 0)
-const requiredTaskCount = computed(() => currentBatch.value?.requiredTaskCount ?? 3)
-const batchProgressPercentage = computed(() => Math.min(100, (completedTaskCount.value / requiredTaskCount.value) * 100))
 const rewards = computed(() => handbook.value?.milestones ?? [])
 const rewardRevealName = computed(() => {
   if (rewardReveal.value?.reward.type === 'supply-box') {
     return t('schoolHandbook.rewardSupplyBoxReceived')
   }
-  if (rewardReveal.value?.reward.type === 'limited-item') {
-    return t('schoolHandbook.rewardLimitedItemReceived')
-  }
   return rewardReveal.value?.reward.name ?? ''
 })
 const rewardRevealIsInventoryItem = computed(() => {
   const type = rewardReveal.value?.reward.type
-  return type === 'supply-box' || type === 'limited-item'
+  return type === 'supply-box'
 })
 const rewardConfirmMaxQuantity = computed(() => {
   const reward = rewardConfirm.value
@@ -427,13 +386,6 @@ const rewardConfirmTotalCost = computed(() => {
   const quantity = Number.isFinite(rewardQuantity.value) ? Math.max(1, Math.floor(rewardQuantity.value)) : 1
   return reward.stampCount * Math.min(quantity, rewardConfirmMaxQuantity.value)
 })
-const remainingMs = computed(() => {
-  const nextRefreshAt = handbook.value?.nextRefreshAt
-  if (!nextRefreshAt) return 0
-  return Math.max(0, Date.parse(nextRefreshAt) - clock.value)
-})
-const isCoolingDown = computed(() => Boolean(handbook.value?.isCoolingDown && remainingMs.value >= 0))
-const formattedCooldown = computed(() => formatDuration(remainingMs.value))
 
 type ApiResponse<T> = { code?: number; message?: string; data?: T }
 
@@ -445,17 +397,8 @@ function unwrapResponse<T>(response: ApiResponse<T>): T {
   return response.data
 }
 
-function formatDuration(durationMs: number): string {
-  const totalSeconds = Math.max(0, Math.ceil(durationMs / 1000))
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-  return [hours, minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':')
-}
-
 function syncProgress(progress: SchoolHandbookProgress): void {
   handbook.value = progress
-  clock.value = Date.now()
 }
 
 async function loadHandbook(): Promise<void> {
@@ -465,7 +408,6 @@ async function loadHandbook(): Promise<void> {
   actionError.value = ''
   try {
     handbook.value = unwrapResponse<SchoolHandbookProgress>(await api.getSchoolHandbookProgress())
-    clock.value = Date.now()
     hasLoadedHandbook.value = true
   } catch (error) {
     const message = error instanceof Error ? error.message : t('schoolHandbook.loadFailed')
@@ -476,11 +418,6 @@ async function loadHandbook(): Promise<void> {
   }
 }
 
-function taskProgressPercentage(task: SchoolHandbookTaskProgress): number {
-  if (task.targetCount <= 0) return 0
-  return Math.min(100, Math.max(0, (task.completedCount / task.targetCount) * 100))
-}
-
 function rewardActionKey(reward: SchoolHandbookMilestoneProgress): string {
   return 'reward:' + reward.id
 }
@@ -489,9 +426,56 @@ function rewardImageById(rewardId: string): string {
   return rewardImages[rewardId] ?? handbookBadge
 }
 
+function isDanceVideoReward(rewardId: string): boolean {
+  return rewardId === 'national-day-school-dance'
+}
+
 function closeRewardReveal(): void {
   rewardReveal.value = null
   rewardRevealQuantity.value = 1
+}
+
+function closeOpenedPackage(): void {
+  openedPackageRewards.value = []
+}
+
+async function handleRewardRevealAction(): Promise<void> {
+  if (!rewardReveal.value || openingPackage.value) return
+  if (!rewardRevealIsInventoryItem.value) {
+    closeRewardReveal()
+    return
+  }
+
+  openingPackage.value = true
+  actionError.value = ''
+  try {
+    const result = await consumeItem(
+      NATIONAL_DAY_GIFT_PACKAGE_ITEM_ID,
+      rewardRevealQuantity.value,
+      0
+    )
+    if (!result?.rewards?.length) {
+      throw new Error(t('schoolHandbook.actionFailed'))
+    }
+    closeRewardReveal()
+    openedPackageRewards.value = result.rewards
+  } catch (error) {
+    actionError.value = error instanceof Error ? error.message : t('schoolHandbook.actionFailed')
+  } finally {
+    openingPackage.value = false
+  }
+}
+
+function packageRewardImageURL(reward: SchoolHandbookRewardGrant): string {
+  return reward.type === 'item' ? (getImageURL('item', reward.itemUrl) ?? '') : ''
+}
+
+function packageRewardName(reward: SchoolHandbookRewardGrant): string {
+  return reward.type === 'cash' ? t('item.supplyBoxCash') : reward.name
+}
+
+function packageRewardAmount(reward: SchoolHandbookRewardGrant): string {
+  return reward.type === 'cash' ? `+${reward.amount}` : `× ${reward.count}`
 }
 
 function openRewardConfirm(reward: SchoolHandbookMilestoneProgress): void {
@@ -562,19 +546,7 @@ async function confirmRewardClaim(): Promise<void> {
   }
 }
 
-onMounted(() => {
-  void loadHandbook()
-  clockTimer = setInterval(() => {
-    clock.value = Date.now()
-    if (handbook.value?.isCoolingDown && remainingMs.value <= 0 && !loading.value) {
-      void loadHandbook()
-    }
-  }, 1000)
-})
-
-onBeforeUnmount(() => {
-  if (clockTimer) clearInterval(clockTimer)
-})
+onMounted(() => void loadHandbook())
 </script>
 
 <style scoped lang="scss">
@@ -675,7 +647,7 @@ onBeforeUnmount(() => {
   border-radius: 9px;
   color: $font-muted-light;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025));
-  cursor: pointer;
+  --game-cursor: var(--cursor-pointer);
   font: inherit;
   font-size: 12px;
   transition: color 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
@@ -791,7 +763,7 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   color: $font-muted-light;
   background: rgba(255, 255, 255, 0.06);
-  cursor: help;
+  --game-cursor: var(--cursor-default);
   font-size: 15px;
   font-weight: 700;
   line-height: 1;
@@ -1068,7 +1040,7 @@ onBeforeUnmount(() => {
 .reward-shop-header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 14px;
   margin-bottom: 7px;
 }
@@ -1150,7 +1122,7 @@ onBeforeUnmount(() => {
   }
 
   &.clickable {
-    cursor: pointer;
+    --game-cursor: var(--cursor-pointer);
 
     &:focus-visible {
       outline: 2px solid $color-pink-100;
@@ -1159,7 +1131,7 @@ onBeforeUnmount(() => {
   }
 
   &.busy {
-    cursor: wait;
+    --game-cursor: var(--cursor-default);
     opacity: 0.72;
   }
 }
@@ -1275,7 +1247,8 @@ onBeforeUnmount(() => {
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.06);
 
-  img {
+  img,
+  video {
     width: 72px;
     height: 72px;
     object-fit: contain;
@@ -1343,7 +1316,7 @@ onBeforeUnmount(() => {
   border: 0;
   color: $font-light;
   background: transparent;
-  cursor: pointer;
+  --game-cursor: var(--cursor-pointer);
   font-size: 17px;
 
   &:hover:not(:disabled) {
@@ -1351,7 +1324,7 @@ onBeforeUnmount(() => {
   }
 
   &:disabled {
-    cursor: not-allowed;
+    --game-cursor: var(--cursor-default);
     opacity: 0.35;
   }
 }
@@ -1411,7 +1384,7 @@ onBeforeUnmount(() => {
   padding: 0 18px;
   overflow: hidden;
   border-radius: 8px;
-  cursor: pointer;
+  --game-cursor: var(--cursor-pointer);
   font: inherit;
   font-size: 12px;
   font-weight: 700;
@@ -1431,7 +1404,7 @@ onBeforeUnmount(() => {
   }
 
   &:disabled {
-    cursor: not-allowed;
+    --game-cursor: var(--cursor-default);
     opacity: 0.48;
   }
 }
@@ -1594,7 +1567,8 @@ onBeforeUnmount(() => {
   margin: 8px 0 4px;
   place-items: center;
 
-  img {
+  img,
+  video {
     width: 100%;
     height: 100%;
     object-fit: contain;
@@ -1630,7 +1604,7 @@ onBeforeUnmount(() => {
   color: $font-light;
   background: linear-gradient(135deg, rgba($color-pink-100, 0.9), rgba($color-pink-100, 0.58));
   box-shadow: 0 7px 18px rgba($color-pink-100, 0.18);
-  cursor: pointer;
+  --game-cursor: var(--cursor-pointer);
   font-size: 13px;
   font-weight: 700;
   transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
@@ -1672,6 +1646,83 @@ onBeforeUnmount(() => {
   color: $font-light;
   font-size: 11px;
   line-height: 1.5;
+}
+
+.reward-reveal-dance-hint {
+  z-index: 1;
+  width: min(300px, 100%);
+  margin: -3px 0 15px;
+  color: $color-pink-100;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.reward-package-dialog {
+  width: min(440px, calc(100vw - 32px));
+}
+
+.reward-package-description {
+  z-index: 1;
+  margin: -2px 0 8px;
+  color: $font-muted-light;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.reward-package-list {
+  z-index: 1;
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 9px;
+  margin: 4px 0 18px;
+}
+
+.reward-package-item {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.reward-package-image {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+
+  img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+  }
+}
+
+.reward-package-image-cash {
+  font-size: 22px;
+}
+
+.reward-package-name {
+  min-width: 0;
+  overflow: hidden;
+  color: $font-light;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reward-package-count {
+  color: $color-pink-100;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .reward-reveal-spark {

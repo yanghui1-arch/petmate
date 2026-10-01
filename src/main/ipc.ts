@@ -48,9 +48,7 @@ import { getMainWindow, getPageWindow } from './index';
 import { CommissionCompletionResult, PlayerResourceState } from './types/player-resource';
 import {
     SchoolHandbookClaimRewardResult,
-    SchoolHandbookProgress,
-    SchoolHandbookTaskCompletionResult,
-    SchoolHandbookTaskId
+    SchoolHandbookProgress
 } from './types/school-handbook';
 import { schoolHandbookManager } from './modules/school-handbook';
 import * as path from 'path';
@@ -61,6 +59,25 @@ import { greenworksManager } from './greenworks';
 import { localAIManager, LocalAIStatus } from './local-ai';
 import './modules/farm/ipc';
 import { farmWindowSize, fixedFarmWindow, observeFarmWorkArea } from './modules/farm/window';
+import { getVersionReminderState, acknowledgeVersionReminder, dismissVersionReward } from './modules/version-reminder';
+import type { VersionReminderState } from './types/version-reminder';
+
+for (const action of ['get', 'acknowledge', 'dismiss-reward'] as const) {
+    ipcMain.handle(`${action}-version-reminder`, (): Response<VersionReminderState> => {
+        try {
+            const player = playerManager.getPlayer();
+            const state = getVersionReminderState(player);
+            const grantOnReturn = action === 'get' && !state.announcementPending
+                && state.eventActive && !player.versionReminder?.nationalDayRewardGrantedAt;
+            if (action === 'acknowledge' || grantOnReturn) playerManager.updatePlayer(acknowledgeVersionReminder(player));
+            if (action === 'dismiss-reward') playerManager.updatePlayer(dismissVersionReward(player));
+            return { code: 200, data: getVersionReminderState(playerManager.getPlayer()) };
+        } catch (error) {
+            logger.error(`版本提醒操作失败 (${action}): ${error}`);
+            return { code: 400, message: '版本提醒操作失败，请重试' };
+        }
+    });
+}
 
 /**
  * 初始化设置数据
@@ -283,25 +300,6 @@ ipcMain.handle("get-school-handbook-progress", (_: IpcMainInvokeEvent, date?: st
 })
 
 ipcMain.handle(
-    "record-school-handbook-task",
-    (_: IpcMainInvokeEvent, taskId: SchoolHandbookTaskId, count: number = 1): Response<SchoolHandbookTaskCompletionResult> => {
-        try {
-            return {
-                code: 200,
-                message: "记录开学手册任务成功",
-                data: schoolHandbookManager.recordTaskCompletion(taskId, count)
-            } as Response<SchoolHandbookTaskCompletionResult>;
-        } catch (error) {
-            logger.error(`记录开学手册任务失败: ${error}`);
-            return {
-                code: 400,
-                message: error instanceof Error ? error.message : "记录开学手册任务失败"
-            } as Response<SchoolHandbookTaskCompletionResult>;
-        }
-    }
-)
-
-ipcMain.handle(
     "claim-school-handbook-reward",
     (_: IpcMainInvokeEvent, milestoneIdOrStampCount: string | number, quantity: number = 1): Response<SchoolHandbookClaimRewardResult> => {
         try {
@@ -349,12 +347,6 @@ ipcMain.handle("complete-commission", (_: IpcMainInvokeEvent, commissionId: stri
         consumePackageItems(totalRequirements);
         const result = playerResourceManager.completeCommission(commissionId, requirements, completionCount);
         notifyPlayerResourcesUpdated(result.resources);
-        try {
-            schoolHandbookManager.recordCommissionCompletion(completionCount);
-        } catch (error) {
-            logger.error(`记录开学手册委托任务失败: ${error}`);
-        }
-
         return {
             code: 200,
             message: "委托完成",

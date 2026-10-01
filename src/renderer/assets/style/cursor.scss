@@ -1,3 +1,55 @@
-// Cursor asset paths (ensure these images exist in assets/cursor/)
-$cursor-default: "@/assets/cursor/sv_cursor_default.png";
-$cursor-pointer: "@/assets/cursor/sv_cursor_pointer.png";
+:root {
+    --cursor-default: url('@/assets/cursor/sv_cursor_default.png') 10 2, default;
+    --cursor-pointer: url('@/assets/cursor/sv_cursor_pointer.png') 17 2, pointer;
+}
+
+// Inheritance keeps icons and text on the same cursor as their control.
+// Override native and component-library cursors throughout the renderer.
+* {
+    cursor: var(--game-cursor, var(--cursor-default)) !important;
+}
+
+button,
+a[href],
+input[type='button'],
+input[type='submit'],
+input[type='reset'],
+input[type='checkbox'],
+input[type='radio'],
+input[type='range'],
+select,
+label,
+[role='button'],
+.clickable,
+.close-icon,
+.n-button,
+.n-switch,
+.n-slider,
+.n-tabs-tab,
+.n-base-selection,
+.n-base-select-option,
+.n-base-clear,
+.n-base-close,
+.n-carousel__arrow,
+.n-carousel__dot,
+.n-image:not(.n-image--preview-disabled) {
+    --game-cursor: var(--cursor-pointer);
+}
+
+:is(
+    :disabled,
+    [aria-disabled='true'],
+    .n-button--disabled,
+    .n-button--loading,
+    .n-switch--disabled,
+    .n-switch--loading,
+    .n-slider--disabled,
+    .n-tabs-tab--disabled,
+    .n-base-selection--disabled,
+    .n-base-select-option--disabled
+) {
+    &,
+    * {
+        --game-cursor: var(--cursor-default) !important;
+    }
+}

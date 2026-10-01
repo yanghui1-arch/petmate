@@ -5,7 +5,6 @@ import windowsAudioMeterScript from './windows-audio-meter.ps1?raw'
 type AudioActivityListener = (active: boolean, peak: number) => void
 
 const ACTIVE_PEAK_THRESHOLD = 0.008
-const ACTIVE_MASTER_VOLUME_THRESHOLD = 0.35
 const SILENCE_HOLD_MS = 700
 const POWERSHELL_COMMAND = 'powershell.exe'
 
@@ -68,18 +67,17 @@ export class SystemAudioActivityMonitor {
         this.outputBuffer = lines.pop() ?? ''
 
         for (const line of lines) {
-            const [peakText, volumeText, mutedText] = line.split(',')
+            const [peakText, , mutedText] = line.split(',')
             const peak = Number.parseFloat(peakText)
-            const volume = Number.parseFloat(volumeText)
-            if (Number.isFinite(peak) && Number.isFinite(volume)) {
-                this.handleSample(peak, volume, mutedText === '1')
+            if (Number.isFinite(peak)) {
+                this.handleSample(peak, mutedText === '1')
             }
         }
     }
 
-    private handleSample(peak: number, volume: number, muted: boolean): void {
+    private handleSample(peak: number, muted: boolean): void {
         // Keep a small release delay so quiet gaps between beats do not flicker idle/dance.
-        if (!muted && volume >= ACTIVE_MASTER_VOLUME_THRESHOLD && peak >= ACTIVE_PEAK_THRESHOLD) {
+        if (!muted && peak >= ACTIVE_PEAK_THRESHOLD) {
             this.silenceStartedAt = null
             this.updateActive(true, peak)
             return

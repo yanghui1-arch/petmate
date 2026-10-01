@@ -4,7 +4,6 @@ import type { ActivityInfo } from "../types/activity"
 import {
     SCHOOL_HANDBOOK_DESKMATE_TITLE_ID,
     SCHOOL_HANDBOOK_FULL_ATTENDANCE_TITLE_ID,
-    SCHOOL_HANDBOOK_LIMITED_ITEM_ITEM_ID,
     SCHOOL_HANDBOOK_REFRESH_COOLDOWN_MS,
     SCHOOL_HANDBOOK_REQUIRED_TASKS,
     SCHOOL_HANDBOOK_TASKS_PER_BATCH,
@@ -26,8 +25,9 @@ import {
     SchoolHandbookTaskProgress
 } from "../types/school-handbook"
 import {
-    SCHOOL_UNIFORM_SKIN_ID,
-    playerResourceManager
+    playerResourceManager,
+    SCHOOL_DANCE_ANIMATION_ID,
+    SCHOOL_UNIFORM_SKIN_ID
 } from "./player/resource"
 
 const SCHOOL_HANDBOOK_STORE_NAME = "school-handbook-store"
@@ -38,7 +38,7 @@ export const SCHOOL_HANDBOOK_TASK_DEFINITIONS: readonly SchoolHandbookTaskDefini
     {
         id: "study",
         name: "完成一次学习活动",
-        description: "和尤美一起认真学习一次。",
+        description: "和尤美一起为庆典认真学习一次。",
         targetCount: 1
     },
     {
@@ -62,7 +62,7 @@ export const SCHOOL_HANDBOOK_TASK_DEFINITIONS: readonly SchoolHandbookTaskDefini
     {
         id: "drawing",
         name: "完成一次绘画活动",
-        description: "完成一次绘画学习活动。",
+        description: "完成一次国庆主题绘画活动。",
         targetCount: 1
     }
 ]
@@ -77,61 +77,80 @@ type SchoolHandbookMilestoneDefinition = {
 export const SCHOOL_HANDBOOK_MILESTONES: readonly SchoolHandbookMilestoneDefinition[] = [
     {
         id: "school-handbook-milestone-3",
-        stampCount: 1,
+        stampCount: 10,
         repeatable: true,
         reward: {
-            id: "school-handbook-supply-box",
+            id: "school-handbook-national-gift",
             type: "supply-box",
-            name: "开学补给箱",
-            description: "一份装满新学期物品的超大补给箱"
+            name: "国庆大礼包",
+            description: "一份装满金币与庆典物品的国庆大礼包"
         }
     },
     {
-        id: "school-handbook-milestone-5",
-        stampCount: 1,
-        repeatable: true,
+        id: "school-handbook-milestone-school-uniform",
+        stampCount: 30,
+        repeatable: false,
         reward: {
-            id: "school-handbook-limited-item",
-            type: "limited-item",
-            name: "开学限定物品",
-            description: "开学手册限定奖励包，打开后可随机获得一件新学期委托道具"
+            id: "national-day-school-uniform",
+            type: "resource-bundle",
+            name: "校园时装",
+            description: "解锁校园制服套装，可前往衣橱实装。",
+            resources: [{
+                type: "skin",
+                id: SCHOOL_UNIFORM_SKIN_ID,
+                name: "学院制服套装"
+            }]
+        }
+    },
+    {
+        id: "school-handbook-milestone-school-dance",
+        stampCount: 30,
+        repeatable: false,
+        reward: {
+            id: "national-day-school-dance",
+            type: "resource-bundle",
+            name: "校园时装·跳舞",
+            description: "解锁校园时装专属跳舞动作。",
+            resources: [{
+                type: "animation",
+                id: SCHOOL_DANCE_ANIMATION_ID,
+                name: "校园时装·跳舞",
+                action: "dance",
+                skin: "school-uniform",
+                previewFrame: "assets/models/youmei/animations/dance/school-uniform/dance.webm"
+            }]
         }
     },
     {
         id: "school-handbook-milestone-7",
-        stampCount: 3,
+        stampCount: 20,
         repeatable: false,
         reward: {
             id: SCHOOL_HANDBOOK_FULL_ATTENDANCE_TITLE_ID,
             type: "title",
-            name: "九月全勤生",
-            description: "解锁「九月全勤生」称谓",
+            name: "国庆同游者",
+            description: "解锁「国庆同游者」称谓",
             resources: [{
                 type: "title",
                 id: SCHOOL_HANDBOOK_FULL_ATTENDANCE_TITLE_ID,
-                name: "九月全勤生"
+                name: "国庆同游者"
             }]
         }
     },
     {
         id: "school-handbook-milestone-12",
-        stampCount: 5,
+        stampCount: 20,
         repeatable: false,
         reward: {
-            id: "school-handbook-youmei-desk-bundle",
-            type: "resource-bundle",
-            name: "学院制服套装与尤美的同桌",
-            description: "解锁学院制服套装，并获得限定称谓“尤美的同桌”。",
+            id: SCHOOL_HANDBOOK_DESKMATE_TITLE_ID,
+            type: "title",
+            name: "山河见证者",
+            description: "解锁国庆限定称谓“山河见证者”。",
             resources: [
-                {
-                    type: "skin",
-                    id: SCHOOL_UNIFORM_SKIN_ID,
-                    name: "学院制服套装"
-                },
                 {
                     type: "title",
                     id: SCHOOL_HANDBOOK_DESKMATE_TITLE_ID,
-                    name: "尤美的同桌"
+                    name: "山河见证者"
                 }
             ]
         }
@@ -170,12 +189,30 @@ export class SchoolHandbookManager {
         this.isInit = true
         this.state = this.normalizeState(this.store.get("state"), new Date())
         this.saveState()
+
+        // Exchange receipts and wardrobe resources live in separate stores.
+        const claimedUniform = this.state.claimedRewards.some(
+            reward => reward.milestoneId === "school-handbook-milestone-school-uniform"
+        )
+        if (claimedUniform && !playerResourceManager.hasSkin(SCHOOL_UNIFORM_SKIN_ID)) {
+            playerResourceManager.grantSkin(SCHOOL_UNIFORM_SKIN_ID)
+        }
     }
 
     getProgress(at: Date | string = new Date()): SchoolHandbookProgress {
         this.ensureInit()
         const now = toDate(at)
         this.ensureReady(now)
+        return this.buildProgress(now)
+    }
+
+    addStamps(count: number, at: Date | string = new Date()): SchoolHandbookProgress {
+        this.ensureInit()
+        assertPositiveInteger(count, "国庆纪念章数量")
+        const now = toDate(at)
+        this.ensureReady(now)
+        this.state.stampCount += count
+        this.saveState()
         return this.buildProgress(now)
     }
 
@@ -304,7 +341,7 @@ export class SchoolHandbookManager {
 
         const totalStampCost = milestone.stampCount * quantity
         if (progress.stampCount < totalStampCost) {
-            throw new Error("印章数量不足，需要 " + totalStampCost + " 枚印章")
+            throw new Error("国庆纪念章数量不足，需要 " + totalStampCost + " 枚国庆纪念章")
         }
 
         let playerResources
@@ -319,6 +356,8 @@ export class SchoolHandbookManager {
                 for (const resource of milestone.reward.resources) {
                     if (resource.type === "skin") {
                         playerResourceManager.grantSkin(resource.id)
+                    } else if (resource.type === "animation") {
+                        playerResourceManager.grantAnimation(resource)
                     } else {
                         playerResourceManager.grantTitle(resource.id)
                     }
@@ -533,7 +572,7 @@ function isTaskId(value: unknown): value is SchoolHandbookTaskId {
 }
 
 function assertTaskId(taskId: unknown): asserts taskId is SchoolHandbookTaskId {
-    if (!isTaskId(taskId)) throw new Error("未知开学手册任务: " + String(taskId))
+    if (!isTaskId(taskId)) throw new Error("未知国庆庆典任务: " + String(taskId))
 }
 
 function assertPositiveInteger(value: number, label: string): void {
@@ -617,7 +656,7 @@ function resolveMilestone(milestoneIdOrStampCount: string | number): SchoolHandb
         const milestone = MILESTONE_DEFINITION_MAP.get(milestoneIdOrStampCount)
         if (milestone) return milestone
     }
-    throw new Error("未知开学手册里程碑: " + String(milestoneIdOrStampCount))
+    throw new Error("未知国庆庆典里程碑: " + String(milestoneIdOrStampCount))
 }
 
 function normalizeClaimedRewards(

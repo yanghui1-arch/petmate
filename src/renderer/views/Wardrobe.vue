@@ -63,7 +63,7 @@ import laborSkinThumb from "@/assets/skins/五一短裙套装-2026.png";
 import schoolUniformSkinThumb from "@/assets/skins/学院制服套装.png";
 import classicSkinShow from "@/assets/skins/show/经典长裙套装-1.png";
 import laborSkinShow from "@/assets/skins/show/五一短裙套装-2026-1.png";
-import schoolUniformSkinShow from "@/assets/skins/show/学院制服套装-1.png";
+import schoolUniformSkinIdle from "@/assets/models/youmei/animations/idle/school-uniform/01.png";
 
 type SkinViewModel = {
   id: string;
@@ -91,7 +91,7 @@ const skinCatalog = computed<SkinViewModel[]>(() => [
     id: "youmei-school-uniform-2026",
     name: t("wardrobe.skins.schoolUniform"),
     thumbnail: schoolUniformSkinThumb,
-    showImage: schoolUniformSkinShow,
+    showImage: schoolUniformSkinIdle,
   },
 ]);
 
@@ -322,7 +322,7 @@ onMounted(() => {
   }
 
   &:disabled {
-    cursor: default;
+    --game-cursor: var(--cursor-default);
     opacity: 0.56;
     box-shadow: none;
   }
