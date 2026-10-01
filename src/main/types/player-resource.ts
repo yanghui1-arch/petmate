@@ -1,7 +1,7 @@
 export type PlayerAnimationResource = {
     id: string;
     name: string;
-    action: "angryKick";
+    action: "angryKick" | "dance";
     skin: string;
     previewFrame: string;
     acquiredAt: string;

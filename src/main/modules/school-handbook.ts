@@ -23,7 +23,11 @@ import {
     SchoolHandbookTaskId,
     SchoolHandbookTaskProgress
 } from "../types/school-handbook"
-import { playerResourceManager } from "./player/resource"
+import {
+    playerResourceManager,
+    SCHOOL_DANCE_ANIMATION_ID,
+    SCHOOL_UNIFORM_SKIN_ID
+} from "./player/resource"
 
 const SCHOOL_HANDBOOK_STORE_NAME = "school-handbook-store"
 const SCHOOL_HANDBOOK_SCHEMA_VERSION = 2
@@ -92,8 +96,27 @@ export const SCHOOL_HANDBOOK_MILESTONES: readonly SchoolHandbookMilestoneDefinit
             description: "解锁校园制服套装，可前往衣橱实装。",
             resources: [{
                 type: "skin",
-                id: "youmei-school-uniform-2026",
+                id: SCHOOL_UNIFORM_SKIN_ID,
                 name: "学院制服套装"
+            }]
+        }
+    },
+    {
+        id: "school-handbook-milestone-school-dance",
+        stampCount: 30,
+        repeatable: false,
+        reward: {
+            id: "national-day-school-dance",
+            type: "resource-bundle",
+            name: "校园时装·跳舞",
+            description: "解锁校园时装专属跳舞动作。",
+            resources: [{
+                type: "animation",
+                id: SCHOOL_DANCE_ANIMATION_ID,
+                name: "校园时装·跳舞",
+                action: "dance",
+                skin: "school-uniform",
+                previewFrame: "assets/models/youmei/animations/dance/school-uniform/dance.webm"
             }]
         }
     },
@@ -324,6 +347,8 @@ export class SchoolHandbookManager {
                 for (const resource of milestone.reward.resources) {
                     if (resource.type === "skin") {
                         playerResourceManager.grantSkin(resource.id)
+                    } else if (resource.type === "animation") {
+                        playerResourceManager.grantAnimation(resource)
                     } else {
                         playerResourceManager.grantTitle(resource.id)
                     }

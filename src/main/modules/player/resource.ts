@@ -42,6 +42,7 @@ type ItemRewardPoolEntry = {
 type EconomicRewardMode = "loss" | "profit" | "special";
 
 const LABOR_KICK_ANIMATION_ID = "youmei-angry-kick-labor-2026";
+export const SCHOOL_DANCE_ANIMATION_ID = "youmei-school-dance-2026";
 export const CLASSIC_SKIN_ID = "youmei-classic-dress";
 export const LABOR_SKIRT_SKIN_ID = "youmei-labor-skirt-2026";
 export const SCHOOL_UNIFORM_SKIN_ID = "youmei-school-uniform-2026";
@@ -298,6 +299,24 @@ class PlayerResourceManager {
             this.resources.equippedTitleId = resource.id
         }
         handleTitleAchievement(resource.name)
+        this.saveResources()
+        return this.getResources()
+    }
+
+    /**
+     * 发放活动动画奖励时使用。重复发放保持幂等，方便活动奖励补发。
+     */
+    grantAnimation(animation: Omit<PlayerAnimationResource, "acquiredAt">): PlayerResourceState {
+        this.ensureInit()
+
+        if (this.resources.animationResources.some(resource => resource.id === animation.id)) {
+            return this.getResources()
+        }
+
+        this.resources.animationResources.push({
+            ...animation,
+            acquiredAt: new Date().toISOString()
+        })
         this.saveResources()
         return this.getResources()
     }

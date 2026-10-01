@@ -2,6 +2,7 @@ import { readonly, ref, type Ref } from 'vue'
 import type { PlayerResourceState } from '@main/types/player-resource'
 import { ModelStatus } from '../types/model'
 import youmeiDance from '@/assets/models/youmei/youmei-dance.png'
+import youmeiSchoolDanceVideo from '@/assets/models/youmei/animations/dance/school-uniform/dance.webm'
 import youmeiDragClassic from '@/assets/models/youmei/animations/drag/classic.png'
 import youmeiDragLabor from '@/assets/models/youmei/animations/drag/labor.png'
 import youmeiDragSchoolUniform from '@/assets/models/youmei/animations/drag/school-uniform.png'
@@ -162,6 +163,7 @@ const LABOR_KICK_ANIMATION_RESOURCE_ID = 'youmei-angry-kick-labor-2026'
 const CLASSIC_SKIN_ID = 'youmei-classic-dress'
 const LABOR_SKIRT_SKIN_ID = 'youmei-labor-skirt-2026'
 const SCHOOL_UNIFORM_SKIN_ID = 'youmei-school-uniform-2026'
+const SCHOOL_DANCE_ANIMATION_ID = 'youmei-school-dance-2026'
 const DRAW_BASIC_ACTIVITY_ID = 1
 const SLEEP_RESUME_FRAME_INDEX = 5
 
@@ -390,6 +392,7 @@ let petMateModelConfig = { scale: 1 }
 let spriteCanvas: HTMLCanvasElement | null = null
 let spriteCanvasContext: CanvasRenderingContext2D | null = null
 let spriteContainer: HTMLDivElement | null = null
+let schoolDanceVideo: HTMLVideoElement | null = null
 const activityPartLayerCache = new WeakMap<
     HTMLImageElement,
     Map<string, HTMLCanvasElement>
@@ -801,7 +804,11 @@ function startAmbientAction() {
         return
     }
 
-    if (isSystemAudioActive) {
+    if (
+        isSystemAudioActive &&
+        equippedSkinId === SCHOOL_UNIFORM_SKIN_ID &&
+        unlockedAnimationResourceIds.has(SCHOOL_DANCE_ANIMATION_ID)
+    ) {
         startAction('dance', { dance: true })
         return
     }
@@ -850,7 +857,26 @@ function startAction(
     lastAnimationTime = now
     updateModelState(state)
     syncSleepAnimation(action, options.startFrameIndex)
+    syncDanceVideo(action)
     renderScene(now)
+}
+
+function syncDanceVideo(action: ActionName): void {
+    if (!schoolDanceVideo) return
+
+    const shouldPlay =
+        action === 'dance' &&
+        equippedSkinId === SCHOOL_UNIFORM_SKIN_ID &&
+        unlockedAnimationResourceIds.has(SCHOOL_DANCE_ANIMATION_ID)
+    if (!shouldPlay) {
+        schoolDanceVideo.pause()
+        schoolDanceVideo.currentTime = 0
+        schoolDanceVideo.style.visibility = 'hidden'
+        return
+    }
+
+    schoolDanceVideo.style.visibility = 'visible'
+    void schoolDanceVideo.play().catch(() => undefined)
 }
 
 function syncSleepAnimation(action: ActionName, startFrameIndex?: number): void {
@@ -986,6 +1012,18 @@ function handleActionCompleted(action: ActionName) {
 
 function renderScene(now: number) {
     if (!spriteCanvas || !spriteCanvasContext || !activePlayback) return
+
+    const isSchoolDance =
+        activePlayback.clip.action === 'dance' &&
+        equippedSkinId === SCHOOL_UNIFORM_SKIN_ID &&
+        unlockedAnimationResourceIds.has(SCHOOL_DANCE_ANIMATION_ID)
+    if (isSchoolDance && schoolDanceVideo) {
+        spriteCanvas.style.visibility = 'hidden'
+        schoolDanceVideo.style.visibility = 'visible'
+        if (schoolDanceVideo.paused) void schoolDanceVideo.play().catch(() => undefined)
+        return
+    }
+    if (schoolDanceVideo) schoolDanceVideo.style.visibility = 'hidden'
 
     const currentPose = getRenderPose(activePlayback)
     if (isSleepAction(activeAction) && sleepAnimationPlayer.isVisible) {
@@ -1793,8 +1831,15 @@ async function loadAnimationAssets(): Promise<void> {
 
 function initPlayerResourceListener() {
     window.api.onPlayerResourcesUpdated((_, resources) => {
+        const previousSkinId = equippedSkinId
+        const previouslyHadSchoolDance = unlockedAnimationResourceIds.has(SCHOOL_DANCE_ANIMATION_ID)
         setUnlockedAnimationResources(resources)
-        void reloadSkinDependentAnimations()
+        void reloadSkinDependentAnimations().then(() => {
+            const hasSchoolDance = unlockedAnimationResourceIds.has(SCHOOL_DANCE_ANIMATION_ID)
+            if (previousSkinId !== equippedSkinId || previouslyHadSchoolDance !== hasSchoolDance) {
+                startAmbientAction()
+            }
+        })
     })
 }
 
@@ -2225,6 +2270,26 @@ function initSpriteCanvas() {
     spriteCanvas.style.visibility = 'visible'
     spriteContainer.appendChild(spriteCanvas)
     spriteCanvasContext = spriteCanvas.getContext('2d', { alpha: true })
+
+    schoolDanceVideo?.remove()
+    schoolDanceVideo = document.createElement('video')
+    schoolDanceVideo.className = 'youmei-school-dance-video'
+    schoolDanceVideo.src = youmeiSchoolDanceVideo
+    schoolDanceVideo.muted = true
+    schoolDanceVideo.loop = true
+    schoolDanceVideo.playsInline = true
+    schoolDanceVideo.preload = 'auto'
+    schoolDanceVideo.style.position = 'absolute'
+    schoolDanceVideo.style.left = '0'
+    schoolDanceVideo.style.bottom = '0'
+    schoolDanceVideo.style.width = `${CANVAS_WIDTH}px`
+    schoolDanceVideo.style.height = `${CANVAS_HEIGHT}px`
+    schoolDanceVideo.style.objectFit = 'contain'
+    schoolDanceVideo.style.objectPosition = 'center bottom'
+    schoolDanceVideo.style.pointerEvents = 'none'
+    schoolDanceVideo.style.visibility = 'hidden'
+    spriteContainer.appendChild(schoolDanceVideo)
+
     syncCanvasResolution(true)
 }
 

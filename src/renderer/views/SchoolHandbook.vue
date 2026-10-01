@@ -77,9 +77,20 @@
                 >
                   <div class="reward-card-visual">
                     <img
+                      v-if="!isDanceVideoReward(reward.reward.id)"
                       class="reward-image"
                       :src="rewardImageById(reward.reward.id)"
                       :alt="reward.reward.name"
+                    />
+                    <video
+                      v-else
+                      class="reward-image reward-video"
+                      :src="schoolDanceVideo"
+                      :aria-label="reward.reward.name"
+                      autoplay
+                      muted
+                      loop
+                      playsinline
                     />
                     <span class="reward-limit">
                       {{ reward.repeatable ? t('schoolHandbook.repeatable') : t('schoolHandbook.oneTimeOnly') }}
@@ -116,8 +127,19 @@
           <div class="reward-confirm-heading">
             <div class="reward-confirm-art">
               <img
+                v-if="!isDanceVideoReward(rewardConfirm.reward.id)"
                 :src="rewardImageById(rewardConfirm.reward.id)"
                 :alt="rewardConfirm.reward.name"
+              />
+              <video
+                v-else
+                class="reward-video"
+                :src="schoolDanceVideo"
+                :aria-label="rewardConfirm.reward.name"
+                autoplay
+                muted
+                loop
+                playsinline
               />
             </div>
             <div class="reward-confirm-copy">
@@ -208,12 +230,29 @@
             :class="`reward-reveal-art-${rewardReveal.reward.type}`"
           >
             <img
+              v-if="!isDanceVideoReward(rewardReveal.reward.id)"
               :src="rewardImageById(rewardReveal.reward.id)"
               :alt="rewardReveal.reward.name"
+            />
+            <video
+              v-else
+              class="reward-video"
+              :src="schoolDanceVideo"
+              :aria-label="rewardReveal.reward.name"
+              autoplay
+              muted
+              loop
+              playsinline
             />
           </div>
           <strong class="reward-reveal-name">{{ rewardRevealName }}</strong>
           <p>{{ rewardReveal.reward.description }}</p>
+          <p
+            v-if="isDanceVideoReward(rewardReveal.reward.id)"
+            class="reward-reveal-dance-hint"
+          >
+            {{ t('schoolHandbook.rewardDanceHint') }}
+          </p>
           <p
             v-if="rewardRevealIsInventoryItem"
             class="reward-reveal-inventory-hint"
@@ -285,6 +324,7 @@ import { useI18n } from 'vue-i18n'
 import handbookBadge from '@/assets/image/special_activity/national-day-2026/national-day-medal.png'
 import rewardSupplyBundle from '@/assets/image/special_activity/national-day-2026/national-day-gift-package.png'
 import schoolUniformImage from '@/assets/image/item/fashion/学院制服套装.png'
+import schoolDanceVideo from '@/assets/models/youmei/animations/dance/school-uniform/dance.webm'
 import fullAttendanceTitleImage from '@/assets/image/special_activity/national-day-2026/national-day-title-fellow-traveler.png'
 import mountainWitnessTitleImage from '@/assets/image/special_activity/national-day-2026/national-day-title-mountain-witness.png'
 import { usePlayer } from '@/hooks/usePlayer'
@@ -384,6 +424,10 @@ function rewardActionKey(reward: SchoolHandbookMilestoneProgress): string {
 
 function rewardImageById(rewardId: string): string {
   return rewardImages[rewardId] ?? handbookBadge
+}
+
+function isDanceVideoReward(rewardId: string): boolean {
+  return rewardId === 'national-day-school-dance'
 }
 
 function closeRewardReveal(): void {
@@ -1203,7 +1247,8 @@ onMounted(() => void loadHandbook())
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.06);
 
-  img {
+  img,
+  video {
     width: 72px;
     height: 72px;
     object-fit: contain;
@@ -1522,7 +1567,8 @@ onMounted(() => void loadHandbook())
   margin: 8px 0 4px;
   place-items: center;
 
-  img {
+  img,
+  video {
     width: 100%;
     height: 100%;
     object-fit: contain;
@@ -1600,6 +1646,17 @@ onMounted(() => void loadHandbook())
   color: $font-light;
   font-size: 11px;
   line-height: 1.5;
+}
+
+.reward-reveal-dance-hint {
+  z-index: 1;
+  width: min(300px, 100%);
+  margin: -3px 0 15px;
+  color: $color-pink-100;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .reward-package-dialog {

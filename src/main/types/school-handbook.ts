@@ -1,4 +1,4 @@
-import type { CommissionGrantedReward, PlayerResourceState } from "./player-resource"
+import type { CommissionGrantedReward, PlayerAnimationResource, PlayerResourceState } from "./player-resource"
 
 export const SCHOOL_HANDBOOK_TITLE = "尤美的国庆庆典"
 export const SCHOOL_HANDBOOK_REQUIRED_TASKS = 3
@@ -56,6 +56,13 @@ export type SchoolHandbookPlayerResourceReward = {
     type: "skin" | "title";
     id: string;
     name: string;
+} | {
+    type: "animation";
+    id: string;
+    name: string;
+    action: PlayerAnimationResource["action"];
+    skin: string;
+    previewFrame: string;
 }
 
 export type SchoolHandbookRewardType =
