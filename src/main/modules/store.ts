@@ -20,9 +20,21 @@ import wishFilePath from '../../../resources/data/prefab_wish.json?commonjs-exte
 import itemFilePath from '../../../resources/data/item.json?commonjs-external&asset'
 import { achieveFirstOpen } from './player/achieve';
 import logger from '../log';
+import { EventEmitter } from 'node:events'
+import type { FarmSnapshot, FarmState, FarmReceipt } from '../types/farm'
+import { assertGameWritable } from './save/coordinator'
+import { writeJsonAtomic } from './save/files'
+import { existsSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+
+export const playerChanges = new EventEmitter()
 
 type PlayerStoreData = {
   playerInfo: PlayerInfo
+  farm?: FarmState
+  revision?: number
+  farmReceipts?: FarmReceipt[]
+  schemaVersion?: number
 }
 
 type ActivityStoreData = {
@@ -64,6 +76,8 @@ class PlayerManager {
         items: []
     }
     private isInit: boolean = false;
+    private initialization: Promise<void> | null = null;
+    private ready = false;
 
     constructor() {
         this.store = new Store<PlayerStoreData>({
@@ -109,13 +123,18 @@ class PlayerManager {
      * 从存储中加载玩家信息
      * @param steamId 玩家的steamId
      */
-    private loadPlayer(steamId:string): void {
+    private async loadPlayer(steamId:string): Promise<void> {
         const stored = (this.store as any).get('playerInfo') as PlayerInfo | undefined
         if (!stored) {
             // 先发http请求获取玩家信息
-            axios.post('http://petmate.fun/api/user/player_info_by_steamid', {
+            // Legacy import is only valid before any related local progress exists.
+            if (['player-resource-store.json', 'school-handbook-store.json'].some(name => existsSync(join(dirname(this.store.path), name)))) {
+                this.savePlayer();
+                return;
+            }
+            await axios.post('http://petmate.fun/api/user/player_info_by_steamid', {
                 steamid: steamId
-            }).then((res: AxiosResponse) => {
+            }, { timeout: 10000 }).then((res: AxiosResponse) => {
                 const response = res.data;
                 const code = response.code;
                 if (code === 200) {
@@ -172,16 +191,48 @@ class PlayerManager {
      * 保存当前玩家信息到存储
      */
     private savePlayer(): void {
-        (this.store as any).set('playerInfo', this.currentPlayer)
+        assertGameWritable()
+        const previous = this.store.store
+        try {
+            writeJsonAtomic(this.store.path, { ...previous, playerInfo: this.currentPlayer, revision: (previous.revision ?? 0) + 1 })
+        } catch (error) {
+            if (previous.playerInfo) this.currentPlayer = this.reconstructPlayer(previous.playerInfo)
+            throw error
+        }
+        playerChanges.emit('changed')
     }
 
-    initPlayer(steamID: string): void {
-        if (this.isInit) return;
+    initPlayer(steamID: string): Promise<void> {
+        if (this.initialization) return this.initialization;
         this.isInit = true;
         console.log("开始加载steamID为", steamID, "的玩家的数据...")
-        this.loadPlayer(steamID);
-        console.log("加载steamID为", steamID, "的玩家的数据完成！")
+        this.initialization = this.loadPlayer(steamID).then(() => {
+            this.ready = true;
+            console.log("加载玩家数据完成！")
+        });
+        return this.initialization;
     }
+
+    private reconstructPlayer(player: PlayerInfo): PlayerInfo {
+        return this.hydratePlayerItemInfo({ ...player, petmates: player.petmates.map(petmate => new Youmei(petmate.id, '尤美', petmate.attrs, petmate.status, petmate.wishes, petmate.completedWishesNum)) });
+    }
+
+    getFarmSnapshot(): FarmSnapshot {
+        if (!this.ready) throw new Error('玩家数据正在初始化，请稍后重试')
+        const stored = this.store.store
+        return { farm: stored.farm ?? null, cash: this.currentPlayer.cash, revision: stored.revision ?? 0, receipts: stored.farmReceipts ?? [] }
+    }
+
+    commitFarmSnapshot(snapshot: FarmSnapshot): void {
+        assertGameWritable()
+        if (!this.ready || !snapshot.farm) throw new Error('农场尚未初始化')
+        const candidate = { ...this.currentPlayer, cash: snapshot.cash }
+        writeJsonAtomic(this.store.path, { ...this.store.store, schemaVersion: 1, playerInfo: candidate, farm: snapshot.farm, revision: snapshot.revision, farmReceipts: snapshot.receipts })
+        this.currentPlayer = candidate
+        playerChanges.emit('changed')
+    }
+
+    getSaveDirectory(): string { return dirname(this.store.path) }
 
     /**
      * 获取玩家信息

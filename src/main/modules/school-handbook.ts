@@ -1,4 +1,5 @@
 import Store from "electron-store"
+import { assertGameWritable } from './save/coordinator'
 import type { ActivityInfo } from "../types/activity"
 import {
     SCHOOL_HANDBOOK_DESKMATE_TITLE_ID,
@@ -427,6 +428,7 @@ export class SchoolHandbookManager {
     }
 
     private saveState(): void {
+        assertGameWritable()
         this.store.set("state", this.state)
     }
 

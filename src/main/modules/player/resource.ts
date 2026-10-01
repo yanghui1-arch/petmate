@@ -1,4 +1,5 @@
 import Store from "electron-store";
+import { assertGameWritable } from '../save/coordinator';
 import type { PackageItemConsumeRequirement } from "./basic";
 import { itemHasType, type Item } from "../../types/item";
 import type {
@@ -687,6 +688,7 @@ class PlayerResourceManager {
     }
 
     private saveResources(): void {
+        assertGameWritable();
         (this.store as any).set("resources", this.resources)
     }
 

@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell, Tray } from 'electron'
 import * as path from 'path'
+import './restore-preflight'
 import './ipc'
 import { destroyScheduler, startOnlineAttributeDecay, startWishGeneration } from './scheduler'
 import { saveChatHistoryMessages } from './llm'
@@ -234,7 +235,7 @@ const createWindow = (): void => {
 }
 
 app.whenReady().then(async () => {
-    appInit()
+    await appInit()
 
     // 更新玩家信息，添加Steam数据
     try {

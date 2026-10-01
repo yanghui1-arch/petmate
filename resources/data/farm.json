@@ -1,0 +1,37 @@
+{
+  "crops": [
+    { "id": "wheat", "name": "小麦", "level": 1, "minutes": 30, "price": 4, "yield": 3, "sell": 2, "exp": 2, "description": "随风轻轻摇摆的小麦，适合短暂休息时照料。" },
+    { "id": "carrot", "name": "胡萝卜", "level": 1, "minutes": 120, "price": 10, "yield": 3, "sell": 6, "exp": 8, "description": "把清甜藏在泥土里的胡萝卜。" },
+    { "id": "potato", "name": "土豆", "level": 2, "minutes": 240, "price": 20, "yield": 4, "sell": 9, "exp": 16, "description": "朴实的小土豆，会带来一篮踏实的收成。" },
+    { "id": "tomato", "name": "番茄", "level": 3, "minutes": 360, "price": 30, "yield": 4, "sell": 14, "exp": 24, "description": "绿叶间藏着红彤彤的番茄。" },
+    { "id": "strawberry", "name": "草莓", "level": 4, "minutes": 480, "price": 40, "yield": 5, "sell": 15, "exp": 32, "description": "耐心等待，就能收获甜甜的小草莓。" },
+    { "id": "pumpkin", "name": "南瓜", "level": 5, "minutes": 720, "price": 60, "yield": 3, "sell": 38, "exp": 48, "description": "圆滚滚的南瓜，适合睡一觉后回来收获。" }
+  ],
+  "levels": [0, 40, 160, 420, 900, 1700, 2900, 4500, 6600, 9300],
+  "decorations": [
+    { "id": "barrel", "name": "木桶", "level": 1, "price": 50, "width": 1 },
+    { "id": "flowerpot", "name": "花盆", "level": 2, "price": 80, "width": 1 },
+    { "id": "fence", "name": "围栏段", "level": 3, "price": 50, "width": 1 },
+    { "id": "bench", "name": "长椅", "level": 4, "price": 150, "width": 2 },
+    { "id": "scarecrow", "name": "稻草人", "level": 5, "price": 200, "width": 1 },
+    { "id": "sign", "name": "木路牌", "level": 6, "price": 120, "width": 1 },
+    { "id": "lantern", "name": "小灯笼", "level": 7, "price": 180, "width": 1 },
+    { "id": "flowerbox", "name": "花箱", "level": 8, "price": 240, "width": 2 },
+    { "id": "mailbox", "name": "邮箱", "level": 9, "price": 300, "width": 1 },
+    { "id": "memorial", "name": "纪念摆件", "level": 10, "price": 500, "width": 1 }
+  ],
+  "orders": [
+    { "id": "wheat-small", "level": 1, "requirements": { "wheat": 3 }, "exp": 15, "size": 1 },
+    { "id": "carrot-small", "level": 1, "requirements": { "carrot": 3 }, "exp": 15, "size": 1 },
+    { "id": "potato-small", "level": 2, "requirements": { "potato": 4 }, "exp": 15, "size": 1 },
+    { "id": "tomato-small", "level": 3, "requirements": { "tomato": 4 }, "exp": 15, "size": 1 },
+    { "id": "strawberry-small", "level": 4, "requirements": { "strawberry": 5 }, "exp": 15, "size": 1 },
+    { "id": "pumpkin-small", "level": 5, "requirements": { "pumpkin": 3 }, "exp": 15, "size": 1 },
+    { "id": "wheat-carrot", "level": 1, "requirements": { "wheat": 3, "carrot": 3 }, "exp": 30, "size": 2 },
+    { "id": "potato-tomato", "level": 3, "requirements": { "potato": 4, "tomato": 4 }, "exp": 30, "size": 2 },
+    { "id": "strawberry-pumpkin", "level": 5, "requirements": { "strawberry": 5, "pumpkin": 3 }, "exp": 30, "size": 2 },
+    { "id": "wheat-carrot-large", "level": 1, "requirements": { "wheat": 6, "carrot": 6 }, "exp": 50, "size": 4 },
+    { "id": "carrot-potato-large", "level": 2, "requirements": { "carrot": 3, "potato": 8 }, "exp": 50, "size": 3 },
+    { "id": "tomato-strawberry-large", "level": 4, "requirements": { "tomato": 8, "strawberry": 10 }, "exp": 50, "size": 4 }
+  ]
+}

@@ -1,12 +1,14 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
+
 import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from '../main/llm'
+import { LocalAIStatus } from '../main/local-ai'
 import { SettingConfig } from '../main/settings'
 import { ActivityInfo } from '../main/types/activity'
+import type { FarmCommand, FarmOperation } from '../main/types/farm'
 import { ItemType } from '../main/types/item'
 import type { PlayerResourceState } from '../main/types/player-resource'
 import type { SchoolHandbookTaskId } from '../main/types/school-handbook'
 import { WindowEvent } from '../main/window-monitor'
-import { LocalAIStatus } from '../main/local-ai'
 
 /**
  * API 调用接口
@@ -33,6 +35,15 @@ contextBridge.exposeInMainWorld('api', {
     getPlayerResources: () => ipcRenderer.invoke('get-player-resources'),
     getSchoolHandbookProgress: (date?: string) => ipcRenderer.invoke('get-school-handbook-progress', date),
     getLocalAIStatus: () => ipcRenderer.invoke('get-local-ai-status'),
+    getFarm: () => ipcRenderer.invoke('farm-get'),
+    previewFarm: (operation: FarmOperation) => ipcRenderer.invoke('farm-preview', operation),
+    executeFarm: (command: FarmCommand) => ipcRenderer.invoke('farm-execute', command),
+    checkpointFarm: () => ipcRenderer.invoke('farm-checkpoint'),
+    exportFarmBackup: () => ipcRenderer.invoke('farm-backup-export'),
+    selectFarmBackup: () => ipcRenderer.invoke('farm-backup-select'),
+    getAutomaticFarmBackup: () => ipcRenderer.invoke('farm-backup-automatic'),
+    restoreFarmBackup: (token: string) => ipcRenderer.invoke('farm-backup-restore', token),
+    onGameSaveChanged: (callback: () => void) => { const listener = () => callback(); ipcRenderer.on('game-save-changed', listener); return () => ipcRenderer.removeListener('game-save-changed', listener) },
 
     // set && update && add
     setChatLLMConfig: (config: ChatLLMConfig) => ipcRenderer.invoke('set-chat-llm-config', config),
@@ -95,6 +106,7 @@ contextBridge.exposeInMainWorld('api', {
     // 其他方法
     listenTTSVoiceSample: (voice: TTSVoice, text: string = '你好，主人，欢迎试听我的音色呢') => ipcRenderer.invoke('listen-tts-voice-sample', voice, text),
     openNewWindow: (route: string, width?: number, height?: number) => ipcRenderer.invoke('open-new-window', route, width, height),
+    resizePageForRoute: (route: string) => ipcRenderer.invoke('resize-page-for-route', route),
     closeWindow: () => ipcRenderer.send('close-window'),
     openOpt: () => ipcRenderer.invoke('open-opt'),
     quitApp: () => ipcRenderer.send('quit-app')

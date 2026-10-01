@@ -1,5 +1,5 @@
-import zhCN from './zh-CN';
 import content from '../content-en-US';
+import zhCN from './zh-CN';
 
 export default {
   ...zhCN,
@@ -10,6 +10,7 @@ export default {
   wheel: {
     home: 'Home',
     shop: 'Shop',
+    farm: 'Farm',
     activity: 'Activities',
     schoolHandbook: 'Handbook',
     chat: 'Chat',
@@ -26,6 +27,7 @@ export default {
     },
     home: 'Home',
     shop: 'Shop',
+    farm: 'Farm',
     activity: 'Activities',
     schoolHandbook: 'New-term handbook',
     commission: 'Commissions',
@@ -34,6 +36,38 @@ export default {
     wardrobe: 'Wardrobe',
     dataRecovery: 'Data recovery',
     settings: 'Settings',
+  },
+  farm: {
+    ...zhCN.farm,
+    sceneFailed: "Farm scene failed to load. Please retry.",
+    closeDrawer: 'Close panel',
+    cancelHint: "Right-click empty space or Esc to cancel",
+    cancelTool: "Cancel tool",
+    sowTool: "Plant: {name} · {count} left",
+    waterTool: "Water: click a growing crop",
+    placeTool: "Place: {name} · click an outer cell",
+    moveTool: "Move: {name} · click a new cell",
+    available: "Available",
+    noDecorations: "None available to place",
+    decorationLimit: "12 decorations already placed",
+    placementCancelled: "Placement cancelled. Choose a valid outer cell.",
+    occupiedPlot: "This plot already has a crop",
+    emptyWater: "Empty plots do not need water",
+    matureWater: "This crop is mature. Harvest it.",
+    saveBlocked: "Saving is unavailable. Please retry.",
+    waterAll: "Water all",
+    harvestAll: "Harvest all",
+    sowSelectedPlot: "Choose a seed, then click an empty plot to plant.",
+
+    selectSeed: 'Choose a seed',
+    submitting: 'Saving',
+    noSeeds: 'No seeds',
+    tutorialRemaining: '{count} tutorial plantings left',
+    level:'Farm level',totalExperience:'Total experience',nextLevel:'Experience needed for next level',maxLevel:'Max level · experience bar full',unlocked:'Unlocked',choosePosition:'Choose position',seedCost:'Uses {count} seeds.',plotCount:'{count} plots',sowBubble:'What shall we grow here?',waterBubble:'Drink up and grow strong.',matureBubble:'A crop is ready to harvest!',harvestBubble:'What a lovely harvest.',
+    confirmMove:'Confirm move',chooseNewPosition:'Choose new position',
+    title:'Youmei Farm',back:'Back',warehouse:'Storage',greeting:'A quiet field waiting for your care.',empty:'Empty',orders:'Farm orders',plotDetail:'Plot details',orderNumber:'Order {number}',deliver:'Deliver',discard:'Discard',restocking:'Restocking',choosePlot:'Select a plot.',remaining:'Remaining',expectedYield:'Expected yield',harvest:'Harvest',water:'Water',watered:'Watered',chooseSeed:'Choose seeds from storage.',openSeeds:'Open seeds',seeds:'Seeds',store:'Shop',decorate:'Decorate',codex:'Crop journal',backup:'Backup & restore',produce:'Produce',decorations:'Decorations',minutes:'min',hours:'hr',sow:'Plant',batchSow:'Plant all',sell:'Sell',each:'each',placed:'Placed',place:'Place',owned:'Owned',locked:'Locked',buy:'Buy',all:'All',sellWarning:'A current order needs this crop. Click confirm again to sell.',confirm:'Confirm',notUnlocked:'Locked',lit:'Discovered',notHarvested:'Not harvested',harvested:'Harvested',decorationHint:'Choose a decoration, then click an empty scene slot.',chooseDecoration:'Choose a decoration',confirmPlace:'Confirm placement',reclaim:'Reclaim',backupScope:'Backups include the farm, companion, inventory, cash and activity progress.',exportBackup:'Export full backup',selectBackup:'Select backup',lastAutomatic:'Last pre-restore backup',restoreConfirm:'Restore this backup',restoreWarning:'This will roll back all game progress and save a backup of the current state. Continue?',exported:'Full backup exported',restarting:'Restored. Restarting…',loading:'Loading farm…',retry:'Retry',loadFailed:'Could not load farm',failed:'Action failed',noEligible:'No eligible plots',sowPreview:'Planting {tutorial} tutorial wheat plots and {normal} regular plots. Continue?',ready:'Ready',stage0:'Sown',stage1:'Seedling',stage2:'Growing',stage3:'Mature',
+    crops:{wheat:'Wheat',carrot:'Carrot',potato:'Potato',tomato:'Tomato',strawberry:'Strawberry',pumpkin:'Pumpkin'},
+    decorNames:{barrel:'Barrel',flowerpot:'Flower pot',fence:'Fence',bench:'Bench',scarecrow:'Scarecrow',sign:'Wood sign',lantern:'Lantern',flowerbox:'Flower box',mailbox:'Mailbox',memorial:'Memorial'}
   },
   settings: {
     title: 'Settings',

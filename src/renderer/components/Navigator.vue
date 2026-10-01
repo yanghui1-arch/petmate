@@ -30,6 +30,12 @@
             <span class="nav-arrow">→</span>
           </router-link>
 
+          <a class="page-navigator-item" href="#/farm" @click.prevent="openFarm">
+            <span class="nav-icon">🌱</span>
+            <span class="nav-text">{{ t("nav.farm") }}</span>
+            <span class="nav-arrow">→</span>
+          </a>
+
           <router-link
             to="/activity"
             class="page-navigator-item"
@@ -137,6 +143,7 @@ import { useI18n } from "vue-i18n";
 import type { DrawerPlacement } from "naive-ui";
 
 const { t } = useI18n();
+const openFarm = () => { show.value = false; void window.api.openNewWindow('/farm') };
 
 const props = defineProps<{
   active: boolean;

@@ -3,6 +3,7 @@
         <div class="data-recovery-container">
             <div class="recover-btn-wrapper">
                 <button class="recover-btn" @click="handleRecoverData">{{ t('dataRecovery.button') }}</button>
+                <button class="recover-btn" @click="openFarmBackup">{{ t('nav.farm') }} · {{ t('farm.backup') }}</button>
             </div>
             <div class="recover-doc-wrapper">
                 <div class="recover-doc-title">
@@ -27,13 +28,14 @@ import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
 const { t } = useI18n();
 const showSpin = ref(false);
+const openFarmBackup = () => { void window.api.openNewWindow('/farm'); };
 const handleRecoverData = () => {
     showSpin.value = true;
     window.server.recoverData().then((res) => {
         if (res.code === 200) {
             openMessageModal('success', t('dataRecovery.success'));
         } else {
-            openMessageModal('fail', t('dataRecovery.failed'));
+            openMessageModal('fail', res.message || t('dataRecovery.failed'));
         }
         showSpin.value = false;
     });

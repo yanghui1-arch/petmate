@@ -1,11 +1,9 @@
 import { Response } from "../../types/response";
-import { ConsumeItemResult, PlayerInfo } from "../main/types/player";
-import { Item, ItemType } from "../main/types/item";
-import { Wish } from "../main/types/wish"
+import { LocalAIStatus } from "../main/local-ai";
 import { ActivityInfo } from "../main/types/activity";
-import { SettingConfig } from "../types/config";
-import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "./llm";
-import { WindowEvent, WindowInfo } from "../main/window-monitor";
+import type { BackupPreview, FarmCommand, FarmOperation, FarmPreview, FarmResult, FarmView } from '../main/types/farm';
+import { Item, ItemType } from "../main/types/item";
+import { ConsumeItemResult, PlayerInfo } from "../main/types/player";
 import { CommissionCompletionResult, PlayerResourceState } from "../main/types/player-resource";
 import {
   SchoolHandbookClaimRewardResult,
@@ -13,7 +11,10 @@ import {
   SchoolHandbookTaskCompletionResult,
   SchoolHandbookTaskId
 } from "../main/types/school-handbook";
-import { LocalAIStatus } from "../main/local-ai";
+import { Wish } from "../main/types/wish"
+import { WindowEvent, WindowInfo } from "../main/window-monitor";
+import { SettingConfig } from "../types/config";
+import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "./llm";
 /**
  * 与主进程通信的接口
  * 所有方法都返回Promise
@@ -40,6 +41,15 @@ interface IElectronAPI {
   getPlayerResources: () => Promise<Response<PlayerResourceState>>;
   getSchoolHandbookProgress: (date?: string) => Promise<Response<SchoolHandbookProgress>>;
   getLocalAIStatus: () => Promise<Response<LocalAIStatus>>;
+  getFarm: () => Promise<Response<FarmView>>;
+  previewFarm: (operation: FarmOperation) => Promise<Response<FarmPreview>>;
+  executeFarm: (command: FarmCommand) => Promise<Response<FarmResult>>;
+  checkpointFarm: () => Promise<Response<void>>;
+  exportFarmBackup: () => Promise<Response<string | null>>;
+  selectFarmBackup: () => Promise<Response<BackupPreview | null>>;
+  getAutomaticFarmBackup: () => Promise<Response<BackupPreview | null>>;
+  restoreFarmBackup: (token: string) => Promise<Response<void>>;
+  onGameSaveChanged: (callback: () => void) => () => void;
 
   // set && update && add
   setChatLLMConfig: (config: ChatLLMConfig) => Promise<Response<ChatLLMConfig>>;
@@ -101,6 +111,7 @@ interface IElectronAPI {
   // 其他
   listenTTSVoiceSample: (voice: TTSVoice, text: string) => Promise<Response<void>>;
   openNewWindow: (route: string, width?: number, height?: number) => Promise<Response<void>>;
+  resizePageForRoute: (route: string) => Promise<Response<void>>;
   openOpt: () => Promise<Response<void>>;
   closeWindow: () => void;
   quitApp: () => Promise<Response<void>>;

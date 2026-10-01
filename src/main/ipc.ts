@@ -59,6 +59,7 @@ import axios, { AxiosResponse } from 'axios';
 import { Youmei } from './modules/petmate/youmei';
 import { greenworksManager } from './greenworks';
 import { localAIManager, LocalAIStatus } from './local-ai';
+import './modules/farm/ipc';
 
 /**
  * 初始化设置数据
@@ -1022,49 +1023,7 @@ ipcMain.handle("update-settings", (_: IpcMainInvokeEvent, settings: Partial<Sett
  * 会从服务器上拉数据下来，然后立即更新到文件和内存中，这意味着其实可以不需要从重新启动Petmate，但是为了保险起见，还是建议重新启动Petmate
  */
 ipcMain.handle("recover-data", async (_: IpcMainInvokeEvent): Promise<Response<void>> => {
-    const steamId: string = greenworksManager.getSteamInfo().steamId;
-    try {
-        const res: AxiosResponse = await axios.post('http://petmate.fun/api/user/player_info_by_steamid', {
-            steamid: steamId
-        });
-
-        const response = res.data;
-        const code = response.code;
-
-        if (code === 200) {
-            const data: ServerData = response.data;
-            const player: PlayerInfo = data.playerInfo;
-            const toUpdateCash = player.cash + data.inventoryValue;
-            const petmate: PetMate = new Youmei(
-                data.playerInfo.petmates[0].id,
-                '尤美',
-                data.playerInfo.petmates[0].attrs,
-                data.playerInfo.petmates[0].status,
-                data.playerInfo.petmates[0].wishes,
-                data.playerInfo.petmates[0].completedWishesNum
-            );
-            player.petmates[0] = petmate;
-            player.cash = toUpdateCash;
-            playerManager.updatePlayer(player);
-            logger.info(`恢复steamID为${steamId}的数据成功！`);
-            return {
-                code: 200,
-                message: "恢复数据成功, 请重新打开主页或者是重新启动Petmate"
-            };
-        } else {
-            logger.error(`获取steamID为${steamId}的玩家信息失败, 没有这个数据。`);
-            return {
-                code: 404,
-                message: "你不是老玩家，没有你之前的数据噢，如果有疑问请联系我们，可以在操作手册中看到联系开发者的方式"
-            };
-        }
-    } catch (err) {
-        logger.error(`获取steamID为${steamId}的玩家信息失败:${err}`);
-        return {
-            code: 400,
-            message: "恢复数据失败, 请检查网络连接"
-        };
-    }
+    return { code: 400, message: '旧服务数据缺少玩家资源与活动领取记录，不能作为完整存档恢复。请在农场使用本地完整备份。' };
 });
 
 /* ============ 窗口相关IPC处理器 ============
@@ -1229,10 +1188,13 @@ ipcMain.handle("open-new-window", (_: IpcMainInvokeEvent, route: string, width: 
             }
         }
 
+        const farm = route === '/farm';
         const newWindow = new BrowserWindow({
-            width: width,
-            height: height,
-            resizable: false,
+            width: farm ? 1080 : width,
+            height: farm ? 720 : height,
+            minWidth: farm ? 800 : width,
+            minHeight: farm ? 600 : height,
+            resizable: farm,
             frame: false,
             transparent: false,
             alwaysOnTop: false,
@@ -1271,6 +1233,26 @@ ipcMain.handle("open-new-window", (_: IpcMainInvokeEvent, route: string, width: 
             code: 400,
             message: "打开新窗口失败"
         } as Response<void>;
+    }
+});
+
+ipcMain.handle('resize-page-for-route', (event: IpcMainInvokeEvent, route: string): Response<void> => {
+    try {
+        const window = BrowserWindow.fromWebContents(event.sender);
+        if (!window || window === getMainWindow()) throw new Error('页面窗口不存在');
+        if (route === '/farm') {
+            window.setMinimumSize(800, 600);
+            window.setResizable(true);
+            window.setSize(1080, 720);
+        } else {
+            window.setMinimumSize(400, 580);
+            window.setSize(400, 580);
+            window.setResizable(false);
+        }
+        window.center();
+        return { code: 200 };
+    } catch (error) {
+        return { code: 400, message: error instanceof Error ? error.message : '窗口尺寸调整失败' };
     }
 });
 

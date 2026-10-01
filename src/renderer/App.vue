@@ -36,7 +36,7 @@ import Navigator from "./components/Navigator.vue";
 import MessageModal from "./components/MessageModal.vue";
 import MessageNotification from "./components/MessageNotification.vue";
 import type { DrawerPlacement } from "naive-ui";
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 import { usePlayer } from "./hooks/usePlayer";
 import {
@@ -63,9 +63,11 @@ const activate = (place: DrawerPlacement) => {
 // 全局玩家状态 - 在这里加载数据
 const { playerData, initPlayerData, refreshPlayerData } = usePlayer();
 const { initSettings, settings } = useSettings();
+let unsubscribeGameSave: (() => void) | null = null;
 
 // 当应用挂载时加载玩家数据
 onMounted(async () => {
+  unsubscribeGameSave = window.api.onGameSaveChanged(() => { void refreshPlayerData(); });
   window.api.onPetmateAttributeDecayed(() => {
     refreshPlayerData();
   });
@@ -77,6 +79,7 @@ onMounted(async () => {
   console.log("设置初始化完成");
   await initPlayerData();
 });
+onUnmounted(() => { unsubscribeGameSave?.(); });
 
 const closeWin = () => {
     console.log("关闭窗口")

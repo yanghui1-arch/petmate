@@ -20,6 +20,7 @@ const routes = [
   { path: '/petmate', name: 'Petmate', component: () => import('@/views/Petmate.vue'), meta: { hideClosedButton: true, hideNavigator: true, recieveNotification: true } }, // 专门的Petmate路由
   { path: '/home', name: 'Home', component: Home },
   { path: '/shop', name: 'Shop', component: Shop },
+  { path: '/farm', name: 'Farm', component: () => import('@/views/Farm.vue'), meta: { hideClosedButton: true, hideNavigator: true } },
   { path: '/activity', name: 'Activity', component: Activity },
   { path: '/school-handbook', name: 'SchoolHandbook', component: SchoolHandbook },
   { path: '/commission', name: 'Commission', component: Commission },
@@ -35,6 +36,10 @@ const routes = [
 const router = createRouter({
   history: createWebHashHistory(),
   routes,
+})
+
+router.afterEach(to => {
+  if (to.path !== '/' && to.path !== '/petmate') void window.api.resizePageForRoute(to.path)
 })
 
 export default router

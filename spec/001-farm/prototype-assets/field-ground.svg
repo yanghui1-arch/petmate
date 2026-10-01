@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 440" fill="none">
+  <defs>
+    <pattern id="earth" width="36" height="28" patternUnits="userSpaceOnUse">
+      <path fill="#8e784f" fill-opacity=".13" d="M5 7h5v2H5zM24 20h4v3h-4z"/>
+      <path fill="#e4cf99" fill-opacity=".2" d="M19 5h3v2h-3zM9 23h4v2H9z"/>
+    </pattern>
+    <path id="parcel" d="M23 10H112V7H198V11H310V8H412V12H525V8H616V11H691V17H705V32H709V101H705V179H711V244H707V335H710V407H700V421H681V427H590V423H483V428H377V424H274V428H165V424H65V427H27V420H14V403H9V317H13V221H8V148H12V58H9V29H16V17H23Z"/>
+    <clipPath id="land"><use href="#parcel"/></clipPath>
+  </defs>
+  <use href="#parcel" fill="#b4a073" stroke="#cdb87c" stroke-width="6" stroke-linejoin="bevel"/>
+  <g clip-path="url(#land)">
+    <path fill="url(#earth)" d="M0 0h720v440H0z"/>
+    <path stroke="#d8c58d" stroke-opacity=".55" stroke-width="2" d="M30 13h70m122 0h59m157 1h73m118 0h52M17 48v51m-3 177v47m690 42v43M53 421h51m111 2h63m212-1h44m91 1h45"/>
+    <path fill="#91a365" d="M9 90h7v4H9zM8 230h6v5H8zM116 7h5v7h-5zM491 6h6v6h-6zM705 167h7v5h-7zM707 356h7v4h-7zM132 423h6v9h-6zM568 423h5v7h-5z"/>
+  </g>
+</svg>

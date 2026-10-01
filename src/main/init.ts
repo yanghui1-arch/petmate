@@ -12,7 +12,7 @@ import { initSettings } from "./settings";
 import { app } from "electron";
 import { DAYS_TO_KEEP_WISH } from "./constant";
 
-export function appInit(): void {
+export async function appInit(): Promise<void> {
     console.log("开始初始化app")
     console.log("开始初始化greenworks...")
     const initResult = greenworksManager.init()
@@ -26,7 +26,7 @@ export function appInit(): void {
     // init store
     initSettings()
     itemManager.initItem()
-    playerManager.initPlayer(steamID)
+    await playerManager.initPlayer(steamID)
     activityManager.initActivity()
     buffManager.initBuff()
     prefabWishManager.initPrefabWish()

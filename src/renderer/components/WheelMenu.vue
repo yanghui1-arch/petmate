@@ -158,6 +158,11 @@
       action: () => window.api.openNewWindow('/shop')
     },
     {
+      id: 'farm',
+      title: t('wheel.farm'),
+      action: () => window.api.openNewWindow('/farm')
+    },
+    {
       id: 'activity',
       title: t('wheel.activity'),
       action: () => window.api.openNewWindow('/activity')
