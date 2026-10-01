@@ -1,6 +1,7 @@
 import { PetMate } from "../modules/petmate/petmate";
 import { ItemTypeValue } from "./item";
 import type { SchoolHandbookRewardGrant } from "./school-handbook";
+import type { VersionReminderSave } from "./version-reminder";
 
 export type PlayerInfo = {
     steamId?: string | null;
@@ -9,6 +10,7 @@ export type PlayerInfo = {
     petmates: Array<PetMate>;
     cash: number;
     items: PackageItemInfo[];
+    versionReminder?: VersionReminderSave;
 }
 
 export interface PackageItemInfo {

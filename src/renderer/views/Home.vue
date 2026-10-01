@@ -201,6 +201,7 @@
       :petmateId="currentPetmateID"
       type="use"
     />
+    <VersionReminder />
     <n-modal v-model:show="isTitleModalShow" transform-origin="center">
       <div class="title-select-modal">
         <button
@@ -227,6 +228,7 @@ import Pagedot from "@/components/Pagedot.vue";
 import BuffPopover from "@/components/buff/BuffPopover.vue";
 import ItemPopover from "@/components/item/ItemPopover.vue";
 import ItemModal from "@/components/item/ItemModal.vue";
+import VersionReminder from "@/components/VersionReminder.vue";
 import type { CarouselInst } from "naive-ui";
 import type { PlayerResourceState } from "@main/types/player-resource";
 import { canUseItemFromPackage, executePackageItemPage } from "../utils/item";

@@ -20,6 +20,8 @@ import wishFilePath from '../../../resources/data/prefab_wish.json?commonjs-exte
 import itemFilePath from '../../../resources/data/item.json?commonjs-external&asset'
 import { achieveFirstOpen } from './player/achieve';
 import logger from '../log';
+import { isNationalDayActive } from './version-reminder';
+import { NATIONAL_DAY_END } from '../types/version-reminder';
 
 type PlayerStoreData = {
   playerInfo: PlayerInfo
@@ -67,21 +69,22 @@ class PlayerManager {
 
     private ensureNationalDayLoginBuff(): void {
         const now = new Date()
-        const nationalDayEnd = new Date(2026, 9, 8, 0, 0, 0, 0)
+        const nationalDayEnd = new Date(NATIONAL_DAY_END)
         const loginBuff = buffManager.getBuff(NATIONAL_DAY_LOGIN_BUFF_ID)
         if (!loginBuff) return
 
         let changed = false
         this.currentPlayer.petmates.forEach(petmate => {
             const existing = petmate.attrs.buffs.find(activeBuff => activeBuff.buff.id === NATIONAL_DAY_LOGIN_BUFF_ID)
-            if (now >= nationalDayEnd) {
+            if (!isNationalDayActive(now.getTime())) {
                 if (existing) {
                     petmate.removeBuff(existing.id)
                     changed = true
                 }
                 return
             }
-            if (!existing && petmate.addBuffUntil(loginBuff, nationalDayEnd)) changed = true
+            // The login gift remains available even when all ordinary buff slots are occupied.
+            if (!existing && petmate.addBuffUntil(loginBuff, nationalDayEnd, true)) changed = true
         })
         if (changed) this.savePlayer()
     }

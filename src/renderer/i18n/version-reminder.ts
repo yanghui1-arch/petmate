@@ -1,0 +1,200 @@
+export default {
+    'zh-CN': {
+        edition: '庆典版本',
+        live: '限时庆典进行中',
+        period: '10.01 — 10.07 · 国庆限定',
+        title: '欢度国庆',
+        subtitle: '山河同游，快乐加倍',
+        intro: '尤美的国庆庆典正式开始！带上好心情，一起收集纪念章、解锁假期惊喜。',
+        versionTitle: '版本更新',
+        inactive: '一起回顾本次庆典与全新内容。',
+        updates: '本次更新',
+        next: '下一站 · 登录好礼',
+        acknowledge: '我已知晓',
+        processing: '正在保存…',
+        activity: {
+            tag: '出游',
+            title: '四大国庆活动',
+            lead: '国庆出游、景区打卡、逛吃美食街、宅家七天乐。参与活动可获得 ',
+            focus: '10–15 枚国庆纪念章',
+            tail: '，还有机会收获限定称谓「盛世庆华章」。'
+        },
+        exchange: {
+            tag: '兑换',
+            title: '庆典任务与奖励商店',
+            lead: '完成每批 3 个任务，积攒纪念章。兑换 ',
+            focus: '国庆大礼包、校园时装、专属跳舞动作',
+            tail: '，以及「国庆同游者」「山河见证者」限定称谓。'
+        },
+        buff: {
+            tag: '增益',
+            title: '黄金周限定 Buff',
+            lead: '登录即享「欢度国庆」：',
+            focus: '普通经验获取 +50%',
+            tail: '。国庆活动还可能带来假日活力、盛世灵感、黄金周充能，助力假期成长。'
+        },
+        companion: {
+            tag: '陪伴',
+            title: '尤美的校园新装',
+            lead: '学院制服与专属舞蹈登场，新增睡眠表现与互动，让 ',
+            focus: '每一天的陪伴更生动',
+            tail: '。解锁后可前往衣橱换装。'
+        },
+        polish: {
+            tag: '体验',
+            title: '庆典转盘与游戏光标',
+            lead: '换上国庆主题转盘，优化菜单交互，并加入 ',
+            focus: '全局游戏光标',
+            tail: '。简体中文、繁体中文与英文界面均可体验。'
+        },
+        giftKicker: '国庆登录奖励',
+        giftTitle: '假期补给已送达！',
+        giftIntro: '谢谢你来陪尤美过国庆，这份庆典心意送给你。',
+        received: '已获得',
+        cashName: '金币',
+        cashHint: '已直接存入钱包',
+        buffName: '欢度国庆',
+        buffHint: '普通经验获取',
+        buffValue: '+50%',
+        until: '持续至 10 月 7 日结束（UTC+8）',
+        expired: '国庆活动已结束，Buff 已到期',
+        oneTime: '国庆登录礼仅赠送一次 · 奖励已自动发放',
+        close: '收下好礼',
+        explore: '前往国庆庆典',
+        retry: '保存失败，请重试。',
+        loadError: '暂时无法加载版本公告',
+        retryLoad: '重新加载'
+    },
+    'zh-TW': {
+        edition: '慶典版本',
+        live: '限時慶典進行中',
+        period: '10.01 — 10.07 · 國慶限定',
+        title: '歡度國慶',
+        subtitle: '山河同遊，快樂加倍',
+        intro: '尤美的國慶慶典正式開始！帶上好心情，一起收集紀念章、解鎖假期驚喜。',
+        versionTitle: '版本更新',
+        inactive: '一起回顧本次慶典與全新內容。',
+        updates: '本次更新',
+        next: '下一站 · 登入好禮',
+        acknowledge: '我已知曉',
+        processing: '正在儲存…',
+        activity: {
+            tag: '出遊',
+            title: '四大國慶活動',
+            lead: '國慶出遊、景區打卡、逛吃美食街、宅家七天樂。參與活動可獲得 ',
+            focus: '10–15 枚國慶紀念章',
+            tail: '，還有機會收穫限定稱謂「盛世慶華章」。'
+        },
+        exchange: {
+            tag: '兌換',
+            title: '慶典任務與獎勵商店',
+            lead: '完成每批 3 個任務，積攢紀念章。兌換 ',
+            focus: '國慶大禮包、校園時裝、專屬跳舞動作',
+            tail: '，以及「國慶同遊者」「山河見證者」限定稱謂。'
+        },
+        buff: {
+            tag: '增益',
+            title: '黃金週限定 Buff',
+            lead: '登入即享「歡度國慶」：',
+            focus: '普通經驗獲取 +50%',
+            tail: '。國慶活動還可能帶來假日活力、盛世靈感、黃金週充能，助力假期成長。'
+        },
+        companion: {
+            tag: '陪伴',
+            title: '尤美的校園新裝',
+            lead: '學院制服與專屬舞蹈登場，新增睡眠表現與互動，讓 ',
+            focus: '每一天的陪伴更生動',
+            tail: '。解鎖後可前往衣櫥換裝。'
+        },
+        polish: {
+            tag: '體驗',
+            title: '慶典轉盤與遊戲游標',
+            lead: '換上國慶主題轉盤，優化選單互動，並加入 ',
+            focus: '全域遊戲游標',
+            tail: '。簡體中文、繁體中文與英文介面均可體驗。'
+        },
+        giftKicker: '國慶登入獎勵',
+        giftTitle: '假期補給已送達！',
+        giftIntro: '謝謝你來陪尤美過國慶，這份慶典心意送給你。',
+        received: '已獲得',
+        cashName: '金幣',
+        cashHint: '已直接存入錢包',
+        buffName: '歡度國慶',
+        buffHint: '普通經驗獲取',
+        buffValue: '+50%',
+        until: '持續至 10 月 7 日結束（UTC+8）',
+        expired: '國慶活動已結束，Buff 已到期',
+        oneTime: '國慶登入禮僅贈送一次 · 獎勵已自動發放',
+        close: '收下好禮',
+        explore: '前往國慶慶典',
+        retry: '儲存失敗，請重試。',
+        loadError: '暫時無法載入版本公告',
+        retryLoad: '重新載入'
+    },
+    'en-US': {
+        edition: 'Celebration update',
+        live: 'Limited-time celebration',
+        period: 'OCT 01–07 · NATIONAL DAY',
+        title: 'National Day',
+        subtitle: 'A holiday to share with Youmei',
+        intro: 'Youmei’s National Day celebration is here! Collect medals and unlock holiday surprises together.',
+        versionTitle: 'Version Update',
+        inactive: 'Discover the celebration and everything new.',
+        updates: 'What’s new',
+        next: 'Up next · Login gifts',
+        acknowledge: 'Got it',
+        processing: 'Saving…',
+        activity: {
+            tag: 'TRAVEL',
+            title: 'Four holiday activities',
+            lead: 'Travel, scenic check-ins, food streets, and a cozy staycation. Earn ',
+            focus: '10–15 National Day medals',
+            tail: ' per activity, with a chance to unlock the Grand Celebration title.'
+        },
+        exchange: {
+            tag: 'REWARDS',
+            title: 'Celebration tasks & exchanges',
+            lead: 'Finish all 3 tasks in each batch and collect medals. Exchange them for ',
+            focus: 'gift packages, a school uniform, and its exclusive dance',
+            tail: ', plus the Fellow Traveler and Mountain Witness titles.'
+        },
+        buff: {
+            tag: 'BUFFS',
+            title: 'Golden Week bonuses',
+            lead: 'Logging in grants National Day Celebration: ',
+            focus: '+50% general EXP',
+            tail: '. Holiday activities may also grant Holiday Vitality, Prosperous Inspiration, or Golden Week Recharge.'
+        },
+        companion: {
+            tag: 'YOUMEI',
+            title: 'A new school look',
+            lead: 'Discover the school uniform, its exclusive dance, and new sleep animations and interactions for ',
+            focus: 'more lively companionship',
+            tail: '. Equip your unlocked outfit in the wardrobe.'
+        },
+        polish: {
+            tag: 'PLAY',
+            title: 'Holiday wheel & game cursors',
+            lead: 'A National Day menu wheel, improved navigation, and ',
+            focus: 'game cursors throughout the app',
+            tail: '. Available in Simplified Chinese, Traditional Chinese, and English.'
+        },
+        giftKicker: 'NATIONAL DAY LOGIN GIFTS',
+        giftTitle: 'Your holiday gifts are here!',
+        giftIntro: 'Thanks for spending the holiday with Youmei. These gifts are yours.',
+        received: 'RECEIVED',
+        cashName: 'Coins',
+        cashHint: 'Added to your wallet',
+        buffName: 'National Day Celebration',
+        buffHint: 'General EXP',
+        buffValue: '+50%',
+        until: 'Until the end of October 7 (UTC+8)',
+        expired: 'The celebration and buff have ended',
+        oneTime: 'One-time holiday gifts · Delivered automatically',
+        close: 'Enjoy the gifts',
+        explore: 'Visit the celebration',
+        retry: 'Could not save. Please try again.',
+        loadError: 'Could not load the update',
+        retryLoad: 'Retry'
+    }
+}
