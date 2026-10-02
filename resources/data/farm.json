@@ -1,11 +1,11 @@
 {
   "crops": [
-    { "id": "wheat", "name": "小麦", "level": 1, "minutes": 30, "price": 4, "yield": 3, "sell": 2, "exp": 2, "description": "随风轻轻摇摆的小麦，适合短暂休息时照料。" },
-    { "id": "carrot", "name": "胡萝卜", "level": 1, "minutes": 120, "price": 10, "yield": 3, "sell": 6, "exp": 8, "description": "把清甜藏在泥土里的胡萝卜。" },
-    { "id": "potato", "name": "土豆", "level": 2, "minutes": 240, "price": 20, "yield": 4, "sell": 9, "exp": 16, "description": "朴实的小土豆，会带来一篮踏实的收成。" },
-    { "id": "tomato", "name": "番茄", "level": 3, "minutes": 360, "price": 30, "yield": 4, "sell": 14, "exp": 24, "description": "绿叶间藏着红彤彤的番茄。" },
-    { "id": "strawberry", "name": "草莓", "level": 4, "minutes": 480, "price": 40, "yield": 5, "sell": 15, "exp": 32, "description": "耐心等待，就能收获甜甜的小草莓。" },
-    { "id": "pumpkin", "name": "南瓜", "level": 5, "minutes": 720, "price": 60, "yield": 3, "sell": 38, "exp": 48, "description": "圆滚滚的南瓜，适合睡一觉后回来收获。" }
+    { "id": "wheat", "name": "小麦", "level": 1, "minutes": 30, "price": 20, "yield": 3, "sell": 20, "exp": 2, "description": "随风轻轻摇摆的小麦，适合短暂休息时照料。" },
+    { "id": "carrot", "name": "胡萝卜", "level": 1, "minutes": 120, "price": 60, "yield": 3, "sell": 100, "exp": 8, "description": "把清甜藏在泥土里的胡萝卜。" },
+    { "id": "potato", "name": "土豆", "level": 2, "minutes": 240, "price": 80, "yield": 4, "sell": 200, "exp": 16, "description": "朴实的小土豆，会带来一篮踏实的收成。" },
+    { "id": "tomato", "name": "番茄", "level": 3, "minutes": 360, "price": 160, "yield": 4, "sell": 400, "exp": 24, "description": "绿叶间藏着红彤彤的番茄。" },
+    { "id": "strawberry", "name": "草莓", "level": 4, "minutes": 480, "price": 240, "yield": 5, "sell": 560, "exp": 32, "description": "耐心等待，就能收获甜甜的小草莓。" },
+    { "id": "pumpkin", "name": "南瓜", "level": 5, "minutes": 720, "price": 300, "yield": 3, "sell": 1700, "exp": 48, "description": "圆滚滚的南瓜，适合睡一觉后回来收获。" }
   ],
   "levels": [0, 40, 160, 420, 900, 1700, 2900, 4500, 6600, 9300],
   "orders": [

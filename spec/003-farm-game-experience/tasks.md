@@ -30,6 +30,16 @@
 
 修正验证：typecheck、test:farm-ui、test:farm-scene、verify-prototype.cjs、修改文件 ESLint 和 build 通过。原生鼠标检查三类热点跟随实际位置、热点源像素可见、计算样式 cursor 为 none；进入已浇水地块、空白区域、选种弹窗和订单弹窗时恢复普通鼠标。最小、默认和宽窗口回归通过；原型验证热点与鼠标位置误差小于 0.05 像素。截图 farm-actual-pointer.png 展示手形鼠标，使用隔离测试存档。
 
+## 2026-10-02 浇水特效补齐
+
+- [x] 用户批准方案 A，补回迁移时遗漏的原型水滴效果。
+- [x] 更新 spec 与 plan；保存成功后播放 5 个蓝色水滴，复用反馈计时器清理，支持减少动态效果。
+- [x] 真实 Vue + FarmService 验证保存等待中/失败不播放、成功触发、重复点击不重播及自动清理。
+- [x] 隔离 Electron + 实际 Vue/Phaser 验证水滴动画生效、地块中心锚点、指针事件穿透及动画节点清理；场景回归通过。
+- [x] typecheck、代码规则检查（关闭既有 prettier 格式规则）、build、git diff --check 通过。
+
+Farm.vue 完整 ESLint 仍受既有 prettier 格式问题影响；HEAD 有 472 条，修改后 464 条，未增加其他规则问题。使用隔离测试存档，未写入用户真实进度。
+
 ## 验证记录
 
 2026-10-01：

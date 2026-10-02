@@ -117,7 +117,7 @@ export class FarmScene extends Phaser.Scene {
         this.cursor?.setVisible(false)
         this.beds.forEach((bed, id) => bed.setTint(this.tint(id)).setAlpha(1))
         this.callbacks.hover(null)
-        this.game.canvas.style.cursor = 'inherit'
+        this.game.canvas.style.setProperty('cursor', 'inherit', 'important')
     }
     private tint(id: number) {
         return this.state.view.farm?.plots[id].plant?.watered ? 0xdcdcdc : 0xffffff
@@ -217,7 +217,7 @@ export class FarmScene extends Phaser.Scene {
         if (!this.state.enabled || target.kind !== 'plot') {
             this.cursor.setVisible(false)
             this.callbacks.hover(null)
-            this.game.canvas.style.cursor = 'inherit'
+            this.game.canvas.style.setProperty('cursor', 'inherit', 'important')
             return
         }
         const mode = plotMode(this.state.view, target.id),
@@ -230,7 +230,8 @@ export class FarmScene extends Phaser.Scene {
             this.cursor.setOrigin(cursorHotspots[index].x, cursorHotspots[index].y)
             this.cursor.setScale(42 / Math.max(this.cursor.frame.width, this.cursor.frame.height))
         }
-        this.game.canvas.style.cursor = index === null ? 'inherit' : 'none'
+        // Global game cursors use !important; the canvas must override them while a tool is visible.
+        this.game.canvas.style.setProperty('cursor', index === null ? 'inherit' : 'none', 'important')
     }
 }
 export function createFarmGame(

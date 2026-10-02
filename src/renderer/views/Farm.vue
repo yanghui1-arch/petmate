@@ -124,14 +124,34 @@
             </button>
         </section>
         <div class="effects" aria-hidden="true">
-            <div
-                v-for="effect in effects"
-                :key="effect.id"
-                class="plot-feedback"
-                :style="{ left: effect.x + 'px', top: effect.y + 'px' }"
-            >
-                {{ effect.text }}
-            </div>
+                <template v-for="effect in effects" :key="effect.id">
+                    <div
+                        class="plot-feedback"
+                        :style="{ left: effect.x + 'px', top: effect.y + 'px' }"
+                    >
+                        {{ effect.text }}
+                    </div>
+                    <div
+                        v-if="effect.water"
+                        class="water-splash"
+                        :style="{
+                            left: effect.x + 'px',
+                            top: effect.y + 35 + 'px',
+                            '--splash-scale': effect.scale
+                        }"
+                    >
+                        <span
+                            v-for="drop in 5"
+                            :key="drop"
+                            class="water-drop"
+                            :style="{
+                                left: (drop - 3) * 12 + 'px',
+                                '--drift': (drop - 3) * 16 + 'px',
+                                animationDelay: (drop - 1) * 0.045 + 's'
+                            }"
+                        />
+                    </div>
+                </template>
             <farm-item-art
                 v-for="fly in flights"
                 :key="fly.id"
@@ -512,7 +532,9 @@ const width = ref(1280),
     count = ref(1),
     sellWarningShown = ref(false)
 const backupPreview = ref<BackupPreview | null>(null)
-const effects = ref<{ id: string; x: number; y: number; text: string }[]>([])
+const effects = ref<
+    { id: string; x: number; y: number; text: string; water: boolean; scale: number }[]
+>([])
 const flights = ref<{ id: string; crop: string; x: number; y: number; dx: number; dy: number }[]>(
     []
 )
@@ -695,10 +717,11 @@ async function refresh() {
         }
     }
 }
-function feedbackAt(plot: number, text: string, crop?: string) {
-    const p = farmLayout(width.value, height.value).plots[plot],
+function feedbackAt(plot: number, text: string, crop?: string, water = false) {
+    const layout = farmLayout(width.value, height.value),
+        p = layout.plots[plot],
         id = crypto.randomUUID()
-    effects.value.push({ id, x: p.x, y: p.y - 35, text })
+    effects.value.push({ id, x: p.x, y: p.y - 35, text, water, scale: layout.scale })
     if (crop && backpack.value) {
         const r = backpack.value.getBoundingClientRect()
         flights.value.push({
@@ -748,7 +771,8 @@ async function run(operation: FarmOperation): Promise<boolean> {
             feedbackAt(
                 operation.plotIds[0],
                 text,
-                operation.type === 'harvest' ? Object.keys(f.items)[0] : undefined
+                operation.type === 'harvest' ? Object.keys(f.items)[0] : undefined,
+                operation.type === 'water'
             )
             if (response.data.view.level > before)
                 showNotice(t('farm.levelUp', { level: response.data.view.level }))
@@ -1578,6 +1602,23 @@ onUnmounted(() => {
     animation: feedback 1.3s ease-out forwards;
     white-space: nowrap;
 }
+.water-splash {
+    position: absolute;
+    transform: scale(var(--splash-scale));
+    transform-origin: 0 0;
+}
+.water-drop {
+    position: absolute;
+    top: -20px;
+    width: 10px;
+    height: 13px;
+    border-radius: 60% 60% 60% 0;
+    background: linear-gradient(135deg, #c5f2ff, #59b8e3 65%);
+    box-shadow:
+        inset 1px 1px 0 #effcff,
+        0 1px 2px #236a8d40;
+    animation: water-splash 0.8s ease-out both;
+}
 .harvest-flight {
     position: absolute;
     width: 46px;
@@ -1601,6 +1642,19 @@ onUnmounted(() => {
     to {
         transform: translate(-50%, -55px);
         opacity: 0;
+    }
+}
+@keyframes water-splash {
+    from {
+        opacity: 1;
+        transform: translate(0, -12px) rotate(-45deg) scale(0.7);
+    }
+    60% {
+        opacity: 0.8;
+    }
+    to {
+        opacity: 0;
+        transform: translate(var(--drift), 25px) rotate(-45deg) scale(0.3);
     }
 }
 @keyframes flight {
@@ -1656,6 +1710,9 @@ onUnmounted(() => {
     }
 }
 @media (prefers-reduced-motion: reduce) {
+    .water-splash {
+        display: none;
+    }
     .plot-feedback,
     .harvest-flight {
         animation: none;

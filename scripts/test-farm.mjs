@@ -77,9 +77,24 @@ assert.equal(first.catalog.orders.length, 12)
 const largeOrder = first.catalog.orders.find((order) => order.id === 'tomato-strawberry-large')
 assert.deepEqual(largeOrder.requirements, { tomato: 8, strawberry: 10 })
 assert.equal(largeOrder.exp, 50)
-assert.equal(orderCash(largeOrder.id), 328)
+assert.equal(orderCash(largeOrder.id), 11000)
+const expectedOrderCash = {
+    'wheat-small': 75,
+    'carrot-small': 375,
+    'potato-small': 1000,
+    'tomato-small': 2000,
+    'strawberry-small': 3500,
+    'pumpkin-small': 6375,
+    'wheat-carrot': 450,
+    'potato-tomato': 3000,
+    'strawberry-pumpkin': 9875,
+    'wheat-carrot-large': 900,
+    'carrot-potato-large': 2375,
+    'tomato-strawberry-large': 11000
+}
 const yields = Object.fromEntries(first.catalog.crops.map((crop) => [crop.id, crop.yield]))
 for (const order of first.catalog.orders) {
+    assert.equal(orderCash(order.id), expectedOrderCash[order.id])
     assert.equal(
         Object.entries(order.requirements).reduce(
             (n, [crop, count]) => n + count / yields[crop],
@@ -135,7 +150,7 @@ assert.equal(persisted.farm.produce.wheat, 18)
 
 const cashBefore = persisted.cash
 command({ type: 'buySeed', cropId: 'wheat', count: 2 })
-assert.equal(persisted.cash, cashBefore - 8)
+assert.equal(persisted.cash, cashBefore - 40)
 command({ type: 'sow', cropId: 'wheat', plotIds: [0] })
 assert.equal(persisted.farm.plots[0].plant.durationMs, 1800000)
 assert.throws(() => command({ type: 'buySeed', cropId: 'wheat', count: 0 }), /正整数/)
@@ -208,7 +223,7 @@ assert.throws(
 )
 carrotCommand({ type: 'harvest', plotIds: [0] })
 carrotCommand({ type: 'deliver', instanceId: carrotSave.farm.orders[1].instanceId })
-assert.equal(carrotSave.cash, 523)
+assert.equal(carrotSave.cash, 875)
 
 wall -= 3600000
 const elapsedBefore = persisted.farm.plots[0].plant.elapsedMs
@@ -296,3 +311,60 @@ assert.throws(() => maxService.getView(), /存档格式无效/)
 console.log(
     'tutorial crossover, preview revision, offline restart, level cap and malformed save: passed'
 )
+
+// Verify the approved economy through actual transactions and virtual growth time.
+const economics = [
+    ['wheat', 20, 40, 24, 1200],
+    ['carrot', 60, 240, 96, 1800],
+    ['potato', 80, 720, 192, 2700],
+    ['tomato', 160, 1440, 288, 3600],
+    ['strawberry', 240, 2560, 384, 4800],
+    ['pumpkin', 300, 4800, 576, 6000]
+]
+for (const [cropId, seedPrice, netPerPlot, wateredMinutes, hourlyNet] of economics) {
+    let save = { farm: null, cash: 10000, revision: 0, receipts: [] }
+    let elapsed = 0
+    let sequence = 0
+    const farm = new FarmService(
+        {
+            read: () => structuredClone(save),
+            commit: (snapshot) => {
+                save = structuredClone(snapshot)
+            }
+        },
+        { wall: () => 1_950_000_000_000 + elapsed, monotonic: () => elapsed },
+        () => `economy-${cropId}-${++sequence}`
+    )
+    farm.getView()
+    save.farm.exp = 900
+    save.farm.tutorialRemaining = 0
+    save.farm.seeds = {}
+    save.revision++
+    const execute = (operation, requestId = `economy-req-${++sequence}`) =>
+        farm.execute({ requestId, expectedRevision: save.revision, operation })
+    const plotIds = Array.from({ length: 12 }, (_, index) => index)
+    assert.equal(farm.getView().unlockedPlots, 12)
+    execute({ type: 'buySeed', cropId, count: 12 })
+    assert.equal(save.cash, 10000 - seedPrice * 12)
+    assert.equal(save.farm.seeds[cropId], 12)
+    execute({ type: 'sow', cropId, plotIds })
+    assert.equal(save.farm.seeds[cropId], 0)
+    execute({ type: 'water', plotIds })
+    elapsed = wateredMinutes * 60000 - 1
+    assert.throws(() => execute({ type: 'harvest', plotIds }), /没有符合条件/)
+    elapsed++
+    const harvest = execute({ type: 'harvest', plotIds })
+    const count = harvest.feedback.items[cropId]
+    const crop = first.catalog.crops.find((entry) => entry.id === cropId)
+    assert.equal(count, crop.yield * 12)
+    assert.equal(save.farm.plots.every((plot) => plot.plant === null), true)
+    const sale = { type: 'sell', cropId, count }
+    execute(sale, `economy-sale-${cropId}`)
+    const completed = structuredClone(save)
+    assert.equal(save.farm.produce[cropId], 0)
+    assert.equal(save.cash - 10000, netPerPlot * 12)
+    assert.equal(((save.cash - 10000) * 60) / wateredMinutes, hourlyNet)
+    execute(sale, `economy-sale-${cropId}`)
+    assert.deepEqual(save, completed, 'repeated sale must not grant coins twice')
+}
+console.log('six crop purchase/growth/sale cycles, order rewards and pumpkin 6000/hour: passed')

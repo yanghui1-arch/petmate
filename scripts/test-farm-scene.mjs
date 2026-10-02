@@ -5,6 +5,7 @@ import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { build } from 'esbuild'
+import { compile } from 'sass'
 import { compileScript, compileStyle, parse } from 'vue/compiler-sfc'
 
 const require = createRequire(import.meta.url)
@@ -14,6 +15,7 @@ try {
     await build({
         stdin: {
             contents: `import { createApp, nextTick } from 'vue';
+                import './src/renderer/assets/style/cursor.scss';
                 import { createI18n } from 'vue-i18n';
                 import { createMemoryHistory, createRouter } from 'vue-router';
                 import Farm from './src/renderer/views/Farm.vue';
@@ -89,10 +91,16 @@ try {
         },
         loader: { '.png': 'file', '.svg': 'file' },
         assetNames: 'assets/[name]-[hash]',
+        alias: { '@': resolve('src/renderer') },
         plugins: [
             {
                 name: 'actual-farm-sfc',
                 setup(builder) {
+                    builder.onLoad({ filter: /\.scss$/ }, async (args) => ({
+                        contents: compile(args.path).css,
+                        loader: 'css',
+                        resolveDir: dirname(args.path)
+                    }))
                     builder.onLoad({ filter: /\.vue$/ }, async (args) => {
                         const source = await readFile(args.path, 'utf8')
                         const { descriptor, errors } = parse(source, { filename: args.path })
@@ -131,7 +139,7 @@ try {
     })
     await writeFile(
         join(temporary, 'index.html'),
-        `<!doctype html><html lang="zh"><meta charset="utf-8"><style>html,body,#app{margin:0;width:100%;height:100%;} ${styles.join('\n')}</style><div id="app"></div><script type="module" src="app.js"></script></html>`
+        `<!doctype html><html lang="zh"><meta charset="utf-8"><link rel="stylesheet" href="app.css"><style>html,body,#app{margin:0;width:100%;height:100%;} ${styles.join('\n')}</style><div id="app"></div><script type="module" src="app.js"></script></html>`
     )
     await build({ entryPoints: ['src/main/modules/farm/window.ts'], bundle: true, platform: 'node', format: 'cjs', outfile: join(temporary, 'farm-window.cjs') })
     // The Electron process resolves its built-in module, rather than the npm launcher.
@@ -233,7 +241,7 @@ app.whenReady().then(async()=>{
  assert.equal(await js("document.querySelector('.portrait img').src.includes('youmei-avatar')"),true);
  assert.equal(await js("document.querySelector('.store-entry .farm-icon').getAttribute('viewBox')"),'0 0 360 312');
  assert.equal(await js("document.querySelector('.store-entry').textContent.trim()"),'商店','shop entry shows its name instead of the balance');
- assert.equal(await js("getComputedStyle(document.querySelector('.profile')).cursor.includes('game-arrow')"),true);
+ assert.equal(await js("getComputedStyle(document.querySelector('.profile')).cursor.includes('sv_cursor_pointer')"),true,'HUD buttons keep the global game pointer');
  await sceneCoverage();await pointerCursor(4,8);await pointerCursor(0,9);await pointerCursor(1,7);
  const fullBackground=await js('(()=>{const r=window.farmTest.scene().world.getAt(0).getBounds();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom}})()');
  assert.ok(Math.abs(fullBackground.x)<0.01&&Math.abs(fullBackground.y)<0.01&&Math.abs(fullBackground.right-1280)<0.01&&Math.abs(fullBackground.bottom-720)<0.01,'the entire 16:9 farm background is visible: '+JSON.stringify(fullBackground));
@@ -255,8 +263,15 @@ app.whenReady().then(async()=>{
  assert.equal((await js("window.farmTest.snapshot()")).farm.tutorialRemaining,5);
  await pointer('plot',4);
  assert.equal((await js("window.farmTest.snapshot()")).farm.plots[4].plant.watered,true);
+ const waterDrops=await js('(()=>{const splash=document.querySelector(".water-splash"),drops=[...splash.querySelectorAll(".water-drop")];return {x:parseFloat(splash.style.left),y:parseFloat(splash.style.top),drops:drops.length,animation:getComputedStyle(drops[0]).animationName,input:getComputedStyle(drops[0]).pointerEvents}})()');
+ const wateredPoint=await js('window.farmTest.point("plot",4)');
+ assert.equal(waterDrops.drops,5);assert.ok(waterDrops.animation.startsWith('water-splash-'));assert.equal(waterDrops.input,'none','water drops do not intercept input');
+ assert.ok(Math.abs(waterDrops.x-wateredPoint.x)<=0.5&&Math.abs(waterDrops.y-wateredPoint.y)<=0.5,'water splash is anchored to the watered plot');
  const waterCount=(await js('window.farmTest.commands()')).length;
  await pointer('plot',4);assert.equal((await js('window.farmTest.commands()')).length,waterCount);
+ assert.equal(await js('document.querySelectorAll(".water-splash").length'),1,'repeat clicking does not add another splash');
+ await screenshot('farm-actual-water.png');
+ await sleep(1100);assert.equal(await js('document.querySelectorAll(".water-drop").length'),0,'water splash cleans up after its animation');
  await sleep(300);assert.equal(await js("!!document.querySelector('.tooltip')"),true);
  await within('.tooltip');await screenshot('farm-actual-hover-1280.png');
  assert.deepEqual(await bounds('.farm-scene canvas'),baseline);
