@@ -5,6 +5,14 @@
         <section class="field" aria-label="农场场景">
             <farm-scene :key="sceneKey" :state="sceneState" @target="sceneTarget" @hover="sceneHover" @progress="assetLoaded" @ready="sceneLoaded" @error="sceneFailure = $event" />
         </section>
+            <farm-entrances
+                ref="entrances"
+                :layout="entranceLayout"
+                :enabled="sceneState.enabled"
+                :hovered="entranceHovered"
+                @hover="entranceHover"
+                @activate="openEntrance"
+            />
         <button class="profile" :aria-label="t('farm.level')" @click="openPanel('level')">
             <span class="portrait"><img :src="youmeiAvatar" alt="" /></span>
             <span class="profile-content"
@@ -481,11 +489,12 @@ import { farmSettingsVisible } from '../../shared/farmExperience'
 import { background } from '../assets/farm-game'
 import gameArrow from '../assets/farm-game/game-arrow.svg'
 import youmeiAvatar from '../assets/image/youmei-avatar.png'
+import FarmEntrances from '../components/farm/FarmEntrances.vue'
 import FarmIcon from '../components/farm/FarmIcon.vue'
 import FarmItemArt from '../components/farm/FarmItemArt.vue'
 import FarmScene from '../components/farm/FarmScene.vue'
 import type { FarmSceneState } from '../game/FarmScene'
-import type { FarmHover, FarmTarget } from '../game/farmSceneModel'
+import type { FarmEntranceId, FarmHover, FarmTarget } from '../game/farmSceneModel'
 import { farmLayout, plotMode } from '../game/farmSceneModel'
 const { t } = useI18n(),
     router = useRouter()
@@ -506,6 +515,8 @@ const host = ref<HTMLElement | null>(null),
     backpack = ref<HTMLElement | null>(null)
 const seedPicker = ref<HTMLElement | null>(null),
     tooltip = ref<HTMLElement | null>(null)
+const entrances = ref<InstanceType<typeof FarmEntrances> | null>(null)
+const entranceHovered = ref<FarmEntranceId | null>(null)
 const view = ref<FarmView | null>(null),
     loadError = ref(''),
     notice = ref(''),
@@ -553,6 +564,7 @@ const sceneState = computed<FarmSceneState>(() => ({
     view: view.value!,
     enabled: sceneReady.value && dataReady.value && !loadError.value && !sceneFailure.value && !blocked.value && !panel.value && seedTarget.value === null
 }))
+const entranceLayout = computed(() => farmLayout(width.value, height.value))
 const assistantOrderNumber = computed(() => (view.value?.farm?.orders.findIndex(o => 'instanceId' in o && o.instanceId === assistantStatus.value.orderId) ?? -1) + 1)
 const hoverPlant = computed(() =>
     hovered.value === null ? null : view.value?.farm?.plots[hovered.value].plant
@@ -649,10 +661,24 @@ function hideHover() {
     hoverTimer = undefined
     hoverCandidate = null
     hovered.value = null
+    entranceHovered.value = null
+}
+function entranceHover(id: FarmEntranceId | null) {
+    hideHover()
+    if (sceneState.value.enabled) entranceHovered.value = id
+}
+function openEntrance(id: FarmEntranceId) {
+    if (!sceneState.value.enabled) return
+    hideHover()
+    entrances.value?.activate(id)
 }
 function sceneHover(value: FarmHover) {
     if (!value || blocked.value || panel.value || seedTarget.value !== null) {
         hideHover()
+        return
+    }
+    if (value.kind === 'entry') {
+        if (entranceHovered.value !== value.id) entranceHover(value.id)
         return
     }
     if (hoverCandidate === value.id) return
@@ -666,12 +692,14 @@ function dismiss() {
     seedTarget.value = null
     panel.value = null
     hideHover()
+    entrances.value?.dismiss()
 }
 function openPanel(name: NonNullable<typeof panel.value>) {
     if (!farmSettingsVisible && (name === 'settings' || name === 'backup')) return
     if (busy.value) return
     seedTarget.value = null
     hideHover()
+    entrances.value?.dismiss()
     panel.value = name
 }
 watch(panel, async (value, previous) => {
@@ -806,6 +834,11 @@ async function sceneTarget(target: FarmTarget, right: boolean) {
         return
     }
     if (blocked.value || panel.value) return
+    if (target.kind === 'entry') {
+        openEntrance(target.id)
+        return
+    }
+    entrances.value?.dismiss()
     if (target.kind === 'blank') {
         dismiss()
         return

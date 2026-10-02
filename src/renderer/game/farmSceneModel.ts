@@ -1,8 +1,19 @@
 import { plantStage } from '../../main/modules/farm/rules'
 import type { FarmView } from '../../main/types/farm'
 export type FarmPoint = { x: number; y: number }
-export type FarmTarget = { kind: 'plot'; id: number } | { kind: 'blank' }
-export type FarmHover = { id: number; x: number; y: number } | null
+export const farmEntrances = [
+    { id: 'pasture', sign: { x: 405, y: 325 }, area: { x: 330, y: 285, width: 125, height: 85 } },
+    { id: 'explore', sign: { x: 860, y: 282 }, area: { x: 895, y: 295, width: 100, height: 55 } },
+    { id: 'cabin', sign: { x: 1368, y: 321 }, area: { x: 1325, y: 268, width: 85, height: 140 } },
+    // The fishing anchor is the post's foot, placed at the user's marked bank location.
+    { id: 'fishing', sign: { x: 399, y: 676 }, area: { x: 320, y: 650, width: 180, height: 140 } }
+] as const
+export type FarmEntranceId = (typeof farmEntrances)[number]['id']
+export type FarmTarget =
+    | { kind: 'plot'; id: number }
+    | { kind: 'entry'; id: FarmEntranceId }
+    | { kind: 'blank' }
+export type FarmHover = (Exclude<FarmTarget, { kind: 'blank' }> & FarmPoint) | null
 export const worldSize = { width: 1600, height: 900 }
 export const fieldFrame = { scale: 0.9, x: 130, y: 37.5 }
 export const footprint: FarmPoint[] = [
@@ -36,6 +47,11 @@ export function farmLayout(width: number, height: number) {
         scale,
         x,
         y,
+        entrances: farmEntrances.map((entry) => ({
+            id: entry.id,
+            x: x + entry.sign.x * scale,
+            y: y + entry.sign.y * scale
+        })),
         plots: Array.from({ length: 12 }, (_, id) => {
             const p = plotPosition(id)
             return {
@@ -60,7 +76,16 @@ export function hitFarm(layout: FarmLayout, x: number, y: number): FarmTarget {
         y: ((y - layout.y) / layout.scale - fieldFrame.y) / fieldFrame.scale
     }
     const id = layout.plots.findIndex((_, index) => insidePlot(point, plotPosition(index)))
-    return id < 0 ? { kind: 'blank' } : { kind: 'plot', id }
+    if (id >= 0) return { kind: 'plot', id }
+    const world = { x: (x - layout.x) / layout.scale, y: (y - layout.y) / layout.scale }
+    const entry = farmEntrances.find(
+        ({ area }) =>
+            world.x >= area.x &&
+            world.x <= area.x + area.width &&
+            world.y >= area.y &&
+            world.y <= area.y + area.height
+    )
+    return entry ? { kind: 'entry', id: entry.id } : { kind: 'blank' }
 }
 export function plotMode(view: FarmView, id: number) {
     if (id >= view.unlockedPlots) return 'locked'

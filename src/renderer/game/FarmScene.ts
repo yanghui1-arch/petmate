@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 
 import { plantStage } from '../../main/modules/farm/rules'
 import type { FarmView } from '../../main/types/farm'
+import gamePointer from '../assets/cursor/sv_cursor_pointer.png'
 import {
     atlas,
     background,
@@ -88,7 +89,10 @@ export class FarmScene extends Phaser.Scene {
         this.input.mouse?.disableContextMenu()
         this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
             const event = pointer.event as Event & { pointerType?: string }
-            if (event?.type.startsWith('touch') || event?.pointerType === 'touch') { this.leave(); return }
+            if (event?.type.startsWith('touch') || event?.pointerType === 'touch') {
+                this.leave()
+                return
+            }
             this.pointerPosition = { x: pointer.x, y: pointer.y }
             this.drawPointer()
         })
@@ -216,13 +220,23 @@ export class FarmScene extends Phaser.Scene {
         )
         if (!this.state.enabled || target.kind !== 'plot') {
             this.cursor.setVisible(false)
+            if (this.state.enabled && target.kind === 'entry') {
+                const p = this.layout.entrances.find((entry) => entry.id === target.id)!
+                this.callbacks.hover({ ...target, x: p.x, y: p.y })
+                this.game.canvas.style.setProperty(
+                    'cursor',
+                    `url("${gamePointer}") 17 2, pointer`,
+                    'important'
+                )
+                return
+            }
             this.callbacks.hover(null)
             this.game.canvas.style.setProperty('cursor', 'inherit', 'important')
             return
         }
         const mode = plotMode(this.state.view, target.id),
             p = this.layout.plots[target.id]
-        this.callbacks.hover({ id: target.id, x: p.x, y: p.y })
+        this.callbacks.hover({ ...target, x: p.x, y: p.y })
         const index = mode === 'sow' ? 8 : mode === 'water' ? 9 : mode === 'harvest' ? 7 : null
         this.cursor.setVisible(index !== null).setPosition(x, y)
         if (index !== null) {
@@ -231,7 +245,11 @@ export class FarmScene extends Phaser.Scene {
             this.cursor.setScale(42 / Math.max(this.cursor.frame.width, this.cursor.frame.height))
         }
         // Global game cursors use !important; the canvas must override them while a tool is visible.
-        this.game.canvas.style.setProperty('cursor', index === null ? 'inherit' : 'none', 'important')
+        this.game.canvas.style.setProperty(
+            'cursor',
+            index === null ? 'inherit' : 'none',
+            'important'
+        )
     }
 }
 export function createFarmGame(

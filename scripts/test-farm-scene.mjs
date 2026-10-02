@@ -23,11 +23,11 @@ try {
                 import enUS from './src/renderer/i18n/locales/en-US';
                 import zhTW from './src/renderer/i18n/locales/zh-TW';
                 import { FarmService } from './src/main/modules/farm/service';
-                import { farmLayout, plantingSlots, plotPosition } from './src/renderer/game/farmSceneModel';
+                import { farmEntrances, farmLayout, plantingSlots, plotPosition } from './src/renderer/game/farmSceneModel';
                 import { cropFrames } from './src/renderer/assets/farm-game';
                 let now = 1800000000000, sequence = 0;
                 let persisted = { farm: null, cash: 500, revision: 0, receipts: [] };
-                let commands = [], notify, failReads = false, readDelay = 900;
+                let commands = [], notify, failReads = false, readDelay = 900, activityCount = 0;
                 const service = new FarmService({ read: () => structuredClone(persisted),
                   commit: value => persisted = structuredClone(value) },
                   { wall: () => now, monotonic: () => now }, () => 'scene-' + ++sequence, () => 0);
@@ -45,6 +45,7 @@ try {
                   executeFarm: async command => { commands.push(command); return { code: 200, data: service.execute(command) }; },
                   onGameSaveChanged: callback => { notify = callback; return () => { notify = null }; },
                   checkpointFarm: async () => {}, closeWindow: () => {}
+                  ,farmManualActivity: async () => { activityCount++ }
                 };
                 const i18n = createI18n({ legacy: false, locale: 'zh-CN', messages: { 'zh-CN': zhCN, 'en-US': enUS, 'zh-TW': zhTW } });
                 const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/farm', component: Farm }] });
@@ -52,13 +53,17 @@ try {
                 async function mount() { await router.push('/farm'); app = createApp(Farm).use(i18n).use(router); app.mount('#app'); }
                 window.farmTest = {
                   snapshot: () => structuredClone(persisted), commands: () => structuredClone(commands),
+                  activities: () => activityCount, entries: farmEntrances,
                   reads: (fail, delay = 450) => { failReads = fail; readDelay = delay },
                   point: (kind, value) => {
                     const canvas = document.querySelector('.farm-scene canvas');
                     const bounds = canvas.getBoundingClientRect();
                     const layout = farmLayout(bounds.width, bounds.height);
 
-                    const p=kind==='plot'?layout.plots[value]:{x:bounds.width-10,y:bounds.height-10};
+                    const entry=farmEntrances.find(e=>e.id===value);
+                    const entryPoints=entry?[.1,.9,.5].flatMap(u=>[.1,.9,.5].map(v=>({x:Math.round(bounds.x+layout.x+(entry.area.x+entry.area.width*u)*layout.scale)-bounds.x,y:Math.round(bounds.y+layout.y+(entry.area.y+entry.area.height*v)*layout.scale)-bounds.y}))):[];
+                    const entryPoint=entryPoints.find(p=>document.elementFromPoint(bounds.x+p.x,bounds.y+p.y)===canvas&&window.farmTest.scene().hit(p.x,p.y).kind==='entry')??entryPoints[0];
+                    const p=kind==='plot'?layout.plots[value]:kind==='entry'?entryPoint:{x:bounds.width-10,y:bounds.height-10};
                     return {x:Math.round(bounds.x+p.x),y:Math.round(bounds.y+p.y)};
                   },
                   scene:()=>window.farmTest.activeScene,
@@ -141,7 +146,13 @@ try {
         join(temporary, 'index.html'),
         `<!doctype html><html lang="zh"><meta charset="utf-8"><link rel="stylesheet" href="app.css"><style>html,body,#app{margin:0;width:100%;height:100%;} ${styles.join('\n')}</style><div id="app"></div><script type="module" src="app.js"></script></html>`
     )
-    await build({ entryPoints: ['src/main/modules/farm/window.ts'], bundle: true, platform: 'node', format: 'cjs', outfile: join(temporary, 'farm-window.cjs') })
+    await build({
+        entryPoints: ['src/main/modules/farm/window.ts'],
+        bundle: true,
+        platform: 'node',
+        format: 'cjs',
+        outfile: join(temporary, 'farm-window.cjs')
+    })
     // The Electron process resolves its built-in module, rather than the npm launcher.
     await writeFile(
         join(temporary, 'main.cjs'),
@@ -211,6 +222,49 @@ async function pointerCursor(id,frame) {
 async function regularCursor() {
  assert.equal(await js('(()=>{const s=window.farmTest.scene();return !s.cursor.visible&&getComputedStyle(s.game.canvas).cursor.includes("game-arrow")})()'),true,'game arrow restored and action cursor hidden');
 }
+async function entranceChecks() {
+ await screenshot('farm-actual-entrances-'+(await js('innerWidth'))+'.png');
+ const save=await js('window.farmTest.snapshot()'),commands=(await js('window.farmTest.commands()')).length;
+ assert.equal(await js('document.querySelectorAll(".entrance-sign").length'),4);
+ for(const entry of await js('window.farmTest.entries')) {
+  const selector='.entrance-sign[data-entrance="'+entry.id+'"]';
+  await within(selector);
+  const point=await js('window.farmTest.point("entry",'+JSON.stringify(entry.id)+')');
+  const before=await js('window.farmTest.activities()');
+  window.webContents.sendInputEvent({type:'mouseMove',...point});await sleep(320);
+  assert.equal(await js('window.farmTest.activities()'),before,'hover does not record player activity');
+  assert.equal(await js('document.querySelector(".entrance-tip")?.getAttribute("data-entry-tip")'),entry.id);
+  const cursor=await js('(()=>{const s=window.farmTest.scene();return {visible:s.cursor.visible,native:getComputedStyle(s.game.canvas).cursor,position:s.pointerPosition,hit:s.hit('+point.x+','+point.y+'),element:document.elementFromPoint('+point.x+','+point.y+').tagName}})()');
+  assert.ok(!cursor.visible&&cursor.native.includes('sv_cursor_pointer'),'scene entry uses one game click cursor: '+JSON.stringify({entry:entry.id,point,cursor}));
+  await pointer('entry',entry.id);
+  assert.equal(await js('window.farmTest.activities()'),before+1,'native entry click records player activity once');
+  assert.equal(await js('document.querySelector(".entrance-feedback")?.getAttribute("data-entry-tip")'),entry.id);
+  await within('.entrance-feedback');
+  assert.equal(await js('getComputedStyle(document.querySelector(".entrance-feedback")).pointerEvents'),'none');
+  await escape();
+  await clickNative(selector);
+  assert.equal(await js('document.querySelectorAll(".entrance-feedback").length'),1,'native sign click '+entry.id);
+  assert.equal(await js('document.querySelector(".entrance-feedback").getAttribute("data-entry-tip")'),entry.id);
+  await escape();
+ }
+ assert.deepEqual(await js('window.farmTest.snapshot()'),save,'entrances do not change the save');
+ assert.equal((await js('window.farmTest.commands()')).length,commands,'entrances never call farm transactions');
+ await clickNative('.entrance-sign[data-entrance="fishing"]');
+ await sleep(2100);assert.equal(await js('document.querySelectorAll(".entrance-tip").length'),0,'entry feedback expires');
+ await clickNative('.entrance-sign[data-entrance="cabin"]');
+ await clickNative('.orders-entry');assert.equal(await js('document.querySelectorAll(".entrance-tip").length'),0);
+ await pointer('entry','cabin');assert.equal(await js('document.querySelectorAll(".entrance-tip").length'),0,'modal blocks entrance input');
+ await escape();
+ window.webContents.focus();
+ await js('document.querySelector(".entrance-sign[data-entrance=pasture]").focus()');
+ assert.equal(await js('document.activeElement?.dataset.entrance'),'pasture');
+ window.webContents.sendInputEvent({type:'keyDown',keyCode:'Return'});window.webContents.sendInputEvent({type:'char',keyCode:String.fromCharCode(13)});window.webContents.sendInputEvent({type:'keyUp',keyCode:'Return'});await sleep(100);
+ assert.equal(await js('document.querySelector(".entrance-feedback")?.getAttribute("data-entry-tip")'),'pasture','Enter activates a focused sign');
+ await escape();
+ window.webContents.sendInputEvent({type:'keyDown',keyCode:'Space'});window.webContents.sendInputEvent({type:'char',keyCode:' '});window.webContents.sendInputEvent({type:'keyUp',keyCode:'Space'});await sleep(100);
+ assert.equal(await js('document.querySelector(".entrance-feedback")?.getAttribute("data-entry-tip")'),'pasture','Space activates a focused sign');
+ await escape();await js('document.activeElement.blur()');
+}
 app.whenReady().then(async()=>{
  const size=farmWindowSize({width:1920,height:1080});
  window=new BrowserWindow({show:false,...size,...fixedFarmWindow,frame:false,useContentSize:true,webPreferences:{contextIsolation:false,nodeIntegration:false,offscreen:true}});
@@ -234,6 +288,7 @@ app.whenReady().then(async()=>{
  await wait("!document.querySelector('.game-loading')");
  await js('window.farmTest.reads(false, 0)');
  await sleep(400);
+ await screenshot('farm-actual-entrances.png');
  assert.equal(await js("document.querySelector('.plot-nameplates,.plot-nameplate')===null"),true,'plots have no persistent labels');
  assert.equal(await js("document.querySelector('.topbar,.toolbar,.sidebar,.companion,.decorate-button')===null"),true);
  assert.equal(await js("document.querySelectorAll('.side-actions .round-button').length"),0);
@@ -242,6 +297,7 @@ app.whenReady().then(async()=>{
  assert.equal(await js("document.querySelector('.store-entry .farm-icon').getAttribute('viewBox')"),'0 0 360 312');
  assert.equal(await js("document.querySelector('.store-entry').textContent.trim()"),'商店','shop entry shows its name instead of the balance');
  assert.equal(await js("getComputedStyle(document.querySelector('.profile')).cursor.includes('sv_cursor_pointer')"),true,'HUD buttons keep the global game pointer');
+ await entranceChecks();
  await sceneCoverage();await pointerCursor(4,8);await pointerCursor(0,9);await pointerCursor(1,7);
  const fullBackground=await js('(()=>{const r=window.farmTest.scene().world.getAt(0).getBounds();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom}})()');
  assert.ok(Math.abs(fullBackground.x)<0.01&&Math.abs(fullBackground.y)<0.01&&Math.abs(fullBackground.right-1280)<0.01&&Math.abs(fullBackground.bottom-720)<0.01,'the entire 16:9 farm background is visible: '+JSON.stringify(fullBackground));
@@ -305,6 +361,7 @@ app.whenReady().then(async()=>{
  }
  window.setContentSize(800,600);await wait("document.querySelector('.farm-scene canvas').width===800");await sleep(300);
  await sceneCoverage();await pointerCursor(6,8);
+ await entranceChecks();
  await screenshot('farm-actual-800.png');
  await pointer('plot',6);await within('.seed-picker');await screenshot('farm-actual-seeds-800.png');await escape();
  for(const locale of ['en-US','zh-TW','zh-CN']) {
@@ -317,6 +374,7 @@ app.whenReady().then(async()=>{
  }
  window.setContentSize(900,506);await wait("document.querySelector('.farm-scene canvas').width===900");await sleep(200);
  await sceneCoverage();await within('.profile');await within('.store-entry');await within('.exit-button');
+ await entranceChecks();
  await pointer('plot',6);await within('.seed-picker');await screenshot('farm-actual-small-16x9.png');await escape();
  await clickNative('.orders-entry');await within('.modal');await escape();
  window.setContentSize(1800,900);await wait("document.querySelector('.farm-scene canvas').width===1800");await sleep(200);await screenshot('farm-actual-wide.png');

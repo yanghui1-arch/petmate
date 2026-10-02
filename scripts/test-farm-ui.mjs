@@ -18,7 +18,7 @@ const bundled = await build({
     stdin: {
         contents: `export { default as Farm } from './src/renderer/views/Farm.vue';
       export { FarmService } from './src/main/modules/farm/service.ts';
-      export { farmLayout, hitFarm, insidePlot, plantingSlots, plotPosition } from './src/renderer/game/farmSceneModel.ts';
+      export { farmEntrances, farmLayout, hitFarm, insidePlot, plantingSlots, plotPosition } from './src/renderer/game/farmSceneModel.ts';
       export { default as zhCN } from './src/renderer/i18n/locales/zh-CN.ts';
       export { default as zhTW } from './src/renderer/i18n/locales/zh-TW.ts';
       export { default as enUS } from './src/renderer/i18n/locales/en-US.ts';`,
@@ -39,13 +39,18 @@ const bundled = await build({
                 builder.onLoad({ filter: /\.vue$/ }, async (args) => {
                     if (basename(args.path) === 'FarmScene.vue')
                         return {
-                            contents: `import { h, onMounted } from 'vue'; export default { props: ['state'], emits: ['target','ready'],
+                            contents: `import { h, onMounted } from 'vue'; export default { props: ['state'], emits: ['target','ready','hover'],
             setup(props, { emit }) { onMounted(()=>emit('ready')); return () => h('farm-scene', { state: props.state,
-              onTarget: (target, right) => emit('target', target, right) }) } };`,
+              onTarget: (target, right) => emit('target', target, right), onHover: value => emit('hover',value) }) } };`,
                             loader: 'js'
                         }
                     // CSS transitions are verified by the real Electron scene test.
-                    const source = (await readFile(args.path, 'utf8')).replace('<Transition name="farm-loading">', '<div class="test-transition">').replace('</Transition>', '</div>')
+                    const source = (await readFile(args.path, 'utf8'))
+                        .replace(
+                            '<Transition name="farm-loading">',
+                            '<div class="test-transition">'
+                        )
+                        .replace('</Transition>', '</div>')
                     const { descriptor, errors } = parse(source, { filename: args.path })
                     assert.deepEqual(errors, [], 'the actual component template must parse cleanly')
                     const script = compileScript(descriptor, {
@@ -72,6 +77,7 @@ const {
     zhCN,
     zhTW,
     enUS,
+    farmEntrances,
     farmLayout,
     hitFarm,
     insidePlot,
@@ -277,6 +283,19 @@ try {
         layout.plots.forEach((p, id) =>
             assert.deepEqual(hitFarm(layout, p.x, p.y), { kind: 'plot', id })
         )
+        for (const [index, entry] of farmEntrances.entries()) {
+            const { area } = entry
+            assert.deepEqual(
+                hitFarm(
+                    layout,
+                    layout.x + (area.x + area.width / 2) * layout.scale,
+                    layout.y + (area.y + area.height / 4) * layout.scale
+                ),
+                { kind: 'entry', id: entry.id }
+            )
+            assert.equal(layout.entrances[index].x, layout.x + entry.sign.x * layout.scale)
+            assert.equal(layout.entrances[index].y, layout.y + entry.sign.y * layout.scale)
+        }
         assert.deepEqual(hitFarm(layout, 0, 0), { kind: 'blank' })
     }
     for (let id = 0; id < 12; id++)
@@ -287,6 +306,48 @@ try {
                     plotPosition(id)
                 )
             )
+    const entranceSave = structuredClone(persisted)
+    const signs = () => findClass('entrance-sign')
+    assert.equal(signs().length, 4)
+    for (const [index, entry] of farmEntrances.entries()) {
+        await click(signs()[index])
+        assert.equal(findClass('entrance-feedback').length, 1)
+        assert.equal(findClass('entrance-feedback')[0].props['data-entry-tip'], entry.id)
+        assert.ok(textOf(findClass('entrance-feedback')[0]).includes('暂未开放'))
+        await target({ kind: 'entry', id: entry.id })
+        assert.equal(
+            findClass('entrance-feedback').length,
+            1,
+            'sign and scene share one feedback card'
+        )
+    }
+    assert.equal(commands.length, 0, 'placeholder entrances never send farm transactions')
+    assert.deepEqual(persisted, entranceSave, 'placeholder entrances preserve the complete save')
+    await new Promise((r) => setTimeout(r, 2100))
+    await settle()
+    assert.equal(findClass('entrance-tip').length, 0, 'entry feedback automatically disappears')
+    scene().props.onHover({ kind: 'entry', id: 'pasture', x: 0, y: 0 })
+    await settle()
+    assert.equal(findClass('entrance-tip').length, 0, 'hover waits before showing a hint')
+    await new Promise((r) => setTimeout(r, 280))
+    await settle()
+    assert.equal(findClass('entrance-tip')[0].props.role, 'tooltip')
+    scene().props.onHover(null)
+    await settle()
+    assert.equal(findClass('entrance-tip').length, 0)
+    await click(signs()[0])
+    await target({ kind: 'blank' }, true)
+    assert.equal(findClass('entrance-tip').length, 0, 'right click clears entrance feedback')
+    await click(signs()[1])
+    listeners.get('keydown')({ key: 'Escape' })
+    await settle()
+    assert.equal(findClass('entrance-tip').length, 0, 'Escape clears entrance feedback')
+    await click(signs()[2])
+    await click(findClass('orders-entry')[0])
+    assert.equal(findClass('entrance-tip').length, 0)
+    await target({ kind: 'entry', id: 'cabin' })
+    assert.equal(findClass('entrance-tip').length, 0, 'modal blocks entry activation')
+    await close()
     await plot(6)
     assert.equal(seeds().length, 0)
     assert.equal(commands.length, 0)
@@ -294,6 +355,8 @@ try {
     assert.equal(seeds().length, 6)
     assert.equal(seeds()[1].props.disabled, true)
     assert.equal(scene().props.state.enabled, false, 'picker blocks underlying scene')
+    await target({ kind: 'entry', id: 'fishing' })
+    assert.equal(findClass('entrance-tip').length, 0, 'seed picker blocks entry activation')
     assert.equal(button(root, '全部浇水'), undefined)
     let release
     gate = new Promise((r) => {
@@ -330,7 +393,11 @@ try {
     const waterRequests = commands.length
     await plot(2)
     assert.equal(commands.length, waterRequests, 'watered crop does not send another transaction')
-    assert.equal(findClass('water-splash')[0], splash, 'repeat clicking does not replay water drops')
+    assert.equal(
+        findClass('water-splash')[0],
+        splash,
+        'repeat clicking does not replay water drops'
+    )
     now += 300000
     notify()
     await settle()
@@ -369,6 +436,8 @@ try {
     assert.deepEqual(persisted, before, 'disk failure cannot consume seed or tutorial allowance')
     assert.ok(findClass('save-error').length)
     assert.equal(scene().props.state.enabled, false)
+    await target({ kind: 'entry', id: 'pasture' })
+    assert.equal(findClass('entrance-tip').length, 0, 'save failure blocks entry activation')
     diskFail = false
     await click(button(root, '重试'))
     assert.equal(scene().props.state.view.saveError, null)
@@ -391,6 +460,15 @@ try {
     for (const locale of ['zh-CN', 'zh-TW', 'en-US']) {
         i18n.global.locale.value = locale
         await settle()
+        await click(signs()[0])
+        assert.ok(
+            textOf(findClass('entrance-feedback')[0]).includes(
+                i18n.global.t('farm.entrancePreparing', {
+                    name: i18n.global.t('farm.entrances.pasture')
+                })
+            )
+        )
+        assert.equal(textOf(root).includes('farm.entrances'), false)
         await click(findClass('codex-entry')[0])
         assert.equal(walk(modal()).filter((n) => n.props['data-item']).length, 30)
         assert.equal(textOf(root).includes('farm.'), false)
