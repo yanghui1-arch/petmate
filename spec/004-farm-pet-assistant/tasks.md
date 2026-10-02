@@ -134,7 +134,7 @@
 - [x] 桌宠对白订阅、计时器、显示和队列统一遵守关闭开关，保留启用代码。
 - [x] 验证关闭时所有劳动事件及已有队列都不出气泡；实际 Vue 桌宠重复挂载无订阅和计时器，饥饿气泡正常。
 - [x] 农场及成就回归、类型检查、构建；生成安装包并检查内置暂停开关。
-- [ ] 提交并推送当前分支远程。
+- [x] 提交并推送当前分支远程：代码提交 `abda1bb` 已推送到 `origin/codex/farm-feature`，`git ls-remote` 确认远程与代码提交一致。
 
 验证：`test:pet-farm-speech`、`test:farm-assistant`、`test:farm-achievements`、`test:farm`、`test:save-recovery`、`test:farm-ui`、`test:farm-scene`、类型检查与构建通过。生产主进程包含关闭开关，桌宠生产 JS 已不包含农田事件订阅。定向 lint 新代码无错误；历史 `Farm.vue` 的 455 项格式问题未增加，`Petmate.vue` 保留 1 项原有 WheelMenu 命名问题。
 
