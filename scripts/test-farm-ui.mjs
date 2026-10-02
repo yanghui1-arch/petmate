@@ -344,6 +344,7 @@ try {
     assert.equal(findClass('entrance-tip').length, 0, 'Escape clears entrance feedback')
     await click(signs()[2])
     await click(findClass('orders-entry')[0])
+    assert.equal(findClass('assistant-status').length, 0, 'order panel hides all assistant status')
     assert.equal(findClass('entrance-tip').length, 0)
     await target({ kind: 'entry', id: 'cabin' })
     assert.equal(findClass('entrance-tip').length, 0, 'modal blocks entry activation')
@@ -451,11 +452,28 @@ try {
     assert.equal(findClass('tabs')[0].children.filter((n) => n.type === 'button').length, 2)
     await click(button(modal(), '作物'))
     await click(button(findClass('item-card')[1], '出售'))
-    const beforeWarning = commands.length
+    const beforeSale = commands.length
+    const beforeSaleCash = persisted.cash
+    assert.ok(
+        persisted.farm.orders.some(
+            (order) =>
+                'templateId' in order &&
+                service
+                    .getView()
+                    .catalog.orders.find((definition) => definition.id === order.templateId)
+                    .requirements.carrot
+        ),
+        'selling crop is needed by a current order'
+    )
+    assert.equal(textOf(modal()).includes('当前订单需要'), false)
     await click(findClass('trade-confirm')[0])
-    assert.equal(commands.length, beforeWarning)
-    await click(findClass('trade-confirm')[0])
+    assert.equal(commands.length, beforeSale + 1, 'one confirmation submits sale for an order crop')
+    assert.deepEqual(commands.at(-1).operation, { type: 'sell', cropId: 'carrot', count: 1 })
     assert.equal(persisted.farm.produce.carrot, 3)
+    assert.equal(
+        persisted.cash,
+        beforeSaleCash + service.getView().catalog.crops.find((crop) => crop.id === 'carrot').sell
+    )
     await close()
     for (const locale of ['zh-CN', 'zh-TW', 'en-US']) {
         i18n.global.locale.value = locale

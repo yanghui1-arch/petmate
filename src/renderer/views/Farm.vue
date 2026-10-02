@@ -200,7 +200,6 @@
                     </div>
                 </header>
                 <template v-if="panel === 'orders'">
-                    <p class="assistant-status" role="status">{{ t('farm.assistantStates.' + assistantStatus.state) }}<span v-if="assistantOrderNumber"> · {{ t('farm.orderNumber', { number: assistantOrderNumber }) }}</span></p>
                     <div class="order-list">
                         <article
                             v-for="(order, index) in view.farm.orders"
@@ -374,9 +373,6 @@
                             {{ value }}
                         </button>
                     </div>
-                    <p v-if="panel === 'sell' && orderNeeds(tradeCrop)">
-                        {{ t('farm.sellWarning') }}
-                    </p>
                     <button
                         class="action-button trade-confirm"
                         :disabled="
@@ -484,7 +480,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { plantProgress, plantStage } from '../../main/modules/farm/rules'
-import type { BackupPreview, FarmAssistantStatus, FarmOperation, FarmPlant, FarmView } from '../../main/types/farm'
+import type { BackupPreview, FarmOperation, FarmPlant, FarmView } from '../../main/types/farm'
 import { farmSettingsVisible } from '../../shared/farmExperience'
 import { background } from '../assets/farm-game'
 import gameArrow from '../assets/farm-game/game-arrow.svg'
@@ -499,8 +495,7 @@ import { farmLayout, plotMode } from '../game/farmSceneModel'
 const { t } = useI18n(),
     router = useRouter()
 const sceneKey = ref(0), sceneReady = ref(false), sceneFailure = ref(''), assetProgress = ref(0), dataReady = ref(false)
-const assistantStatus = ref<FarmAssistantStatus>({ state: 'waitingPlayer' })
-let stopAssistantState: (() => void) | undefined, lastManualIntent = -Infinity
+let lastManualIntent = -Infinity
 const loadingProgress = computed(() => sceneReady.value && dataReady.value && !loadError.value && !sceneFailure.value ? 100 : Math.min(99, Math.round((dataReady.value ? 20 : 0) + assetProgress.value * 70)))
 function assetLoaded(value: number) { assetProgress.value = Math.max(assetProgress.value, value) }
 function sceneLoaded() { sceneReady.value = true }
@@ -540,8 +535,7 @@ const seedTarget = ref<number | null>(null),
 const width = ref(1280),
     height = ref(720),
     tradeCrop = ref(''),
-    count = ref(1),
-    sellWarningShown = ref(false)
+    count = ref(1)
 const backupPreview = ref<BackupPreview | null>(null)
 const effects = ref<
     { id: string; x: number; y: number; text: string; water: boolean; scale: number }[]
@@ -565,7 +559,6 @@ const sceneState = computed<FarmSceneState>(() => ({
     enabled: sceneReady.value && dataReady.value && !loadError.value && !sceneFailure.value && !blocked.value && !panel.value && seedTarget.value === null
 }))
 const entranceLayout = computed(() => farmLayout(width.value, height.value))
-const assistantOrderNumber = computed(() => (view.value?.farm?.orders.findIndex(o => 'instanceId' in o && o.instanceId === assistantStatus.value.orderId) ?? -1) + 1)
 const hoverPlant = computed(() =>
     hovered.value === null ? null : view.value?.farm?.plots[hovered.value].plant
 )
@@ -613,10 +606,6 @@ const deliverable = computed(
         view.value?.farm?.orders.filter((o) => 'templateId' in o && canDeliver(o.templateId))
             .length ?? 0
 )
-const orderNeeds = (crop: string) =>
-    view.value?.farm?.orders.some(
-        (o) => 'templateId' in o && orderDefinition(o.templateId).requirements[crop]
-    ) ?? false
 const tradePrice = computed(() =>
     tradeCrop.value
         ? panel.value === 'sell'
@@ -876,7 +865,6 @@ function openSell(id: string) {
     if (busy.value) return
     tradeCrop.value = id
     count.value = 1
-    sellWarningShown.value = false
     openPanel('sell')
 }
 async function confirmTrade() {
@@ -888,11 +876,6 @@ async function confirmTrade() {
     )
         return
     const selling = panel.value === 'sell'
-    if (selling && orderNeeds(tradeCrop.value) && !sellWarningShown.value) {
-        sellWarningShown.value = true
-        showNotice(t('farm.sellWarning'))
-        return
-    }
     if (
         await run({
             type: selling ? 'sell' : 'buySeed',
@@ -970,8 +953,6 @@ function onKeydown(event: KeyboardEvent) {
 }
 onMounted(() => {
     manualActivity()
-    stopAssistantState = window.api.onFarmAssistantState?.(value => { assistantStatus.value = value })
-    void window.api.getFarmAssistant?.().then(r => { if (!disposed && r.code === 200 && r.data) assistantStatus.value = r.data }).catch(() => {})
     window.addEventListener('keydown', onKeydown)
     window.addEventListener('blur', hideHover)
     observer = new ResizeObserver(() => {
@@ -1001,7 +982,6 @@ onMounted(() => {
     })
 })
 onUnmounted(() => {
-    stopAssistantState?.()
     disposed = true
     ++loadSequence
     window.removeEventListener('keydown', onKeydown)
@@ -1028,7 +1008,6 @@ onUnmounted(() => {
 .loading-card button { display: block; margin: 12px auto 0; padding: 8px 20px; border-radius: 12px; }
 .farm-loading-leave-active { transition: opacity .25s; pointer-events: none; }
 .farm-loading-leave-to { opacity: 0; }
-.assistant-status { padding: 8px 12px; border-radius: 12px; background: #dfebc8; }
 .farm {
     --ink: #664329;
     position: relative;
