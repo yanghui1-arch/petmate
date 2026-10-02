@@ -12,18 +12,29 @@
         <div class="context-menu" v-if="isShowContextMenu">
             <WheelMenu @closed="closeContextMenu" />
         </div>
-        <div v-if="farmSpeech && !farmSpeechBlocked" class="pet-dialog farm-dialog" aria-live="polite"><span>{{ farmSpeechVisible }}</span><span v-if="farmSpeechVisible.length < farmSpeech.length" class="pet-dialog-caret"></span></div>
+        <div
+            v-if="farmSpeech && !farmSpeechBlocked"
+            class="pet-dialog farm-dialog"
+            aria-live="polite"
+        >
+            <span>{{ farmSpeechVisible }}</span
+            ><span
+                v-if="farmSpeechVisible.length < farmSpeech.length"
+                class="pet-dialog-caret"
+            ></span>
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { farmAssistantEnabled, farmExperience } from '../../shared/farmExperience'
 import WheelMenu from '../components/WheelMenu.vue'
 import { isShowContextMenu, usePetmateModel } from '../hooks/usePetmateModel'
 import { usePlayer } from '../hooks/usePlayer'
 import { FarmDialogue } from '../utils/farmDialogue'
-import { farmExperience } from '../../shared/farmExperience'
 
 const LOW_ATTRIBUTE_RATIO = 0.3
 const LOW_ENERGY_RATIO = 0.1
@@ -76,24 +87,54 @@ const isHungryDialogTyping = computed(() => {
     )
 })
 const shouldShowSleepDialog = computed(() => sleepDialogVisibleText.value.length > 0)
-const farmSpeech = ref(''), farmSpeechVisible = ref('')
+const farmSpeech = ref(''),
+    farmSpeechVisible = ref('')
 const farmDialogue = new FarmDialogue()
 const farmSpeechBlocked = computed(() => {
     const status = currentPetmate.value?.status.status
-    return shouldShowHungryDialog.value || shouldShowSleepDialog.value || isShowContextMenu.value || (!!status && status !== 'idle' && status !== 'finished') || isEnergyLow.value
+    return (
+        !farmAssistantEnabled ||
+        shouldShowHungryDialog.value ||
+        shouldShowSleepDialog.value ||
+        isShowContextMenu.value ||
+        (!!status && status !== 'idle' && status !== 'finished') ||
+        isEnergyLow.value
+    )
 })
-let farmSpeechTimer: ReturnType<typeof setInterval> | undefined, stopFarmSpeech: (() => void) | undefined, speechHoldUntil = 0
-function clearFarmSpeech() { farmSpeech.value = ''; farmSpeechVisible.value = ''; speechHoldUntil = 0; farmDialogue.clear() }
-function advanceFarmSpeech() {
-    if (farmSpeechBlocked.value || document.hidden) { clearFarmSpeech(); return }
-    const now = Date.now(), event = farmDialogue.next(now, false)
-    if (event) { farmSpeech.value = t('petmate.farmSpeech.' + event); farmSpeechVisible.value = ''; speechHoldUntil = 0 }
-    if (!farmSpeech.value) return
-    if (farmSpeechVisible.value.length < farmSpeech.value.length) farmSpeechVisible.value = farmSpeech.value.slice(0, farmSpeechVisible.value.length + 1)
-    else if (!speechHoldUntil) speechHoldUntil = now + farmExperience.bubbleHoldMs
-    else if (now >= speechHoldUntil) { farmSpeech.value = ''; farmSpeechVisible.value = ''; speechHoldUntil = 0 }
+let farmSpeechTimer: ReturnType<typeof setInterval> | undefined,
+    stopFarmSpeech: (() => void) | undefined,
+    speechHoldUntil = 0
+function clearFarmSpeech() {
+    farmSpeech.value = ''
+    farmSpeechVisible.value = ''
+    speechHoldUntil = 0
+    farmDialogue.clear()
 }
-watch(farmSpeechBlocked, value => { if (value) clearFarmSpeech() })
+function advanceFarmSpeech() {
+    if (farmSpeechBlocked.value || document.hidden) {
+        clearFarmSpeech()
+        return
+    }
+    const now = Date.now(),
+        event = farmDialogue.next(now, false)
+    if (event) {
+        farmSpeech.value = t('petmate.farmSpeech.' + event)
+        farmSpeechVisible.value = ''
+        speechHoldUntil = 0
+    }
+    if (!farmSpeech.value) return
+    if (farmSpeechVisible.value.length < farmSpeech.value.length)
+        farmSpeechVisible.value = farmSpeech.value.slice(0, farmSpeechVisible.value.length + 1)
+    else if (!speechHoldUntil) speechHoldUntil = now + farmExperience.bubbleHoldMs
+    else if (now >= speechHoldUntil) {
+        farmSpeech.value = ''
+        farmSpeechVisible.value = ''
+        speechHoldUntil = 0
+    }
+}
+watch(farmSpeechBlocked, (value) => {
+    if (value) clearFarmSpeech()
+})
 const isSleepDialogTyping = computed(() => {
     return sleepDialogVisibleText.value.length < sleepDialogText.value.length
 })
@@ -151,9 +192,13 @@ watch(sleepResponseTick, () => {
 })
 
 onMounted(async () => {
-    stopFarmSpeech = window.api.onFarmAssistantEvent?.(event => { if (!document.hidden && !farmSpeechBlocked.value) farmDialogue.offer(event) })
-    farmSpeechTimer = setInterval(advanceFarmSpeech, 120)
-    document.addEventListener('visibilitychange', clearFarmSpeech)
+    if (farmAssistantEnabled) {
+        stopFarmSpeech = window.api.onFarmAssistantEvent?.((event) => {
+            if (!document.hidden && !farmSpeechBlocked.value) farmDialogue.offer(event)
+        })
+        farmSpeechTimer = setInterval(advanceFarmSpeech, 120)
+        document.addEventListener('visibilitychange', clearFarmSpeech)
+    }
     stopPlayerDataSync = subscribeToPlayerDataSync(() => {
         void refreshPlayerData()
     })

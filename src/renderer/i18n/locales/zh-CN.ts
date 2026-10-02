@@ -36,6 +36,9 @@ export default {
     settings: '设置',
   },
   farm: {
+    achievements: '成就', achievementUnlocked: '已达成', achievementLocked: '未达成',
+    achievementNames: { harvest1: '第一篮收成', harvest100: '渐入佳境', harvest500: '丰收常客', harvest1000: '千次丰收', order1: '第一位顾客', order10: '回头客来了', order100: '金牌供货商', collection: '田园百味', allRounder: '样样拿手', fullField: '十二块希望', diversity: '缤纷田园', wateredField: '雨露均沾' },
+    achievementDescriptions: { harvest1: '累计收获 1 块成熟地。', harvest100: '累计收获 100 块成熟地。', harvest500: '累计收获 500 块成熟地。', harvest1000: '累计收获 1000 块成熟地。', order1: '完成 1 笔农场订单。', order10: '完成 10 笔农场订单。', order100: '完成 100 笔农场订单。', collection: '六种作物各收获过至少一次。', allRounder: '六种作物各累计收获 20 块地，进度为收获最少的作物。', fullField: '解锁全部 12 块地。', diversity: '同时种植六种不同的作物。', wateredField: '同时有 12 块已种植且已浇水的地。' },
     loadingData: "读取农场…",
     loadingArt: "准备作物…",
     loadingReady: "农场准备好了",

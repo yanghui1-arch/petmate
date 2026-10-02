@@ -4,6 +4,7 @@ import { BrowserWindow } from 'electron'
 
 import { gameWritesFrozen } from '../save/coordinator'
 import { playerManager } from '../store'
+import { syncFarmAchievements } from './achievements'
 import { FarmAssistant } from './assistant'
 import { FarmService } from './service'
 
@@ -11,7 +12,11 @@ import { FarmService } from './service'
 const startedAt = performance.now()
 export const farmService = new FarmService(
     { read: () => playerManager.getFarmSnapshot(), commit: snapshot => playerManager.commitFarmSnapshot(snapshot) },
-    { wall: () => Date.now(), monotonic: () => performance.now() }, randomUUID
+    { wall: () => Date.now(), monotonic: () => performance.now() }, randomUUID, Math.random,
+    farm => {
+        const owner = playerManager.getPlayer().steamId
+        if (owner) syncFarmAchievements(owner, farm)
+    }
 )
 export const farmAssistant = new FarmAssistant(farmService,
     { wall: () => Date.now(), monotonic: () => performance.now() },
@@ -28,6 +33,6 @@ export const farmAssistant = new FarmAssistant(farmService,
     }, randomUUID, startedAt)
 export function startFarmAssistant() {
     // Initializes farm data through its normal transaction, without opening a window.
-    try { farmService.getView() } catch { /* Existing storage diagnostics stay authoritative. */ }
+    try { farmService.checkpoint() } catch { /* Existing storage diagnostics stay authoritative. */ }
     farmAssistant.start()
 }

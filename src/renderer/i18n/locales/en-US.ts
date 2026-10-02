@@ -39,6 +39,9 @@ export default {
   },
   farm: {
     ...zhCN.farm,
+    achievements: 'Achievements', achievementUnlocked: 'Unlocked', achievementLocked: 'Not yet earned',
+    achievementNames: { harvest1: 'First Basket', harvest100: 'Getting the Hang of It', harvest500: 'Harvest Regular', harvest1000: 'A Thousand Harvests', order1: 'First Customer', order10: 'Returning Customers', order100: 'Trusted Supplier', collection: 'A Taste of Everything', allRounder: 'All-Round Grower', fullField: 'Twelve Fields of Hope', diversity: 'A Colorful Farm', wateredField: 'Every Plot Counts' },
+    achievementDescriptions: { harvest1: 'Harvest 1 mature plot.', harvest100: 'Harvest 100 mature plots.', harvest500: 'Harvest 500 mature plots.', harvest1000: 'Harvest 1000 mature plots.', order1: 'Complete 1 farm order.', order10: 'Complete 10 farm orders.', order100: 'Complete 100 farm orders.', collection: 'Harvest each of the six crops at least once.', allRounder: 'Harvest 20 plots of each crop. Progress shows your least harvested crop.', fullField: 'Unlock all 12 plots.', diversity: 'Grow six different crops at the same time.', wateredField: 'Have 12 planted and watered plots at the same time.' },
     loadingData: "Reading the farm…",
     loadingArt: "Preparing crops…",
     loadingReady: "Farm is ready",

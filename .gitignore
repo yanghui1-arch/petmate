@@ -50,3 +50,4 @@ resources/local-ai/installation.json
 __pycache__/
 *.pyc
 .env
+spec

@@ -342,7 +342,14 @@ app.whenReady().then(async()=>{
  await pointer('plot',4);assert.equal((await js('window.farmTest.commands()')).length,before,'modal blocks scene');
  await escape();await clickNative('.codex-entry');
  assert.equal(await js("document.querySelectorAll('.modal .item-art').length"),30);
- await screenshot('farm-actual-codex-1280.png');await escape();
+ await screenshot('farm-actual-codex-1280.png');
+ await clickNative('.achievements-tab');
+ assert.equal(await js("document.querySelectorAll('[data-achievement]').length"),12);
+ assert.equal(await js("document.querySelectorAll('.achievement-art svg').length"),24,'every card renders its illustrated icon');
+ await js("Promise.all([...document.querySelectorAll('.achievement-art image')].map(async image=>{const loaded=new Image();loaded.src=image.getAttribute('href');await loaded.decode()}))");
+ await sleep(300);
+ assert.equal(await js("[...document.querySelectorAll('.achievement-art > svg')].every(svg=>svg.getBoundingClientRect().width>0&&svg.getBoundingClientRect().height>0)"),true,'achievement artwork has visible dimensions');
+ await screenshot('farm-actual-achievements-1280.png');await escape();
  await clickNative('.store-entry');
  assert.equal(await js("document.querySelector('.store-balance').textContent.includes('500')"),true,'shop header shows current balance');
  await screenshot('farm-actual-store-1280.png');await escape();

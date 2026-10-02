@@ -1,4 +1,5 @@
-import type { FarmAssistantMetadata, FarmCommand, FarmOperation, FarmPreview, FarmResult, FarmSnapshot, FarmView } from '../../types/farm'
+import { updateFarmAchievements } from '../../../shared/farmAchievements'
+import type { FarmAssistantMetadata, FarmCommand, FarmOperation, FarmPreview, FarmResult, FarmSnapshot, FarmState, FarmView } from '../../types/farm'
 import { farmCatalog, farmLevel, getCrop, unlockedPlots } from './catalog'
 import { applyOperation, clone, createFarm, eligiblePlots, growFarm, plantStage, validateFarm } from './rules'
 
@@ -17,11 +18,15 @@ export class FarmService {
     private readonly repository: FarmRepository,
     private readonly clock: FarmClock,
     private readonly id: () => string,
-    private readonly random: () => number = Math.random
+    private readonly random: () => number = Math.random,
+    private readonly onCommitted: (farm: FarmState) => void = () => {}
   ) {}
 
   private persist(snapshot: FarmSnapshot): void {
     try {
+      if (snapshot.farm) {
+        updateFarmAchievements(snapshot.farm, farmCatalog, unlockedPlots(snapshot.farm.exp))
+      }
       this.repository.commit(snapshot)
       this.lastCheckpoint = this.clock.monotonic()
       this.saveError = null
@@ -29,6 +34,8 @@ export class FarmService {
       this.saveError = '存档暂不可用，本次操作未完成。请检查磁盘后重试。'
       throw error
     }
+    // External achievement failures must never turn a saved trade into an error.
+    if (snapshot.farm) { try { this.onCommitted(clone(snapshot.farm)) } catch { /* Retry at the next durable checkpoint. */ } }
   }
 
   private current(): FarmSnapshot {

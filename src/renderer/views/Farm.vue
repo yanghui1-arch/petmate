@@ -387,7 +387,24 @@
                     </button>
                 </template>
                 <template v-else-if="panel === 'codex'">
-                    <div class="item-list">
+                        <div class="tabs">
+                            <button
+                                class="action-button secondary"
+                                :class="{ active: codexTab === 'crops' }"
+                                @click="codexTab = 'crops'"
+                            >
+                                {{ t('farm.produce') }}
+                            </button>
+                            <button
+                                class="action-button secondary achievements-tab"
+                                :class="{ active: codexTab === 'achievements' }"
+                                @click="codexTab = 'achievements'"
+                            >
+                                {{ t('farm.achievements') }}
+                            </button>
+                        </div>
+                        <farm-achievements v-if="codexTab === 'achievements'" :view="view" />
+                    <div v-else class="item-list">
                         <article
                             v-for="crop in view.catalog.crops"
                             :key="crop.id"
@@ -485,6 +502,7 @@ import { farmSettingsVisible } from '../../shared/farmExperience'
 import { background } from '../assets/farm-game'
 import gameArrow from '../assets/farm-game/game-arrow.svg'
 import youmeiAvatar from '../assets/image/youmei-avatar.png'
+import FarmAchievements from '../components/farm/FarmAchievements.vue'
 import FarmEntrances from '../components/farm/FarmEntrances.vue'
 import FarmIcon from '../components/farm/FarmIcon.vue'
 import FarmItemArt from '../components/farm/FarmItemArt.vue'
@@ -530,6 +548,7 @@ const panel = ref<
 >(null)
 const warehouseTab = ref<'seeds' | 'produce'>('seeds'),
     warehouseTabs = ['seeds', 'produce'] as const
+const codexTab = ref<'crops' | 'achievements'>('crops')
 const seedTarget = ref<number | null>(null),
     hovered = ref<number | null>(null)
 const width = ref(1280),
@@ -686,6 +705,7 @@ function dismiss() {
 function openPanel(name: NonNullable<typeof panel.value>) {
     if (!farmSettingsVisible && (name === 'settings' || name === 'backup')) return
     if (busy.value) return
+    if (name === 'codex') codexTab.value = 'crops'
     seedTarget.value = null
     hideHover()
     entrances.value?.dismiss()
