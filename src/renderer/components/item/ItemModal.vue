@@ -58,7 +58,7 @@
               class="supply-box-reward-image"
               :class="{ 'supply-box-reward-image-cash': reward.type === 'cash' }"
             >
-              <span v-if="reward.type === 'cash'" aria-hidden="true">🪙</span>
+              <img v-if="reward.type === 'cash'" :src="coinIcon" :alt="t('item.supplyBoxCash')" />
               <img
                 v-else
                 :src="rewardImageURL(reward) ?? ''"
@@ -80,6 +80,7 @@
 <script setup lang="ts">
 import { computed, defineProps, ref, PropType, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import coinIcon from "@/assets/image/ui/coin.svg";
 import { usePlayer } from "../../hooks/usePlayer";
 import { useShow } from "../../hooks/useShow";
 import { Item, Buff, getItemTypes } from "../../types/common";
@@ -552,8 +553,12 @@ const cancel = () => {
 .supply-box-reward-image-cash {
   border-color: rgba($color-pink-100, 0.54);
   background: radial-gradient(circle, rgba($color-pink-100, 0.34), rgba($system-bgc, 0.5));
-  font-size: 34px;
   filter: drop-shadow(0 5px 8px rgba($color-pink-100, 0.28));
+
+  img {
+    width: 34px;
+    height: 34px;
+  }
 }
 
 .supply-box-reward-name {

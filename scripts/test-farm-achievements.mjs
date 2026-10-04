@@ -163,6 +163,7 @@ for (const target of [1, 10, 100]) {
     f.state.farm.exp = 900
     for (const [index, crop] of farmCatalog.crops.entries()) {
         f.state.farm.achievements.harvestedPlots[crop.id] = 19
+        f.state.farm.achievements.manualHarvestedPlots[crop.id] = 19
         f.plant(index, crop.id)
     }
     f.service.checkpoint()
@@ -367,6 +368,23 @@ function entriesAt(count) {
         'in-flight checkpoints coalesce to the newest saved total'
     )
     assert.equal(f.calls.filter((c) => c[0] === 'store').length, 2)
+}
+{
+    const f = steamFixture(), entries = entriesAt(1)
+    const manual = entries.filter(entry => ['collection', 'minimum', 'watered'].includes(entry.metric))
+    for (const entry of manual) f.stats.delete(entry.stat)
+    f.stats.set('FarmManualCropTypesHarvested', 6)
+    f.stats.set('FarmManualLeastHarvestedCropCount', 20)
+    f.stats.set('FarmManualWateredPlots', 12)
+    await f.sync.sync('player', entries)
+    assert.ok(f.unlocked.has('ACH_FARM_HARVEST_1'), 'unpublished manual stats cannot block ordinary achievements')
+    assert.equal(f.errors.length, 0)
+    assert.ok(manual.every(entry => !f.unlocked.has(entry.id)))
+    for (const entry of manual) f.stats.set(entry.stat, 0)
+    await f.sync.sync('player', entries)
+    assert.ok(manual.every(entry => f.stats.get(entry.stat) === 0), 'obsolete statistic names are never copied into player progress')
+    await f.sync.sync('player', entries.map(entry => manual.some(item => item.id === entry.id) ? {...entry,value:entry.target,unlocked:true} : entry))
+    assert.ok(manual.every(entry => f.unlocked.has(entry.id)), 'published original stats retry the saved player-only results')
 }
 console.log(
     'Farm achievements: 12 conditions, plot counts, orders, permanent unlocks, replay/save failure, disabled assistant, Steam retry/monotonic/coalescing: passed'

@@ -1,4 +1,5 @@
 import { ensureFarmAchievements, farmAchievementDefinitions } from '../../../shared/farmAchievements'
+import { validateFarmLife } from '../../../shared/farmLife'
 import type { FarmFeedback, FarmOperation, FarmPlant, FarmState } from '../../types/farm'
 import { farmCatalog, farmLevel, getCrop, getOrder, orderCash, unlockedPlots } from './catalog'
 
@@ -54,7 +55,7 @@ export function eligiblePlots(farm: FarmState, operation: FarmOperation): number
     return operation.type === 'sow' ? !plant : operation.type === 'water' ? !!plant && !plant.watered && plantProgress(plant) < 1 : !!plant && plantProgress(plant) >= 1
   })
 }
-export function applyOperation(farm: FarmState, cash: number, operation: FarmOperation, now: number): { cash: number; feedback: FarmFeedback } {
+export function applyOperation(farm: FarmState, cash: number, operation: FarmOperation, now: number, origin: 'player' | 'helper' = 'player'): { cash: number; feedback: FarmFeedback } {
   const achievements = ensureFarmAchievements(farm, farmCatalog)
   const feedback: FarmFeedback = { message: '', items: {}, exp: 0, cashDelta: 0, kind: 'other' }
   const add = (target: Record<string, number>, key: string, count: number) => { target[key] = (target[key] ?? 0) + count }
@@ -75,7 +76,7 @@ export function applyOperation(farm: FarmState, cash: number, operation: FarmOpe
       feedback.message = `播种了 ${plots.length} 块${crop.name}`
       feedback.kind = 'sow'
     } else if (operation.type === 'water') {
-      for (const plotId of plots) farm.plots[plotId].plant!.watered = true
+      for (const plotId of plots) { farm.plots[plotId].plant!.watered = true; farm.plots[plotId].plant!.wateredBy = origin }
       feedback.message = `为 ${plots.length} 块地浇了水`
       feedback.kind = 'water'
     } else {
@@ -84,6 +85,7 @@ export function applyOperation(farm: FarmState, cash: number, operation: FarmOpe
         add(farm.produce, crop.id, crop.yield)
         add(farm.harvests, crop.id, crop.yield)
         add(achievements.harvestedPlots, crop.id, 1)
+        if (origin === 'player') add(achievements.manualHarvestedPlots!, crop.id, 1)
         add(feedback.items, crop.id, crop.yield)
         feedback.exp += crop.exp
         farm.plots[plotId].plant = null
@@ -135,12 +137,14 @@ export function validateFarm(value: unknown): asserts value is FarmState {
   if (farm?.assistant !== undefined && (!farm.assistant || typeof farm.assistant !== 'object' || !Number.isInteger(farm.assistant.successfulActions) || farm.assistant.successfulActions < 0 || farm.assistant.successfulActions >= 6 || !Number.isFinite(farm.assistant.restUntil) || farm.assistant.restUntil < 0 || !Number.isFinite(farm.assistant.lastManualAt) || farm.assistant.lastManualAt < 0)) throw new Error('农场助手状态无效')
   const nonnegative = (number: number) => Number.isSafeInteger(number) && number >= 0
   if (!farm || farm.version !== 1 || !nonnegative(farm.exp) || !nonnegative(farm.tutorialRemaining) || farm.tutorialRemaining > 6 || !nonnegative(farm.lastWallTime)) throw new Error('农场存档格式无效')
+  if (farm.life !== undefined) validateFarmLife(farm.life)
   if (!Array.isArray(farm.plots) || farm.plots.length !== 12) throw new Error('地块存档无效')
   const cropIds = new Set(farmCatalog.crops.map(crop => crop.id))
   if (farm.achievements !== undefined) {
     const state = farm.achievements
     const ids = new Set<string>(farmAchievementDefinitions.map(entry => entry.id))
     if (!state || typeof state !== 'object' || !nonnegative(state.completedOrders) || !state.harvestedPlots || Array.isArray(state.harvestedPlots) || Object.entries(state.harvestedPlots).some(([key, count]) => !cropIds.has(key) || !nonnegative(count)) || !Array.isArray(state.unlocked) || new Set(state.unlocked).size !== state.unlocked.length || state.unlocked.some(id => !ids.has(id))) throw new Error('农场成就记录无效')
+    if (state.manualHarvestedPlots !== undefined && (!state.manualHarvestedPlots || Array.isArray(state.manualHarvestedPlots) || Object.entries(state.manualHarvestedPlots).some(([key, count]) => !cropIds.has(key) || !nonnegative(count)))) throw new Error('玩家收获记录无效')
   }
   for (const name of ['seeds', 'produce', 'harvests'] as const) {
     const allowed = cropIds
@@ -150,6 +154,7 @@ export function validateFarm(value: unknown): asserts value is FarmState {
     if (plot.id !== index || (plot.plant && index >= unlockedPlots(farm.exp))) throw new Error('地块编号无效')
     if (plot.plant) {
       const plant = plot.plant
+      if (plant.wateredBy !== undefined && (!plant.watered || !['player', 'helper'].includes(plant.wateredBy))) throw new Error('浇水来源无效')
       const crop = getCrop(plant.cropId)
       if (crop.level > farmLevel(farm.exp) || !nonnegative(plant.plantedAt) || !Number.isFinite(plant.elapsedMs) || plant.elapsedMs < 0 || plant.elapsedMs > plant.durationMs || typeof plant.watered !== 'boolean' || ![crop.minutes * 60_000, ...(crop.id === 'wheat' ? [TUTORIAL_MS] : [])].includes(plant.durationMs)) throw new Error('作物成长记录无效')
     } else if (plot.plant !== null) throw new Error('空地记录无效')

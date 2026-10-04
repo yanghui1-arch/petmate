@@ -2,6 +2,8 @@ import Phaser from 'phaser'
 
 import { plantStage } from '../../main/modules/farm/rules'
 import type { FarmView } from '../../main/types/farm'
+import type { FarmLifeVisit } from '../../shared/farmLife'
+import { farmLifePose } from '../../shared/farmLife'
 import gamePointer from '../assets/cursor/sv_cursor_pointer.png'
 import {
     atlas,
@@ -12,6 +14,8 @@ import {
     iconFrames,
     icons
 } from '../assets/farm-game'
+import { farmLifeArt, farmLifeFrame } from '../assets/farm-life'
+import flowerImage from '../assets/farm-life/flower.svg'
 import type { FarmHover, FarmLayout, FarmTarget } from './farmSceneModel'
 import {
     farmLayout,
@@ -21,7 +25,7 @@ import {
     plotMode,
     plotPosition
 } from './farmSceneModel'
-export type FarmSceneState = { view: FarmView; enabled: boolean }
+export type FarmSceneState = { view: FarmView; enabled: boolean; visit?: FarmLifeVisit | null }
 export type FarmSceneEvents = {
     target: (_target: FarmTarget, _right: boolean) => void
     hover: (_hover: FarmHover) => void
@@ -35,17 +39,28 @@ export class FarmScene extends Phaser.Scene {
     private callbacks: FarmSceneEvents
     private world?: Phaser.GameObjects.Container
     private field?: Phaser.GameObjects.Container
+    private standing?: Phaser.GameObjects.Layer
     private cursor?: Phaser.GameObjects.Image
     private beds: Phaser.GameObjects.Image[] = []
     private plants: { image: Phaser.GameObjects.Image; plot: number }[] = []
     private layout!: FarmLayout
     private pointerPosition: { x: number; y: number } | null = null
+    private actor?: Phaser.GameObjects.Sprite
+    private flower?: Phaser.GameObjects.Image
+    private discoveredFlowers = new Set<string>()
+    private actorVisit = ''
+    private actorAppeared = 0
     constructor(state: FarmSceneState, callbacks: FarmSceneEvents) {
         super('farm')
         this.state = state
         this.callbacks = callbacks
     }
     preload() {
+        for (const [pose, art] of Object.entries(farmLifeArt)) {
+            if (art.width) this.load.spritesheet('life-' + pose, art.url, { frameWidth: art.width, frameHeight: art.height })
+            else this.load.image('life-' + pose, art.url)
+        }
+        this.load.svg('life-flower', flowerImage)
         this.load.on('progress', (value: number) => this.callbacks.progress?.(value))
         this.load.image('background', background)
         this.load.image('atlas', atlas)
@@ -80,6 +95,11 @@ export class FarmScene extends Phaser.Scene {
                     .add(index, 0, ...(stage.rect as [number, number, number, number]))
             )
         this.world = this.add.container()
+        // Crops and the character share a display list, sorted by their ground contact.
+        this.standing = this.add.layer().setDepth(1)
+        this.actor = this.add.sprite(0, 0, 'life-bridge', 0).setVisible(false)
+        this.standing.add(this.actor)
+        this.flower = this.add.image(0, 0, 'life-flower').setDepth(4).setOrigin(0.5, 1).setVisible(false)
         this.cursor = this.add
             .image(0, 0, 'icons', 8)
             .setDepth(100)
@@ -108,6 +128,26 @@ export class FarmScene extends Phaser.Scene {
         this.redraw()
         this.game.events.once('postrender', () => this.callbacks.ready())
     }
+    update() {
+        if (!this.layout || !this.actor || !this.flower) return
+        const visit = this.state.visit, layout = this.layout
+        this.flower.setPosition(layout.x + 1150 * layout.scale, layout.y + 770 * layout.scale).setDisplaySize(30 * layout.scale, 36 * layout.scale).setVisible(!!this.state.view.farm?.life?.flower)
+        const discovery = this.state.view.farm?.life?.events.find(event => event.kind === 'flower' && !event.interrupted && !event.shown)
+        if (this.state.enabled && discovery && !this.discoveredFlowers.has(discovery.id)) {
+            this.discoveredFlowers.add(discovery.id)
+            this.tweens.add({ targets: this.flower, alpha: 0.25, duration: 450, yoyo: true, repeat: 2, onComplete: () => this.flower?.setAlpha(1) })
+        }
+        if (!visit || !['visiting', 'exiting'].includes(visit.phase)) { this.actor.setVisible(false); this.actorVisit = ''; return }
+        if (this.actorVisit !== visit.id) { this.actorVisit = visit.id; this.actorAppeared = performance.now() }
+        const pose = farmLifePose(visit.kind, visit.cancelled), art = farmLifeArt[pose]
+        const frame = farmLifeFrame(pose, performance.now() - this.actorAppeared)
+        this.actor.setTexture('life-' + pose, art.width ? frame : '__BASE')
+            .setOrigin(art.anchorX, art.anchorY)
+            .setPosition(layout.x + art.x * 1.25 * layout.scale, layout.y + art.y * 1.25 * layout.scale)
+        const height = art.displayHeight * 1.25 * layout.scale
+        this.actor.setDisplaySize(height * this.actor.frame.width / this.actor.frame.height, height).setVisible(true).setAlpha(1)
+        this.actor.setDepth(this.actor.y)
+    }
     updateState(state: FarmSceneState) {
         const changed = this.state.view !== state.view
         this.state = state
@@ -127,8 +167,9 @@ export class FarmScene extends Phaser.Scene {
         return this.state.view.farm?.plots[id].plant?.watered ? 0xdcdcdc : 0xffffff
     }
     private redraw() {
-        if (!this.world) return
+        if (!this.world || !this.standing) return
         this.layout = farmLayout(this.scale.width, this.scale.height)
+        this.plants.forEach(({ image }) => image.destroy())
         this.world.removeAll(true)
         this.beds = []
         this.plants = []
@@ -179,9 +220,14 @@ export class FarmScene extends Phaser.Scene {
             const meta = cropFrames[root.crop].stages[root.phase],
                 [x, y, w, h] = meta.rect
             const image = this.add
-                .image(root.x, root.y, root.crop, root.phase)
+                .image(
+                    this.layout.x + (fieldFrame.x + root.x * fieldFrame.scale) * this.layout.scale,
+                    this.layout.y + (fieldFrame.y + root.y * fieldFrame.scale) * this.layout.scale,
+                    root.crop, root.phase
+                )
                 .setOrigin((meta.pivot[0] - x) / w, (meta.pivot[1] - y) / h)
-                .setScale(meta.height / h)
+                .setScale(meta.height / h * fieldFrame.scale * this.layout.scale)
+            image.setDepth(image.y)
             image.setData({
                 plot: root.plot,
                 slot: root.index,
@@ -189,7 +235,7 @@ export class FarmScene extends Phaser.Scene {
                 rootX: root.x,
                 rootY: root.y
             })
-            this.field.add(image)
+            this.standing.add(image)
             this.plants.push({ image, plot: root.plot })
         }
         this.drawPointer()

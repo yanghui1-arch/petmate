@@ -1,21 +1,23 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, powerMonitor, screen, shell, Tray } from 'electron'
-import { farmAssistant, startFarmAssistant } from './modules/farm/runtime'
-import * as path from 'path'
 import './restore-preflight'
 import './ipc'
-import { destroyScheduler, startOnlineAttributeDecay, startWishGeneration } from './scheduler'
-import { saveChatHistoryMessages } from './llm'
+
 import { is } from '@electron-toolkit/utils'
-import { join } from 'path'
-import trayIcon from '../../resources/icon.png?asset'
-import { playerManager } from './modules/store'
-import { greenworksManager } from './greenworks'
-import { getOnTop, updateSettings } from './settings'
-import { appInit } from './init'
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, powerMonitor, screen, shell, Tray } from 'electron'
 import * as fs from 'fs'
-import logger from './log'
-import { SystemAudioActivityMonitor } from './packages/system-audio-activity'
+import * as path from 'path'
+import { join } from 'path'
+
+import trayIcon from '../../resources/icon.png?asset'
+import { greenworksManager } from './greenworks'
+import { appInit } from './init'
+import { saveChatHistoryMessages } from './llm'
 import { localAIManager } from './local-ai'
+import logger from './log'
+import { attachFarmLifeDesktop, farmAssistant, farmLife, startFarmAssistant } from './modules/farm/runtime'
+import { playerManager } from './modules/store'
+import { SystemAudioActivityMonitor } from './packages/system-audio-activity'
+import { destroyScheduler, startOnlineAttributeDecay, startWishGeneration } from './scheduler'
+import { getOnTop, updateSettings } from './settings'
 
 app.commandLine.appendSwitch('--in-process-gpu')
 
@@ -49,6 +51,7 @@ function getDefaultPetmateWindowBounds() {
 
 function enforcePetmateWindowSize(win: BrowserWindow) {
     if (win.isDestroyed()) return
+    if (farmLife.getView().visit?.phase === 'leaving') return
 
     const { x, y } = win.getBounds()
     win.setResizable(false)
@@ -157,6 +160,7 @@ const createWindow = (): void => {
     })
 
     mainWindow = win
+    attachFarmLifeDesktop(win)
     const WM_INITMENU = 0x0116
     mainWindow.hookWindowMessage(WM_INITMENU, () => {
         mainWindow?.setEnabled(false)
@@ -255,8 +259,8 @@ app.whenReady().then(async () => {
     // 创建窗口
     createWindow()
     startFarmAssistant()
-    powerMonitor.on('suspend', () => farmAssistant.suspend(true))
-    powerMonitor.on('resume', () => farmAssistant.suspend(false))
+    powerMonitor.on('suspend', () => { farmAssistant.suspend(true); farmLife.suspend(true) })
+    powerMonitor.on('resume', () => { farmAssistant.suspend(false); farmLife.suspend(false) })
     startSystemAudioActivityMonitor()
     startWishGeneration(0)
     startOnlineAttributeDecay()
@@ -275,6 +279,7 @@ ipcMain.on('quit-app', () => {
 
 app.on('before-quit', () => {
     farmAssistant.stop()
+    farmLife.stop()
     localAIManager.cancelModelDownload()
     void localAIManager.stop()
     stopPetmateWindowDrag()
@@ -320,6 +325,8 @@ ipcMain.on('move-petmate-window', (event, x: number, y: number) => {
 ipcMain.on('start-petmate-window-drag', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     if (!win) return
+    farmLife.activity()
+    farmLife.recall()
 
     startPetmateWindowDrag(win)
 })

@@ -40,7 +40,16 @@ export class FarmAchievementSync {
                 if (next.owner === this.lastOwner && signature === this.lastSignature) continue
                 const names = new Set(this.steam.names())
                 // Leave missing definitions eligible for retry after backend publishing.
-                const configured = next.entries.filter((entry) => names.has(entry.id))
+                const configured = next.entries.filter((entry) => {
+                    if (!names.has(entry.id)) return false
+                    // Player-only statistics retain their original, unpublished API names.
+                    // Missing backend statistics must not block unrelated achievements.
+                    if (['collection', 'minimum', 'watered'].includes(entry.metric)) {
+                        const current = this.steam.getStat(entry.stat)
+                        return Number.isInteger(current) && current! >= 0
+                    }
+                    return true
+                })
                 if (!configured.length) continue
                 const stats = new Map<string, number>()
                 for (const entry of configured)

@@ -100,7 +100,7 @@ export const farmAchievementDefinitions = [
 ] as const
 
 export function ensureFarmAchievements(farm: FarmState, catalog: FarmCatalog) {
-    return (farm.achievements ??= {
+    const state = (farm.achievements ??= {
         // Existing harvest records are item counts; each crop has a fixed yield.
         harvestedPlots: Object.fromEntries(
             catalog.crops.map((crop) => [
@@ -111,6 +111,8 @@ export function ensureFarmAchievements(farm: FarmState, catalog: FarmCatalog) {
         completedOrders: 0,
         unlocked: []
     })
+    state.manualHarvestedPlots ??= {}
+    return state
 }
 
 export function farmAchievementEntries(
@@ -126,12 +128,12 @@ export function farmAchievementEntries(
     const metrics = {
         harvest: counts.reduce((sum, count) => sum + count, 0),
         orders: state?.completedOrders ?? 0,
-        collection: counts.filter((count) => count > 0).length,
-        minimum: Math.min(...counts),
+        collection: catalog.crops.filter(crop => (state?.manualHarvestedPlots?.[crop.id] ?? 0) > 0).length,
+        minimum: Math.min(...catalog.crops.map(crop => state?.manualHarvestedPlots?.[crop.id] ?? 0)),
         plots: unlockedPlots,
         diversity: new Set(farm.plots.flatMap((plot) => (plot.plant ? [plot.plant.cropId] : [])))
             .size,
-        watered: farm.plots.filter((plot) => plot.plant?.watered).length
+        watered: farm.plots.filter((plot) => plot.plant?.watered && plot.plant.wateredBy === 'player').length
     }
     return farmAchievementDefinitions.map((definition) => ({
         ...definition,

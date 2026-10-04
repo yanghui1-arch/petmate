@@ -7,7 +7,13 @@
             :class="{ unlocked: entry.unlocked }"
             :data-achievement="entry.id"
         >
-            <div class="achievement-art"><farm-icon :index="entry.icon" /></div>
+            <div class="achievement-art">
+                <img
+                    :src="farmAchievementArt[entry.id][entry.unlocked ? 'unlocked' : 'locked']"
+                    alt=""
+                    aria-hidden="true"
+                />
+            </div>
             <div class="achievement-content">
                 <header>
                     <h3>{{ t('farm.achievementNames.' + entry.key) }}</h3>
@@ -39,7 +45,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { FarmView } from '../../../main/types/farm'
 import { farmAchievementEntries } from '../../../shared/farmAchievements'
-import FarmIcon from './FarmIcon.vue'
+import { farmAchievementArt } from '../../assets/farm-achievements'
 
 const props = defineProps<{ view: FarmView }>()
 const { t } = useI18n()
@@ -72,10 +78,12 @@ const entries = computed(() =>
     width: 66px;
     height: 66px;
     flex-shrink: 0;
-    opacity: 0.65;
 }
-.unlocked .achievement-art {
-    opacity: 1;
+.achievement-art img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 .achievement-content {
     min-width: 0;

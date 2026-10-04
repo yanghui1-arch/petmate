@@ -27,13 +27,14 @@ const player = ref({
 globalThis.petSpeechTestPlayer = player
 const bundled = await build({
     stdin: {
-        contents: `export { default as Petmate } from './src/renderer/views/Petmate.vue';`,
+        contents: `export { default as Petmate } from './src/renderer/views/Petmate.vue'; export { farmLifeCN as lifeMessages } from './src/renderer/i18n/farm-life';`,
         resolveDir: process.cwd()
     },
     bundle: true,
     platform: 'node',
     format: 'esm',
     write: false,
+    loader: { '.png': 'dataurl', '.webm': 'dataurl' },
     plugins: [
         {
             name: 'pet-speech-test',
@@ -78,10 +79,11 @@ const bundled = await build({
         }
     ]
 })
-const { Petmate } = await import(
+const { Petmate, lifeMessages } = await import(
     'data:text/javascript;base64,' + Buffer.from(bundled.outputFiles[0].text).toString('base64')
 )
-const node = (type) => ({ type, props: {}, children: [], parent: null, text: '' })
+const node = (type) => ({ type, props: {}, children: [], parent: null, text: '',
+    ...(type === 'video' ? { readyState: 0, plays: 0, play() { this.plays++; return Promise.resolve() } } : {}) })
 const detach = (child) => {
     if (child.parent) child.parent.children.splice(child.parent.children.indexOf(child), 1)
     child.parent = null
@@ -113,22 +115,55 @@ const renderer = createRenderer({
     nextSibling: (child) => child.parent?.children[child.parent.children.indexOf(child) + 1] ?? null
 })
 const intervals = new Map(),
+    timeouts = new Map(),
+    animationFrames = new Map(),
     listeners = new Map()
-let sequence = 0,
+let animationNow = 0, sequence = 0,
     subscriptions = 0,
-    receiveFarmEvent
+    receiveFarmEvent, receiveLife, receiveLifeSpeech
+let interactions = 0
+const heartbeats = []
 const originals = {
     setInterval,
     clearInterval,
+    setTimeout,
+    clearTimeout,
+    requestAnimationFrame: globalThis.requestAnimationFrame,
+    cancelAnimationFrame: globalThis.cancelAnimationFrame,
+    performance: globalThis.performance,
     window: globalThis.window,
     document: globalThis.document
 }
+const originalDateNow = Date.now
+let speechNow = originalDateNow()
+Date.now = () => speechNow
+const finishedSpeeches = []
 globalThis.setInterval = (callback, delay) => {
     const id = ++sequence
     intervals.set(id, { callback, delay })
     return id
 }
 globalThis.clearInterval = (id) => intervals.delete(id)
+globalThis.setTimeout = (callback, delay) => {
+    const id = ++sequence
+    timeouts.set(id, { callback, delay })
+    return id
+}
+globalThis.clearTimeout = (id) => timeouts.delete(id)
+globalThis.performance = { now: () => animationNow }
+globalThis.requestAnimationFrame = callback => {
+    const id = ++sequence
+    animationFrames.set(id, callback)
+    return id
+}
+globalThis.cancelAnimationFrame = id => animationFrames.delete(id)
+const advanceFrame = async elapsed => {
+    animationNow += elapsed
+    const pending = [...animationFrames.values()]
+    animationFrames.clear()
+    for (const callback of pending) callback(animationNow)
+    await settle()
+}
 globalThis.document = {
     hidden: false,
     addEventListener: (name, callback) => listeners.set(name, callback),
@@ -136,6 +171,12 @@ globalThis.document = {
 }
 globalThis.window = {
     api: {
+        getFarmLife: async () => ({ code: 200, data: { enabled: false, visit: null } }),
+        onFarmLifeState: callback => { receiveLife = callback; return () => receiveLife = undefined },
+        onFarmLifeSpeech: callback => { receiveLifeSpeech = callback; return () => receiveLifeSpeech = undefined },
+        farmLifePetState: (ready, blocked) => heartbeats.push({ ready, blocked }),
+        farmLifeInteraction: () => interactions++,
+        finishFarmLifeSpeech: id => finishedSpeeches.push(id),
         onFarmAssistantEvent(callback) {
             subscriptions++
             receiveFarmEvent = callback
@@ -163,6 +204,7 @@ try {
                 locale: 'test',
                 messages: {
                     test: {
+                        farmLife: lifeMessages,
                         petmate: {
                             hungryDialog: '饿啦',
                             sleepDialog: '困啦',
@@ -191,21 +233,88 @@ try {
             !walk(root).some((n) => String(n.props.class).includes('farm-dialog')),
             'legacy event cannot display a farm bubble'
         )
+        const event = {id:'new-life',at:Date.now(),day:'2026-10-03',kind:'water',plots:3,items:{},line:0,shown:false,interrupted:false,orderReady:false}
+        receiveLifeSpeech({stage:'start',event}); await settle()
+        assert.ok(!walk(root).some(n => String(n.props.class).includes('farm-dialog')), 'new switch off also suppresses speech')
+        const visit = {id:event.id,skin:'school-uniform',phase:'preparing',since:Date.now(),kind:'water',plotIds:[0],line:0,returnAt:0,committed:false,cancelled:false,tutorial:false}
+        receiveLife({enabled:true,visit,direction:'left'}); receiveLifeSpeech({stage:'start',event}); await settle()
+        for(let tick=0;tick<90;tick++) { for(const timer of [...intervals.values()]) if(timer.delay===80)timer.callback() }
+        await settle()
+        assert.ok(!walk(root).some(n => String(n.props.class).includes('life-sprite')), 'legacy actions removed')
+        assert.equal(walk(root).find(n => n.props.class === 'petmate-canvas-container').props.style.visibility, 'visible', 'preparing keeps original model')
+        assert.ok(walk(root).some(n => String(n.props.class).includes('farm-dialog')), 'new life speech is visible')
+        assert.ok(heartbeats.some(state => state.ready && !state.blocked), 'renderer reports live readiness')
+        const finishedBefore = finishedSpeeches.length
+        speechNow += 1499
+        for (const timer of intervals.values()) if (timer.delay === 80) timer.callback()
+        await settle()
+        assert.equal(finishedSpeeches.length, finishedBefore, 'full text remains for 1.5 seconds before costume scan')
+        assert.ok(walk(root).some(n => String(n.props.class).includes('farm-dialog')))
+        speechNow += 1
+        for (const timer of intervals.values()) if (timer.delay === 80) timer.callback()
+        await settle()
+        assert.deepEqual(finishedSpeeches.slice(finishedBefore), [visit.id], 'bubble ends and signals the matching departure together')
+        assert.ok(!walk(root).some(n => String(n.props.class).includes('farm-dialog')))
+        for (const timer of intervals.values()) if (timer.delay === 80) timer.callback()
+        assert.equal(finishedSpeeches.length, finishedBefore + 1, 'dialogue completion is sent only once')
+        receiveLife({enabled:true,visit:{...visit,phase:'leaving'}}); await settle()
+        const video=walk(root).find(n=>n.type==='video')
+        assert.ok(video && video.props.src.startsWith('data:video/webm'),'departure uses approved transparent video')
+        assert.ok(!('autoplay' in video.props) && !video.props.loop,'video waits for costume effect and plays once')
+        video.props.onLoadeddata();await settle()
+        assert.equal(walk(root).find(n => n.props.class === 'petmate-canvas-container').props.style.visibility, 'visible', 'original costume starts fully visible')
+        assert.ok(walk(root).some(n => n.props.class === 'costume-effect'),'warm costume effect mounts')
+        assert.equal(video.plays,0,'walking does not start during costume effect')
+        await advanceFrame(550)
+        const originalModel=walk(root).find(n => n.props.class === 'petmate-canvas-container')
+        assert.equal(originalModel.props.style.visibility,'visible','lower original costume remains at halfway')
+        assert.equal(originalModel.props.style.clipPath,'inset(150px 0 0)','clip upper half of original')
+        assert.equal(walk(root).find(n=>n.props.class==='departure-frame').props.style.clipPath,'inset(0 calc(100% - 245px) 150px 0)','show complementary upper half of workwear; keep door hidden')
+        assert.equal(video.plays,0,'workwear stays on first frame while beam scans')
+        await advanceFrame(550)
+        assert.equal(walk(root).find(n=>n.props.class==='petmate-canvas-container').props.style.visibility,'hidden','original disappears after feet are changed')
+        assert.equal(walk(root).find(n=>n.props.class==='departure-frame').props.style.clipPath,'none','door and complete video appear after scan')
+        assert.equal(video.plays,1,'start approved video once after costume effect')
+        assert.ok(!walk(root).some(n => n.props.class === 'costume-effect'),'effect clears after 1100ms')
+        receiveLife({enabled:true,visit:{...visit,phase:'visiting'}}); await settle()
+        assert.ok(!walk(root).some(n=>n.type==='video'),'farm visit removes desktop video')
+        assert.equal(walk(root).find(n => n.props.class === 'petmate-canvas-container').props.style.visibility, 'hidden')
+        receiveLife({enabled:true,visit:{...visit,phase:'returning'}}); await settle()
+        assert.equal(walk(root).find(n => n.props.class === 'petmate-canvas-container').props.style.visibility, 'visible','return restores original costume')
+        receiveLife({enabled:true,visit:{...visit,id:'cancel-costume',phase:'leaving'}});await settle()
+        const cancelledVideo=walk(root).find(n=>n.type==='video')
+        cancelledVideo.props.onLoadeddata();await settle()
+        receiveLife({enabled:true,visit:null});await settle()
+        await advanceFrame(1100)
+        assert.equal(cancelledVideo.plays,0,'cancel during costume effect never starts a stale video')
+        assert.equal(walk(root).find(n => n.props.class === 'petmate-canvas-container').props.style.visibility,'visible','cancel restores original immediately')
+        receiveLife({enabled:true,visit:{...visit,phase:'returning'}});await settle()
+        walk(root).find(n => n.props.class === 'petmate-container').props.onPointerdownCapture()
+        await settle(); assert.ok(interactions > 0); assert.ok(!walk(root).some(n => String(n.props.class).includes('farm-dialog')), 'player interaction clears speech and recalls')
+        receiveLifeSpeech({stage:'start',event}); await settle()
         player.value.petmates[0].attrs.hungry = 20
         await settle()
         assert.ok(
             walk(root).some((n) => String(n.props.class).includes('hunger-dialog')),
             'hunger bubbles remain available'
         )
+        assert.ok(!walk(root).some(n => String(n.props.class).includes('farm-dialog')), 'hunger takes priority without queued life speech')
+        receiveLife({enabled:true,visit:null}); await settle()
+        assert.equal(walk(root).find(n => n.props.class === 'petmate-canvas-container').props.style.visibility, 'visible')
         player.value.petmates[0].attrs.hungry = 100
         await settle()
         app.unmount()
         assert.equal(intervals.size, 0, 'unmount clears remaining pet timers')
+        assert.equal(timeouts.size, 0, 'unmount clears costume and dialogue timers')
+        assert.equal(animationFrames.size, 0, 'unmount cancels scan frames')
+        assert.equal(receiveLife, undefined); assert.equal(receiveLifeSpeech, undefined)
+        assert.deepEqual(heartbeats.at(-1), {ready:false,blocked:true})
     }
 } finally {
+    Date.now = originalDateNow
     Object.assign(globalThis, originals)
     delete globalThis.petSpeechTestPlayer
 }
 console.log(
-    'Pet farm speech: disabled IPC subscription, timer, legacy events, hunger bubbles and repeated mounts passed'
+    'Pet speech: old assistant remains disabled; new life switch, original costume, once-only departure video, single role, truthful bubbles, player recall, hunger priority, heartbeat and remount cleanup passed'
 )

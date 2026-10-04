@@ -8,7 +8,7 @@ import { backupSummary, captureGameSaves, listAutomaticBackup, loadBackupFile, m
 import { freezeGameWrites, gameWritesFrozen } from '../save/coordinator'
 import { writeJsonAtomic } from '../save/files'
 import { playerChanges, playerManager } from '../store'
-import { farmAssistant, farmService as service } from './runtime'
+import { farmAssistant, farmLife, farmService as service,finishFarmLifeSpeech,isFarmWindow, leaveFarmWindow, registerFarmWindow, setFarmLifePetState } from './runtime'
 
 const selectedBackups = new Map<string, { path: string; checksum: string }>()
 
@@ -29,9 +29,28 @@ playerChanges.on('changed', () => {
 
 ipcMain.handle('farm-get', (): Response<FarmView> => result(() => service.getView()))
 ipcMain.handle('farm-preview', (_event, operation: FarmOperation): Response<FarmPreview> => result(() => service.preview(operation)))
-ipcMain.handle('farm-execute', (_event, command: FarmCommand): Response<FarmResult> => result(() => { farmAssistant.manualActivity(); return service.execute(command) }))
+ipcMain.handle('farm-execute', (_event, command: FarmCommand): Response<FarmResult> => result(() => { farmLife.activity(); farmAssistant.manualActivity(); return service.execute(command) }))
 ipcMain.handle('farm-assistant-get', () => result(() => farmAssistant.getStatus()))
-ipcMain.handle('farm-manual-activity', () => result(() => farmAssistant.manualActivity()))
+ipcMain.handle('farm-manual-activity', () => result(() => { farmLife.activity(); farmAssistant.manualActivity() }))
+ipcMain.handle('farm-life-get', () => ({ code: 200, data: farmLife.getView() }))
+ipcMain.handle('farm-life-enter', event => result(() => {
+  const window = BrowserWindow.fromWebContents(event.sender)
+  if (!window || !/#\/farm(?:$|\?)/.test(event.sender.getURL())) throw new Error('农场页面不存在')
+  registerFarmWindow(window)
+  return farmLife.getView()
+}))
+ipcMain.handle('farm-life-leave', event => { const window = BrowserWindow.fromWebContents(event.sender); if (window) leaveFarmWindow(window.id); return { code: 200 } })
+ipcMain.handle('farm-life-ready', event => { const window = BrowserWindow.fromWebContents(event.sender); if (window && isFarmWindow(window.id)) farmLife.farmReady(); return { code: 200 } })
+ipcMain.on('farm-life-pet-state', (event, state) => { if (state && typeof state === 'object') setFarmLifePetState(event.sender.id, state.ready, state.blocked) })
+ipcMain.on('farm-life-speech-finished', (event, id) => finishFarmLifeSpeech(event.sender.id, id))
+ipcMain.on('farm-life-interaction', () => { farmLife.interaction() })
+ipcMain.handle('farm-life-diary-shown', (event, id: string) => result(() => {
+  const window = BrowserWindow.fromWebContents(event.sender)
+  if (!window || !isFarmWindow(window.id) || typeof id !== 'string' || id.length > 120) throw new Error('日记请求无效')
+  const view = service.getView()
+  if (!view.farm?.life?.events.some(event => event.id === id && !event.shown)) return
+  service.lifeTransaction(view.revision, data => { const entry = data.events.find(event => event.id === id); if (entry) entry.shown = true })
+}))
 ipcMain.handle('farm-checkpoint', (): Response<void> => result(() => service.checkpoint()))
 
 function currentOwner(): string | null {

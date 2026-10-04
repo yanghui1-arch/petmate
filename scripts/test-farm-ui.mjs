@@ -91,6 +91,7 @@ const node = (type, text = '') => ({
     type,
     text,
     props: {},
+    style: { display: '' },
     children: [],
     parent: null,
     tagName: type.toUpperCase(),
@@ -491,7 +492,12 @@ try {
         assert.equal(walk(modal()).filter((n) => n.props['data-item']).length, 30)
         await click(findClass('achievements-tab')[0])
         assert.equal(walk(modal()).filter(n => n.props['data-achievement']).length, 12)
-        assert.equal(findClass('achievement-art').length, 12, 'each achievement has existing game artwork')
+        assert.equal(findClass('achievement-art').length, 12, 'each achievement has its Steam artwork')
+        for (const card of walk(modal()).filter(n => n.props['data-achievement'])) {
+            const image = walk(card).find(n => n.type === 'img')
+            const state = String(card.props.class).split(' ').includes('unlocked') ? 'unlocked' : 'locked'
+            assert.equal(image.props.src, '/farm-assets/' + card.props['data-achievement'] + '_' + state + '.png')
+        }
         assert.ok(textOf(modal()).includes(i18n.global.t('farm.achievementNames.harvest1')))
         if (locale === 'en-US') assert.ok(textOf(modal()).includes('First Basket'))
         assert.equal(walk(modal()).filter(n => n.props.role === 'progressbar').length, 12)

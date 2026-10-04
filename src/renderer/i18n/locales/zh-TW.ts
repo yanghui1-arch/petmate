@@ -1,8 +1,10 @@
 import content from '../content-zh-TW';
+import { farmLifeTW } from '../farm-life';
 import zhCN from './zh-CN';
 
 export default {
   ...zhCN,
+  farmLife: farmLifeTW,
   content,
   app: {
     name: 'Petmate',
@@ -41,7 +43,7 @@ export default {
     ...zhCN.farm,
     achievements: '成就', achievementUnlocked: '已達成', achievementLocked: '未達成',
     achievementNames: { harvest1: '第一籃收成', harvest100: '漸入佳境', harvest500: '豐收常客', harvest1000: '千次豐收', order1: '第一位顧客', order10: '回頭客來了', order100: '金牌供貨商', collection: '田園百味', allRounder: '樣樣拿手', fullField: '十二塊希望', diversity: '繽紛田園', wateredField: '雨露均霑' },
-    achievementDescriptions: { harvest1: '累計收穫 1 塊成熟地。', harvest100: '累計收穫 100 塊成熟地。', harvest500: '累計收穫 500 塊成熟地。', harvest1000: '累計收穫 1000 塊成熟地。', order1: '完成 1 筆農場訂單。', order10: '完成 10 筆農場訂單。', order100: '完成 100 筆農場訂單。', collection: '六種作物各收穫過至少一次。', allRounder: '六種作物各累計收穫 20 塊地，進度為收穫最少的作物。', fullField: '解鎖全部 12 塊地。', diversity: '同時種植六種不同的作物。', wateredField: '同時有 12 塊已種植且已澆水的地。' },
+    achievementDescriptions: { harvest1: '累計收穫 1 塊成熟地。', harvest100: '累計收穫 100 塊成熟地。', harvest500: '累計收穫 500 塊成熟地。', harvest1000: '累計收穫 1000 塊成熟地。', order1: '完成 1 筆農場訂單。', order10: '完成 10 筆農場訂單。', order100: '完成 100 筆農場訂單。', collection: '親自收穫六種作物，每種至少一次。', allRounder: '親自收穫六種作物，每種累計 20 塊地。進度為玩家收穫最少的作物。', fullField: '解鎖全部 12 塊地。', diversity: '同時種植六種不同的作物。', wateredField: '同時有 12 塊已種植且本輪由你親自澆水的地。' },
     loadingData: "讀取農場…",
     loadingArt: "準備作物…",
     loadingReady: "農場準備好了",
