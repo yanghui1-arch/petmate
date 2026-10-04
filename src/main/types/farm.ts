@@ -4,15 +4,18 @@ export type CropDefinition = {
 }
 export type OrderDefinition = { id: string; level: number; requirements: Record<string, number>; exp: number; size: number }
 export type FarmCatalog = { crops: CropDefinition[]; orders: OrderDefinition[]; levels: number[] }
-export type FarmPlant = { cropId: string; plantedAt: number; durationMs: number; elapsedMs: number; watered: boolean }
+export type FarmPlant = { cropId: string; plantedAt: number; durationMs: number; elapsedMs: number; watered: boolean; wateredBy?: 'player' | 'helper' }
 export type FarmPlot = { id: number; plant: FarmPlant | null }
 export type FarmOrder = { instanceId: string; templateId: string } | { remainingMs: number }
+export type FarmAchievementState = { harvestedPlots: Record<string, number>; manualHarvestedPlots?: Record<string, number>; completedOrders: number; unlocked: string[] }
 export type FarmState = {
   version: 1; tutorialRemaining: number; exp: number; lastWallTime: number;
   plots: FarmPlot[]; seeds: Record<string, number>; produce: Record<string, number>;
   harvests: Record<string, number>;
   orders: FarmOrder[]
   assistant?: FarmAssistantMetadata
+  achievements?: FarmAchievementState
+  life?: import('../../shared/farmLife').FarmLifeData
 }
 export type FarmAssistantMetadata = { successfulActions: number; restUntil: number; lastManualAt: number }
 export type FarmAssistantStatus = { state: 'waitingPlayer' | 'working' | 'waitingGrowth' | 'waitingOrders' | 'missingSeeds' | 'resting' | 'paused' | 'saveError'; orderId?: string }

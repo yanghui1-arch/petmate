@@ -302,7 +302,7 @@
                 class="reward-package-image"
                 :class="{ 'reward-package-image-cash': reward.type === 'cash' }"
               >
-                <span v-if="reward.type === 'cash'" aria-hidden="true">🪙</span>
+                <img v-if="reward.type === 'cash'" :src="coinIcon" :alt="t('item.supplyBoxCash')" />
                 <img v-else :src="packageRewardImageURL(reward)" :alt="reward.name" />
               </div>
               <span class="reward-package-name">{{ packageRewardName(reward) }}</span>
@@ -321,6 +321,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import coinIcon from '@/assets/image/ui/coin.svg'
 import handbookBadge from '@/assets/image/special_activity/national-day-2026/national-day-medal.png'
 import rewardSupplyBundle from '@/assets/image/special_activity/national-day-2026/national-day-gift-package.png'
 import schoolUniformImage from '@/assets/image/item/fashion/学院制服套装.png'
@@ -1707,7 +1708,10 @@ onMounted(() => void loadHandbook())
 }
 
 .reward-package-image-cash {
-  font-size: 22px;
+  img {
+    width: 22px;
+    height: 22px;
+  }
 }
 
 .reward-package-name {

@@ -1,5 +1,8 @@
-import type { FarmAssistantMetadata, FarmCommand, FarmOperation, FarmPreview, FarmResult, FarmSnapshot, FarmView } from '../../types/farm'
+import { updateFarmAchievements } from '../../../shared/farmAchievements'
+import { ensureFarmLife, type FarmLifeData } from '../../../shared/farmLife'
+import type { FarmAssistantMetadata, FarmCommand, FarmOperation, FarmPreview, FarmResult, FarmSnapshot, FarmState, FarmView } from '../../types/farm'
 import { farmCatalog, farmLevel, getCrop, unlockedPlots } from './catalog'
+import { safeHelp } from './lifeRules'
 import { applyOperation, clone, createFarm, eligiblePlots, growFarm, plantStage, validateFarm } from './rules'
 
 export interface FarmRepository {
@@ -17,11 +20,15 @@ export class FarmService {
     private readonly repository: FarmRepository,
     private readonly clock: FarmClock,
     private readonly id: () => string,
-    private readonly random: () => number = Math.random
+    private readonly random: () => number = Math.random,
+    private readonly onCommitted: (farm: FarmState) => void = () => {}
   ) {}
 
   private persist(snapshot: FarmSnapshot): void {
     try {
+      if (snapshot.farm) {
+        updateFarmAchievements(snapshot.farm, farmCatalog, unlockedPlots(snapshot.farm.exp))
+      }
       this.repository.commit(snapshot)
       this.lastCheckpoint = this.clock.monotonic()
       this.saveError = null
@@ -29,6 +36,8 @@ export class FarmService {
       this.saveError = '存档暂不可用，本次操作未完成。请检查磁盘后重试。'
       throw error
     }
+    // External achievement failures must never turn a saved trade into an error.
+    if (snapshot.farm) { try { this.onCommitted(clone(snapshot.farm)) } catch { /* Retry at the next durable checkpoint. */ } }
   }
 
   private current(): FarmSnapshot {
@@ -53,6 +62,7 @@ export class FarmService {
       : Math.max(0, now - snapshot.farm.lastWallTime)
     // Project from the last durable checkpoint, not from the previous UI read.
     growFarm(snapshot.farm, elapsed, now, this.id, this.random)
+    if (snapshot.farm.life) ensureFarmLife(snapshot.farm, now)
     return snapshot
   }
 
@@ -119,6 +129,22 @@ export class FarmService {
     this.anchor(snapshot)
   }
 
+  lifeTransaction(expectedRevision: number, change: (_data: FarmLifeData, _farm: FarmState, _feedback?: import('../../types/farm').FarmFeedback) => void, operation?: FarmOperation): FarmView {
+    const snapshot = this.project()
+    if (snapshot.revision !== expectedRevision) throw new Error('资源已变化，请刷新后重新确认')
+    if (operation) {
+      if (!('plotIds' in operation) || !operation.plotIds.length || safeHelp(snapshot.farm!, snapshot.cash, operation, this.clock.wall()).length !== operation.plotIds.length) throw new Error('这次操作留给玩家亲自完成')
+      const outcome = applyOperation(snapshot.farm!, snapshot.cash, operation, this.clock.wall(), 'helper')
+      snapshot.cash = outcome.cash
+      change(ensureFarmLife(snapshot.farm!, this.clock.wall()), snapshot.farm!, outcome.feedback)
+    } else change(ensureFarmLife(snapshot.farm!, this.clock.wall()), snapshot.farm!)
+    validateFarm(snapshot.farm)
+    snapshot.revision++
+    this.persist(snapshot)
+    this.anchor(snapshot)
+    return this.view(snapshot)
+  }
+
   execute(command: FarmCommand, assistant?: FarmAssistantMetadata): FarmResult {
     if (!command || typeof command.requestId !== 'string' || !command.requestId || command.requestId.length > 120 || !Number.isSafeInteger(command.expectedRevision) || !command.operation) throw new Error('农场请求无效')
     const fingerprint = JSON.stringify(command.operation)
@@ -134,7 +160,7 @@ export class FarmService {
       this.persist(durable)
     }
     const snapshot = this.project()
-    const outcome = applyOperation(snapshot.farm!, snapshot.cash, command.operation, this.clock.wall())
+    const outcome = applyOperation(snapshot.farm!, snapshot.cash, command.operation, this.clock.wall(), assistant ? 'helper' : 'player')
     snapshot.cash = outcome.cash
     snapshot.farm!.assistant = assistant ?? { ...snapshot.farm!.assistant, successfulActions: 0, restUntil: 0, lastManualAt: this.clock.wall() }
     validateFarm(snapshot.farm)

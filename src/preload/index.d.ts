@@ -9,11 +9,12 @@ import {
   SchoolHandbookClaimRewardResult,
   SchoolHandbookProgress
 } from "../main/types/school-handbook";
+import type { VersionReminderState } from "../main/types/version-reminder";
 import { Wish } from "../main/types/wish"
 import { WindowEvent, WindowInfo } from "../main/window-monitor";
+import type { FarmLifeEvent, FarmLifeView } from '../shared/farmLife';
 import { SettingConfig } from "../types/config";
 import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "./llm";
-import type { VersionReminderState } from "../main/types/version-reminder";
 /**
  * 与主进程通信的接口
  * 所有方法都返回Promise
@@ -44,6 +45,16 @@ interface IElectronAPI {
   getSchoolHandbookProgress: (date?: string) => Promise<Response<SchoolHandbookProgress>>;
   getLocalAIStatus: () => Promise<Response<LocalAIStatus>>;
   getFarm: () => Promise<Response<FarmView>>;
+  getFarmLife: () => Promise<Response<FarmLifeView>>;
+  enterFarmLife: () => Promise<Response<FarmLifeView>>;
+  leaveFarmLife: () => Promise<Response<void>>;
+  readyFarmLife: () => Promise<Response<void>>;
+  markFarmDiaryShown: (id: string) => Promise<Response<void>>;
+  farmLifePetState: (_ready: boolean, _blocked: boolean) => void;
+  farmLifeInteraction: () => void;
+  finishFarmLifeSpeech: (_id: string) => void;
+  onFarmLifeState: (callback: (_state: FarmLifeView & { direction?: 'left' | 'right' }) => void) => () => void;
+  onFarmLifeSpeech: (callback: (_speech: { stage: 'start' | 'return'; event: FarmLifeEvent }) => void) => () => void;
   getFarmAssistant: () => Promise<Response<FarmAssistantStatus>>;
   farmManualActivity: () => Promise<Response<void>>;
   onFarmAssistantState: (callback: (status: FarmAssistantStatus) => void) => () => void;

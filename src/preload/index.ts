@@ -8,6 +8,7 @@ import type { FarmAssistantEvent, FarmAssistantStatus, FarmCommand, FarmOperatio
 import { ItemType } from '../main/types/item'
 import type { PlayerResourceState } from '../main/types/player-resource'
 import { WindowEvent } from '../main/window-monitor'
+import type { FarmLifeEvent, FarmLifeView } from '../shared/farmLife'
 
 /**
  * API 调用接口
@@ -38,6 +39,16 @@ contextBridge.exposeInMainWorld('api', {
     getSchoolHandbookProgress: (date?: string) => ipcRenderer.invoke('get-school-handbook-progress', date),
     getLocalAIStatus: () => ipcRenderer.invoke('get-local-ai-status'),
     getFarm: () => ipcRenderer.invoke('farm-get'),
+    getFarmLife: () => ipcRenderer.invoke('farm-life-get'),
+    enterFarmLife: () => ipcRenderer.invoke('farm-life-enter'),
+    leaveFarmLife: () => ipcRenderer.invoke('farm-life-leave'),
+    readyFarmLife: () => ipcRenderer.invoke('farm-life-ready'),
+    markFarmDiaryShown: (id: string) => ipcRenderer.invoke('farm-life-diary-shown', id),
+    farmLifePetState: (ready: boolean, blocked: boolean) => ipcRenderer.send('farm-life-pet-state', { ready, blocked }),
+    farmLifeInteraction: () => ipcRenderer.send('farm-life-interaction'),
+    finishFarmLifeSpeech: (id: string) => ipcRenderer.send('farm-life-speech-finished', id),
+    onFarmLifeState: (callback: (_state: FarmLifeView & { direction?: 'left' | 'right' }) => void) => { const listener = (_event: IpcRendererEvent, state: FarmLifeView) => callback(state); ipcRenderer.on('farm-life-state', listener); return () => ipcRenderer.removeListener('farm-life-state', listener) },
+    onFarmLifeSpeech: (callback: (_speech: { stage: 'start' | 'return'; event: FarmLifeEvent }) => void) => { const listener = (_event: IpcRendererEvent, speech: { stage: 'start' | 'return'; event: FarmLifeEvent }) => callback(speech); ipcRenderer.on('farm-life-speech', listener); return () => ipcRenderer.removeListener('farm-life-speech', listener) },
     getFarmAssistant: () => ipcRenderer.invoke('farm-assistant-get'),
     farmManualActivity: () => ipcRenderer.invoke('farm-manual-activity'),
     onFarmAssistantState: (callback: (status: FarmAssistantStatus) => void) => { const listener = (_event: IpcRendererEvent, status: FarmAssistantStatus) => callback(status); ipcRenderer.on('farm-assistant-state', listener); return () => ipcRenderer.removeListener('farm-assistant-state', listener) },

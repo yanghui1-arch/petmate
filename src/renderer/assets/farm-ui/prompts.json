@@ -1,0 +1,89 @@
+{
+    "date": "2026-10-04",
+    "tool": "built-in image_gen.imagegen",
+    "transparent_background": true,
+    "references": [
+        "src/renderer/assets/farm-game/farm-world-lane.png",
+        "water.png (generated style reference)"
+    ],
+    "icons": [
+        {
+            "key": "water",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-3297f9b7-c77f-4904-85d5-4bde258b3396.png",
+            "asset": "src/renderer/assets/farm-ui/water.png",
+            "prompt": "Use the provided farm scene only as the COLOR AND SHAPE STYLE reference. Generate one standalone mobile farming game diary-event icon: a small powder-blue watering can with exactly two large clear water droplets beside its spout. Rounded chunky silhouette, warm thin brown contour, clean matte painted color blocks with just two gentle cel-shaded tones, warm light from upper left, simplified attractive casual farming-game cartoon like the referenced landscape. It must be instantly readable when displayed at 26 pixels. Centered square composition, object takes 80 percent of frame, entire silhouette visible with clean margins. True transparent background. No farm scene, no ground, no cast shadow, no circular button frame, no badge, no lettering, no numbers, no realism, no oil paint texture, no tiny scratches or sparkles. This is ONE UI icon, not a sprite sheet."
+        },
+        {
+            "key": "harvest",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-c454a6a9-886c-47d4-9ef2-ef54db08ebe1.png",
+            "asset": "src/renderer/assets/farm-ui/harvest.png",
+            "prompt": "Generate ONE isolated game UI icon. Image 1 is the farm scene STYLE reference, image 2 is the approved watercolor-free cartoon ICON STYLE reference. Match the clean rounded shapes, warm brown outline and very simple soft cel shading of image 2. Matte warm colors, generous chunky silhouette, few large parts readable at 26px or 80px. Square composition, entire object centered with clean margin, around 78% frame occupancy. Genuinely transparent background. No background scene, no circular frame, no button, no text or numbers, no ground shadow, no realistic materials, no oil paint grain, no microdetail, no excessive gloss. Subject: a warm honey-colored woven harvest basket filled with one orange carrot, one round red tomato and two green leaves. Simplified broad weave bands, curved handle."
+        },
+        {
+            "key": "stock",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-87a8a580-0f5f-4bd7-a1aa-fe8380fa5002.png",
+            "asset": "src/renderer/assets/farm-ui/stock.png",
+            "prompt": "Generate ONE isolated game UI icon. Image 1 is the farm scene STYLE reference, image 2 is the approved watercolor-free cartoon ICON STYLE reference. Match the clean rounded shapes, warm brown outline and very simple soft cel shading of image 2. Matte warm colors, generous chunky silhouette, few large parts readable at 26px or 80px. Square composition, entire object centered with clean margin, around 78% frame occupancy. Genuinely transparent background. No background scene, no circular frame, no button, no text or numbers, no ground shadow, no realistic materials, no oil paint grain, no microdetail, no excessive gloss. Subject: a small honey-colored wooden supply crate holding two carrots, with a cream order slip clipped to its front. Slip has only three green tick marks and short simple lines, no lettering."
+        },
+        {
+            "key": "rest",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-677cc159-c2c0-414d-b162-7f859d125e43.png",
+            "asset": "src/renderer/assets/farm-ui/rest.png",
+            "prompt": "Generate ONE isolated game UI icon. Image 1 is the farm scene STYLE reference, image 2 is the approved watercolor-free cartoon ICON STYLE reference. Match the clean rounded shapes, warm brown outline and very simple soft cel shading of image 2. Matte warm colors, generous chunky silhouette, few large parts readable at 26px or 80px. Square composition, entire object centered with clean margin, around 78% frame occupancy. Genuinely transparent background. No background scene, no circular frame, no button, no text or numbers, no ground shadow, no realistic materials, no oil paint grain, no microdetail, no excessive gloss. Subject: A small rounded wooden stool with a simple straw sunhat resting on it, peaceful rest."
+        },
+        {
+            "key": "butterfly",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-adedbcd1-f965-4194-9e65-5b548eb566bf.png",
+            "asset": "src/renderer/assets/farm-ui/butterfly.png",
+            "prompt": "Generate ONE isolated game UI icon. Image 1 is the farm scene STYLE reference, image 2 is the approved watercolor-free cartoon ICON STYLE reference. Match the clean rounded shapes, warm brown outline and very simple soft cel shading of image 2. Matte warm colors, generous chunky silhouette, few large parts readable at 26px or 80px. Square composition, entire object centered with clean margin, around 78% frame occupancy. Genuinely transparent background. No background scene, no circular frame, no button, no text or numbers, no ground shadow, no realistic materials, no oil paint grain, no microdetail, no excessive gloss. Subject: One cute lilac butterfly hovering beside one green leaf, very few large shapes."
+        },
+        {
+            "key": "seedlings",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-f7af8eb3-d8aa-43e3-8cb3-a433616a5fb0.png",
+            "asset": "src/renderer/assets/farm-ui/seedlings.png",
+            "prompt": "Generate ONE isolated game UI icon. Image 1 is the farm scene STYLE reference, image 2 is the approved watercolor-free cartoon ICON STYLE reference. Match the clean rounded shapes, warm brown outline and very simple soft cel shading of image 2. Matte warm colors, generous chunky silhouette, few large parts readable at 26px or 80px. Square composition, entire object centered with clean margin, around 78% frame occupancy. Genuinely transparent background. No background scene, no circular frame, no button, no text or numbers, no ground shadow, no realistic materials, no oil paint grain, no microdetail, no excessive gloss. Subject: Two bright green young sprout leaves growing from a tiny mound of brown soil."
+        },
+        {
+            "key": "walk",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-a241d0d9-2c36-4ea4-b664-d7c77e468db5.png",
+            "asset": "src/renderer/assets/farm-ui/walk.png",
+            "prompt": "Generate ONE isolated game UI icon. Image 1 is the farm scene STYLE reference, image 2 is the approved watercolor-free cartoon ICON STYLE reference. Match the clean rounded shapes, warm brown outline and very simple soft cel shading of image 2. Matte warm colors, generous chunky silhouette, few large parts readable at 26px or 80px. Square composition, entire object centered with clean margin, around 78% frame occupancy. Genuinely transparent background. No background scene, no circular frame, no button, no text or numbers, no ground shadow, no realistic materials, no oil paint grain, no microdetail, no excessive gloss. Subject: Two small rounded brown boot prints, a few simple sole shapes, with a tiny green grass tuft, indicating a relaxed farm walk."
+        },
+        {
+            "key": "check",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-b95d2e0e-a900-48e2-ac95-8059c99ff24a.png",
+            "asset": "src/renderer/assets/farm-ui/check.png",
+            "prompt": "Generate ONE isolated game UI icon. Image 1 is the farm scene STYLE reference, image 2 is the approved watercolor-free cartoon ICON STYLE reference. Match the clean rounded shapes, warm brown outline and very simple soft cel shading of image 2. Matte warm colors, generous chunky silhouette, few large parts readable at 26px or 80px. Square composition, entire object centered with clean margin, around 78% frame occupancy. Genuinely transparent background. No background scene, no circular frame, no button, no text or numbers, no ground shadow, no realistic materials, no oil paint grain, no microdetail, no excessive gloss. Subject: A small magnifying glass beside a tiny green sprout on a rounded brown soil bed, representing checking the farm."
+        },
+        {
+            "key": "flower",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-6d3e4910-fb0c-4580-bd61-b7715ab9e06f.png",
+            "asset": "src/renderer/assets/farm-ui/flower.png",
+            "prompt": "Generate ONE isolated game UI icon. Image 1 is the farm scene STYLE reference, image 2 is the approved watercolor-free cartoon ICON STYLE reference. Match the clean rounded shapes, warm brown outline and very simple soft cel shading of image 2. Matte warm colors, generous chunky silhouette, few large parts readable at 26px or 80px. Square composition, entire object centered with clean margin, around 78% frame occupancy. Genuinely transparent background. No background scene, no circular frame, no button, no text or numbers, no ground shadow, no realistic materials, no oil paint grain, no microdetail, no excessive gloss. Subject: One cute white daisy with a warm yellow center, two green leaves and two tiny warm-gold star sparkles, no vase."
+        },
+        {
+            "key": "orders",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-782c555d-d613-4bf1-b132-cb400b5b08c3.png",
+            "asset": "src/renderer/assets/farm-ui/orders.png",
+            "prompt": "Generate ONE isolated game UI icon. Image 1 is the farm scene STYLE reference, image 2 is the approved watercolor-free cartoon ICON STYLE reference. Match the clean rounded shapes, warm brown outline and very simple soft cel shading of image 2. Matte warm colors, generous chunky silhouette, few large parts readable at 26px or 80px. Square composition, entire object centered with clean margin, around 78% frame occupancy. Genuinely transparent background. No background scene, no circular frame, no button, no text or numbers, no ground shadow, no realistic materials, no oil paint grain, no microdetail, no excessive gloss. Subject: a cute honey-colored wooden clipboard holding a cream order sheet, three rounded green ticks and simple brown short lines, a rounded clip on top. Clear generous silhouette, no writing or numbers."
+        },
+        {
+            "key": "backpack",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-bd1d6bda-5a7a-464c-a299-d819ae575a90.png",
+            "asset": "src/renderer/assets/farm-ui/backpack.png",
+            "prompt": "Generate ONE isolated game UI icon. Image 1 is the farm scene STYLE reference, image 2 is the approved watercolor-free cartoon ICON STYLE reference. Match the clean rounded shapes, warm brown outline and very simple soft cel shading of image 2. Matte warm colors, generous chunky silhouette, few large parts readable at 26px or 80px. Square composition, entire object centered with clean margin, around 78% frame occupancy. Genuinely transparent background. No background scene, no circular frame, no button, no text or numbers, no ground shadow, no realistic materials, no oil paint grain, no microdetail, no excessive gloss. Subject: A cute orange-brown rounded small backpack, one large flap, simple buckle, little green leaf charm. No leather texture or tiny stitching."
+        },
+        {
+            "key": "codex",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-5034ea91-d354-4307-ab4b-691e56debc42.png",
+            "asset": "src/renderer/assets/farm-ui/codex.png",
+            "prompt": "Generate ONE isolated game UI icon. Image 1 is the farm scene STYLE reference, image 2 is the approved watercolor-free cartoon ICON STYLE reference. Match the clean rounded shapes, warm brown outline and very simple soft cel shading of image 2. Matte warm colors, generous chunky silhouette, few large parts readable at 26px or 80px. Square composition, entire object centered with clean margin, around 78% frame occupancy. Genuinely transparent background. No background scene, no circular frame, no button, no text or numbers, no ground shadow, no realistic materials, no oil paint grain, no microdetail, no excessive gloss. Subject: A green botanical book with one large leaf emblem on its cover, cream page edges, rounded chunky corners, three-quarter view. No lettering."
+        },
+        {
+            "key": "shop",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-e47e878d-8305-42aa-a4b2-048183010a20.png",
+            "asset": "src/renderer/assets/farm-ui/shop.png",
+            "prompt": "Generate ONE isolated game UI icon. Image 1 is the farm scene STYLE reference, image 2 is the approved watercolor-free cartoon ICON STYLE reference. Match the clean rounded shapes, warm brown outline and very simple soft cel shading of image 2. Matte warm colors, generous chunky silhouette, few large parts readable at 26px or 80px. Square composition, entire object centered with clean margin, around 78% frame occupancy. Genuinely transparent background. No background scene, no circular frame, no button, no text or numbers, no ground shadow, no realistic materials, no oil paint grain, no microdetail, no excessive gloss. Subject: A very compact cute farm shop stall with a green and cream striped awning, chunky wooden counter, one crate with two vegetables. Simplify everything into large readable shapes, no lettering or price signs."
+        }
+    ]
+}

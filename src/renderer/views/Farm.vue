@@ -5,6 +5,11 @@
         <section class="field" aria-label="农场场景">
             <farm-scene :key="sceneKey" :state="sceneState" @target="sceneTarget" @hover="sceneHover" @progress="assetLoaded" @ready="sceneLoaded" @error="sceneFailure = $event" />
         </section>
+            <farm-diary
+                :events="view.farm.life?.events ?? []"
+                :ready="sceneReady && dataReady && !loadError && !sceneFailure"
+                :blocked="blocked || !!panel || seedTarget !== null"
+            />
             <farm-entrances
                 ref="entrances"
                 :layout="entranceLayout"
@@ -25,7 +30,7 @@
         </button>
         <div class="top-actions">
             <button class="store-entry" :aria-label="t('farm.store')" @click="openPanel('store')">
-                <farm-icon :index="5" /><strong>{{ t('farm.store') }}</strong>
+                <farm-ui-icon name="shop" /><strong>{{ t('farm.store') }}</strong>
             </button>
             <button
                 v-if="farmSettingsVisible"
@@ -40,7 +45,7 @@
         <nav class="side-actions" :aria-label="t('farm.title')">
             <button class="game-button orders-entry" @click="openPanel('orders')">
                 <span class="entry-art"
-                    ><farm-icon :index="1" /><span v-if="deliverable" class="badge">{{
+                    ><farm-ui-icon name="orders" /><span v-if="deliverable" class="badge">{{
                         deliverable
                     }}</span></span
                 ><strong>{{ t('farm.ordersShort') }}</strong>
@@ -50,11 +55,11 @@
                 class="game-button backpack-entry"
                 @click="openPanel('warehouse')"
             >
-                <span class="entry-art"><farm-icon :index="2" /></span
+                <span class="entry-art"><farm-ui-icon name="backpack" /></span
                 ><strong>{{ t('farm.backpack') }}</strong>
             </button>
             <button class="game-button codex-entry" @click="openPanel('codex')">
-                <span class="entry-art"><farm-icon :index="3" /></span
+                <span class="entry-art"><farm-ui-icon name="codex" /></span
                 ><strong>{{ t('farm.codex') }}</strong>
             </button>
         </nav>
@@ -387,7 +392,24 @@
                     </button>
                 </template>
                 <template v-else-if="panel === 'codex'">
-                    <div class="item-list">
+                        <div class="tabs">
+                            <button
+                                class="action-button secondary"
+                                :class="{ active: codexTab === 'crops' }"
+                                @click="codexTab = 'crops'"
+                            >
+                                {{ t('farm.produce') }}
+                            </button>
+                            <button
+                                class="action-button secondary achievements-tab"
+                                :class="{ active: codexTab === 'achievements' }"
+                                @click="codexTab = 'achievements'"
+                            >
+                                {{ t('farm.achievements') }}
+                            </button>
+                        </div>
+                        <farm-achievements v-if="codexTab === 'achievements'" :view="view" />
+                    <div v-else class="item-list">
                         <article
                             v-for="crop in view.catalog.crops"
                             :key="crop.id"
@@ -482,13 +504,17 @@ import { useRouter } from 'vue-router'
 import { plantProgress, plantStage } from '../../main/modules/farm/rules'
 import type { BackupPreview, FarmOperation, FarmPlant, FarmView } from '../../main/types/farm'
 import { farmSettingsVisible } from '../../shared/farmExperience'
+import type { FarmLifeView } from '../../shared/farmLife'
 import { background } from '../assets/farm-game'
 import gameArrow from '../assets/farm-game/game-arrow.svg'
 import youmeiAvatar from '../assets/image/youmei-avatar.png'
+import FarmAchievements from '../components/farm/FarmAchievements.vue'
+import FarmDiary from '../components/farm/FarmDiary.vue'
 import FarmEntrances from '../components/farm/FarmEntrances.vue'
 import FarmIcon from '../components/farm/FarmIcon.vue'
 import FarmItemArt from '../components/farm/FarmItemArt.vue'
 import FarmScene from '../components/farm/FarmScene.vue'
+import FarmUiIcon from '../components/farm/FarmUiIcon.vue'
 import type { FarmSceneState } from '../game/FarmScene'
 import type { FarmEntranceId, FarmHover, FarmTarget } from '../game/farmSceneModel'
 import { farmLayout, plotMode } from '../game/farmSceneModel'
@@ -498,7 +524,10 @@ const sceneKey = ref(0), sceneReady = ref(false), sceneFailure = ref(''), assetP
 let lastManualIntent = -Infinity
 const loadingProgress = computed(() => sceneReady.value && dataReady.value && !loadError.value && !sceneFailure.value ? 100 : Math.min(99, Math.round((dataReady.value ? 20 : 0) + assetProgress.value * 70)))
 function assetLoaded(value: number) { assetProgress.value = Math.max(assetProgress.value, value) }
-function sceneLoaded() { sceneReady.value = true }
+function sceneLoaded() {
+    sceneReady.value = true
+    void window.api.readyFarmLife?.()
+}
 function retryLoading() { sceneReady.value = false; dataReady.value = false; sceneFailure.value = ''; assetProgress.value = 0; sceneKey.value++; void refresh() }
 function manualActivity() {
     if (disposed || Date.now() - lastManualIntent < 250) return
@@ -516,6 +545,8 @@ const view = ref<FarmView | null>(null),
     loadError = ref(''),
     notice = ref(''),
     busy = ref(false)
+const life = ref<FarmLifeView>({ visit: null, enabled: false })
+let stopLife: (() => void) | undefined
 const panel = ref<
     | 'orders'
     | 'warehouse'
@@ -530,6 +561,7 @@ const panel = ref<
 >(null)
 const warehouseTab = ref<'seeds' | 'produce'>('seeds'),
     warehouseTabs = ['seeds', 'produce'] as const
+const codexTab = ref<'crops' | 'achievements'>('crops')
 const seedTarget = ref<number | null>(null),
     hovered = ref<number | null>(null)
 const width = ref(1280),
@@ -556,6 +588,7 @@ let hoverCandidate: number | null = null,
 const blocked = computed(() => busy.value || !!view.value?.saveError)
 const sceneState = computed<FarmSceneState>(() => ({
     view: view.value!,
+    visit: life.value.visit,
     enabled: sceneReady.value && dataReady.value && !loadError.value && !sceneFailure.value && !blocked.value && !panel.value && seedTarget.value === null
 }))
 const entranceLayout = computed(() => farmLayout(width.value, height.value))
@@ -686,6 +719,7 @@ function dismiss() {
 function openPanel(name: NonNullable<typeof panel.value>) {
     if (!farmSettingsVisible && (name === 'settings' || name === 'backup')) return
     if (busy.value) return
+    if (name === 'codex') codexTab.value = 'crops'
     seedTarget.value = null
     hideHover()
     entrances.value?.dismiss()
@@ -952,6 +986,12 @@ function onKeydown(event: KeyboardEvent) {
     }
 }
 onMounted(() => {
+    stopLife = window.api.onFarmLifeState?.((state) => {
+        life.value = state
+    })
+    void window.api.enterFarmLife?.().then((result) => {
+        if (result.code === 200 && result.data) life.value = result.data
+    })
     manualActivity()
     window.addEventListener('keydown', onKeydown)
     window.addEventListener('blur', hideHover)
@@ -982,6 +1022,8 @@ onMounted(() => {
     })
 })
 onUnmounted(() => {
+    stopLife?.()
+    void window.api.leaveFarmLife?.()
     disposed = true
     ++loadSequence
     window.removeEventListener('keydown', onKeydown)

@@ -16,7 +16,7 @@ function fixture() {
     const clock = { wall: () => f.wall, monotonic: () => f.mono }
     f.service = new FarmService({ read: () => structuredClone(f.persisted), commit: snapshot => { f.attempts++; if (f.fail) throw Error('disk failed'); f.persisted = structuredClone(snapshot) } }, clock, id, () => 0)
     f.service.getView()
-    f.assistant = new FarmAssistant(f.service, clock, () => f.available, () => f.frozen, () => f.owner, (status, event) => { if (event) f.events.push({ status, event }) }, id, 0)
+    f.assistant = new FarmAssistant(f.service, clock, () => f.available, () => f.frozen, () => f.owner, (status, event) => { if (event) f.events.push({ status, event }) }, id, 0, () => true)
     f.advance = ms => { f.mono += ms; f.wall += ms }
     return f
 }
@@ -147,7 +147,7 @@ function fixture() {
     assert.notEqual(planFarmAssistant(f.service.getView()).orderId, previous.instanceId, 'stale order is replanned')
 }
 {
-    const d = new FarmDialogue()
+    const d = new FarmDialogue(() => true)
     d.offer({ id: 'start', kind: 'started', at: 0 })
     assert.equal(d.next(0, false), 'started')
     d.offer({ id: 'start', kind: 'started', at: 0 }); assert.equal(d.next(30000, false), undefined)
@@ -161,6 +161,22 @@ function fixture() {
     assert.equal(d.next(95000, false), undefined, 'suppressed speech is not replayed')
     d.offer({ id: 'old', kind: 'missingSeeds', at: 0 })
     assert.equal(d.next(96000, false), undefined, 'old events expire')
+}
+{
+    const dialogue = new FarmDialogue()
+    for (const kind of ['started', 'missingSeeds', 'harvested', 'resting', 'delivered']) {
+        dialogue.offer({ id: kind, kind, at: 0 })
+        assert.equal(dialogue.next(0, false), undefined, 'disabled dialogue ignores leftover IPC events: ' + kind)
+    }
+    let enabled = true
+    const queued = new FarmDialogue(() => enabled)
+    queued.offer({ id: 'queued', kind: 'started', at: 0 })
+    enabled = false
+    assert.equal(queued.next(0, false), undefined, 'disabling clears already queued speech')
+    enabled = true
+    assert.equal(queued.next(0, false), undefined, 're-enabling cannot replay discarded speech')
+    queued.offer({ id: 'new', kind: 'harvested', at: 0 })
+    assert.equal(queued.next(0, false), 'harvested', 'explicitly enabled dialogue still works')
 }
 assert.deepEqual(farmWindowSize({ width: 1920, height: 1080 }), { width: 1280, height: 720 })
 assert.deepEqual(farmWindowSize({ width: 900, height: 600 }), { width: 900, height: 506 })

@@ -2,65 +2,67 @@
  * 暴露ipc事件
  */
 
-import { ipcMain, IpcMainInvokeEvent, IpcMainEvent, screen, BrowserWindow, app } from 'electron';
-import { shell } from 'electron';
+import './modules/farm/ipc';
+
 import { is } from '@electron-toolkit/utils'
-import { playerManager, ServerData } from './modules/store';
-import { ConsumeItemResult, PlayerInfo } from './types/player';
+import axios, { AxiosResponse } from 'axios';
+import { app,BrowserWindow, ipcMain, IpcMainEvent, IpcMainInvokeEvent, screen } from 'electron';
+import { shell } from 'electron';
+import * as fs from 'fs';
+import * as path from 'path';
+
 import { Response } from '../types/response';
-import { consumeItem, consumePackageItems, PackageItemConsumeRequirement } from './modules/player/basic';
-import { playerResourceManager } from './modules/player/resource';
-import logger from './log';
-import { PetMate } from './modules/petmate/petmate';
-import { startActivity, finishActivity, cancelActivity, claimActivityReward } from './modules/player/act';
-import { ActiveBuff } from './types/buff';
 import { MAX_WISHES_STORE_NUM } from './constant';
-import { Wish } from './types/wish';
-import { Item, ItemType } from './types/item';
-import { buyItem } from './modules/player/basic';
-import { ActivityInfo } from './types/activity';
-import { getCompletedWishesNum, showActivities, showItems, getItemInfo } from './modules/show';
 import { ChatLLMConfigError, LLMConfigError, NotEnoughError, NotFoundError, TTSProcessError } from './error';
-import { wishHandler } from './modules/wish';
-import { getModelSize, getSettings, SettingConfig, updateSettings, defaultSettings } from './settings';
+import { greenworksManager } from './greenworks';
+import { getMainWindow, getPageWindow } from './index';
 import {
-    chat,
+    addTTSVoice,     chat,
     ChatLLMConfig, ChatMessage,
+    clearChatHistoryMessages,
     cloneVoice,
-    getChatLLMConfig, getTTSLLMConfig,
+    getChatLLMConfig,     getChatPrompt,
+    getHistoryChatMessages,
+getTTSLLMConfig,
+getTTSVoiceList,
+    HistoryChatMessage,
     initLLM,
+    listenTTSVoiceSample,
+    memorySummary,
+    saveChatHistoryMessages,
     setChatLLMConfig,
     setTTSLLMConfig,
     TTSLLMConfig,
     TTSVoice,
-    addTTSVoice, getTTSVoiceList,
-    listenTTSVoiceSample,
-    getChatPrompt,
-    updateChatPrompt,
-    saveChatHistoryMessages,
-    memorySummary,
-    clearChatHistoryMessages,
-    HistoryChatMessage,
-    getHistoryChatMessages
-} from './llm';
-import { windowMonitor, WindowInfo, WindowEvent } from './window-monitor';
-import { getMainWindow, getPageWindow } from './index';
+    updateChatPrompt} from './llm';
+import { localAIManager, LocalAIStatus } from './local-ai';
+import logger from './log';
+import { leaveFarmWindow,registerFarmWindow } from './modules/farm/runtime';
+import { farmWindowSize, fixedFarmWindow, observeFarmWorkArea } from './modules/farm/window';
+import { PetMate } from './modules/petmate/petmate';
+import { Youmei } from './modules/petmate/youmei';
+import { cancelActivity, claimActivityReward,finishActivity, startActivity } from './modules/player/act';
+import { consumeItem, consumePackageItems, PackageItemConsumeRequirement } from './modules/player/basic';
+import { buyItem } from './modules/player/basic';
+import { playerResourceManager } from './modules/player/resource';
+import { schoolHandbookManager } from './modules/school-handbook';
+import { getCompletedWishesNum, getItemInfo,showActivities, showItems } from './modules/show';
+import { playerManager, ServerData } from './modules/store';
+import { acknowledgeVersionReminder, dismissVersionReward,getVersionReminderState } from './modules/version-reminder';
+import { wishHandler } from './modules/wish';
+import { defaultSettings,getModelSize, getSettings, SettingConfig, updateSettings } from './settings';
+import { ActivityInfo } from './types/activity';
+import { ActiveBuff } from './types/buff';
+import { Item, ItemType } from './types/item';
+import { ConsumeItemResult, PlayerInfo } from './types/player';
 import { CommissionCompletionResult, PlayerResourceState } from './types/player-resource';
 import {
     SchoolHandbookClaimRewardResult,
     SchoolHandbookProgress
 } from './types/school-handbook';
-import { schoolHandbookManager } from './modules/school-handbook';
-import * as path from 'path';
-import * as fs from 'fs';
-import axios, { AxiosResponse } from 'axios';
-import { Youmei } from './modules/petmate/youmei';
-import { greenworksManager } from './greenworks';
-import { localAIManager, LocalAIStatus } from './local-ai';
-import './modules/farm/ipc';
-import { farmWindowSize, fixedFarmWindow, observeFarmWorkArea } from './modules/farm/window';
-import { getVersionReminderState, acknowledgeVersionReminder, dismissVersionReward } from './modules/version-reminder';
 import type { VersionReminderState } from './types/version-reminder';
+import { Wish } from './types/wish';
+import { WindowEvent,WindowInfo, windowMonitor } from './window-monitor';
 
 for (const action of ['get', 'acknowledge', 'dismiss-reward'] as const) {
     ipcMain.handle(`${action}-version-reminder`, (): Response<VersionReminderState> => {
@@ -1206,6 +1208,7 @@ ipcMain.handle("open-new-window", (_: IpcMainInvokeEvent, route: string, width: 
         newWindow.once('ready-to-show', () => {
             newWindow.show();
         });
+        if (farm) registerFarmWindow(newWindow);
         observeFarmWorkArea(newWindow, screen);
 
         // 加载指定路由的页面
@@ -1237,6 +1240,7 @@ ipcMain.handle('resize-page-for-route', (event: IpcMainInvokeEvent, route: strin
         const window = BrowserWindow.fromWebContents(event.sender);
         if (!window || window === getMainWindow()) throw new Error('页面窗口不存在');
         if (route === '/farm') {
+            registerFarmWindow(window);
             const size = farmWindowSize(screen.getDisplayMatching(window.getBounds()).workAreaSize);
             window.setMinimumSize(1, 1);
             window.setSize(size.width, size.height);
@@ -1245,6 +1249,7 @@ ipcMain.handle('resize-page-for-route', (event: IpcMainInvokeEvent, route: strin
             window.setMaximizable(false);
             window.setFullScreenable(false);
         } else {
+            leaveFarmWindow(window.id);
             window.setMinimumSize(400, 580);
             window.setSize(400, 580);
             window.setResizable(false);

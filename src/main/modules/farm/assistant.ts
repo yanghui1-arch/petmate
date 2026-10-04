@@ -1,4 +1,4 @@
-import { farmExperience } from '../../../shared/farmExperience'
+import { farmAssistantEnabled, farmExperience } from '../../../shared/farmExperience'
 import type { FarmAssistantEvent, FarmAssistantStatus, FarmOperation, FarmView } from '../../types/farm'
 import { plantProgress } from './rules'
 import { type FarmClock,FarmService } from './service'
@@ -48,28 +48,32 @@ export class FarmAssistant {
         private readonly canWork: () => boolean, private readonly isFrozen: () => boolean,
         private readonly playerId: () => string | null,
         private readonly publish: (status: FarmAssistantStatus, event?: FarmAssistantEvent) => void,
-        private readonly id: () => string, startedAt = clock.monotonic()) {
+        private readonly id: () => string, startedAt = clock.monotonic(),
+        private readonly enabled: () => boolean = () => farmAssistantEnabled) {
         this.lastManual = startedAt
     }
-    getStatus() { return { ...this.status } }
+    getStatus() { return this.enabled() ? { ...this.status } : { state: 'paused' as const } }
     private update(state: FarmAssistantStatus['state'], orderId?: string, event?: FarmAssistantEvent['kind']) {
         const changed = this.status.state !== state || this.status.orderId !== orderId
         this.status = { state, orderId }
         if (changed || event) this.publish(this.getStatus(), event ? { id: this.id(), kind: event, at: this.clock.wall() } : undefined)
     }
     manualActivity() {
+        if (!this.enabled()) return
         this.lastManual = this.clock.monotonic()
         this.startedWorking = false
         this.update('waitingPlayer')
         this.service.recordManualActivity()
     }
     suspend(value: boolean) {
+        if (!this.enabled()) return
         this.suspended = value
         this.startedWorking = false
         if (value) this.update('paused')
         else this.nextAction = this.clock.monotonic() + farmExperience.actionMs
     }
     start() {
+        if (!this.enabled()) { this.stop(); return }
         if (this.running) return
         this.running = true
         const schedule = () => {
@@ -87,6 +91,7 @@ export class FarmAssistant {
     }
     stop() { this.running = false; if (this.timer) clearTimeout(this.timer); this.timer = undefined }
     tick() {
+        if (!this.enabled()) { this.stop(); return }
         const now = this.clock.monotonic()
         if (this.suspended || this.isFrozen() || !this.canWork()) { this.startedWorking = false; this.update('paused'); return }
         const owner = this.playerId()

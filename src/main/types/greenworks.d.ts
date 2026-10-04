@@ -16,7 +16,7 @@ declare module 'greenworks' {
         isSteamRunning: () => boolean;
         getStatInt: (name: string) => number;
         getStatFloat: (name: string) => number;
-        setStat(name: string, value: number): () => void;
+        setStat(name: string, value: number): boolean;
         storeStats: (successCallback: () => void, failureCallback?: (err) => void) => void;
         // 可以继续补你用到的函数
     };
