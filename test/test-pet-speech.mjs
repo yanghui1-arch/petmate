@@ -98,6 +98,9 @@ try {
             {
                 name: 'isolated-speech',
                 setup(builder) {
+                    builder.onLoad({ filter: /startupDiagnostics\.ts$/ }, () => ({
+                        contents: 'export function observeWindowStartup() {}', loader: 'js'
+                    }))
                     builder.onResolve({ filter: /^electron$/ }, () => ({
                         path: 'electron',
                         namespace: 'mock'

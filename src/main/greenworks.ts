@@ -1,5 +1,6 @@
 import greenworks from "greenworks";
 import logger from "./log";
+import { diagnosticError, recordStartup } from './startupDiagnostics';
 
 const appId = 3657100;
 
@@ -18,21 +19,28 @@ class GreenworksManager {
         }
 
         try {
+            recordStartup('steam-restart-check-start', { appId });
             const launchWithoutUsingSteam = greenworks.restartAppIfNecessary(appId);
+            recordStartup('steam-restart-check-result', { restartRequired: launchWithoutUsingSteam });
             if (launchWithoutUsingSteam) {
+                recordStartup('startup-exit-requested', { reason: 'steam-relaunch-required' });
                 logger.error("需要开启Steam启动Petmate")
                 return false;
             }
 
+            recordStartup('steam-api-init-start');
             if (greenworks.init()) {
                 this.steamInfo = greenworks.getSteamId();
                 this.isInitialized = true;
+                recordStartup('steam-api-init-success');
                 return true;
             } else {
+                recordStartup('startup-exit-requested', { reason: 'steam-api-init-returned-false' });
                 logger.error('初始化greenworks失败');
                 return false;
             }
         } catch (error) {
+            recordStartup('startup-exit-requested', { reason: 'steam-api-init-exception', error: diagnosticError(error) });
             logger.error('初始化greenworks失败:', error);
             return false;
         }

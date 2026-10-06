@@ -10,6 +10,13 @@ export default defineConfig(({ command }) => ({
   main: {
     plugins: [externalizeDepsPlugin()],
     publicDir: false,
+    build: {
+      rollupOptions: {
+        input: { index: resolve('src/main/bootstrap.ts') },
+        // Business modules still resolve preload, renderer and resources from out/main.
+        output: { chunkFileNames: '[name]-[hash].js' }
+      }
+    },
   },
   preload: {
     plugins: [externalizeDepsPlugin()]

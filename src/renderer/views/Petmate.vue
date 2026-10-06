@@ -349,7 +349,12 @@ onMounted(async () => {
         void refreshPlayerData()
     })
 
-    await init2D()
+    try {
+        await init2D()
+    } catch (error) {
+        console.error('[startup] pet-model-init-failed: ' + (error instanceof Error ? error.stack ?? error.message : String(error)))
+        throw error
+    }
     playIdle()
     await initPlayerData()
     lifePetReady.value = true

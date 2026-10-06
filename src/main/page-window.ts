@@ -9,6 +9,7 @@ import { isHelperWindow } from './helperWindows'
 import logger from './log'
 import { registerFarmWindow } from './modules/farm/runtime'
 import { farmWindowSize, fixedFarmWindow, observeFarmWorkArea } from './modules/farm/window'
+import { observeWindowStartup } from './startupDiagnostics'
 
 // Shared by renderer entries and the tray, with the same single-page policy.
 export function openPageWindow(
@@ -53,6 +54,7 @@ export function openPageWindow(
             }
         })
 
+        observeWindowStartup(newWindow, farm ? 'farm' : 'page')
         newWindow.once('ready-to-show', () => {
             newWindow.show()
         })

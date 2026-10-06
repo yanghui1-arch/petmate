@@ -78,6 +78,7 @@ onMounted(async () => {
   }
   console.log("设置初始化完成");
   await initPlayerData();
+  if (!playerData.value) console.error('[startup] renderer-player-data-unavailable');
 });
 onUnmounted(() => { unsubscribeGameSave?.(); });
 

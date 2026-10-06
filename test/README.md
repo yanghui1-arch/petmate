@@ -14,6 +14,7 @@ npm run test:farm-ui
 npm run test:farm-scene
 npm run test:pet-farm-speech
 npm run test:pet-speech
+npm run test:startup
 npm run test:save-recovery
 npm run test:model-download
 npm run typecheck
@@ -37,3 +38,9 @@ npm run test:farm-assistant
 使用 `npm run dev` 启动真实游戏，按 **Ctrl+Alt+F8** 打开开发控制器。它使用当前玩家存档，劳动、金币和农田编辑会真实保存；触发按钮只跳过出行冷却，不绕过成就、属性、每日次数或生活/劳动交替规则。
 
 旧的独立存档控制器已移除，`dev:farm-life` 和专用 lab 命令不再提供。正式构建不包含真实游戏开发控制器页面、快捷键和测试接口。
+
+## 启动诊断
+
+先运行 `npm run build`，再运行 `npm run test:startup`。测试使用隔离目录和模拟 Steam 模块，验证真实 Electron 构建入口的原生模块加载失败、损坏设置/恢复日志、Steam 重启与初始化失败退出，以及正常启动并显示桌宠，不读取玩家真实存档或改变账号成就。
+
+正式程序日志默认在 `%APPDATA%\Petmate\logs\`：`startup.log` 同步记录启动阶段、Steam 检查结果、异常堆栈、窗口加载/崩溃和退出；`combined.log` 保存常规日志。用户目录不可写时尝试 `%TEMP%\Petmate\logs\`。日志按大小轮转；启动日志不记录 Steam 用户身份、命令行参数或聊天配置。排查时保留本次启动的日志及轮转文件。操作系统在主进程执行前阻止启动，或原生层硬崩溃时，仍需要系统事件记录。

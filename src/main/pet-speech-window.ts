@@ -9,6 +9,7 @@ import {
     positionPetSpeech
 } from '../shared/petSpeech'
 import { registerHelperWindow } from './helperWindows'
+import { observeWindowStartup } from './startupDiagnostics'
 
 export class PetSpeechWindow {
     readonly window: BrowserWindow
@@ -47,6 +48,7 @@ export class PetSpeechWindow {
                 backgroundThrottling: false
             }
         })
+        observeWindowStartup(this.window, 'speech-bubble')
         registerHelperWindow(this.window)
         this.window.setIgnoreMouseEvents(true, { forward: true })
         const events: EventEmitter = owner

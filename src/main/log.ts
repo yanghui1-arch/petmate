@@ -1,5 +1,6 @@
 import winston from 'winston';
 import path from 'path';
+import { getDiagnosticDirectory, recordStartup } from './startupDiagnostics';
 
 // 获取调用栈中的调用者文件名与行号
 function getCallerInfo(): string {
@@ -28,15 +29,20 @@ const logger = winston.createLogger({
     level: 'info',
     format: winston.format.combine(
         winston.format.timestamp(),
-        winston.format.printf(({ timestamp, level, message }) => {
+        winston.format.errors({ stack: true }),
+        winston.format.printf(({ timestamp, level, message, stack }) => {
             const caller = getCallerInfo();
-            return `[${timestamp}] [${level.toUpperCase()}] ${caller} ${message}`;
+            return `[${timestamp}] [${level.toUpperCase()}] ${caller} ${message}${stack ? '\n' + stack : ''}`;
         })
     ),
     transports: [
         new winston.transports.Console(),
-        new winston.transports.File({ filename: 'logs/combined.log' }),
+        ...(getDiagnosticDirectory() ? [new winston.transports.File({
+            filename: path.join(getDiagnosticDirectory()!, 'combined.log'),
+            maxsize: 5 * 1024 * 1024, maxFiles: 3, tailable: true
+        })] : []),
     ],
 });
+logger.on('error', error => recordStartup('application-log-failed', { message: String(error) }));
 
 export default logger;

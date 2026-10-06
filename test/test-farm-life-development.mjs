@@ -96,6 +96,9 @@ try {
             {
                 name: 'isolated-live-controller',
                 setup(builder) {
+                    builder.onLoad({ filter: /startupDiagnostics\.ts$/ }, () => ({
+                        contents: 'export function observeWindowStartup() {}', loader: 'js'
+                    }))
                     builder.onResolve(
                         { filter: /^(electron|@electron-toolkit\/utils)$|\/runtime$|\/log$/ },
                         (args) => ({ path: args.path, namespace: 'mock' })
