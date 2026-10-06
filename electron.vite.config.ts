@@ -6,7 +6,7 @@ import Components from 'unplugin-vue-components/vite'
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 import glsl from 'vite-plugin-glsl';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   main: {
     plugins: [externalizeDepsPlugin()],
     publicDir: false,
@@ -33,6 +33,9 @@ export default defineConfig({
         ]
       }),
       Components({
+        // Keep type generation in development; parallel production transforms
+        // can compete for this file on Windows.
+        dts: command === 'serve',
         resolvers: [NaiveUiResolver()]
       })
     ],
@@ -49,4 +52,4 @@ export default defineConfig({
         assetsInlineLimit: 0
     }
   }
-})
+}))

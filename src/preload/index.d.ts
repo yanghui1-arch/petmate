@@ -12,7 +12,9 @@ import {
 import type { VersionReminderState } from "../main/types/version-reminder";
 import { Wish } from "../main/types/wish"
 import { WindowEvent, WindowInfo } from "../main/window-monitor";
-import type { FarmLifeEvent, FarmLifeView } from '../shared/farmLife';
+import type { FarmLifeEvent, FarmLifeKind, FarmLifeView } from '../shared/farmLife';
+import type { FarmLifeDevelopmentCommand, FarmLifeDevelopmentState } from '../shared/farmLifeDevelopment';
+import type { PetSpeechMessage, PetSpeechState } from '../shared/petSpeech';
 import { SettingConfig } from "../types/config";
 import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "./llm";
 /**
@@ -20,6 +22,10 @@ import { ChatLLMConfig, ChatMessage, TTSLLMConfig, TTSVoice } from "./llm";
  * 所有方法都返回Promise
  */
 interface IElectronAPI {
+  updatePetSpeech: (_message: PetSpeechMessage | null) => void;
+  getPetSpeech: () => Promise<Response<PetSpeechState>>;
+  petSpeechMeasured: (_id: string, _height: number) => void;
+  onPetSpeechState: (_callback: (_state: PetSpeechState) => void) => () => void;
   // 初始化
   initSettings: () => Promise<Response<SettingConfig>>;
   initLLM: () => Promise<Response<void>>;
@@ -46,6 +52,8 @@ interface IElectronAPI {
   getLocalAIStatus: () => Promise<Response<LocalAIStatus>>;
   getFarm: () => Promise<Response<FarmView>>;
   getFarmLife: () => Promise<Response<FarmLifeView>>;
+  getFarmLifeDevelopment: () => Promise<Response<FarmLifeDevelopmentState>>;
+  commandFarmLifeDevelopment: (action: FarmLifeDevelopmentCommand, kind?: FarmLifeKind) => Promise<Response<FarmLifeDevelopmentState>>;
   enterFarmLife: () => Promise<Response<FarmLifeView>>;
   leaveFarmLife: () => Promise<Response<void>>;
   readyFarmLife: () => Promise<Response<void>>;
@@ -53,6 +61,8 @@ interface IElectronAPI {
   farmLifePetState: (_ready: boolean, _blocked: boolean) => void;
   farmLifeInteraction: () => void;
   finishFarmLifeSpeech: (_id: string) => void;
+  moveCoveredFarmDeparture: (_id: string) => Promise<Response<boolean>>;
+  onFarmDepartureShift: (_callback: (_request: { id: string }) => void) => () => void;
   onFarmLifeState: (callback: (_state: FarmLifeView & { direction?: 'left' | 'right' }) => void) => () => void;
   onFarmLifeSpeech: (callback: (_speech: { stage: 'start' | 'return'; event: FarmLifeEvent }) => void) => () => void;
   getFarmAssistant: () => Promise<Response<FarmAssistantStatus>>;

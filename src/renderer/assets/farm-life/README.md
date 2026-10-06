@@ -15,4 +15,4 @@
 
 使用 `scripts/prepare-farm-life-assets.py` 从已批准的本地资源打包；不会调用生成模型。当前出发资源来自 spec008/desktop-departure/magenta-v2/departure-magenta-alpha-12fps.webm，抠图脚本和源视频保存在 spec008。旧三服装八动作图集、旧动作组件及生成脚本已删除，旧动作视频样片已删除。
 
-透明视频回归检查：本地保留 video-playback.mp4 源视频时，运行 `python -B scripts/test-farm-departure-alpha.py --video src/renderer/assets/farm-life/departure.webm`，对照源片每隔一帧的蓝色虹膜、蝴蝶结、头发、背景/地面与暖黄色门光，检查最终编码后的透明通道和 79 帧数量。实际播放器与换装衔接使用农场生活验收控制器检查。
+透明视频回归检查：本地保留 video-playback.mp4 源视频时，运行 `python -B test/test-farm-departure-alpha.py --video src/renderer/assets/farm-life/departure.webm`，对照源片每隔一帧的蓝色虹膜、蝴蝶结、头发、背景/地面与暖黄色门光，检查最终编码后的透明通道和 79 帧数量。实际播放器与换装衔接在 `npm run dev` 中使用 Ctrl+Alt+F8 的真实游戏控制器检查；正式安装包不提供该入口。

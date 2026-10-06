@@ -1,4 +1,6 @@
 export const farmLifeCN = {
+    awayTitle: '尤美去农场啦',
+    visitFarm: '去看看',
     title: '尤美的小日记',
     empty: '田边的小故事，等她回来再听。',
     fresh: '新鲜事',
@@ -100,6 +102,8 @@ export const farmLifeCN = {
     }
 }
 export const farmLifeTW = {
+    awayTitle: '尤美去農場啦',
+    visitFarm: '去看看',
     title: '尤美的小日記',
     empty: '田邊的小故事，等她回來再聽。',
     fresh: '新鮮事',
@@ -201,6 +205,8 @@ export const farmLifeTW = {
     }
 }
 export const farmLifeEN = {
+    awayTitle: 'Youmei at the farm',
+    visitFarm: 'Visit',
     title: "Yume's little diary",
     empty: 'Little stories from the farm, when she returns.',
     fresh: 'New',

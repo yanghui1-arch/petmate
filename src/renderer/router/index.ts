@@ -33,13 +33,19 @@ const routes = [
   { path: '/data-recovery', name: 'DataRecovery', component: DataRecovery },
 ]
 
+if (import.meta.env.DEV) routes.push({
+  path: '/farm-life-controller', name: 'FarmLifeController',
+  component: () => import('@/views/FarmLifeController.vue'),
+  meta: { hideClosedButton: true, hideNavigator: true }
+})
+
 const router = createRouter({
   history: createWebHashHistory(),
   routes,
 })
 
 router.afterEach(to => {
-  if (to.path !== '/' && to.path !== '/petmate') void window.api.resizePageForRoute(to.path)
+  if (to.path !== '/' && to.path !== '/petmate' && (!import.meta.env.DEV || to.path !== '/farm-life-controller')) void window.api.resizePageForRoute(to.path)
 })
 
 export default router

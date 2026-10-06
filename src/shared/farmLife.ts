@@ -88,8 +88,6 @@ export function validateFarmLife(data: FarmLifeData): void {
         data.daily.trips > farmLifeConfig.maxTrips ||
         data.daily.work > farmLifeConfig.maxWorkTrips ||
         data.daily.life > farmLifeConfig.maxLifeTrips ||
-        data.daily.watered > farmLifeConfig.maxWater ||
-        data.daily.harvested > farmLifeConfig.maxHarvest ||
         data.daily.work + data.daily.life !== data.daily.trips
     )
         throw new Error('农场生活额度无效')
@@ -150,6 +148,7 @@ export function farmLifePose(kind: FarmLifeKind, interrupted = false): FarmLifeP
     return 'bridge'
 }
 export const farmDeparture = {
+    relocationFadeMs: 400,
     costumeMs: 1100,
     durationMs: 6583,
     windowWidth: 470,
@@ -159,8 +158,12 @@ export const farmDeparture = {
     left: 39,
     top: -12
 } as const
+export const farmAwayCard = { width: 288, height: 132 } as const
 export const farmLifeConfig = {
     enabled: true,
+    idleCheckMs: 30_000,
+    activeCheckMs: 250,
+    lifeFallbackMs: 2 * 60 * 60_000,
     idleMs: 20 * 60_000,
     idleMaxMs: 35 * 60_000,
     interactionMs: 30_000,
@@ -174,16 +177,14 @@ export const farmLifeConfig = {
     maxVisitMs: 60_000,
     diaryMs: 2_800,
     watchGraceMs: 6_000,
-    waterMin: 3,
-    waterMax: 6,
+    maxWaterPlots: 3,
+    maxHarvestPlots: 3,
     harvestMinRatio: 0.25,
     harvestMaxRatio: 0.5,
     weights: { water: 40, harvest: 40, order: 30, life: 20 },
-    maxTrips: 4,
-    maxWorkTrips: 3,
-    maxLifeTrips: 1,
-    maxWater: 10,
-    maxHarvest: 3
+    maxTrips: 7,
+    maxWorkTrips: 4,
+    maxLifeTrips: 3
 } as const
 export const isFarmLifeWork = (kind: FarmLifeKind) => ['water', 'harvest', 'order'].includes(kind)
 export function farmLifeDay(at: number): string {

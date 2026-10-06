@@ -4,16 +4,23 @@
         @pointerdown.capture="lifeInteraction"
         @contextmenu.capture="lifeInteraction"
     >
+        <farm-away-card
+            v-if="isAway"
+            :opening="awayOpening"
+            @farm="openAwayPage('/farm')"
+            @home="openAwayPage('/home')"
+        />
         <div
             ref="petmateContainer"
             class="petmate-canvas-container"
             :style="{
-                visibility:
-                    life.visit &&
+                opacity: shiftOpacity,
+                display:
+                    shiftCovered || (life.visit &&
                     !['preparing', 'returning'].includes(life.visit.phase) &&
-                    !(life.visit.phase === 'leaving' && !costumeChanged)
-                        ? 'hidden'
-                        : 'visible',
+                    !(life.visit.phase === 'leaving' && !costumeChanged))
+                        ? 'none'
+                        : 'block',
                 clipPath: life.visit?.phase === 'leaving' ? `inset(${costumeScan}px 0 0)` : 'none'
             }"
         ></div>
@@ -24,34 +31,11 @@
             @scan="costumeScan = $event"
             @switched="costumeChanged = true"
         />
-        <div v-if="lifeSpeech && !lifeBlocked" class="pet-dialog farm-dialog" aria-live="polite">
-            <span>{{ lifeVisibleText }}</span
-            ><span
-                v-if="lifeVisibleText.length < lifeSpeech.length"
-                class="pet-dialog-caret"
-            ></span>
-        </div>
-        <div v-if="shouldShowHungryDialog" class="pet-dialog hunger-dialog" aria-live="polite">
-            <span>{{ hungryDialogVisibleText }}</span>
-            <span v-if="isHungryDialogTyping" class="pet-dialog-caret"></span>
-        </div>
-        <div v-if="shouldShowSleepDialog" class="pet-dialog sleep-dialog" aria-live="polite">
-            <span>{{ sleepDialogVisibleText }}</span>
-            <span v-if="isSleepDialogTyping" class="pet-dialog-caret"></span>
-        </div>
-        <div class="context-menu" v-if="isShowContextMenu">
+        <farm-departure-shift v-if="shiftId" :key="shiftId" :id="shiftId"
+            @opacity="shiftOpacity = $event" @covered="shiftCovered = true"
+            @done="finishShift(shiftId, $event)" />
+        <div class="context-menu" v-if="!isAway && isShowContextMenu">
             <wheel-menu @closed="closeContextMenu" />
-        </div>
-        <div
-            v-if="farmSpeech && !farmSpeechBlocked"
-            class="pet-dialog farm-dialog"
-            aria-live="polite"
-        >
-            <span>{{ farmSpeechVisible }}</span
-            ><span
-                v-if="farmSpeechVisible.length < farmSpeech.length"
-                class="pet-dialog-caret"
-            ></span>
         </div>
     </div>
 </template>
@@ -62,10 +46,14 @@ import { useI18n } from 'vue-i18n'
 
 import { farmAssistantEnabled, farmExperience } from '../../shared/farmExperience'
 import { farmLifeConfig, type FarmLifeView } from '../../shared/farmLife'
+import { selectPetSpeech } from '../../shared/petSpeech'
+import FarmAwayCard from '../components/farm/FarmAwayCard.vue'
 import FarmDeparture from '../components/farm/FarmDeparture.vue'
+import FarmDepartureShift from '../components/farm/FarmDepartureShift.vue'
 import WheelMenu from '../components/WheelMenu.vue'
 import { isShowContextMenu, usePetmateModel } from '../hooks/usePetmateModel'
 import { usePlayer } from '../hooks/usePlayer'
+import { usePetSpeech } from '../hooks/usePetSpeech'
 import { FarmDialogue } from '../utils/farmDialogue'
 import { farmLifeLine } from '../utils/farmLifeText'
 
@@ -91,15 +79,50 @@ const { t } = useI18n()
 const hungerDialogText = computed(() => t('petmate.hungryDialog'))
 const sleepDialogText = computed(() => t('petmate.sleepDialog'))
 
-const { init2D, playIdle, setAngry, setEnergyLow, setActivity, sleepResponseTick, destroy } =
+const { init2D, playIdle, setAngry, setEnergyLow, setActivity, sleepResponseTick, speechAnchor, destroy } =
     usePetmateModel(petmateContainer)
 const { playerData, initPlayerData, refreshPlayerData, subscribeToPlayerDataSync } = usePlayer()
 const life = ref<FarmLifeView>({ visit: null, enabled: false })
+const isAway = computed(() => !!life.value.visit && ['visiting', 'exiting'].includes(life.value.visit.phase))
+const awayOpening = ref(false)
+async function openAwayPage(route: '/farm' | '/home') {
+    if (awayOpening.value) return
+    awayOpening.value = true
+    try {
+        const result = await window.api.openNewWindow(route)
+        if (result.code !== 200) console.error(result.message)
+    } catch (error) {
+        console.error('打开出行入口失败', error)
+    } finally {
+        awayOpening.value = false
+    }
+}
 const costumeChanged = ref(false)
 const costumeScan = ref(0)
+const shiftId = ref<string | null>(null)
+const shiftCovered = ref(false)
+const shiftOpacity = ref(1)
+function finishShift(id: string, success: boolean) {
+    if (shiftId.value !== id) return
+    shiftId.value = null
+    if (life.value.visit?.id !== id || life.value.visit.phase !== 'preparing') return
+    if (success) window.api.finishFarmLifeSpeech(id)
+    else {
+        shiftCovered.value = false
+        shiftOpacity.value = 1
+        window.api.farmLifeInteraction()
+    }
+}
 watch(
     () => [life.value.visit?.id, life.value.visit?.phase],
     (current, previous) => {
+        if (current[0] !== previous[0] || !['preparing', 'leaving'].includes(current[1] ?? '')) {
+            shiftId.value = null
+            shiftCovered.value = false
+            shiftOpacity.value = 1
+        } else if (current[1] !== 'preparing') {
+            shiftId.value = null
+        }
         if (current[0] !== previous[0] || current[1] !== 'leaving') {
             costumeChanged.value = false
             costumeScan.value = 0
@@ -118,12 +141,14 @@ const lifeBlocked = computed(
         !!activeActivityId.value
 )
 let stopLife: (() => void) | undefined,
+    stopShift: (() => void) | undefined,
     stopLifeSpeech: (() => void) | undefined,
     lifeTimer: ReturnType<typeof setInterval> | undefined,
     lifeHoldUntil = 0,
     lifeTicks = 0
 let lifeDepartureId: string | null = null
 function lifeInteraction() {
+    if (isAway.value) return
     window.api.farmLifeInteraction?.()
     lifeSpeech.value = ''
     lifeVisibleText.value = ''
@@ -147,12 +172,6 @@ const isEnergyLow = computed(() => {
     if (!attrs) return false
 
     return attrs.energy < attrs.maxEnergy * LOW_ENERGY_RATIO
-})
-const isHungryDialogTyping = computed(() => {
-    return (
-        shouldShowHungryDialog.value &&
-        hungryDialogVisibleText.value.length < hungerDialogText.value.length
-    )
 })
 const shouldShowSleepDialog = computed(() => sleepDialogVisibleText.value.length > 0)
 const farmSpeech = ref(''),
@@ -203,9 +222,19 @@ function advanceFarmSpeech() {
 watch(farmSpeechBlocked, (value) => {
     if (value) clearFarmSpeech()
 })
-const isSleepDialogTyping = computed(() => {
-    return sleepDialogVisibleText.value.length < sleepDialogText.value.length
+const speechWindowVisible = ref(!document.hidden)
+function updateSpeechVisibility() { speechWindowVisible.value = !document.hidden }
+const activeSpeech = computed(() => {
+    if (!lifePetReady.value || !speechWindowVisible.value || isAway.value ||
+        life.value.visit?.phase === 'leaving' || isShowContextMenu.value) return null
+    return selectPetSpeech([
+        shouldShowSleepDialog.value ? { key: 'sleep', text: sleepDialogText.value, visibleText: sleepDialogVisibleText.value } : null,
+        shouldShowHungryDialog.value ? { key: 'hungry', text: hungerDialogText.value, visibleText: hungryDialogVisibleText.value } : null,
+        lifeSpeech.value && !lifeBlocked.value ? { key: 'life', text: lifeSpeech.value, visibleText: lifeVisibleText.value } : null,
+        farmSpeech.value && !farmSpeechBlocked.value ? { key: 'assistant', text: farmSpeech.value, visibleText: farmSpeechVisible.value } : null
+    ])
 })
+usePetSpeech(activeSpeech, speechAnchor)
 const hasLowAttribute = computed(() => {
     const attrs = currentPetmate.value?.attrs
     if (!attrs) return false
@@ -260,6 +289,10 @@ watch(sleepResponseTick, () => {
 })
 
 onMounted(async () => {
+    document.addEventListener('visibilitychange', updateSpeechVisibility)
+    stopShift = window.api.onFarmDepartureShift?.(({ id }) => {
+        if (life.value.visit?.id === id && life.value.visit.phase === 'preparing') shiftId.value = id
+    })
     stopLife = window.api.onFarmLifeState?.((state) => {
         life.value = state
         if (state.visit?.phase !== 'preparing' || state.visit.id !== lifeDepartureId) lifeDepartureId = null
@@ -344,6 +377,8 @@ watch(lifeBlocked, (blocked) => {
 })
 
 onUnmounted(() => {
+    document.removeEventListener('visibilitychange', updateSpeechVisibility)
+    stopShift?.()
     stopLife?.()
     stopLifeSpeech?.()
     if (lifeTimer) clearInterval(lifeTimer)
@@ -443,81 +478,6 @@ function clearSleepDialogTimers() {
     height: 100vh;
     z-index: 1;
     overflow: hidden;
-}
-
-.pet-dialog {
-    position: fixed;
-    top: 0;
-    left: 16px;
-    z-index: 20;
-    max-width: 190px;
-    min-height: 48px;
-    padding: 10px 12px;
-    border: 1px solid rgba(253, 203, 110, 0.55);
-    border-radius: 12px;
-    background: rgba(255, 248, 238, 0.94);
-    box-shadow: 0 8px 22px rgba(90, 48, 55, 0.22);
-    color: #7a3f44;
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.6;
-    pointer-events: none;
-    animation: petDialogPopIn 0.22s ease-out;
-
-    &::after {
-        content: '';
-        position: absolute;
-        right: 30px;
-        bottom: -8px;
-        width: 14px;
-        height: 14px;
-        border-right: 1px solid rgba(253, 203, 110, 0.55);
-        border-bottom: 1px solid rgba(253, 203, 110, 0.55);
-        background: rgba(255, 248, 238, 0.94);
-        transform: rotate(45deg);
-    }
-}
-
-.sleep-dialog {
-    right: 16px;
-    left: auto;
-
-    &::after {
-        right: auto;
-        left: 30px;
-    }
-}
-
-.pet-dialog-caret {
-    display: inline-block;
-    width: 1px;
-    height: 1em;
-    margin-left: 2px;
-    background: #7a3f44;
-    vertical-align: -2px;
-    animation: petDialogCaretBlink 0.8s steps(1) infinite;
-}
-
-@keyframes petDialogPopIn {
-    from {
-        opacity: 0;
-        transform: translateY(6px) scale(0.96);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-@keyframes petDialogCaretBlink {
-    0%,
-    49% {
-        opacity: 1;
-    }
-    50%,
-    100% {
-        opacity: 0;
-    }
 }
 
 .context-menu {

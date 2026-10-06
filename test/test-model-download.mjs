@@ -17,12 +17,14 @@ const partialModel = join(
 )
 
 const mockLLMSize = 1_280_835_840
+const rangeStarts = []
 
 globalThis.fetch = async (input, init = {}) => {
   const url = String(input)
   assert.match(url, /Qwen3\.5-2B-Q4_K_M\.gguf$/)
   const range = new Headers(init.headers).get('Range')
   const start = range ? Number(range.match(/^bytes=(\d+)-$/)?.[1] ?? 0) : 0
+  rangeStarts.push(start)
   let offset = start
   const signal = init.signal
   const stream = new ReadableStream({
@@ -70,6 +72,10 @@ try {
         !cancelled
         && status.phase === 'downloading'
         && status.downloadedBytes >= threshold
+        // Progress is emitted before the current chunk reaches disk. Cancel
+        // after durable bytes exist, rather than relying on stream timing.
+        && existsSync(partialModel)
+        && statSync(partialModel).size >= threshold
       ) {
         cancelled = true
         downloader.cancel()
@@ -93,6 +99,7 @@ try {
   await downloadUntil(firstSize + 2 * 1024 * 1024)
   const resumedSize = statSync(partialModel).size
   assert.ok(resumedSize > firstSize)
+  assert.deepEqual(rangeStarts, [0, firstSize], 'resume starts at the saved file size')
 
   console.log(JSON.stringify({
     source: 'mock ModelScope transport',

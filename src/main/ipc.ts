@@ -13,6 +13,8 @@ import * as path from 'path';
 
 import { Response } from '../types/response';
 import { MAX_WISHES_STORE_NUM } from './constant';
+import { isDevelopmentWindow } from './developmentWindows';
+import { isHelperWindow } from './helperWindows';
 import { ChatLLMConfigError, LLMConfigError, NotEnoughError, NotFoundError, TTSProcessError } from './error';
 import { greenworksManager } from './greenworks';
 import { getMainWindow, getPageWindow } from './index';
@@ -50,6 +52,7 @@ import { getCompletedWishesNum, getItemInfo,showActivities, showItems } from './
 import { playerManager, ServerData } from './modules/store';
 import { acknowledgeVersionReminder, dismissVersionReward,getVersionReminderState } from './modules/version-reminder';
 import { wishHandler } from './modules/wish';
+import { openPageWindow } from './page-window';
 import { defaultSettings,getModelSize, getSettings, SettingConfig, updateSettings } from './settings';
 import { ActivityInfo } from './types/activity';
 import { ActiveBuff } from './types/buff';
@@ -1170,75 +1173,14 @@ windowMonitor.on('window-changed', (event: WindowEvent) => {
  * @returns 打开窗口成功或失败
  */
 ipcMain.handle("open-new-window", (_: IpcMainInvokeEvent, route: string, width: number = 400, height: number = 580): Response<void> => {
-    try {
-        const mainWindow: BrowserWindow | null = getMainWindow();
-        if (!mainWindow) throw new NotFoundError("主窗口未找到");
-        const mainWindowID: number = mainWindow.id;
-        const currentWindowNum: number = BrowserWindow.getAllWindows().length;
-        // 最多只能一个主窗口 + 一个新窗口
-        if (currentWindowNum > 1) {
-            const currentWindows: BrowserWindow[] = BrowserWindow.getAllWindows();
-            for (const win of currentWindows) {
-                if (win.id !== mainWindowID) win.close();
-            }
-        }
-
-        const farm = route === '/farm';
-        const farmSize = farmWindowSize(screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workAreaSize);
-        const newWindow = new BrowserWindow({
-            width: farm ? farmSize.width : width,
-            height: farm ? farmSize.height : height,
-            minWidth: farm ? farmSize.width : width,
-            minHeight: farm ? farmSize.height : height,
-            resizable: false,
-            ...(farm ? fixedFarmWindow : {}),
-            frame: false,
-            transparent: false,
-            alwaysOnTop: false,
-            show: false,
-            modal: false, // 确保不是模态窗口
-            webPreferences: {
-                preload: path.join(__dirname, '../preload/index.js'),
-                contextIsolation: true,
-                nodeIntegration: true,
-                webgl: true
-            },
-        });
-
-        newWindow.once('ready-to-show', () => {
-            newWindow.show();
-        });
-        if (farm) registerFarmWindow(newWindow);
-        observeFarmWorkArea(newWindow, screen);
-
-        // 加载指定路由的页面
-        if (is.dev) {
-            newWindow.loadURL(`http://localhost:5173/#${route}`);
-            newWindow.webContents.openDevTools({ mode: 'detach' });
-        } else {
-            newWindow.loadFile(path.join(__dirname, '../renderer/index.html'), {
-                hash: route
-            });
-        }
-
-        logger.info(`成功打开新窗口，路由: ${route}`);
-        return {
-            code: 200,
-            message: "打开新窗口成功"
-        } as Response<void>;
-    } catch (error) {
-        logger.error(`打开新窗口失败: ${error}`);
-        return {
-            code: 400,
-            message: "打开新窗口失败"
-        } as Response<void>;
-    }
+    return openPageWindow(getMainWindow(), route, width, height);
 });
 
 ipcMain.handle('resize-page-for-route', (event: IpcMainInvokeEvent, route: string): Response<void> => {
     try {
         const window = BrowserWindow.fromWebContents(event.sender);
         if (!window || window === getMainWindow()) throw new Error('页面窗口不存在');
+        if (isDevelopmentWindow(window.id) || isHelperWindow(window.id)) return { code: 200 };
         if (route === '/farm') {
             registerFarmWindow(window);
             const size = farmWindowSize(screen.getDisplayMatching(window.getBounds()).workAreaSize);
