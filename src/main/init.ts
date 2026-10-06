@@ -11,30 +11,33 @@ import { greenworksManager } from './greenworks'
 import { initSettings } from "./settings";
 import { app } from "electron";
 import { DAYS_TO_KEEP_WISH } from "./constant";
+import { recordStartup, runStartupStage } from './startupDiagnostics';
 
-export async function appInit(): Promise<void> {
+export async function appInit(): Promise<boolean> {
     console.log("开始初始化app")
     console.log("开始初始化greenworks...")
     const initResult = greenworksManager.init()
     if (initResult === false) {
+        recordStartup('initialization-aborted', { stage: 'steam' });
         app.quit()
-        return
+        return false
     }
     console.log(`初始化greenworks成功！`)
     const steamID: string = greenworksManager.getSteamInfo().steamId
 
     // init store
-    initSettings()
-    itemManager.initItem()
-    await playerManager.initPlayer(steamID)
-    activityManager.initActivity()
-    buffManager.initBuff()
-    prefabWishManager.initPrefabWish()
-    playerResourceManager.initPlayerResource()
-    schoolHandbookManager.initSchoolHandbook()
+    await runStartupStage('settings', () => initSettings())
+    await runStartupStage('item-catalog', () => itemManager.initItem())
+    await runStartupStage('player-save', () => playerManager.initPlayer(steamID))
+    await runStartupStage('activity-catalog', () => activityManager.initActivity())
+    await runStartupStage('buff-catalog', () => buffManager.initBuff())
+    await runStartupStage('wish-catalog', () => prefabWishManager.initPrefabWish())
+    await runStartupStage('player-resources', () => playerResourceManager.initPlayerResource())
+    await runStartupStage('school-handbook', () => schoolHandbookManager.initSchoolHandbook())
 
     // 初始化玩家数据的状态
-    initPlayerDataStatus()
+    await runStartupStage('player-status', () => initPlayerDataStatus())
+    return true
 }
 
 /**

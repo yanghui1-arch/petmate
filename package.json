@@ -23,6 +23,7 @@
     "test:farm-assistant": "node test/test-farm-assistant.mjs",
     "test:pet-farm-speech": "node test/test-pet-farm-speech.mjs",
     "test:pet-speech": "node test/test-pet-speech.mjs",
+    "test:startup": "node test/test-startup-diagnostics.mjs",
     "test:farm-achievements": "node test/test-farm-achievements.mjs",
     "test:farm-life": "node test/test-farm-life.mjs",
     "test:farm-life-development": "node test/test-farm-life-development.mjs",

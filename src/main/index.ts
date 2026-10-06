@@ -22,6 +22,7 @@ import { SystemAudioActivityMonitor } from './packages/system-audio-activity'
 import { openPageWindow } from './page-window'
 import { destroyScheduler, startOnlineAttributeDecay, startWishGeneration } from './scheduler'
 import { getOnTop, updateSettings } from './settings'
+import { diagnosticError, observeWindowStartup, recordStartup, runStartupStage } from './startupDiagnostics'
 
 app.commandLine.appendSwitch('--in-process-gpu')
 
@@ -153,6 +154,7 @@ const createWindow = (): void => {
     })
 
     enforcePetmateWindowSize(win)
+    observeWindowStartup(win, 'desktop-pet')
     win.once('ready-to-show', () => {
         enforcePetmateWindowSize(win)
         win.show()
@@ -255,27 +257,27 @@ const createWindow = (): void => {
     ])
     tray.setContextMenu(contextMenu)
     tray.setToolTip('Petmate')
+    recordStartup('tray-created')
 }
 
 app.whenReady().then(async () => {
-    await appInit()
+    recordStartup('electron-ready')
+    if (!await runStartupStage('application-init', () => appInit())) return
 
     // 更新玩家信息，添加Steam数据
     try {
         const steamInfo = greenworksManager.getSteamInfo()
-        console.log(steamInfo)
-        console.log('Username:', steamInfo.screenName)
-        console.log('Steam ID:', steamInfo.steamId, "type", typeof steamInfo.steamId)
         playerManager.updateSteamInfo(steamInfo.steamId)
-        console.log('Steam information saved to player manager')
+        recordStartup('steam-player-info-saved')
     } catch (error) {
+        recordStartup('startup-exit-requested', { reason: 'steam-player-info-failed', error: diagnosticError(error) })
         console.log('Failed to save Steam information:', error)
         app.quit()
         return
     }
 
     // 创建窗口
-    createWindow()
+    await runStartupStage('main-window', () => createWindow())
     startFarmAssistant()
     if (import.meta.env.DEV && is.dev && !app.isPackaged) {
         const { installFarmLifeDevelopmentController } = await import('./modules/farm/developmentController')
@@ -283,19 +285,26 @@ app.whenReady().then(async () => {
     }
     powerMonitor.on('suspend', () => { farmAssistant.suspend(true); farmLife.suspend(true) })
     powerMonitor.on('resume', () => { farmAssistant.suspend(false); farmLife.suspend(false) })
-    startSystemAudioActivityMonitor()
+    await runStartupStage('audio-monitor', () => startSystemAudioActivityMonitor())
     startWishGeneration(0)
     startOnlineAttributeDecay()
+    recordStartup('main-services-started')
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })
+}).catch(error => {
+    recordStartup('startup-failed', { error: diagnosticError(error) })
+    logger.error('Petmate启动失败', error)
+    app.quit()
 })
 
 app.on('window-all-closed', () => {
+    recordStartup('all-windows-closed')
     if (process.platform !== 'darwin') app.quit()
 })
 ipcMain.on('quit-app', () => {
+    recordStartup('quit-requested', { reason: 'renderer-quit-app' })
     app.quit()
 })
 
