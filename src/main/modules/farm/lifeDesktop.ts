@@ -1,6 +1,6 @@
 import { BrowserWindow, screen } from 'electron'
 
-import { farmDeparture, type FarmLifeView } from '../../../shared/farmLife'
+import { farmAwayCard, farmDeparture, type FarmLifeView } from '../../../shared/farmLife'
 
 export function clampPetPosition(
     point: { x: number; y: number },
@@ -16,8 +16,9 @@ export function clampPetPosition(
 /** The video owns the walk. Move the native window only before it starts. */
 export class FarmLifeDesktop {
     private origin: { x: number; y: number; width: number; height: number } | null = null
+    private awayPosition: { x: number; y: number } | null = null
     private phase = ''
-    private timer?: ReturnType<typeof setInterval>
+    private shift: { id: string; target: { x: number; y: number }; moved: boolean } | null = null
     private internal = false
     private hiddenForVisit = false
     hiddenByPlayer = false
@@ -34,8 +35,31 @@ export class FarmLifeDesktop {
         window.on('closed', () => this.clear())
     }
     private clear() {
-        if (this.timer) clearInterval(this.timer)
-        this.timer = undefined
+        this.shift = null
+    }
+    /** Let the current costume fade out before changing native coordinates. */
+    prepareRelocation(id: string): boolean {
+        if (this.window.isDestroyed() || this.phase !== 'preparing') return false
+        if (this.shift?.id === id) {
+            if (!this.shift.moved) return true
+            this.shift = null
+            return false
+        }
+        const bounds = this.window.getBounds()
+        const area = screen.getDisplayMatching(bounds).workArea
+        const target = clampPetPosition(bounds, area, { width: farmDeparture.windowWidth, height: farmDeparture.windowHeight })
+        if (target.x === bounds.x && target.y === bounds.y) return false
+        this.shift = { id, target, moved: false }
+        this.window.webContents.send('farm-life-departure-shift', { id })
+        return true
+    }
+    moveCovered(id: string): boolean {
+        if (this.window.isDestroyed() || this.phase !== 'preparing' || this.shift?.id !== id) return false
+        if (!this.shift.moved) {
+            this.window.setPosition(this.shift.target.x, this.shift.target.y)
+            this.shift.moved = true
+        }
+        return true
     }
     private show() {
         this.internal = true
@@ -53,6 +77,12 @@ export class FarmLifeDesktop {
         this.phase = ''
         if (this.window.isDestroyed()) return
         if (this.origin) {
+            if (this.awayPosition) {
+                const bounds = this.window.getBounds()
+                this.origin.x += bounds.x - this.awayPosition.x
+                this.origin.y += bounds.y - this.awayPosition.y
+            }
+            this.awayPosition = null
             const area = screen.getDisplayMatching(this.origin).workArea
             this.resize({ ...this.origin, ...clampPetPosition(this.origin, area, this.origin) })
             this.origin = null
@@ -71,15 +101,6 @@ export class FarmLifeDesktop {
         const bounds = this.window.getBounds()
         if (visit.phase === 'preparing') {
             this.origin = bounds
-            const area = screen.getDisplayMatching(bounds).workArea
-            const target = clampPetPosition(bounds, area, { width: farmDeparture.windowWidth, height: farmDeparture.windowHeight })
-            const started = performance.now()
-            if (target.x !== bounds.x || target.y !== bounds.y) this.timer = setInterval(() => {
-                if (this.window.isDestroyed()) { this.clear(); return }
-                const t = Math.min(1, (performance.now() - started) / 350)
-                this.window.setPosition(Math.round(bounds.x + (target.x - bounds.x) * t), Math.round(bounds.y + (target.y - bounds.y) * t))
-                if (t === 1) this.clear()
-            }, 16)
         } else if (visit.phase === 'leaving') {
             this.origin ??= bounds
             const size = { width: farmDeparture.windowWidth, height: farmDeparture.windowHeight }
@@ -87,9 +108,19 @@ export class FarmLifeDesktop {
             this.resize({ ...clampPetPosition(bounds, area, size), ...size })
         } else if (visit.phase === 'visiting' || visit.phase === 'exiting') {
             this.hiddenForVisit = true
-            this.internal = true
-            try { this.window.setIgnoreMouseEvents(true); this.window.hide() }
-            finally { this.internal = false }
+            if (!this.awayPosition) {
+                const origin = this.origin ??= bounds
+                const area = screen.getDisplayMatching(origin).workArea
+                const point = {
+                    x: origin.x + (origin.width - farmAwayCard.width) / 2,
+                    y: origin.y + origin.height - farmAwayCard.height
+                }
+                this.resize({ ...clampPetPosition(point, area, farmAwayCard), ...farmAwayCard })
+                const card = this.window.getBounds()
+                this.awayPosition = { x: card.x, y: card.y }
+            }
+            this.window.setIgnoreMouseEvents(false)
+            if (!this.hiddenByPlayer) this.show()
         } else if (visit.phase === 'returning') {
             this.restore()
             this.phase = 'returning'

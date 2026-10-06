@@ -8,6 +8,9 @@ import * as path from 'path'
 import { join } from 'path'
 
 import trayIcon from '../../resources/icon.png?asset'
+import { isDevelopmentWindow } from './developmentWindows'
+import { isHelperWindow } from './helperWindows'
+import { PetSpeechWindow, registerPetSpeechIpc } from './pet-speech-window'
 import { greenworksManager } from './greenworks'
 import { appInit } from './init'
 import { saveChatHistoryMessages } from './llm'
@@ -16,12 +19,15 @@ import logger from './log'
 import { attachFarmLifeDesktop, farmAssistant, farmLife, startFarmAssistant } from './modules/farm/runtime'
 import { playerManager } from './modules/store'
 import { SystemAudioActivityMonitor } from './packages/system-audio-activity'
+import { openPageWindow } from './page-window'
 import { destroyScheduler, startOnlineAttributeDecay, startWishGeneration } from './scheduler'
 import { getOnTop, updateSettings } from './settings'
 
 app.commandLine.appendSwitch('--in-process-gpu')
 
 let mainWindow: BrowserWindow | null = null
+let speechWindow: PetSpeechWindow | null = null
+registerPetSpeechIpc(() => speechWindow)
 let tray: Tray | null = null
 let systemAudioActivityMonitor: SystemAudioActivityMonitor | null = null
 const PETMATE_WINDOW_WIDTH = 300
@@ -51,7 +57,7 @@ function getDefaultPetmateWindowBounds() {
 
 function enforcePetmateWindowSize(win: BrowserWindow) {
     if (win.isDestroyed()) return
-    if (farmLife.getView().visit?.phase === 'leaving') return
+    if (['leaving', 'visiting', 'exiting'].includes(farmLife.getView().visit?.phase ?? '')) return
 
     const { x, y } = win.getBounds()
     win.setResizable(false)
@@ -155,14 +161,20 @@ const createWindow = (): void => {
         enforcePetmateWindowSize(win)
     })
     win.on('closed', () => {
+        if (speechWindow?.owner === win) speechWindow = null
         if (petmateWindowDragSession?.win === win) stopPetmateWindowDrag()
         if (mainWindow === win) mainWindow = null
     })
 
     mainWindow = win
     attachFarmLifeDesktop(win)
+    speechWindow = new PetSpeechWindow(win, join(__dirname, '../preload/index.js'), bubble =>
+        is.dev && process.env['ELECTRON_RENDERER_URL']
+            ? bubble.loadURL(process.env['ELECTRON_RENDERER_URL'].replace(/\/$/, '') + '/#/pet-speech')
+            : bubble.loadFile(join(__dirname, '../renderer/index.html'), { hash: '/pet-speech' }))
     const WM_INITMENU = 0x0116
     mainWindow.hookWindowMessage(WM_INITMENU, () => {
+        if (['visiting', 'exiting'].includes(farmLife.getView().visit?.phase ?? '')) return
         mainWindow?.setEnabled(false)
         mainWindow?.setEnabled(true)
         mainWindow?.webContents.send('show-context-menu')
@@ -185,6 +197,12 @@ const createWindow = (): void => {
             label: '显示',
             click: () => {
                 mainWindow?.show()
+            }
+        },
+        {
+            label: '主页',
+            click: () => {
+                openPageWindow(mainWindow, '/home')
             }
         },
         {
@@ -259,6 +277,10 @@ app.whenReady().then(async () => {
     // 创建窗口
     createWindow()
     startFarmAssistant()
+    if (import.meta.env.DEV && is.dev && !app.isPackaged) {
+        const { installFarmLifeDevelopmentController } = await import('./modules/farm/developmentController')
+        installFarmLifeDevelopmentController(getMainWindow, join(__dirname, '../preload/index.js'))
+    }
     powerMonitor.on('suspend', () => { farmAssistant.suspend(true); farmLife.suspend(true) })
     powerMonitor.on('resume', () => { farmAssistant.suspend(false); farmLife.suspend(false) })
     startSystemAudioActivityMonitor()
@@ -305,7 +327,7 @@ export function getMainWindow(): BrowserWindow | null {
  * @returns 页面窗口
  */
 export function getPageWindow(): BrowserWindow | null {
-    const allWindowsExcludeMain: BrowserWindow[] = BrowserWindow.getAllWindows().filter(window => window.id !== mainWindow?.id)
+    const allWindowsExcludeMain: BrowserWindow[] = BrowserWindow.getAllWindows().filter(window => window.id !== mainWindow?.id && !isDevelopmentWindow(window.id) && !isHelperWindow(window.id))
     if (allWindowsExcludeMain.length > 1) {
         throw new Error(`页面窗口数量不正确，最多只有一个页面窗口，但是有${allWindowsExcludeMain.length}个`)
     }

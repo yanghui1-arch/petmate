@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
-import { basename, dirname } from 'node:path'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { basename, dirname, join, resolve } from 'node:path'
+import { tmpdir } from 'node:os'
+import { spawn } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import { build } from 'esbuild'
@@ -17,6 +19,8 @@ const { createMemoryHistory, createRouter } = require('vue-router')
 const bundled = await build({
     stdin: {
         contents: `export { default as Farm } from './src/renderer/views/Farm.vue';
+      export { default as Petmate } from './src/renderer/views/Petmate.vue';
+      export { default as FarmLifeController } from './src/renderer/views/FarmLifeController.vue';
       export { FarmService } from './src/main/modules/farm/service.ts';
       export { farmEntrances, farmLayout, hitFarm, insidePlot, plantingSlots, plotPosition } from './src/renderer/game/farmSceneModel.ts';
       export { default as zhCN } from './src/renderer/i18n/locales/zh-CN.ts';
@@ -37,6 +41,21 @@ const bundled = await build({
                     external: true
                 }))
                 builder.onLoad({ filter: /\.vue$/ }, async (args) => {
+                    if (basename(args.path) === 'WheelMenu.vue')
+                        return { contents: 'export default { render: () => null }', loader: 'js' }
+                    if (basename(args.path) === 'FarmDeparture.vue')
+                        return {
+                            contents: `import { h } from 'vue'; export default { emits:['switched'],
+                                setup(_, {emit}) { return ()=>h('farm-departure-test',{onSwitched:()=>emit('switched')}) } };`,
+                            loader: 'js'
+                        }
+                    if (basename(args.path) === 'FarmDepartureShift.vue')
+                        return {
+                            contents: `import { h } from 'vue'; export default { props:['id'], emits:['opacity','covered','done'],
+                                setup(props, {emit}) { return ()=>h('farm-shift-test',{id:props.id,
+                                    onOpacity:value=>emit('opacity',value),onCovered:()=>emit('covered'),onDone:ok=>emit('done',ok)}) } };`,
+                            loader: 'js'
+                        }
                     if (basename(args.path) === 'FarmScene.vue')
                         return {
                             contents: `import { h, onMounted } from 'vue'; export default { props: ['state'], emits: ['target','ready','hover'],
@@ -67,12 +86,31 @@ const bundled = await build({
                     contents: `export default ${JSON.stringify(`/farm-assets/${basename(args.path)}`)}`,
                     loader: 'js'
                 }))
+                builder.onLoad({ filter: /usePetmateModel\.ts$/ }, () => ({
+                    contents: `import { ref } from 'vue';
+                    export const isShowContextMenu=ref(false);
+                    export const usePetmateModel=()=>({
+                        init2D:async()=>{}, playIdle(){}, setAngry(){}, setEnergyLow(){},
+                        setActivity(){}, sleepResponseTick:globalThis.petUiSleep??ref(0), speechAnchor:ref({x:150,y:10}), destroy(){}
+                    });`,
+                    loader: 'js'
+                }))
+                builder.onLoad({ filter: /usePlayer\.ts$/ }, () => ({
+                    contents: `import { ref } from 'vue';
+                    export const usePlayer=()=>({
+                        playerData:globalThis.petUiPlayer??ref(null),initPlayerData:async()=>{},refreshPlayerData:async()=>{},
+                        subscribeToPlayerDataSync:()=>()=>{}
+                    });`,
+                    loader: 'js'
+                }))
             }
         }
     ]
 })
 const {
     Farm,
+    Petmate,
+    FarmLifeController,
     FarmService,
     zhCN,
     zhTW,
@@ -205,7 +243,7 @@ const previousWindow = globalThis.window,
     previousConfirm = globalThis.confirm,
     previousObserver = globalThis.ResizeObserver
 const listeners = new Map()
-globalThis.document = { hidden: true, activeElement: null }
+globalThis.document = { hidden: true, activeElement: null, addEventListener() {}, removeEventListener() {} }
 globalThis.confirm = () => true
 globalThis.ResizeObserver = class {
     observe() {}
@@ -528,6 +566,271 @@ try {
     await settle()
     assert.equal(listeners.size, 0)
     assert.ok(checkpointed && unsubscribed)
+    let receiveLife, receiveShift, receiveSpeech, interactions = 0, releasePage
+    const finishedSpeech = []
+    const speechUpdates = []
+    globalThis.petUiSleep = require('vue').ref(0)
+    globalThis.petUiPlayer = require('vue').ref(null)
+    document.hidden = false
+    const routes = []
+    const away = { enabled: true, visit: { id: 'away-card-test', phase: 'visiting' } }
+    Object.assign(window.api, {
+        updatePetSpeech: message => speechUpdates.push(structuredClone(message)),
+        onFarmLifeState: callback => { receiveLife = callback; return () => {} },
+        onFarmLifeSpeech: callback => { receiveSpeech = callback; return () => {} },
+        onFarmDepartureShift: callback => { receiveShift = callback; return () => {} },
+        finishFarmLifeSpeech: id => finishedSpeech.push(id),
+        getFarmLife: async () => ({ code: 200, data: away }),
+        onActivityFinished() {},
+        farmLifeInteraction: () => interactions++,
+        openNewWindow: async route => {
+            routes.push(route)
+            if (route === '/farm') await new Promise(resolve => { releasePage = resolve })
+            return { code: 200 }
+        }
+    })
+    const petApp = renderer.createApp(Petmate).use(i18n)
+    const paintCases = []
+    try {
+        petApp.mount(root)
+        await settle()
+        assert.equal(findClass('away-card').length, 1)
+        const modelLayer = findClass('petmate-canvas-container')[0]
+        const visibleCanvas = node('canvas')
+        visibleCanvas.style.visibility = 'visible'
+        visibleCanvas.parent = modelLayer
+        modelLayer.children.push(visibleCanvas)
+        assert.equal(modelLayer.props.style.display, 'none', 'the entire model layer must be removed from painting, even with visible descendants')
+        paintCases.push({ phase: 'visiting', style: { ...modelLayer.props.style }, visible: false })
+        assert.equal(buttons(findClass('away-card')[0]).length, 2)
+        assert.equal(walk(findClass('away-card')[0]).filter(n => n.type === 'p').length, 0)
+        const pointer = { stopPropagation() {}, preventDefault() {} }
+        findClass('petmate-container')[0].props.onPointerdownCapture(pointer)
+        findClass('away-card-host')[0].props.onPointerdown(pointer)
+        await click(findClass('away-card-farm')[0])
+        assert.equal(findClass('away-card-home')[0].props.disabled, true)
+        await click(findClass('away-card-home')[0])
+        assert.deepEqual(routes, ['/farm'], 'pending opening prevents duplicate page requests')
+        releasePage()
+        await settle()
+        await click(findClass('away-card-home')[0])
+        assert.deepEqual(routes, ['/farm', '/home'])
+        assert.equal(interactions, 0, 'card pointer capture and both buttons must not recall Youmei')
+        receiveLife({ ...away, visit: { ...away.visit, phase: 'exiting' } })
+        await settle()
+        assert.equal(findClass('away-card').length, 1, 'entry stays during farm exit')
+        visibleCanvas.style.visibility = 'visible' // The real renderScene does this every frame.
+        assert.equal(modelLayer.props.style.display, 'none', 'exit cannot expose an explicitly visible child canvas')
+        paintCases.push({ phase: 'exiting', style: { ...modelLayer.props.style }, visible: false })
+        for (const locale of ['zh-CN', 'zh-TW', 'en-US']) {
+            i18n.global.locale.value = locale
+            await settle()
+            assert.equal(textOf(root).includes('farmLife.'), false)
+            assert.equal(textOf(root).includes('wheel.'), false)
+        }
+        receiveLife({ ...away, visit: { ...away.visit, phase: 'returning' } })
+        await settle()
+        assert.equal(findClass('away-card').length, 0, 'return removes entry')
+        assert.equal(findClass('petmate-canvas-container')[0], modelLayer, 'keep the initialized model mounted throughout the trip')
+        assert.equal(modelLayer.props.style.display, 'block', 'return restores the model layer')
+        paintCases.push({ phase: 'returning', style: { ...modelLayer.props.style }, visible: true })
+        receiveLife({ enabled: true, visit: null })
+        await settle()
+        assert.equal(modelLayer.props.style.display, 'block', 'idle keeps the model visible')
+        receiveLife({ ...away, visit: { ...away.visit, phase: 'preparing' } })
+        await settle()
+        assert.equal(modelLayer.props.style.display, 'block', 'departure dialogue shows the original model')
+        receiveShift({id:'stale'})
+        await settle()
+        assert.equal(walk(root).filter(n=>n.type==='farm-shift-test').length,0,'ignore stale relocation request')
+        receiveShift({id:away.visit.id})
+        await settle()
+        let shift = walk(root).find(n=>n.type==='farm-shift-test')
+        assert.ok(shift)
+        shift.props.onOpacity(.5)
+        await settle()
+        assert.equal(modelLayer.props.style.opacity,.5,'fade affects the whole current model')
+        assert.equal(modelLayer.props.style.display,'block','model stays mounted and visible during fade')
+        shift.props.onOpacity(0)
+        shift.props.onCovered()
+        await settle()
+        assert.equal(modelLayer.props.style.display,'none','completed fade removes the entire original model before native relocation')
+        paintCases.push({phase:'teleport-covered',style:{...modelLayer.props.style},visible:false})
+        assert.equal(finishedSpeech.length,0,'costume and video must wait for fade and relocation')
+        shift.props.onDone(true)
+        await settle()
+        assert.deepEqual(finishedSpeech,[away.visit.id])
+        assert.equal(walk(root).filter(n=>n.type==='farm-shift-test').length,0)
+        assert.equal(modelLayer.props.style.display,'none','new position must never show the previous outfit')
+        receiveLife({ ...away, visit: { ...away.visit, phase: 'leaving' } })
+        await settle()
+        assert.equal(modelLayer.props.style.display,'none','scan at relocated position only reveals workwear')
+        paintCases.push({phase:'relocated-scan',style:{...modelLayer.props.style},visible:false})
+        receiveLife({ ...away, visit: { ...away.visit, phase: 'returning' } })
+        await settle()
+        assert.equal(modelLayer.props.style.display,'block')
+        assert.equal(modelLayer.props.style.opacity,1,'return restores full opacity')
+        receiveLife({ ...away, visit: { ...away.visit, phase: 'preparing' } })
+        await settle()
+        receiveShift({id:away.visit.id})
+        await settle()
+        shift=walk(root).find(n=>n.type==='farm-shift-test')
+        shift.props.onCovered()
+        await settle()
+        receiveLife({enabled:true,visit:null})
+        await settle()
+        shift.props.onDone(true)
+        assert.equal(modelLayer.props.style.display,'block','cancelling a covered trip restores model immediately')
+        assert.equal(modelLayer.props.style.opacity,1,'cancel restores full opacity')
+        assert.deepEqual(finishedSpeech,[away.visit.id],'cancelled fade cannot start a late departure')
+        receiveLife({ ...away, visit: { ...away.visit, phase: 'leaving' } })
+        await settle()
+        assert.equal(modelLayer.props.style.display, 'block', 'scan still shows the clipped original costume before switching')
+        paintCases.push({ phase: 'leaving-scan', style: { ...modelLayer.props.style }, visible: true })
+        walk(root).find(n => n.type === 'farm-departure-test').props.onSwitched()
+        await settle()
+        assert.equal(modelLayer.props.style.display, 'none', 'completed outfit change hides the original model behind the departure video')
+        paintCases.push({ phase: 'leaving-switched', style: { ...modelLayer.props.style }, visible: false })
+        receiveLife({ enabled: true, visit: null })
+        await settle()
+        findClass('petmate-container')[0].props.onPointerdownCapture(pointer)
+        assert.equal(interactions, 1, 'normal pet interactions still work after return')
+        receiveLife({ ...away, visit: { ...away.visit, phase: 'preparing' } })
+        receiveSpeech({ stage: 'start', event: { id: away.visit.id, kind: 'water', line: 0, plots: 1 } })
+        await settle()
+        const initialSpeech = speechUpdates.at(-1)
+        assert.equal(initialSpeech.key, 'life')
+        assert.equal(initialSpeech.text, i18n.global.t('farmLife.start.water.0', { count: 1 }))
+        // settle() may span a typing tick on a busy machine; validate the prefix
+        // without assuming that no real interval has elapsed.
+        assert.ok(initialSpeech.text.startsWith(initialSpeech.visibleText))
+        assert.deepEqual(initialSpeech.anchor, { x: 150, y: 10 })
+        await new Promise(done => setTimeout(done, 200))
+        await settle()
+        assert.equal(speechUpdates.at(-1).id, initialSpeech.id, 'typing keeps the message identity and full-text reserve')
+        assert.ok(speechUpdates.at(-1).visibleText.length > 0)
+        assert.equal(findClass('pet-dialog').length, 0, 'all speech renders outside the model window')
+        receiveLife({ ...away, visit: { ...away.visit, phase: 'leaving' } })
+        await settle()
+        assert.equal(speechUpdates.at(-1), null, 'outfit scan clears the independent speech window')
+        receiveLife({ enabled: true, visit: null })
+        globalThis.petUiPlayer.value = { petmates: [{ attrs: { hungry: 0, maxHungry: 100, emotion: 100, maxEmotion: 100, energy: 100, maxEnergy: 100 }, status: { status: 'idle' } }] }
+        await settle()
+        assert.equal(speechUpdates.at(-1).key, 'hungry', 'hunger uses the same speech window')
+        receiveSpeech({ stage: 'return', event: { id: 'blocked-return', kind: 'water', line: 0, plots: 1 } })
+        await settle()
+        assert.equal(speechUpdates.at(-1).key, 'hungry', 'hunger prevents farm speech from replacing it')
+        globalThis.petUiSleep.value++
+        await new Promise(done => setTimeout(done, 150))
+        await settle()
+        assert.equal(speechUpdates.at(-1).key, 'sleep', 'sleep has priority through the same rendering path')
+        console.log('Actual desktop Vue: away entry, farm/home routes, duplicate prevention, no recall, exit/return and three locales: passed')
+        console.log('Actual desktop speech: complete text, stable typing identity, farm/hunger/sleep priority, no inline bubble, clearing on departure and unmount: passed')
+    } finally {
+        petApp.unmount()
+        assert.equal(speechUpdates.at(-1), null, 'unmount clears the auxiliary window')
+        delete globalThis.petUiSleep
+        delete globalThis.petUiPlayer
+        document.hidden = true
+    }
+    if (process.argv.includes('--paint')) {
+        // Feed the actual Vue style bindings above into Chromium. Reproduce the
+        // model hook's explicitly visible child canvas and test rendered pixels.
+        const prefix = join(tmpdir(), 'petmate-model-visibility-')
+        const directory = await mkdtemp(prefix)
+        try {
+            const source = await readFile('src/renderer/views/Petmate.vue', 'utf8')
+            const css = parse(source).descriptor.styles.map(style => style.content).join('\n')
+            const main = join(directory, 'main.cjs')
+            await writeFile(main, `
+                const assert=require('node:assert/strict');
+                const {app,BrowserWindow}=require('electron');
+                app.whenReady().then(async()=>{
+                    const win=new BrowserWindow({width:288,height:132,useContentSize:true,show:false,
+                        frame:false,transparent:true,webPreferences:{offscreen:true}});
+                    try {
+                        await win.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent(
+                            '<html><head><style>html,body{margin:0;background:transparent}'+${JSON.stringify(css)}+
+                            '</style></head><body><div class="petmate-canvas-container"><canvas width="300" height="300" style="visibility:visible;position:absolute;inset:0"></canvas></div></body></html>'
+                        ));
+                        for(const test of ${JSON.stringify(paintCases)}) {
+                            const visible=await win.webContents.executeJavaScript('('+((test)=>{
+                                const layer=document.querySelector('.petmate-canvas-container');
+                                Object.assign(layer.style,test.style);
+                                const canvas=layer.querySelector('canvas');
+                                canvas.style.visibility='visible';
+                                const ctx=canvas.getContext('2d');ctx.fillStyle='#ff0080';ctx.fillRect(0,0,300,300);
+                                return canvas.checkVisibility({checkVisibilityCSS:true});
+                            }).toString()+')('+JSON.stringify(test)+')');
+                            assert.equal(visible,test.visible,test.phase+': child visibility must obey the model layer');
+                            await new Promise(done=>setTimeout(done,100));
+                            const bitmap=(await win.webContents.capturePage()).toBitmap();
+                            assert.ok(bitmap.length>0);
+                            assert.equal(bitmap[bitmap.length-1],test.visible?255:0,test.phase+': actual bottom pixel alpha');
+                        }
+                        console.log('Electron paint: explicitly visible child canvas stays transparent while away and renders on return/scan: passed');
+                    } finally {win.destroy()}
+                    app.exit(0);
+                }).catch(error=>{console.error(error);app.exit(1)});
+            `)
+            const env = { ...process.env }
+            delete env.ELECTRON_RUN_AS_NODE
+            const child = spawn(require('electron'), [main], { env, stdio: 'inherit', windowsHide: true })
+            const code = await new Promise((done, reject) => { child.once('exit', done); child.once('error', reject) })
+            assert.equal(code, 0, 'Electron model visibility regression')
+        } finally {
+            if (!resolve(directory).startsWith(resolve(prefix))) throw Error('Unexpected test directory')
+            await rm(directory, { recursive: true, force: true })
+        }
+    }
+    const live = { life: { enabled: true, visit: null }, reason: '', choices: [{ kind: 'water', plotIds: [0, 1] }], daily: { trips: 0, work: 0, life: 0, watered: 0, harvested: 0 }, resources: { cash: 50, planted: 2 }, setupReason: '' }
+    const devCommands = []
+    const priorRoutes = routes.length
+    Object.assign(window.api, {
+        getFarmLifeDevelopment: async () => ({ code: 200, data: structuredClone(live) }),
+        commandFarmLifeDevelopment: async (action, kind) => {
+            devCommands.push([action, kind])
+            if (action === 'addCoins') live.resources.cash += 1000
+            else if (action === 'clearCrops') live.resources.planted = 0
+            if (action === 'resetQuota') live.daily = { trips: 0, work: 0, life: 0, watered: 0, harvested: 0 }
+            if (['addCoins', 'clearCrops', 'matureCrops', 'resetQuota'].includes(action))
+                return { code: 200, data: structuredClone(live) }
+            live.life.visit = { id: 'live-test', kind: 'water', phase: 'preparing', committed: false }
+            live.setupReason = '尤美正在出行'
+            live.choices = []
+            live.reason = '已有出行'
+            return { code: 200, data: structuredClone(live) }
+        }
+    })
+    const liveApp = renderer.createApp(FarmLifeController)
+    try {
+        liveApp.mount(root)
+        await settle()
+        const water = walk(root).find(n => n.props['data-life-event'] === 'water')
+        const harvest = walk(root).find(n => n.props['data-life-event'] === 'harvest')
+        assert.equal(water.props.disabled, false)
+        assert.equal(harvest.props.disabled, true)
+        for (const action of ['addCoins', 'matureCrops', 'clearCrops', 'resetQuota']) {
+            const target = walk(root).find(n => n.props['data-farm-action'] === action)
+            assert.equal(target.props.disabled, false)
+            await click(target)
+            assert.deepEqual(devCommands.at(-1), [action, undefined])
+        }
+        assert.ok(textOf(root).includes('金币 1050'))
+        assert.ok(textOf(root).includes('已种植 0 块'))
+        devCommands.length = 0
+        await click(water)
+        assert.deepEqual(devCommands, [['trigger', 'water']], 'actual controller button calls the live IPC')
+        assert.equal(routes.length, priorRoutes, 'controller cannot automatically open the farm')
+        assert.ok(textOf(root).includes('出发气泡'))
+        assert.ok(textOf(root).includes('尚未提交工作'))
+        for (const action of ['matureCrops', 'clearCrops', 'resetQuota'])
+            assert.equal(walk(root).find(n => n.props['data-farm-action'] === action).props.disabled, true)
+        assert.equal(walk(root).find(n => n.props['data-farm-action'] === 'addCoins').props.disabled, false)
+        await click(button(root, '召回尤美'))
+        assert.deepEqual(devCommands.at(-1), ['recall', undefined])
+        console.log('Actual live controller Vue: real command dispatch, qualification display, phase and recall, no automatic farm opening: passed')
+    } finally { liveApp.unmount() }
     console.log(
         'Actual Vue + farm service: direct planting/watering/harvest, duplicate blocking, failed-save rollback, real trade/orders, illustrated panels, locales, backup errors and cleanup: passed'
     )

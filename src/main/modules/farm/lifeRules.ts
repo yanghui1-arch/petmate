@@ -44,10 +44,8 @@ export function lifeChoices(view: FarmView, at: number, random: () => number): L
     if (budget.work < farmLifeConfig.maxWorkTrips) {
         const water = eligiblePlots(farm, { type: 'water', plotIds: ids })
         const count = Math.min(
-            farmLifeConfig.waterMin +
-                Math.floor(random() * (farmLifeConfig.waterMax - farmLifeConfig.waterMin + 1)),
-            Math.max(1, water.length - 1),
-            farmLifeConfig.maxWater - budget.watered
+            farmLifeConfig.maxWaterPlots,
+            Math.max(1, water.length - 1)
         )
         const waterIds = safeHelp(
             farm,
@@ -58,9 +56,9 @@ export function lifeChoices(view: FarmView, at: number, random: () => number): L
         if (waterIds.length)
             choices.push({ kind: 'water', plotIds: waterIds, weight: farmLifeConfig.weights.water })
         const ripe = eligiblePlots(farm, { type: 'harvest', plotIds: ids })
-        if (ripe.length >= 2 && budget.harvested < farmLifeConfig.maxHarvest) {
+        if (ripe.length >= 2) {
             const max = Math.min(
-                3,
+                farmLifeConfig.maxHarvestPlots,
                 Math.max(
                     Math.ceil(ripe.length * farmLifeConfig.harvestMinRatio),
                     Math.floor(
@@ -71,8 +69,7 @@ export function lifeChoices(view: FarmView, at: number, random: () => number): L
                                         farmLifeConfig.harvestMinRatio))
                     )
                 ),
-                ripe.length - 1,
-                farmLifeConfig.maxHarvest - budget.harvested
+                ripe.length - 1
             )
             const ripeIds = safeHelp(farm, view.cash, { type: 'harvest', plotIds: ripe }, at)
             if (ripeIds.length)

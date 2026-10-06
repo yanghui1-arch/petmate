@@ -32,7 +32,14 @@ export function setFarmLifePetState(sender: number, ready: boolean, blocked: boo
 }
 export function attachFarmLifeDesktop(window: BrowserWindow) { desktop = new FarmLifeDesktop(window, () => { farmLife.activity(); farmLife.recall() }) }
 export function finishFarmLifeSpeech(sender: number, id: unknown) {
-    if (sender === desktop?.window.webContents.id && typeof id === 'string') farmLife.speechFinished(id)
+    const visit = farmLife.getView().visit
+    if (sender !== desktop?.window.webContents.id || typeof id !== 'string' || visit?.id !== id || visit.phase !== 'preparing') return
+    if (!desktop.prepareRelocation(id)) farmLife.speechFinished(id)
+}
+export function moveCoveredFarmDeparture(sender: number, id: unknown): boolean {
+    const visit = farmLife.getView().visit
+    return sender === desktop?.window.webContents.id && typeof id === 'string' && visit?.id === id && visit.phase === 'preparing'
+        ? desktop.moveCovered(id) : false
 }
 export const farmService = new FarmService(
     { read: () => playerManager.getFarmSnapshot(), commit: snapshot => playerManager.commitFarmSnapshot(snapshot) },

@@ -515,7 +515,7 @@ check(
         assert.equal(stale.snapshot.farm.produce.wheat, 0)
     }
 )
-check('harvest fractions preserve mature fields and daily remaining quota', () => {
+check('harvest fractions preserve mature fields; previous harvests do not cap later trips', () => {
     for (const count of [2, 3, 5, 6]) {
         const f = fixture()
         f.snapshot.farm.achievements.harvestedPlots.wheat = 5
@@ -529,12 +529,12 @@ check('harvest fractions preserve mature fields and daily remaining quota', () =
         assert.ok(choice.plotIds.length <= Math.floor(count * 0.5))
         assert.ok(choice.plotIds.length < count)
         const data = ensureFarmLife(f.snapshot.farm, f.wall)
-        data.daily.harvested = 2
+        data.daily.harvested = 9
         assert.equal(
             lifeChoices(f.service.getView(), f.wall, () => 0).find(
                 (choice) => choice.kind === 'harvest'
             ).plotIds.length,
-            1
+            choice.plotIds.length
         )
     }
 })
@@ -576,9 +576,9 @@ check('quota ceilings, one ripe plot and manual-first requirement restrict choic
         lifeChoices(f.service.getView(), f.wall, () => 0).some((c) => c.kind === 'harvest'),
         false
     )
-    data.daily.trips = 4
-    data.daily.work = 3
-    data.daily.life = 1
+    data.daily.trips = config.maxTrips
+    data.daily.work = config.maxWorkTrips
+    data.daily.life = config.maxLifeTrips
     assert.deepEqual(
         lifeChoices(f.service.getView(), f.wall, () => 0),
         []
@@ -860,4 +860,312 @@ check(
         }
     }
 )
+check('live development trigger skips only waiting, preserves real work and manual farm entry', () => {
+    const f = fixture()
+    f.run({ type: 'sow', cropId: 'carrot', plotIds: [0, 1, 2, 3] })
+    assert.throws(() => f.controller.triggerForDevelopment('water'), /先进入农场/)
+    f.enter(); f.leave()
+    const before = structuredClone(f.snapshot)
+    assert.ok(f.controller.developmentState().choices.some(choice => choice.kind === 'water'))
+    assert.deepEqual(f.snapshot, before, 'inspection cannot alter resources or quota')
+    assert.equal(f.mono, 0, 'no test clock is used')
+    f.controller.triggerForDevelopment('water')
+    assert.equal(f.controller.getView().visit.phase, 'preparing')
+    assert.throws(() => f.controller.triggerForDevelopment('water'), /已有出行/)
+    f.depart()
+    assert.equal(f.open, false, 'departure must leave the entry card for manual viewing')
+    assert.equal(f.snapshot.farm.life.events.length, 1)
+    assert.ok(f.snapshot.farm.plots.some(plot => plot.plant?.wateredBy === 'helper'))
+    const budget = structuredClone(f.snapshot.farm.life.daily)
+    f.enter()
+    assert.equal(f.controller.getView().visit.phase, 'visiting')
+    assert.deepEqual(f.snapshot.farm.life.daily, budget, 'watching cannot repeat work')
+    f.controller.recall()
+    f.finish()
+})
+check('development triggers preserve host, milestone and quota guards', () => {
+    for (const count of [0, 99, 499, 999]) {
+        const f = fixture()
+        for (let id = 0; id < 6; id++) f.plant(id)
+        f.snapshot.farm.achievements.harvestedPlots.wheat = count
+        if (count) f.snapshot.farm.achievements.manualHarvestedPlots = { wheat: 1 }
+        f.service.checkpoint()
+        f.enter(); f.leave()
+        assert.throws(() => f.controller.triggerForDevelopment('harvest'), /没有合格目标/)
+        assert.equal(f.controller.getView().visit, null)
+    }
+    const f = fixture()
+    f.run({ type: 'sow', cropId: 'carrot', plotIds: [0, 1, 2, 3] })
+    f.enter()
+    assert.throws(() => f.controller.triggerForDevelopment('water'), /关闭农场/)
+    f.leave()
+    f.blocked = true
+    assert.throws(() => f.controller.triggerForDevelopment('water'), /暂时不能出行/)
+    f.blocked = false
+    f.visible = false
+    assert.throws(() => f.controller.triggerForDevelopment('water'), /已隐藏/)
+    f.visible = true
+    f.service.lifeTransaction(f.snapshot.revision, data => {
+        data.daily = { trips: config.maxTrips, work: config.maxWorkTrips, life: config.maxLifeTrips, watered: 0, harvested: 0 }
+        data.trips = config.maxTrips
+    })
+    assert.throws(() => f.controller.triggerForDevelopment('water'), /次数已用完/)
+})
+check('development setup persists coins, maturity and clearing without harvest rewards or counters', () => {
+    const f = fixture()
+    f.run({ type: 'sow', cropId: 'carrot', plotIds: [0, 1] })
+    f.snapshot.farm.plots[0].plant.watered = true
+    f.snapshot.farm.plots[0].plant.wateredBy = 'player'
+    f.service.checkpoint()
+    const before = structuredClone(f.snapshot)
+    f.controller.editForDevelopment('addCoins')
+    f.controller.editForDevelopment('addCoins')
+    assert.equal(f.snapshot.cash, before.cash + 2000, 'each click accumulates')
+    f.controller.editForDevelopment('matureCrops')
+    for (const plot of f.snapshot.farm.plots.filter(plot => plot.plant))
+        assert.equal(plot.plant.elapsedMs, plot.plant.durationMs)
+    assert.equal(f.snapshot.farm.plots[0].plant.wateredBy, 'player')
+    assert.equal(f.snapshot.farm.plots[1].plant.watered, false)
+    assert.equal(f.snapshot.farm.plots[0].plant.cropId, 'carrot')
+    assert.deepEqual(f.snapshot.farm.achievements, before.farm.achievements)
+    const restarted = new FarmService(f.repo, f.clock, f.id)
+    assert.equal(restarted.getView().farm.plots[1].plant.elapsedMs, f.snapshot.farm.plots[1].plant.durationMs)
+    f.controller.editForDevelopment('clearCrops')
+    assert.ok(f.snapshot.farm.plots.every(plot => plot.plant === null))
+    for (const field of ['exp', 'produce', 'seeds', 'harvests', 'achievements', 'tutorialRemaining', 'orders', 'life'])
+        assert.deepEqual(f.snapshot.farm[field], before.farm[field], field + ' must not grant rewards or alter progress')
+    assert.equal(f.snapshot.cash, before.cash + 2000)
+    assert.equal(f.snapshot.revision, before.revision + 4)
+    assert.equal(f.controller.developmentState().resources.planted, 0)
+    assert.equal(f.controller.developmentState().resources.cash, before.cash + 2000)
+})
+check('development setup save failures roll back all three operations and can retry', () => {
+    for (const action of ['addCoins', 'matureCrops', 'clearCrops']) {
+        const f = fixture()
+        f.run({ type: 'sow', cropId: 'carrot', plotIds: [0] })
+        const before = structuredClone(f.snapshot)
+        f.fail = true
+        assert.throws(() => f.controller.editForDevelopment(action), /disk full/)
+        assert.deepEqual(f.snapshot, before)
+        assert.ok(f.service.storageError)
+        f.fail = false
+        f.controller.editForDevelopment(action)
+        assert.equal(f.service.storageError, null)
+        assert.equal(f.snapshot.revision, before.revision + 1)
+    }
+})
+check('development quota reset renews all five daily budgets and preserves history and progress', () => {
+    const f = fixture()
+    f.run({ type: 'sow', cropId: 'carrot', plotIds: [0, 1] })
+    f.enter(); f.leave()
+    f.service.lifeTransaction(f.snapshot.revision, data => {
+        data.daily = { trips: config.maxTrips, work: config.maxWorkTrips, life: config.maxLifeTrips, watered: 12, harvested: 12 }
+        data.trips = 10
+        data.tutorialDone = true
+        data.flower = true
+        data.recent = ['butterfly']
+    })
+    const before = structuredClone(f.snapshot)
+    assert.equal(f.controller.developmentState().choices.length, 0)
+    f.controller.editForDevelopment('resetQuota')
+    const empty = { trips: 0, work: 0, life: 0, watered: 0, harvested: 0 }
+    assert.deepEqual(f.snapshot.farm.life.daily, empty)
+    assert.deepEqual(f.snapshot.farm, { ...before.farm, life: { ...before.farm.life, daily: empty } })
+    assert.equal(f.snapshot.cash, before.cash)
+    assert.equal(f.snapshot.revision, before.revision + 1)
+    assert.equal(f.controller.developmentState().choices.some(choice => choice.kind === 'rest'), false, 'quota reset does not bypass life/work alternation')
+    assert.ok(f.controller.developmentState().choices.some(choice => choice.kind === 'water'))
+    const restarted = new FarmService(f.repo, f.clock, f.id)
+    assert.deepEqual(restarted.getView().farm.life.daily, empty)
+    f.fail = true
+    const saved = structuredClone(f.snapshot)
+    assert.throws(() => f.controller.editForDevelopment('resetQuota'), /disk full/)
+    assert.deepEqual(f.snapshot, saved)
+})
+check('idle timer sleeps for thirty seconds; active trips switch to 250ms and stop cancels timers', () => {
+    const originalSet = globalThis.setTimeout, originalClear = globalThis.clearTimeout
+    const pending = new Map()
+    let id = 0
+    globalThis.setTimeout = (callback, delay) => { pending.set(++id, { callback, delay }); return id }
+    globalThis.clearTimeout = timer => pending.delete(timer)
+    try {
+        const f = fixture()
+        f.run({ type: 'sow', cropId: 'carrot', plotIds: [0, 1, 2, 3] })
+        f.enter(); f.leave()
+        f.controller.start(); f.controller.start()
+        assert.equal(pending.size, 1)
+        assert.equal([...pending.values()][0].delay, 30_000)
+        f.controller.triggerForDevelopment('water')
+        assert.equal(pending.size, 1)
+        assert.equal([...pending.values()][0].delay, 250)
+        const [timer, entry] = [...pending.entries()][0]
+        pending.delete(timer)
+        f.mono += 250; f.wall += 250
+        entry.callback()
+        assert.equal([...pending.values()][0].delay, 250)
+        f.controller.activity()
+        assert.equal(f.controller.getView().visit, null)
+        assert.equal([...pending.values()][0].delay, 30_000)
+        f.controller.stop()
+        assert.equal(pending.size, 0)
+    } finally {
+        globalThis.setTimeout = originalSet
+        globalThis.clearTimeout = originalClear
+    }
+})
+function afterLife(f) {
+    f.service.lifeTransaction(f.snapshot.revision, data => {
+        data.entered = true
+        data.tutorialDone = true
+        data.recent = ['rest']
+        data.trips = 1
+        data.daily = { trips: 1, work: 0, life: 1, watered: 0, harvested: 0 }
+    })
+    f.controller.tick()
+}
+check('a leisure trip must be followed by work; development controls obey the same rule', () => {
+    const f = fixture()
+    afterLife(f)
+    f.run({ type: 'sow', cropId: 'carrot', plotIds: [0, 1, 2, 3] })
+    const choices = f.controller.developmentState().choices
+    assert.ok(choices.some(choice => choice.kind === 'water'))
+    assert.ok(choices.every(choice => ['water', 'harvest', 'order'].includes(choice.kind)))
+    assert.throws(() => f.controller.triggerForDevelopment('rest'), /没有合格目标/)
+    f.advance(config.idleMs)
+    assert.equal(f.controller.getView().visit.kind, 'water')
+    f.depart(); f.finish()
+    assert.ok(f.controller.developmentState().choices.some(choice => choice.kind === 'rest'))
+})
+check('two-hour fallback requires continuous absence, then starts a fresh wait after each leisure return', () => {
+    const f = fixture()
+    afterLife(f)
+    f.advance(config.lifeFallbackMs - 1)
+    assert.equal(f.controller.getView().visit, null)
+    assert.throws(() => f.controller.triggerForDevelopment('rest'), /没有合格目标/)
+    f.advance(1)
+    assert.ok(f.controller.getView().visit)
+    f.depart(); f.finish()
+    f.advance(config.lifeFallbackMs - 1)
+    assert.equal(f.controller.getView().visit, null)
+    f.advance(1)
+    assert.ok(f.controller.getView().visit)
+    f.depart(); f.finish()
+    assert.equal(f.snapshot.farm.life.daily.life, 3)
+    f.advance(config.lifeFallbackMs)
+    assert.equal(f.controller.getView().visit, null, 'three leisure trips exhaust the daily budget')
+})
+check('a work opportunity during cooldown resets the entire two-hour fallback', () => {
+    const f = fixture()
+    afterLife(f)
+    f.advance(10 * 60_000)
+    f.controller.activity()
+    f.plant(0, 'carrot', false)
+    f.controller.tick()
+    assert.equal(f.controller.getView().visit, null, 'cooldown still prevents departure')
+    f.snapshot.farm.plots[0].plant = null
+    f.controller.tick()
+    f.advance(config.lifeFallbackMs - 1)
+    assert.equal(f.controller.getView().visit, null)
+    f.advance(1)
+    assert.ok(f.controller.getView().visit)
+})
+check('sleep and restart cannot accumulate two-hour leisure fallback offline', () => {
+    for (const mode of ['sleep', 'restart']) {
+        const f = fixture()
+        afterLife(f)
+        f.advance(60 * 60_000)
+        if (mode === 'sleep') f.controller.suspend(true)
+        else f.controller.stop()
+        f.mono += 3 * config.lifeFallbackMs; f.wall += 3 * config.lifeFallbackMs
+        if (mode === 'sleep') f.controller.suspend(false)
+        else f.controller = new FarmLife(f.service, f.clock, f.host, f.id, () => 0)
+        f.controller.tick()
+        f.advance(config.lifeFallbackMs - 1)
+        assert.equal(f.controller.getView().visit, null, mode)
+        f.advance(1)
+        assert.ok(f.controller.getView().visit, mode)
+    }
+})
+check('new work targets during a second leisure departure cancel it before charging quota', () => {
+    const f = fixture()
+    afterLife(f)
+    f.advance(config.lifeFallbackMs)
+    assert.ok(f.controller.getView().visit)
+    f.plant(0, 'carrot', false)
+    f.controller.speechFinished(f.controller.getView().visit.id)
+    f.advance(config.walkMs)
+    assert.equal(f.controller.getView().visit, null)
+    assert.equal(f.snapshot.farm.life.daily.life, 1)
+    assert.equal(f.snapshot.farm.life.events.length, 0)
+    assert.ok(f.controller.developmentState().choices.some(choice => choice.kind === 'water'))
+})
+check('four work trips can each water three plots; daily plot totals are statistics only', () => {
+    const f = fixture()
+    f.enter(); f.leave()
+    for (let trip = 0; trip < config.maxWorkTrips; trip++) {
+        for (let plot = 0; plot < 4; plot++) f.plant(plot, 'carrot', false)
+        f.controller.triggerForDevelopment('water')
+        f.depart(); f.finish()
+        assert.equal(f.snapshot.farm.life.events.at(-1).plots, 3)
+    }
+    assert.equal(f.snapshot.farm.life.daily.watered, 12)
+    assert.equal(f.snapshot.farm.life.daily.work, 4)
+    validateFarmLife(f.snapshot.farm.life)
+    assert.equal(f.controller.developmentState().choices.some(choice => choice.kind === 'water'), false)
+    assert.ok(f.controller.developmentState().choices.some(choice => choice.kind === 'rest'))
+    // Existing pre-upgrade counters remain valid without rewriting player history.
+    validateFarmLife({ ...f.snapshot.farm.life, daily: { trips: 4, work: 3, life: 1, watered: 10, harvested: 3 } })
+})
+check('previous daily plot totals do not restrict new watering or harvesting; each choice is at most three', () => {
+    const f = fixture()
+    f.snapshot.farm.exp = 10000
+    f.snapshot.farm.achievements.manualHarvestedPlots = { wheat: 1 }
+    f.snapshot.farm.achievements.harvestedPlots.wheat = 5
+    for (let id = 0; id < 12; id++) f.plant(id, id < 7 ? 'wheat' : 'carrot', id < 7)
+    f.service.lifeTransaction(f.snapshot.revision, data => { data.daily.watered = 10; data.daily.harvested = 3 })
+    const choices = lifeChoices(f.service.getView(), f.wall, () => 0.999)
+    assert.equal(choices.find(choice => choice.kind === 'water').plotIds.length, 3)
+    assert.equal(choices.find(choice => choice.kind === 'harvest').plotIds.length, 3)
+    assert.ok(choices.every(choice => choice.plotIds.length <= 3))
+})
+check('four harvest trips save up to three plots each without a daily three-plot ceiling', () => {
+    const f = fixture(true, () => 0.999)
+    f.snapshot.farm.exp = 10000
+    f.snapshot.farm.achievements.manualHarvestedPlots = { wheat: 1 }
+    f.snapshot.farm.achievements.harvestedPlots.wheat = 5
+    f.enter(); f.leave()
+    for (let trip = 0; trip < 4; trip++) {
+        for (let plot = 0; plot < 8; plot++) f.plant(plot)
+        f.controller.triggerForDevelopment('harvest')
+        f.depart(); f.finish()
+        assert.ok(f.snapshot.farm.life.events.at(-1).plots <= 3)
+    }
+    assert.ok(f.snapshot.farm.life.daily.harvested > 3)
+    assert.equal(f.snapshot.farm.life.daily.work, 4)
+    assert.equal(f.snapshot.farm.life.events.length, 4)
+    validateFarmLife(f.snapshot.farm.life)
+})
+check('development crop edits cannot race active trips; coin edits retain trips and validate amounts', () => {
+    const f = fixture()
+    f.run({ type: 'sow', cropId: 'carrot', plotIds: [0, 1] })
+    f.enter(); f.leave()
+    f.controller.triggerForDevelopment('water')
+    const before = structuredClone(f.snapshot)
+    assert.ok(f.controller.developmentState().setupReason)
+    for (const action of ['clearCrops', 'matureCrops', 'resetQuota']) {
+        assert.throws(() => f.controller.editForDevelopment(action), /正在出行/)
+        assert.throws(() => f.service.editForDevelopment(action), /正在出行/)
+    }
+    f.controller.editForDevelopment('addCoins')
+    assert.equal(f.snapshot.cash, before.cash + 1000)
+    assert.deepEqual(f.snapshot.farm.life, before.farm.life)
+    assert.equal(f.controller.getView().visit.phase, 'preparing')
+    assert.throws(() => f.controller.editForDevelopment('__proto__'), /未知操作|正在出行/)
+    const overflow = fixture()
+    overflow.snapshot.cash = Number.MAX_SAFE_INTEGER
+    assert.throws(() => overflow.controller.editForDevelopment('addCoins'), /允许范围/)
+    assert.equal(overflow.snapshot.cash, Number.MAX_SAFE_INTEGER)
+    overflow.controller.suspend(true)
+    assert.throws(() => overflow.controller.editForDevelopment('addCoins'), /休眠/)
+})
 console.log(`farm life: ${checks} isolated behavioral groups passed`)
