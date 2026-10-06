@@ -8,7 +8,7 @@ import { backupSummary, captureGameSaves, listAutomaticBackup, loadBackupFile, m
 import { freezeGameWrites, gameWritesFrozen } from '../save/coordinator'
 import { writeJsonAtomic } from '../save/files'
 import { playerChanges, playerManager } from '../store'
-import { farmAssistant, farmLife, farmService as service,finishFarmLifeSpeech,isFarmWindow, leaveFarmWindow, registerFarmWindow, setFarmLifePetState } from './runtime'
+import { farmAssistant, farmLife, farmService as service,finishFarmLifeSpeech,isFarmWindow, leaveFarmWindow, moveCoveredFarmDeparture, registerFarmWindow, setFarmLifePetState } from './runtime'
 
 const selectedBackups = new Map<string, { path: string; checksum: string }>()
 
@@ -43,6 +43,7 @@ ipcMain.handle('farm-life-leave', event => { const window = BrowserWindow.fromWe
 ipcMain.handle('farm-life-ready', event => { const window = BrowserWindow.fromWebContents(event.sender); if (window && isFarmWindow(window.id)) farmLife.farmReady(); return { code: 200 } })
 ipcMain.on('farm-life-pet-state', (event, state) => { if (state && typeof state === 'object') setFarmLifePetState(event.sender.id, state.ready, state.blocked) })
 ipcMain.on('farm-life-speech-finished', (event, id) => finishFarmLifeSpeech(event.sender.id, id))
+ipcMain.handle('farm-life-departure-covered', (event, id) => result(() => moveCoveredFarmDeparture(event.sender.id, id)))
 ipcMain.on('farm-life-interaction', () => { farmLife.interaction() })
 ipcMain.handle('farm-life-diary-shown', (event, id: string) => result(() => {
   const window = BrowserWindow.fromWebContents(event.sender)

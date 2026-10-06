@@ -53,6 +53,9 @@ try {
         ignored = false
         destroyed = false
         focused = 0
+        sent = []
+        moves = []
+        webContents = { send: (channel, payload) => this.sent.push([channel, payload]) }
         isDestroyed() {
             return this.destroyed
         }
@@ -61,6 +64,7 @@ try {
         }
         setPosition(x, y) {
             assert.ok(Number.isInteger(x) && Number.isInteger(y))
+            this.moves.push([x, y])
             this.bounds.x = x
             this.bounds.y = y
         }
@@ -88,6 +92,8 @@ try {
         for (const timer of [...timers.values()]) timer()
     }
     phase('preparing')
+    assert.equal(desktop.prepareRelocation('enough-room'), false, 'enough space skips the flash')
+    assert.equal(window.sent.length, 0)
     phase('leaving')
     assert.equal(desktop.direction,'right')
     assert.equal(window.bounds.width,470)
@@ -96,12 +102,13 @@ try {
     assert.deepEqual(window.bounds,departureBounds,'video owns walk; native window must remain stationary')
     assert.equal(timers.size,0)
     phase('visiting')
-    assert.equal(window.visible, false)
-    assert.equal(window.ignored, true)
+    assert.equal(window.visible, true)
+    assert.equal(window.ignored, false, 'away card must receive button clicks')
+    assert.deepEqual(window.bounds, { x: -1544, y: 568, width: 288, height: 132 })
     assert.equal(desktop.hiddenByPlayer, false)
     assert.equal(interactions, 0)
     phase('exiting')
-    assert.equal(window.visible, false)
+    assert.equal(window.visible, true)
     // Monitor removal while away: clamp return to the surviving display.
     area = { x: 0, y: 0, width: 1280, height: 720 }
     phase('returning')
@@ -134,22 +141,79 @@ try {
     )
     window.bounds.x=960
     phase('preparing')
-    advance(175)
-    assert.ok(window.bounds.x<960&&window.bounds.x>810,'room for door is prepared smoothly')
-    advance(175)
-    assert.equal(window.bounds.x,810)
+    advance(350)
+    assert.equal(window.bounds.x,960,'preparing dialogue must not slide the native window')
+    const moveCount = window.moves.length
+    assert.equal(desktop.prepareRelocation('edge'),true)
+    assert.deepEqual(window.sent.at(-1),['farm-life-departure-shift',{id:'edge'}])
+    const sentCount = window.sent.length
+    assert.equal(desktop.prepareRelocation('edge'),true)
+    assert.equal(window.sent.length,sentCount,'duplicate speech acknowledgement cannot restart flash')
+    assert.equal(window.bounds.x,960,'requesting flash must not move the character')
+    assert.equal(desktop.moveCovered('stale'),false)
+    assert.equal(window.bounds.x,960)
+    assert.equal(desktop.moveCovered('edge'),true)
+    assert.deepEqual(window.bounds,{x:810,y:400,width:300,height:300},'covered move is immediate and preserves vertical position')
+    assert.equal(desktop.moveCovered('edge'),true)
+    assert.equal(window.moves.length,moveCount+1,'native relocation happens once')
+    assert.equal(desktop.prepareRelocation('edge'),false,'finished flash releases normal outfit and video')
     phase('leaving')
+    assert.equal(desktop.moveCovered('edge'),false,'late relocation cannot move a playing video')
     assert.equal(window.bounds.x+window.bounds.width,1280,'door cannot be clipped off screen')
     desktop.restore()
     assert.equal(window.bounds.x,960)
     assert.equal(window.bounds.width,300)
+    phase('preparing')
+    assert.equal(desktop.prepareRelocation('cancelled'),true)
+    desktop.restore()
+    assert.equal(desktop.moveCovered('cancelled'),false,'cancelled trip cannot teleport later')
+    assert.equal(window.bounds.x,960)
+    area={x:-1920,y:-80,width:1920,height:1040}
+    window.bounds={x:-310,y:800,width:300,height:300}
+    phase('preparing')
+    assert.equal(desktop.prepareRelocation('negative-display'),true)
+    assert.equal(desktop.moveCovered('negative-display'),true)
+    assert.deepEqual(window.bounds,{x:-470,y:660,width:300,height:300},'nearest safe point respects negative display origin and bottom edge')
+    desktop.restore()
+    area={x:0,y:0,width:1280,height:720}
+    window.bounds = { x: 100, y: 200, width: 300, height: 300 }
+    phase('preparing')
+    phase('leaving')
+    phase('visiting')
+    const cardStart = { ...window.bounds }
+    const beforeDragInteractions = interactions
+    window.setPosition(cardStart.x + 260, cardStart.y - 80)
+    const movedCard = { ...window.bounds }
+    phase('visiting')
+    phase('exiting')
+    assert.deepEqual(window.bounds, movedCard, 'phase changes must not snap a dragged card back')
+    assert.equal(interactions, beforeDragInteractions, 'native card movement cannot recall the pet')
+    phase('returning')
+    assert.deepEqual(window.bounds, { x: 360, y: 120, width: 300, height: 300 }, 'pet follows the card displacement')
+    desktop.restore()
+    assert.deepEqual(window.bounds, { x: 360, y: 120, width: 300, height: 300 }, 'return displacement applies once')
+    phase('preparing')
+    phase('leaving')
+    phase('visiting')
+    window.setPosition(9000, -9000)
+    phase('returning')
+    assert.deepEqual(window.bounds, { x: 980, y: 0, width: 300, height: 300 }, 'dragged return remains inside work area')
+    phase('preparing')
+    phase('leaving')
+    phase('visiting')
+    window.hide()
+    phase('exiting')
+    assert.equal(window.visible, false, 'away card must respect manual hide')
+    phase('returning')
+    assert.equal(window.visible, false, 'return must respect manual hide')
+    window.showInactive()
     phase('preparing')
     phase('leaving')
     window.destroyed = true
     window.emit('closed')
     assert.equal(timers.size, 0)
     console.log(
-        'Farm life desktop: two work areas, stationary full video, expanded animation bounds, hide without interception, return clamp, explicit user hide, no focus and cleanup: passed'
+        'Farm life desktop: cover-before-teleport, move once, stale/cancel guards, two work areas, stationary video, draggable away card, return, explicit hide and cleanup: passed'
     )
 } finally {
     Object.assign(globalThis, originals)

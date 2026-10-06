@@ -1,5 +1,6 @@
 import { updateFarmAchievements } from '../../../shared/farmAchievements'
 import { ensureFarmLife, type FarmLifeData } from '../../../shared/farmLife'
+import { farmDevelopmentActions, type FarmDevelopmentAction } from '../../../shared/farmLifeDevelopment'
 import type { FarmAssistantMetadata, FarmCommand, FarmOperation, FarmPreview, FarmResult, FarmSnapshot, FarmState, FarmView } from '../../types/farm'
 import { farmCatalog, farmLevel, getCrop, unlockedPlots } from './catalog'
 import { safeHelp } from './lifeRules'
@@ -99,6 +100,34 @@ export class FarmService {
     const snapshot = this.project()
     this.persist(snapshot)
     this.anchor(snapshot)
+  }
+
+  /** Only the authorized development controller calls this; no harvest rewards are granted. */
+  editForDevelopment(action: FarmDevelopmentAction): FarmView {
+    if (!Object.hasOwn(farmDevelopmentActions, action)) throw new Error('未知操作。')
+    const snapshot = this.project()
+    if (action !== 'addCoins' && snapshot.farm!.life?.active)
+      throw new Error('尤美正在出行，请等待返回后再调整农田或额度。')
+    if (action === 'addCoins') {
+      const cash = snapshot.cash + 1000
+      if (!Number.isSafeInteger(cash) || cash < 0) throw new Error('金币余额超出允许范围。')
+      snapshot.cash = cash
+    } else if (action === 'resetQuota') {
+      ensureFarmLife(snapshot.farm!, this.clock.wall()).daily = {
+        trips: 0, work: 0, life: 0, watered: 0, harvested: 0
+      }
+    } else {
+      for (const plot of snapshot.farm!.plots) {
+        if (!plot.plant) continue
+        if (action === 'clearCrops') plot.plant = null
+        else plot.plant.elapsedMs = plot.plant.durationMs
+      }
+    }
+    validateFarm(snapshot.farm)
+    snapshot.revision++
+    this.persist(snapshot)
+    this.anchor(snapshot)
+    return this.view(snapshot)
   }
 
   preview(operation: FarmOperation): FarmPreview {

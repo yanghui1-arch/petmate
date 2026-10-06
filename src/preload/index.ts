@@ -8,12 +8,22 @@ import type { FarmAssistantEvent, FarmAssistantStatus, FarmCommand, FarmOperatio
 import { ItemType } from '../main/types/item'
 import type { PlayerResourceState } from '../main/types/player-resource'
 import { WindowEvent } from '../main/window-monitor'
-import type { FarmLifeEvent, FarmLifeView } from '../shared/farmLife'
+import type { FarmLifeEvent, FarmLifeKind, FarmLifeView } from '../shared/farmLife'
+import type { FarmLifeDevelopmentCommand } from '../shared/farmLifeDevelopment'
+import type { PetSpeechMessage, PetSpeechState } from '../shared/petSpeech'
 
 /**
  * API 调用接口
  */
 contextBridge.exposeInMainWorld('api', {
+    updatePetSpeech: (message: PetSpeechMessage | null) => ipcRenderer.send('pet-speech-update', message),
+    getPetSpeech: () => ipcRenderer.invoke('pet-speech-get'),
+    petSpeechMeasured: (id: string, height: number) => ipcRenderer.send('pet-speech-measured', id, height),
+    onPetSpeechState: (callback: (_state: PetSpeechState) => void) => {
+        const listener = (_event: IpcRendererEvent, state: PetSpeechState) => callback(state)
+        ipcRenderer.on('pet-speech-state', listener)
+        return () => ipcRenderer.removeListener('pet-speech-state', listener)
+    },
     // init
     initSettings: () => ipcRenderer.invoke('init-settings'),
     initLLM: () => ipcRenderer.invoke('init-llm'),
@@ -40,6 +50,10 @@ contextBridge.exposeInMainWorld('api', {
     getLocalAIStatus: () => ipcRenderer.invoke('get-local-ai-status'),
     getFarm: () => ipcRenderer.invoke('farm-get'),
     getFarmLife: () => ipcRenderer.invoke('farm-life-get'),
+    ...(import.meta.env.DEV ? {
+        getFarmLifeDevelopment: () => ipcRenderer.invoke('farm-life-development-get'),
+        commandFarmLifeDevelopment: (action: FarmLifeDevelopmentCommand, kind?: FarmLifeKind) => ipcRenderer.invoke('farm-life-development-command', action, kind),
+    } : {}),
     enterFarmLife: () => ipcRenderer.invoke('farm-life-enter'),
     leaveFarmLife: () => ipcRenderer.invoke('farm-life-leave'),
     readyFarmLife: () => ipcRenderer.invoke('farm-life-ready'),
@@ -47,6 +61,8 @@ contextBridge.exposeInMainWorld('api', {
     farmLifePetState: (ready: boolean, blocked: boolean) => ipcRenderer.send('farm-life-pet-state', { ready, blocked }),
     farmLifeInteraction: () => ipcRenderer.send('farm-life-interaction'),
     finishFarmLifeSpeech: (id: string) => ipcRenderer.send('farm-life-speech-finished', id),
+    moveCoveredFarmDeparture: (id: string) => ipcRenderer.invoke('farm-life-departure-covered', id),
+    onFarmDepartureShift: (callback: (_request: { id: string }) => void) => { const listener = (_event: IpcRendererEvent, request: { id: string }) => callback(request); ipcRenderer.on('farm-life-departure-shift', listener); return () => ipcRenderer.removeListener('farm-life-departure-shift', listener) },
     onFarmLifeState: (callback: (_state: FarmLifeView & { direction?: 'left' | 'right' }) => void) => { const listener = (_event: IpcRendererEvent, state: FarmLifeView) => callback(state); ipcRenderer.on('farm-life-state', listener); return () => ipcRenderer.removeListener('farm-life-state', listener) },
     onFarmLifeSpeech: (callback: (_speech: { stage: 'start' | 'return'; event: FarmLifeEvent }) => void) => { const listener = (_event: IpcRendererEvent, speech: { stage: 'start' | 'return'; event: FarmLifeEvent }) => callback(speech); ipcRenderer.on('farm-life-speech', listener); return () => ipcRenderer.removeListener('farm-life-speech', listener) },
     getFarmAssistant: () => ipcRenderer.invoke('farm-assistant-get'),

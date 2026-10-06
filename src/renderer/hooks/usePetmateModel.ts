@@ -460,6 +460,7 @@ const defaultModelState: ModelStatus = {
 /** 是否显示轮盘菜单栏的 flag */
 export const isShowContextMenu = ref(false)
 const sleepResponseTick = ref(0)
+const speechAnchor = ref({ x: CANVAS_WIDTH / 2, y: CHARACTER_TOP_MARGIN })
 
 export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
     const init2D = async (): Promise<void> => {
@@ -585,6 +586,7 @@ export const usePetmateModel = (petmateContainer: Ref<HTMLDivElement>) => {
         setEnergyLow,
         setActivity,
         sleepResponseTick: readonly(sleepResponseTick),
+        speechAnchor: readonly(speechAnchor),
         destroy
     }
 }
@@ -854,6 +856,11 @@ function startAction(
 
     activeAction = action
     activePlayback = createPlayback(clip, options.startFrameIndex)
+    const frame = clip.frames[0]
+    speechAnchor.value = {
+        x: clamp(CANVAS_WIDTH / 2 + ((frame.bounds.left + frame.bounds.right - frame.sourceWidth) / 2) * clip.renderScale, 0, CANVAS_WIDTH),
+        y: clamp(CHARACTER_BASELINE_Y + (Math.min(...clip.frames.map(item => item.bounds.top)) - clip.anchorY) * clip.renderScale, 0, CANVAS_HEIGHT)
+    }
     lastAnimationTime = now
     updateModelState(state)
     syncSleepAnimation(action, options.startFrameIndex)
