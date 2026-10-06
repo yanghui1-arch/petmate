@@ -24,8 +24,6 @@ import { destroyScheduler, startOnlineAttributeDecay, startWishGeneration } from
 import { getOnTop, updateSettings } from './settings'
 import { diagnosticError, observeWindowStartup, recordStartup, runStartupStage } from './startupDiagnostics'
 
-app.commandLine.appendSwitch('--in-process-gpu')
-
 let mainWindow: BrowserWindow | null = null
 let speechWindow: PetSpeechWindow | null = null
 registerPetSpeechIpc(() => speechWindow)
@@ -320,11 +318,6 @@ app.on('before-quit', () => {
     // 保存聊天记录
     saveChatHistoryMessages()
 })
-
-app.commandLine.appendSwitch('enable-gpu-rasterization')
-app.commandLine.appendSwitch('enable-zero-copy')
-app.commandLine.appendSwitch('disable-software-rasterizer')
-app.commandLine.appendSwitch('ignore-gpu-blacklist')
 
 export function getMainWindow(): BrowserWindow | null {
     return mainWindow
