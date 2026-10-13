@@ -70,10 +70,15 @@ export default {
     sceneFailed: "農場畫面載入失敗，請重試。",
 
     selectSeed: '選擇種子播種',
+    batchActions: '農場一鍵操作', sowAll: '一鍵種植', waterAll: '一鍵澆水', harvestAll: '一鍵收穫',
+    batchUnlockAt: '農場 {level} 級解鎖一鍵操作', batchTools: '一鍵種植、澆水、收穫', batchUnlocked: '解鎖一鍵種植、澆水和收穫',
+    batchSelectSeed: '選擇要批量種植的種子', canPlant: '可種 {count} 塊',
+    batchSown: '已種植 {count} 塊地', batchWatered: '已澆水 {count} 塊地',
+    noEmptyPlots: '沒有可種植的空地', noWaterTargets: '沒有需要澆水的作物', noHarvestTargets: '還沒有成熟的作物',
     noSeeds: '種子不足',
     tutorialRemaining: '教學剩餘 {count} 次',
-    level:'農場等級',maxLevel:'滿級 · 經驗條已填滿',plotCount:'{count} 塊地',
-    title:'尤美農場',back:'返回',empty:'空地',orders:'農場訂單',orderNumber:'訂單 {number}',deliver:'交付',discard:'放棄',restocking:'補單中',remaining:'剩餘',expectedYield:'預計收成',harvest:'收穫',water:'澆水',watered:'已澆水',seeds:'種子',store:'商店',codex:'圖鑑',backup:'備份與復原',produce:'作物',minutes:'分鐘',hours:'小時',sow:'播種',sell:'出售',each:'個',owned:'擁有',locked:'未解鎖',buy:'購買',all:'全部',confirm:'確認',notUnlocked:'未解鎖',lit:'已點亮',notHarvested:'未收穫',harvested:'累計收穫',backupScope:'備份包含農場、角色、背包、共用貨幣和活動進度。',exportBackup:'匯出完整備份',selectBackup:'選擇備份',lastAutomatic:'上次復原前備份',restoreConfirm:'復原此備份',restoreWarning:'復原會回退全部遊戲進度，並自動備份目前進度。確定繼續？',exported:'完整備份已匯出',restarting:'復原完成，正在重新啟動。',loading:'正在載入農場…',retry:'重試',loadFailed:'農場載入失敗',failed:'操作失敗',ready:'已就緒',stage0:'播種',stage1:'幼苗',stage2:'生長中',stage3:'已成熟',
+    level:'農場等級',maxLevel:'滿級 · 經驗條已填滿',maxLevelLabel:'滿級',plotCount:'{count} 塊地',
+    title:'尤美農場',back:'返回',empty:'空地',orders:'農場訂單',orderNumber:'訂單 {number}',deliver:'交付',discard:'放棄',restocking:'補單中',remaining:'剩餘',expectedYield:'預計收成',harvest:'收穫',water:'澆水',watered:'已澆水',seeds:'種子',store:'商店',codex:'圖鑑',produce:'作物',minutes:'分鐘',hours:'小時',sow:'播種',sell:'出售',each:'個',owned:'擁有',locked:'未解鎖',buy:'購買',all:'全部',confirm:'確認',notUnlocked:'未解鎖',lit:'已點亮',notHarvested:'未收穫',harvested:'累計收穫',loading:'正在載入農場…',retry:'重試',loadFailed:'農場載入失敗',failed:'操作失敗',ready:'已就緒',stage0:'播種',stage1:'幼苗',stage2:'生長中',stage3:'已成熟',
     crops:{wheat:'小麥',carrot:'胡蘿蔔',potato:'馬鈴薯',tomato:'番茄',strawberry:'草莓',pumpkin:'南瓜'}
   },
   settings: {

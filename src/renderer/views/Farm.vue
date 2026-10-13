@@ -63,6 +63,17 @@
                 ><strong>{{ t('farm.codex') }}</strong>
             </button>
         </nav>
+        <nav class="batch-actions" :aria-label="t('farm.batchActions')">
+            <button class="game-button batch-button" :class="{ locked: !batchUnlocked }" data-batch-action="sow" :disabled="!sceneState.enabled || (batchUnlocked && !batchPlots.sow.length)" :title="!batchUnlocked ? batchUnlockMessage : !batchPlots.sow.length ? t('farm.noEmptyPlots') : ''" @click="openBatchSow">
+                <span class="entry-art"><farm-ui-icon name="batchSow" /><span v-if="!batchUnlocked" class="batch-lock" aria-hidden="true"></span></span><strong>{{ t('farm.sowAll') }}</strong>
+            </button>
+            <button class="game-button batch-button" :class="{ locked: !batchUnlocked }" data-batch-action="water" :disabled="!sceneState.enabled || (batchUnlocked && !batchPlots.water.length)" :title="!batchUnlocked ? batchUnlockMessage : !batchPlots.water.length ? t('farm.noWaterTargets') : ''" @click="runBatch('water')">
+                <span class="entry-art"><farm-ui-icon name="batchWater" /><span v-if="!batchUnlocked" class="batch-lock" aria-hidden="true"></span></span><strong>{{ t('farm.waterAll') }}</strong>
+            </button>
+            <button class="game-button batch-button" :class="{ locked: !batchUnlocked }" data-batch-action="harvest" :disabled="!sceneState.enabled || (batchUnlocked && !batchPlots.harvest.length)" :title="!batchUnlocked ? batchUnlockMessage : !batchPlots.harvest.length ? t('farm.noHarvestTargets') : ''" @click="runBatch('harvest')">
+                <span class="entry-art"><farm-ui-icon name="batchHarvest" /><span v-if="!batchUnlocked" class="batch-lock" aria-hidden="true"></span></span><strong>{{ t('farm.harvestAll') }}</strong>
+            </button>
+        </nav>
         <aside
             v-if="hovered !== null && !panel && seedTarget === null"
             ref="tooltip"
@@ -96,11 +107,11 @@
             class="seed-picker"
             :style="popoverPosition(seedTarget, 338, 330)"
             role="dialog"
-            :aria-label="t('farm.selectSeed')"
+            :aria-label="t(batchSow ? 'farm.batchSelectSeed' : 'farm.selectSeed')"
             @contextmenu.prevent.stop="dismiss"
         >
             <header>
-                <strong>{{ t('farm.selectSeed') }}</strong
+                <strong>{{ t(batchSow ? 'farm.batchSelectSeed' : 'farm.selectSeed') }}</strong
                 ><button class="close-button" :aria-label="t('farm.closePanel')" @click="dismiss">
                     ×
                 </button>
@@ -127,6 +138,7 @@
                             ? t('farm.unlockAt', { level: crop.level })
                             : seedMinutes(crop.id) + ' ' + t('farm.minutes')
                     }}</small>
+                    <small v-if="batchSow && crop.level <= view.level">{{ t('farm.canPlant', { count: batchSeedCount(crop.id) }) }}</small>
                 </button>
             </div>
             <small v-if="view.farm.tutorialRemaining">{{
@@ -355,28 +367,32 @@
                         </div>
                     </div>
                     <div class="quantities">
-                        <button
-                            :disabled="blocked || count <= 1"
-                            @click="count = Math.max(1, count - 1)"
-                        >
-                            −</button
-                        ><input
-                            v-model.number="count"
-                            type="number"
-                            min="1"
-                            :max="tradeMaximum"
-                            :disabled="blocked"
-                            :aria-label="t('farm.tradeQuantity')"
-                        /><button :disabled="blocked || count >= tradeMaximum" @click="count++">
-                            +</button
-                        ><button
-                            v-for="value in [1, 5, 10]"
-                            :key="value"
-                            :disabled="blocked || value > tradeMaximum"
-                            @click="count = value"
-                        >
-                            {{ value }}
-                        </button>
+                        <div class="quantity-stepper">
+                            <button
+                                :disabled="blocked || count <= 1"
+                                @click="adjustTradeCount(-1)"
+                            >
+                                −</button
+                            ><input
+                                v-model.number="count"
+                                type="number"
+                                min="1"
+                                :max="tradeMaximum"
+                                :disabled="blocked"
+                                :aria-label="t('farm.tradeQuantity')"
+                            /><button :disabled="blocked || count >= tradeMaximum" @click="adjustTradeCount(1)">
+                                +</button>
+                        </div>
+                        <div class="quantity-shortcuts">
+                            <button
+                                v-for="value in [5, 10]"
+                                :key="value"
+                                :disabled="blocked || count >= tradeMaximum"
+                                @click="adjustTradeCount(value)"
+                            >
+                                +{{ value }}
+                            </button>
+                        </div>
                     </div>
                     <button
                         class="action-button trade-confirm"
@@ -446,36 +462,19 @@
                     <div class="unlock-list">
                         <p v-for="(_, index) in view.catalog.levels" :key="index">
                             <strong
-                                >Lv.{{ index + 1 }} · {{ view.catalog.levels[index] }} EXP</strong
+                                >Lv.{{ index + 1 }} · {{
+                                    index < view.catalog.levels.length - 1
+                                        ? (view.catalog.levels[index + 1] - view.catalog.levels[index]) + ' EXP'
+                                        : t('farm.maxLevelLabel')
+                                }}</strong
                             ><span>{{ unlockText(index + 1) }}</span>
                         </p>
                     </div></template
                 >
                 <template v-else-if="panel === 'settings'"
                     ><div class="settings-list">
-                        <button @click="openPanel('backup')">{{ t('farm.backup') }}</button
-                        ><button @click="goBack">{{ t('farm.back') }}</button
+                        <button @click="goBack">{{ t('farm.back') }}</button
                         ><button @click="windowClose">{{ t('farm.closeWindow') }}</button>
-                    </div></template
-                >
-                <template v-else-if="panel === 'backup'"
-                    ><p>{{ t('farm.backupScope') }}</p>
-                    <div class="settings-list">
-                        <button :disabled="busy" @click="exportBackup">
-                            {{ t('farm.exportBackup') }}</button
-                        ><button :disabled="busy" @click="selectBackup">
-                            {{ t('farm.selectBackup') }}</button
-                        ><button :disabled="busy" @click="automaticBackup">
-                            {{ t('farm.lastAutomatic') }}
-                        </button>
-                    </div>
-                    <div v-if="backupPreview" class="backup-summary">
-                        <p>{{ backupPreview.createdAt }}</p>
-                        <p>Lv.{{ backupPreview.level }} · ◈ {{ backupPreview.cash }}</p>
-                        <p>{{ backupPreview.scope }}</p>
-                        <button class="action-button" :disabled="busy" @click="restoreBackup">
-                            {{ t('farm.restoreConfirm') }}
-                        </button>
                     </div></template
                 >
             </section>
@@ -502,8 +501,8 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { plantProgress, plantStage } from '../../main/modules/farm/rules'
-import type { BackupPreview, FarmOperation, FarmPlant, FarmView } from '../../main/types/farm'
-import { farmSettingsVisible } from '../../shared/farmExperience'
+import type { FarmOperation, FarmPlant, FarmView } from '../../main/types/farm'
+import { farmBatchUnlockLevel, farmSettingsVisible } from '../../shared/farmExperience'
 import type { FarmLifeView } from '../../shared/farmLife'
 import { background } from '../assets/farm-game'
 import gameArrow from '../assets/farm-game/game-arrow.svg'
@@ -556,7 +555,6 @@ const panel = ref<
     | 'codex'
     | 'level'
     | 'settings'
-    | 'backup'
     | null
 >(null)
 const warehouseTab = ref<'seeds' | 'produce'>('seeds'),
@@ -564,11 +562,11 @@ const warehouseTab = ref<'seeds' | 'produce'>('seeds'),
 const codexTab = ref<'crops' | 'achievements'>('crops')
 const seedTarget = ref<number | null>(null),
     hovered = ref<number | null>(null)
+const batchSow = ref(false)
 const width = ref(1280),
     height = ref(720),
     tradeCrop = ref(''),
     count = ref(1)
-const backupPreview = ref<BackupPreview | null>(null)
 const effects = ref<
     { id: string; x: number; y: number; text: string; water: boolean; scale: number }[]
 >([])
@@ -597,6 +595,20 @@ const hoverPlant = computed(() =>
 )
 const cropDefinition = (id: string) => view.value!.catalog.crops.find((c) => c.id === id)!
 const cropName = (id: string) => t('farm.crops.' + id)
+const batchUnlocked = computed(() => (view.value?.level ?? 0) >= farmBatchUnlockLevel)
+const batchUnlockMessage = computed(() => t('farm.batchUnlockAt', { level: farmBatchUnlockLevel }))
+const batchPlots = computed(() => {
+    const plots: Record<'sow' | 'water' | 'harvest', number[]> = { sow: [], water: [], harvest: [] }
+    const v = view.value
+    if (!v?.farm) return plots
+    for (const plot of v.farm.plots.slice(0, v.unlockedPlots)) {
+        if (!plot.plant) plots.sow.push(plot.id)
+        else if (plantProgress(plot.plant) >= 1) plots.harvest.push(plot.id)
+        else if (!plot.plant.watered) plots.water.push(plot.id)
+    }
+    return plots
+})
+const batchSeedCount = (cropId: string) => Math.min(batchPlots.value.sow.length, view.value?.farm?.seeds[cropId] ?? 0)
 const seedMinutes = (id: string) =>
     id === 'wheat' && (view.value?.farm?.tutorialRemaining ?? 0) > 0
         ? 5
@@ -664,7 +676,8 @@ const unlockText = (level: number) =>
         ...view.value!.catalog.crops.filter((c) => c.level === level).map((c) => cropName(c.id)),
         ...([1, 3, 5].includes(level)
             ? [t('farm.plotCount', { count: level === 1 ? 6 : level === 3 ? 9 : 12 })]
-            : [])
+            : []),
+        ...(level === farmBatchUnlockLevel ? [t('farm.batchTools')] : [])
     ].join(' · ')
 function popoverPosition(id: number, w: number, h: number) {
     const element = w === 338 ? seedPicker.value : tooltip.value
@@ -712,15 +725,17 @@ function sceneHover(value: FarmHover) {
 }
 function dismiss() {
     seedTarget.value = null
+    batchSow.value = false
     panel.value = null
     hideHover()
     entrances.value?.dismiss()
 }
 function openPanel(name: NonNullable<typeof panel.value>) {
-    if (!farmSettingsVisible && (name === 'settings' || name === 'backup')) return
+    if (!farmSettingsVisible && name === 'settings') return
     if (busy.value) return
     if (name === 'codex') codexTab.value = 'crops'
     seedTarget.value = null
+    batchSow.value = false
     hideHover()
     entrances.value?.dismiss()
     panel.value = name
@@ -742,6 +757,7 @@ watch(view, (v) => {
     )
         seedTarget.value = null
 })
+watch(seedTarget, value => { if (value === null) batchSow.value = false })
 function showNotice(message: string) {
     notice.value = message
     if (noticeTimer) clearTimeout(noticeTimer)
@@ -797,6 +813,7 @@ async function run(operation: FarmOperation): Promise<boolean> {
     ++loadSequence
     hideHover()
     const before = view.value.level
+    const beforePlants = view.value.farm!.plots.map(plot => plot.plant)
     try {
         const response = await window.api.executeFarm({
             requestId: crypto.randomUUID(),
@@ -810,7 +827,18 @@ async function run(operation: FarmOperation): Promise<boolean> {
         }
         view.value = response.data.view
         const f = response.data.feedback
+        const levelUp = response.data.view.level > before
+            ? [t('farm.levelUp', { level: response.data.view.level }),
+                ...(before < farmBatchUnlockLevel && response.data.view.level >= farmBatchUnlockLevel
+                    ? [t('farm.batchUnlocked')] : [])].join(' · ')
+            : ''
         if ('plotIds' in operation) {
+            const appliedPlots = operation.plotIds.filter(id => {
+                const previous = beforePlants[id], current = response.data!.view.farm!.plots[id].plant
+                if (operation.type === 'sow') return !previous && !!current
+                if (operation.type === 'water') return !!previous && !previous.watered && !!current?.watered
+                return !!previous && !current
+            })
             const text =
                 operation.type === 'sow'
                     ? t('farm.sown')
@@ -819,14 +847,18 @@ async function run(operation: FarmOperation): Promise<boolean> {
                       : Object.entries(f.items)
                             .map(([crop, n]) => cropName(crop) + ' ×' + n)
                             .join(' · ')
-            feedbackAt(
-                operation.plotIds[0],
-                text,
-                operation.type === 'harvest' ? Object.keys(f.items)[0] : undefined,
-                operation.type === 'water'
+            for (const id of appliedPlots) {
+                const cropId = beforePlants[id]?.cropId
+                const plotText = operation.type === 'harvest' && cropId
+                    ? cropName(cropId) + ' ×' + cropDefinition(cropId).yield
+                    : text
+                feedbackAt(id, plotText, operation.type === 'harvest' ? cropId : undefined, operation.type === 'water')
+            }
+            const summary = operation.type === 'harvest' ? text : t(
+                operation.type === 'sow' ? 'farm.batchSown' : 'farm.batchWatered',
+                { count: appliedPlots.length }
             )
-            if (response.data.view.level > before)
-                showNotice(t('farm.levelUp', { level: response.data.view.level }))
+            if (operation.plotIds.length > 1 || levelUp) showNotice([operation.plotIds.length > 1 ? summary : '', levelUp].filter(Boolean).join(' · '))
         } else {
             const label =
                 operation.type === 'buySeed'
@@ -839,7 +871,8 @@ async function run(operation: FarmOperation): Promise<boolean> {
             showNotice(
                 t(label) +
                     (f.cashDelta ? ' · ◈ ' + (f.cashDelta > 0 ? '+' : '') + f.cashDelta : '') +
-                    (f.exp ? ' · +' + f.exp + ' EXP' : '')
+                    (f.exp ? ' · +' + f.exp + ' EXP' : '') +
+                    (levelUp ? ' · ' + levelUp : '')
             )
         }
         return true
@@ -874,20 +907,42 @@ async function sceneTarget(target: FarmTarget, right: boolean) {
     }
     if (mode === 'sow') {
         hideHover()
+        batchSow.value = false
         seedTarget.value = target.id
     } else if (mode === 'water' || mode === 'harvest')
         await run({ type: mode, plotIds: [target.id] })
+}
+function canUseBatch() {
+    if (!sceneState.value.enabled) return false
+    if (!batchUnlocked.value) {
+        showNotice(batchUnlockMessage.value)
+        return false
+    }
+    return true
+}
+function openBatchSow() {
+    if (!canUseBatch() || !batchPlots.value.sow.length) return
+    hideHover()
+    entrances.value?.dismiss()
+    batchSow.value = true
+    seedTarget.value = batchPlots.value.sow[0]
+}
+async function runBatch(type: 'water' | 'harvest') {
+    if (!canUseBatch() || !batchPlots.value[type].length) return
+    entrances.value?.dismiss()
+    await run({ type, plotIds: [...batchPlots.value[type]] })
 }
 async function sow(cropId: string) {
     if (
         seedTarget.value === null ||
         blocked.value ||
+        (batchSow.value && !batchUnlocked.value) ||
         !view.value?.farm?.seeds[cropId] ||
         cropDefinition(cropId).level > view.value.level
     )
         return
-    const id = seedTarget.value
-    if (await run({ type: 'sow', cropId, plotIds: [id] })) seedTarget.value = null
+    const plotIds = batchSow.value ? batchPlots.value.sow.slice(0, batchSeedCount(cropId)) : [seedTarget.value]
+    if (plotIds.length && await run({ type: 'sow', cropId, plotIds })) seedTarget.value = null
 }
 function openBuy(id: string) {
     if (busy.value) return
@@ -900,6 +955,11 @@ function openSell(id: string) {
     tradeCrop.value = id
     count.value = 1
     openPanel('sell')
+}
+function adjustTradeCount(delta: number) {
+    if (blocked.value || tradeMaximum.value < 1) return
+    const current = Number.isSafeInteger(count.value) ? count.value : 1
+    count.value = Math.min(tradeMaximum.value, Math.max(1, current + delta))
 }
 async function confirmTrade() {
     if (
@@ -918,44 +978,6 @@ async function confirmTrade() {
         })
     )
         openPanel(selling ? 'warehouse' : 'store')
-}
-async function backupAction(
-    action: () => Promise<{ code: number; message?: string; data?: BackupPreview | null }>,
-    preview = false
-) {
-    if (busy.value) return
-    busy.value = true
-    try {
-        const r = await action()
-        if (r.code !== 200) showNotice(r.message || t('farm.failed'))
-        else if (preview) backupPreview.value = r.data || null
-        else showNotice(t('farm.exported'))
-    } catch (error) {
-        showNotice(error instanceof Error ? error.message : t('farm.failed'))
-    } finally {
-        busy.value = false
-    }
-}
-function exportBackup() {
-    void backupAction(() => window.api.exportFarmBackup())
-}
-function selectBackup() {
-    void backupAction(() => window.api.selectFarmBackup(), true)
-}
-function automaticBackup() {
-    void backupAction(() => window.api.getAutomaticFarmBackup(), true)
-}
-async function restoreBackup() {
-    if (busy.value || !backupPreview.value || !confirm(t('farm.restoreWarning'))) return
-    busy.value = true
-    try {
-        const r = await window.api.restoreFarmBackup(backupPreview.value.token)
-        showNotice(r.code === 200 ? t('farm.restarting') : r.message || t('farm.failed'))
-        if (r.code !== 200) busy.value = false
-    } catch (error) {
-        busy.value = false
-        showNotice(error instanceof Error ? error.message : t('farm.failed'))
-    }
 }
 function goBack() {
     void router.push('/home')
@@ -1286,6 +1308,59 @@ onUnmounted(() => {
     font-size: 12px;
     font-weight: 900;
 }
+.batch-actions {
+    position: absolute;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 24px;
+    max-width: calc(100% - 160px);
+    z-index: 4;
+}
+.batch-button {
+    min-width: 96px;
+    white-space: nowrap;
+}
+.batch-button .entry-art { width: 60px; height: 60px; }
+.batch-button.locked { opacity: 0.7; }
+.batch-lock {
+    position: absolute;
+    top: 6px;
+    right: 0;
+    box-sizing: border-box;
+    width: 18px;
+    height: 15px;
+    border: 2px solid #fff4ca;
+    border-radius: 4px;
+    background: #ba8b4e;
+    box-shadow: 0 1px 2px #61442380;
+    pointer-events: none;
+}
+.batch-lock::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: -9px;
+    width: 6px;
+    height: 7px;
+    border: 2px solid #fff4ca;
+    border-radius: 6px 6px 0 0;
+}
+.batch-lock::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 3px;
+    width: 2px;
+    height: 5px;
+    border-radius: 2px;
+    background: #694626;
+}
+.batch-button strong { font-size: 15px; }
+.batch-button:not(:disabled):active .entry-art { transform: translateY(1px); }
+.batch-button:disabled { opacity: 0.5; }
+.batch-button:disabled .entry-art { transform: none; filter: none; }
 .tooltip,
 .seed-picker {
     position: absolute;
@@ -1573,15 +1648,52 @@ onUnmounted(() => {
 .quantities {
     justify-content: center;
     align-items: center;
+    gap: 16px;
+}
+.quantity-stepper,
+.quantity-shortcuts {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.quantities button {
+    box-sizing: border-box;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid #cfb07b;
+    border-radius: 10px;
+    background: #fff5d9;
+    box-shadow: 0 1px 0 #d6ba8a;
+    color: #795334;
+    font-size: 14px;
+    line-height: 1;
+}
+.quantity-shortcuts button { width: 50px; }
+.quantities button:not(:disabled):hover { background: #f8e8bf; }
+.quantities button:not(:disabled):active {
+    transform: translateY(1px);
+    box-shadow: none;
 }
 .quantities input {
-    width: 75px;
-    padding: 8px;
-    border: 1px solid #bfa476;
-    border-radius: 8px;
+    box-sizing: border-box;
+    width: 64px;
+    height: 36px;
+    padding: 0 6px;
+    border: 1px solid #cfb07b;
+    border-radius: 10px;
     text-align: center;
     background: #fff9e6;
+    color: #795334;
+    font-size: 14px;
+    font-weight: 700;
+    appearance: textfield;
+    -moz-appearance: textfield;
 }
+.quantities input::-webkit-inner-spin-button,
+.quantities input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.quantities button:focus-visible,
+.quantities input:focus-visible { outline: 2px solid #8eab50; outline-offset: 2px; }
 .trade-confirm {
     display: block;
     margin: 20px auto 8px;
@@ -1604,10 +1716,6 @@ onUnmounted(() => {
     flex-direction: column;
     gap: 14px;
     margin: 24px 0;
-}
-.backup-summary {
-    border-top: 1px solid #dec69f;
-    padding-top: 12px;
 }
 .notice {
     position: absolute;
@@ -1722,6 +1830,13 @@ onUnmounted(() => {
     }
 }
 @media (max-width: 900px) {
+    .batch-actions {
+        left: 90px;
+        transform: none;
+        gap: 12px;
+        max-width: calc(100% - 340px);
+    }
+    .batch-button { min-width: 86px; }
     .profile {
         transform: scale(0.75);
         transform-origin: top left;
@@ -1747,6 +1862,8 @@ onUnmounted(() => {
     .game-button {
         min-width: 60px;
     }
+    .batch-button .entry-art { width: 52px; height: 52px; }
+    .batch-button strong { font-size: 14px; }
     .item-list {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -1762,6 +1879,12 @@ onUnmounted(() => {
     .notice {
         top: 90px;
     }
+}
+@media (max-width: 650px) {
+    .batch-actions { left: 80px; right: 244px; bottom: 8px; gap: 8px; max-width: none; }
+    .batch-button { flex: 1; min-width: 0; white-space: normal; }
+    .batch-button .entry-art { width: 44px; height: 44px; }
+    .batch-button strong { font-size: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
     .water-splash {

@@ -161,9 +161,10 @@ try {
     assert.equal(command(sender, 'trigger', '__proto__').code, 400)
     assert.equal(command(sender, 'unknown', 'water').code, 400)
     assert.equal(command(sender, '__proto__').code, 400)
-    for (const action of ['clearCrops', 'addCoins', 'matureCrops', 'resetQuota'])
+    const setupActions = ['clearCrops', 'addCoins', 'matureCrops', 'resetQuota', 'resetFarmLevel', 'levelUp', 'addFarmExp']
+    for (const action of setupActions)
         assert.equal(command(sender, action).code, 200)
-    assert.deepEqual(edits, ['clearCrops', 'addCoins', 'matureCrops', 'resetQuota'])
+    assert.deepEqual(edits, setupActions)
     assert.equal(command(sender, 'trigger', 'water').code, 200)
     assert.equal(triggers, 1)
     assert.equal(windows.length, 2, 'trigger dispatch never opens the farm automatically')
@@ -180,8 +181,8 @@ try {
     assert.equal(helper.isDestroyed(), false, 'normal pages cannot close the speech helper')
     assert.equal(pet.isDestroyed(), false)
     app.isPackaged = true
-    assert.equal(command(sender, 'addCoins').code, 400)
-    assert.equal(edits.length, 4, 'packaged gate prevents currency edits too')
+    for (const action of setupActions) assert.equal(command(sender, action).code, 400)
+    assert.equal(edits.length, setupActions.length, 'packaged gate prevents all resource edits')
     assert.equal(
         command(sender, 'trigger', 'water').code,
         400,

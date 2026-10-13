@@ -72,10 +72,6 @@ contextBridge.exposeInMainWorld('api', {
     previewFarm: (operation: FarmOperation) => ipcRenderer.invoke('farm-preview', operation),
     executeFarm: (command: FarmCommand) => ipcRenderer.invoke('farm-execute', command),
     checkpointFarm: () => ipcRenderer.invoke('farm-checkpoint'),
-    exportFarmBackup: () => ipcRenderer.invoke('farm-backup-export'),
-    selectFarmBackup: () => ipcRenderer.invoke('farm-backup-select'),
-    getAutomaticFarmBackup: () => ipcRenderer.invoke('farm-backup-automatic'),
-    restoreFarmBackup: (token: string) => ipcRenderer.invoke('farm-backup-restore', token),
     onGameSaveChanged: (callback: () => void) => { const listener = () => callback(); ipcRenderer.on('game-save-changed', listener); return () => ipcRenderer.removeListener('game-save-changed', listener) },
 
     // set && update && add

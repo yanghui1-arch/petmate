@@ -32,4 +32,3 @@ export type FarmSnapshot = { farm: FarmState | null; cash: number; revision: num
 export type FarmView = FarmSnapshot & { catalog: FarmCatalog; level: number; unlockedPlots: number; saveError: string | null }
 export type FarmPreview = { revision: number; operation: FarmOperation; eligible: number; tutorial: number; normal: number; seedCost: number }
 export type FarmResult = { view: FarmView; feedback: FarmFeedback }
-export type BackupPreview = { token: string; createdAt: string; level: number; cash: number; scope: string; automatic: boolean }

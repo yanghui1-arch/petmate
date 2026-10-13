@@ -1,0 +1,25 @@
+{
+    "date": "2026-10-12",
+    "tool": "built-in image_gen.imagegen",
+    "transparent_background": true,
+    "icons": [
+        {
+            "key": "batch-sow",
+            "asset": "src/renderer/assets/farm-ui/batch-sow.png",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-8015b873-c132-43ab-9aa0-366ce512a28d.png",
+            "prompt": "Use case: stylized-concept. Asset type: small farm game action icon readable at 60px. Create ONE isolated icon on true transparent background. Style matches a cute countryside game: rounded simple cartoon shapes, clean warm brown outlines, soft colored areas and only a few broad cel-shaded shadows, cheerful pastel colors, no realistic or painterly texture, no glossy 3D render. Centered compact square composition filling 85% of the canvas, consistent medium-thick outlines, no text, no badge, no border, no background panel, no surrounding scenery.  Subject: A small pale cream kraft seed packet with a simple green seed pictogram (not letters), tilted downwards, THREE big golden seeds visibly falling out into a short rich brown soil furrow below. Clearly depict the ACTION of sowing seeds rather than just a seedling."
+        },
+        {
+            "key": "batch-water",
+            "asset": "src/renderer/assets/farm-ui/batch-water.png",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-2ec1fc4d-051a-4651-9b73-1bffdd26f5a7.png",
+            "prompt": "Use case: stylized-concept. Asset type: small farm game action icon readable at 60px. Create ONE isolated icon on true transparent background. Style matches a cute countryside game: rounded simple cartoon shapes, clean warm brown outlines, soft colored areas and only a few broad cel-shaded shadows, cheerful pastel colors, no realistic or painterly texture, no glossy 3D render. Centered compact square composition filling 85% of the canvas, consistent medium-thick outlines, no text, no badge, no border, no background panel, no surrounding scenery.  Subject: A rounded light turquoise watering can tilted gently forward, with a short spout and THREE prominent blue drops pouring down. Cream rim and handle details. Clearly depict watering. Keep it simple with no flower decorations."
+        },
+        {
+            "key": "batch-harvest",
+            "asset": "src/renderer/assets/farm-ui/batch-harvest.png",
+            "source": "C:/Users/chenhaozhe/.codex/generated_images/01a0f1cc-e1ba-7f60-92e2-16d856353648/exec-eff74024-1582-41e6-b3a0-1430a4e80e34.png",
+            "prompt": "Use case: stylized-concept. Asset type: small farm game action icon readable at 60px. Create ONE isolated icon on true transparent background. Style matches a cute countryside game: rounded simple cartoon shapes, clean warm brown outlines, soft colored areas and only a few broad cel-shaded shadows, cheerful pastel colors, no realistic or painterly texture, no glossy 3D render. Centered compact square composition filling 85% of the canvas, consistent medium-thick outlines, no text, no badge, no border, no background panel, no surrounding scenery.  Subject: A small curved steel sickle with a honey brown wooden handle beside THREE plump golden wheat heads bundled with a soft green tie. Sickle blade is broad and rounded, not threatening, visually clear. Clearly depict harvesting crops rather than a basket of groceries."
+        }
+    ]
+}

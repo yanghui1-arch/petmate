@@ -16,7 +16,10 @@ export const farmDevelopmentActions = {
     clearCrops: '铲除全部作物',
     addCoins: '金币 +1000',
     matureCrops: '全部作物成熟',
-    resetQuota: '重置今日出行额度'
+    resetQuota: '重置今日出行额度',
+    resetFarmLevel: '重置农场等级',
+    levelUp: '升一级',
+    addFarmExp: '农场经验 +100'
 } as const
 export type FarmDevelopmentAction = keyof typeof farmDevelopmentActions
 export type FarmLifeDevelopmentCommand = 'trigger' | 'recall' | FarmDevelopmentAction
@@ -26,6 +29,6 @@ export type FarmLifeDevelopmentState = {
     reason: string
     choices: { kind: FarmLifeKind; plotIds: number[] }[]
     daily: FarmLifeData['daily'] | null
-    resources: { cash: number; planted: number }
+    resources: { cash: number; planted: number; level: number; levelExp: number; levelExpRequired: number | null }
     setupReason: string
 }

@@ -1,7 +1,7 @@
 import { Response } from "../../types/response";
 import { LocalAIStatus } from "../main/local-ai";
 import { ActivityInfo } from "../main/types/activity";
-import type { BackupPreview, FarmAssistantEvent, FarmAssistantStatus, FarmCommand, FarmOperation, FarmPreview, FarmResult, FarmView } from '../main/types/farm';
+import type { FarmAssistantEvent, FarmAssistantStatus, FarmCommand, FarmOperation, FarmPreview, FarmResult, FarmView } from '../main/types/farm';
 import { Item, ItemType } from "../main/types/item";
 import { ConsumeItemResult, PlayerInfo } from "../main/types/player";
 import { CommissionCompletionResult, PlayerResourceState } from "../main/types/player-resource";
@@ -72,10 +72,6 @@ interface IElectronAPI {
   previewFarm: (operation: FarmOperation) => Promise<Response<FarmPreview>>;
   executeFarm: (command: FarmCommand) => Promise<Response<FarmResult>>;
   checkpointFarm: () => Promise<Response<void>>;
-  exportFarmBackup: () => Promise<Response<string | null>>;
-  selectFarmBackup: () => Promise<Response<BackupPreview | null>>;
-  getAutomaticFarmBackup: () => Promise<Response<BackupPreview | null>>;
-  restoreFarmBackup: (token: string) => Promise<Response<void>>;
   onGameSaveChanged: (callback: () => void) => () => void;
 
   // set && update && add

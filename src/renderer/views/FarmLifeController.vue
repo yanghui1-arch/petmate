@@ -38,18 +38,23 @@
             </button>
         </section>
         <section class="setup">
-            <h2>农田与金币</h2>
+            <h2>农场调试</h2>
             <p>
                 金币 {{ state?.resources.cash ?? '—' }} · 已种植
                 {{ state?.resources.planted ?? '—' }} 块
+            </p>
+            <p v-if="state">
+                农场 Lv.{{ state.resources.level }} ·
+                <template v-if="state.resources.levelExpRequired !== null">本级经验 {{ state.resources.levelExp }}/{{ state.resources.levelExpRequired }}</template>
+                <template v-else>已满级 · 累计超出经验 {{ state.resources.levelExp }}</template>
             </p>
             <div class="events">
                 <button
                     v-for="(name, action) in setupActions"
                     :key="action"
                     :data-farm-action="action"
-                    :disabled="busy || !state || (action !== 'addCoins' && !!state.setupReason)"
-                    :title="action !== 'addCoins' && state?.setupReason ? state.setupReason : name"
+                    :disabled="busy || !state || (action !== 'addCoins' && !!state.setupReason) || (action === 'levelUp' && state?.resources.levelExpRequired === null)"
+                    :title="action !== 'addCoins' && state?.setupReason ? state.setupReason : action === 'levelUp' && state?.resources.levelExpRequired === null ? '农场已满级' : name"
                     @click="command(action)"
                 >
                     {{ name }}
@@ -59,6 +64,9 @@
             <p class="save-note">直接保存当前进度。铲除无收益；催熟不自动收获，不增加收获次数。</p>
             <p class="save-note">
                 重置今日出行、劳动、生活额度及浇水、收获统计，保留历史与成就。
+            </p>
+            <p class="save-note">
+                等级调整保留作物、金币、库存和已有成就。重置前需清理高级作物、第 7～12 块地上的作物及高级订单。
             </p>
         </section>
         <section class="actions">
@@ -127,18 +135,17 @@ async function command(action: FarmLifeDevelopmentCommand, kind?: FarmLifeKind) 
         const result = await window.api.commandFarmLifeDevelopment(action, kind)
         if (result.code === 200 && result.data) {
             state.value = result.data
-            message.value =
-                action === 'trigger'
-                    ? '已开始真实出行，请观看桌宠；出门后自己点击卡片。'
-                    : action === 'recall'
-                      ? '已请求返回桌面。'
-                      : action === 'clearCrops'
-                        ? '全部作物已铲除并保存。'
-                        : action === 'addCoins'
-                          ? '已增加 1000 金币并保存。'
-                          : action === 'resetQuota'
-                            ? '今日五项出行额度已归零并保存，可以继续验收。'
-                            : '全部作物已成熟并保存，可以手动收获。'
+            message.value = {
+                trigger: '已开始真实出行，请观看桌宠；出门后自己点击卡片。',
+                recall: '已请求返回桌面。',
+                clearCrops: '全部作物已铲除并保存。',
+                addCoins: '已增加 1000 金币并保存。',
+                matureCrops: '全部作物已成熟并保存，可以手动收获。',
+                resetQuota: '今日五项出行额度已归零并保存，可以继续验收。',
+                resetFarmLevel: '农场已重置为 1 级，经验归零并保存。',
+                levelUp: '已升到农场 Lv.' + result.data.resources.level + ' 并保存。',
+                addFarmExp: '已增加 100 农场经验并保存。'
+            }[action]
         } else message.value = result.message ?? '操作失败。'
     } catch (error) {
         message.value = String(error)

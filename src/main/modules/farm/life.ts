@@ -128,16 +128,22 @@ export class FarmLife {
             life: this.getView(), reason,
             choices: [...candidates.values()].map(({ kind, plotIds }) => ({ kind, plotIds })),
             daily: data ? structuredClone(data.daily) : null,
-            resources: { cash: view.cash, planted: view.farm?.plots.filter(plot => plot.plant).length ?? 0 },
+            resources: {
+                cash: view.cash, planted: view.farm?.plots.filter(plot => plot.plant).length ?? 0,
+                level: view.level,
+                levelExp: (view.farm?.exp ?? 0) - view.catalog.levels[view.level - 1],
+                levelExpRequired: view.level < view.catalog.levels.length
+                    ? view.catalog.levels[view.level] - view.catalog.levels[view.level - 1] : null
+            },
             setupReason: this.suspended ? '应用处于休眠状态。'
-                : this.visit || data?.active ? '尤美正在出行，请等待返回后再调整农田或额度。'
+                : this.visit || data?.active ? '尤美正在出行，请等待返回后再调整农场。'
                 : view.saveError ?? ''
         }
     }
     editForDevelopment(action: FarmDevelopmentAction) {
         if (this.suspended) throw Error('应用处于休眠状态。')
         if (action !== 'addCoins' && this.visit)
-            throw Error('尤美正在出行，请等待返回后再调整农田或额度。')
+            throw Error('尤美正在出行，请等待返回后再调整农场。')
         this.service.editForDevelopment(action)
         this.publish()
     }

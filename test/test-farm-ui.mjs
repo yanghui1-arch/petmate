@@ -270,20 +270,6 @@ globalThis.window = {
         checkpointFarm: async () => {
             checkpointed = true
         },
-        exportFarmBackup: async () => ({ code: 200 }),
-        selectFarmBackup: async () => ({
-            code: 200,
-            data: {
-                token: 'backup-test',
-                createdAt: '2026-10-01',
-                level: 1,
-                cash: 500,
-                scope: 'overall',
-                automatic: false
-            }
-        }),
-        getAutomaticFarmBackup: async () => ({ code: 200, data: null }),
-        restoreFarmBackup: async () => ({ code: 500, message: '模拟恢复失败' })
     }
 }
 const i18n = createI18n({
@@ -462,7 +448,23 @@ try {
     assert.equal(findClass('item-card').length, 6)
     await click(button(modal(), '◈ 20 · 购买'))
     assert.equal(textOf(findClass('store-balance')[0]).includes('575'), true)
-    await click(button(modal(), '5'))
+    const tradeQuantity = () => walk(findClass('quantities')[0]).find(node => node.type === 'input')
+    const beforeQuantityCommands = commands.length
+    assert.equal(button(modal(), '1'), undefined, 'no redundant +1 shortcut')
+    await click(button(modal(), '+5'))
+    assert.equal(textOf(findClass('trade-confirm')[0]).trim(), '确认 · ◈ 120', '+5 adds to the current quantity')
+    await click(button(modal(), '+10'))
+    assert.equal(textOf(findClass('trade-confirm')[0]).trim(), '确认 · ◈ 320', '+10 adds rather than replacing quantity')
+    await click(button(modal(), '+10'))
+    await click(button(modal(), '+5'))
+    assert.equal(textOf(findClass('trade-confirm')[0]).trim(), '确认 · ◈ 560', 'buy quantity clamps to affordable stock')
+    assert.equal(button(modal(), '+10').props.disabled, true)
+    assert.equal(commands.length, beforeQuantityCommands, 'quantity controls never submit a purchase')
+    tradeQuantity().props['onUpdate:modelValue'](1)
+    await settle()
+    await click(button(modal(), '+5'))
+    await click(button(modal(), '−'))
+    assert.equal(textOf(findClass('trade-confirm')[0]).trim(), '确认 · ◈ 100')
     await click(findClass('trade-confirm')[0])
     assert.equal(persisted.cash, 475)
     assert.equal(textOf(findClass('store-balance')[0]).includes('475'), true)
@@ -505,6 +507,15 @@ try {
         'selling crop is needed by a current order'
     )
     assert.equal(textOf(modal()).includes('当前订单需要'), false)
+    await click(button(modal(), '+5'))
+    const carrotSellPrice = service.getView().catalog.crops.find(crop => crop.id === 'carrot').sell
+    assert.equal(textOf(findClass('trade-confirm')[0]).trim(), '确认 · ◈ ' + carrotSellPrice * 4, 'sell quantity clamps to owned produce')
+    assert.equal(button(modal(), '+10').props.disabled, true)
+    await click(button(modal(), '−'))
+    await click(button(modal(), '+'))
+    assert.equal(textOf(findClass('trade-confirm')[0]).trim(), '确认 · ◈ ' + carrotSellPrice * 4, 'plain + adds exactly one')
+    tradeQuantity().props['onUpdate:modelValue'](1)
+    await settle()
     await click(findClass('trade-confirm')[0])
     assert.equal(commands.length, beforeSale + 1, 'one confirmation submits sale for an order crop')
     assert.deepEqual(commands.at(-1).operation, { type: 'sell', cropId: 'carrot', count: 1 })
@@ -562,6 +573,178 @@ try {
     assert.equal(findClass('notice').length, 0)
     assert.equal(findClass('plot-feedback').length, 0)
     assert.equal(findClass('water-drop').length, 0, 'water drops are removed automatically')
+
+    // Batch actions run the actual Vue handlers against the real transactional service.
+    const batch = type => walk(root).find(node => node.props['data-batch-action'] === type)
+    const plant = (cropId, mature = false, watered = false) => {
+        const crop = service.getView().catalog.crops.find(crop => crop.id === cropId)
+        return { cropId, plantedAt: now, durationMs: crop.minutes * 60000,
+            elapsedMs: mature ? crop.minutes * 60000 : 0, watered }
+    }
+    persisted.farm.tutorialRemaining = 0
+    persisted.farm.plots.forEach(plot => { plot.plant = null })
+    persisted.farm.plots[0].plant = plant('wheat', true)
+    persisted.farm.plots[1].plant = plant('carrot', true)
+    persisted.farm.plots[2].plant = plant('wheat')
+    persisted.farm.plots[3].plant = plant('carrot')
+    persisted.farm.plots[4].plant = plant('carrot', false, true)
+    persisted.farm.seeds.wheat = 1
+    persisted.farm.seeds.carrot = 7
+    persisted.farm.exp = 0
+    notify()
+    await settle()
+    const beforeLockedCommands = commands.length
+    for (const exp of [0, 159]) {
+        persisted.farm.exp = exp
+        notify()
+        await settle()
+        assert.equal(findClass('batch-lock').length, 3, 'all batch actions are locked below level 3')
+        for (const type of ['sow', 'water', 'harvest']) {
+            await click(batch(type))
+            assert.ok(textOf(findClass('notice')[0]).includes('农场 3 级解锁一键操作'))
+            assert.equal(seeds().length, 0, 'locked planting never opens seed selection')
+        }
+    }
+    assert.equal(commands.length, beforeLockedCommands, 'locked controls never submit farm transactions')
+    for (const locale of ['zh-CN', 'zh-TW', 'en-US']) {
+        i18n.global.locale.value = locale
+        await settle()
+        await click(batch('water'))
+        assert.equal(batch('water').props.title, i18n.global.t('farm.batchUnlockAt', { level: 3 }))
+        assert.ok(textOf(findClass('notice')[0]).includes(batch('water').props.title))
+    }
+    i18n.global.locale.value = 'zh-CN'
+    await settle()
+    await click(findClass('profile')[0])
+    assert.ok(textOf(modal()).includes('一键种植、浇水、收获'), 'level rewards list batch actions')
+    for (const [locale, maxLevel] of [['zh-CN', '满级'], ['zh-TW', '滿級'], ['en-US', 'Max level']]) {
+        i18n.global.locale.value = locale
+        await settle()
+        const levelLabels = walk(findClass('unlock-list')[0]).filter(node => node.type === 'strong').map(textOf)
+        assert.deepEqual(levelLabels, [40, 120, 260, 480, 800, 1200, 1600, 2100, 2700]
+            .map((exp, index) => `Lv.${index + 1} · ${exp} EXP`).concat(`Lv.10 · ${maxLevel}`),
+            'level details show each level XP capacity instead of cumulative thresholds')
+    }
+    i18n.global.locale.value = 'zh-CN'
+    await settle()
+    await close()
+    await plot(0)
+    assert.equal(service.getView().level, 3, 'single-plot harvesting remains available below batch unlock')
+    assert.equal(findClass('batch-lock').length, 0, 'crossing level 3 unlocks all controls immediately')
+    assert.ok(textOf(findClass('notice')[0]).includes('解锁一键种植、浇水和收获'))
+    persisted.farm.plots[0].plant = plant('wheat', true)
+    for (const id of [6, 7, 8]) persisted.farm.plots[id].plant = plant('carrot', false, true)
+    notify()
+    await settle()
+    assert.equal(batch('sow').props.disabled, false)
+    assert.equal(textOf(batch('sow')), i18n.global.t('farm.sowAll'))
+    assert.equal(textOf(batch('water')), i18n.global.t('farm.waterAll'))
+    assert.equal(textOf(batch('harvest')), i18n.global.t('farm.harvestAll'))
+    const seedStock = structuredClone(persisted.farm.seeds)
+    Object.keys(persisted.farm.seeds).forEach(cropId => { persisted.farm.seeds[cropId] = 0 })
+    notify()
+    await settle()
+    assert.equal(batch('sow').props.disabled, false, 'empty plots remain clickable with no seeds')
+    const beforeEmptySeedCommands = commands.length
+    await click(batch('sow'))
+    assert.ok(seeds().length > 0, 'zero stock still opens the seed chooser')
+    assert.ok(seeds().every(option => option.props.disabled), 'zero stock cannot submit a planting')
+    await click(button(root, '补充种子'))
+    assert.ok(modal(), 'restocking opens the store from the zero-stock chooser')
+    assert.equal(commands.length, beforeEmptySeedCommands, 'opening the chooser/store does not auto-buy or plant')
+    await close()
+    persisted.farm.seeds = seedStock
+    notify()
+    await settle()
+    const failedBatch = structuredClone(persisted)
+    diskFail = true
+    await click(batch('water'))
+    assert.deepEqual(persisted, failedBatch, 'batch save failure rolls back every target')
+    assert.equal(findClass('water-drop').length, 0)
+    assert.equal(batch('water').props.disabled, true)
+    diskFail = false
+    await click(button(root, '重试'))
+    const beforeBatchCommands = commands.length
+    gate = new Promise(resolve => { release = resolve })
+    await click(batch('water'))
+    await click(batch('water'))
+    assert.equal(commands.length, beforeBatchCommands + 1, 'a pending batch cannot be submitted twice')
+    assert.deepEqual(commands.at(-1).operation, { type: 'water', plotIds: [2, 3] })
+    assert.equal(findClass('water-drop').length, 0, 'batch effects wait for durable save')
+    gate = null
+    release()
+    await settle()
+    assert.equal(findClass('water-drop').length, 10, 'both watered plots receive an effect')
+    assert.equal(persisted.farm.plots[0].plant.watered, false, 'mature plot is not watered')
+    assert.equal(persisted.farm.plots[2].plant.wateredBy, 'player')
+    assert.equal(persisted.farm.plots[3].plant.wateredBy, 'player')
+    assert.equal(batch('water').props.disabled, true)
+
+    const beforeBatchHarvest = structuredClone(persisted)
+    await click(batch('harvest'))
+    assert.deepEqual(commands.at(-1).operation, { type: 'harvest', plotIds: [0, 1] })
+    for (const cropId of ['wheat', 'carrot']) {
+        assert.equal(persisted.farm.produce[cropId], (beforeBatchHarvest.farm.produce[cropId] ?? 0) + 3)
+        assert.equal(persisted.farm.achievements.manualHarvestedPlots[cropId], (beforeBatchHarvest.farm.achievements.manualHarvestedPlots[cropId] ?? 0) + 1)
+    }
+    assert.equal(persisted.farm.exp, beforeBatchHarvest.farm.exp + 10)
+    assert.ok(textOf(findClass('notice')[0]).includes('小麦 ×3 · 胡萝卜 ×3'))
+    assert.equal(persisted.farm.plots[2].plant.cropId, 'wheat', 'immature crops remain')
+    assert.equal(batch('harvest').props.disabled, true)
+    const beforeBatchCash = persisted.cash
+    await click(batch('sow'))
+    assert.ok(textOf(seeds()[0]).includes('可种 1 块'))
+    assert.equal(seeds()[4].props.disabled, true, 'locked crop cannot be batch planted')
+    await click(seeds()[0])
+    assert.deepEqual(commands.at(-1).operation, { type: 'sow', cropId: 'wheat', plotIds: [0] })
+    assert.equal(persisted.farm.seeds.wheat, 0)
+    assert.equal(persisted.cash, beforeBatchCash, 'batch sow never buys seeds')
+    await click(batch('sow'))
+    assert.ok(textOf(seeds()[1]).includes('可种 2 块'))
+    await click(seeds()[1])
+    assert.deepEqual(commands.at(-1).operation, { type: 'sow', cropId: 'carrot', plotIds: [1, 5] })
+    assert.equal(persisted.farm.seeds.carrot, 5)
+    assert.equal(batch('sow').props.disabled, true)
+    assert.ok(persisted.farm.plots.slice(9).every(plot => !plot.plant), 'locked plots remain untouched')
+
+    // A single player click can legitimately complete the twelve-plot watering achievement.
+    persisted.farm.exp = 900
+    const freshPlant = plant('wheat')
+    persisted.farm.plots.forEach(plot => { plot.plant = structuredClone(freshPlant) })
+    persisted.farm.achievements.unlocked = persisted.farm.achievements.unlocked.filter(id => id !== 'ACH_FARM_WATERED_FIELD')
+    notify()
+    await settle()
+    await click(batch('water'))
+    assert.equal(commands.at(-1).operation.plotIds.length, 12)
+    assert.ok(persisted.farm.plots.every(plot => plot.plant.wateredBy === 'player'))
+    assert.ok(persisted.farm.achievements.unlocked.includes('ACH_FARM_WATERED_FIELD'))
+    // A crop that matures while the request is pending must not get a false watering effect.
+    persisted.farm.plots[0].plant = { ...freshPlant, elapsedMs: freshPlant.durationMs - 1000 }
+    persisted.farm.plots[1].plant = plant('carrot')
+    notify()
+    await settle()
+    const beforeBoundarySplashes = findClass('water-splash').length
+    gate = new Promise(resolve => { release = resolve })
+    await click(batch('water'))
+    now += 2000
+    gate = null
+    release()
+    await settle()
+    assert.equal(persisted.farm.plots[0].plant.watered, false)
+    assert.equal(persisted.farm.plots[1].plant.wateredBy, 'player')
+    assert.equal(findClass('water-splash').length, beforeBoundarySplashes + 1)
+    assert.ok(textOf(findClass('notice')[0]).includes('已浇水 1 块地'))
+    for (const locale of ['zh-CN', 'zh-TW', 'en-US']) {
+        i18n.global.locale.value = locale
+        await settle()
+        assert.ok(textOf(batch('sow')).includes(i18n.global.t('farm.sowAll')))
+        assert.ok(textOf(batch('water')).includes(i18n.global.t('farm.waterAll')))
+        assert.ok(textOf(batch('harvest')).includes(i18n.global.t('farm.harvestAll')))
+        assert.equal(textOf(root).includes('farm.'), false)
+    }
+    for (const file of ['src/renderer/views/Farm.vue', 'src/renderer/views/DataRecovery.vue', 'src/preload/index.ts', 'src/preload/index.d.ts', 'src/main/modules/farm/ipc.ts']) {
+        assert.doesNotMatch(await readFile(file, 'utf8'), /farm-backup|(?:export|select|restore)FarmBackup|openFarmBackup/)
+    }
     app.unmount()
     await settle()
     assert.equal(listeners.size, 0)
@@ -783,7 +966,7 @@ try {
             await rm(directory, { recursive: true, force: true })
         }
     }
-    const live = { life: { enabled: true, visit: null }, reason: '', choices: [{ kind: 'water', plotIds: [0, 1] }], daily: { trips: 0, work: 0, life: 0, watered: 0, harvested: 0 }, resources: { cash: 50, planted: 2 }, setupReason: '' }
+    const live = { life: { enabled: true, visit: null }, reason: '', choices: [{ kind: 'water', plotIds: [0, 1] }], daily: { trips: 0, work: 0, life: 0, watered: 0, harvested: 0 }, resources: { cash: 50, planted: 2, level: 1, levelExp: 0, levelExpRequired: 40 }, setupReason: '' }
     const devCommands = []
     const priorRoutes = routes.length
     Object.assign(window.api, {
@@ -793,7 +976,10 @@ try {
             if (action === 'addCoins') live.resources.cash += 1000
             else if (action === 'clearCrops') live.resources.planted = 0
             if (action === 'resetQuota') live.daily = { trips: 0, work: 0, life: 0, watered: 0, harvested: 0 }
-            if (['addCoins', 'clearCrops', 'matureCrops', 'resetQuota'].includes(action))
+            if (action === 'resetFarmLevel') Object.assign(live.resources, { level: 1, levelExp: 0, levelExpRequired: 40 })
+            if (action === 'levelUp') Object.assign(live.resources, { level: 2, levelExp: 0, levelExpRequired: 120 })
+            if (action === 'addFarmExp') live.resources.levelExp += 100
+            if (['addCoins', 'clearCrops', 'matureCrops', 'resetQuota', 'resetFarmLevel', 'levelUp', 'addFarmExp'].includes(action))
                 return { code: 200, data: structuredClone(live) }
             live.life.visit = { id: 'live-test', kind: 'water', phase: 'preparing', committed: false }
             live.setupReason = '尤美正在出行'
@@ -810,7 +996,7 @@ try {
         const harvest = walk(root).find(n => n.props['data-life-event'] === 'harvest')
         assert.equal(water.props.disabled, false)
         assert.equal(harvest.props.disabled, true)
-        for (const action of ['addCoins', 'matureCrops', 'clearCrops', 'resetQuota']) {
+        for (const action of ['addCoins', 'matureCrops', 'clearCrops', 'resetQuota', 'resetFarmLevel', 'levelUp', 'addFarmExp']) {
             const target = walk(root).find(n => n.props['data-farm-action'] === action)
             assert.equal(target.props.disabled, false)
             await click(target)
@@ -818,13 +1004,19 @@ try {
         }
         assert.ok(textOf(root).includes('金币 1050'))
         assert.ok(textOf(root).includes('已种植 0 块'))
+        assert.ok(textOf(root).includes('农场 Lv.2'))
+        assert.ok(textOf(root).includes('本级经验 100/120'))
+        Object.assign(live.resources, { level: 10, levelExp: 0, levelExpRequired: null })
+        await click(button(root, '刷新状态'))
+        assert.equal(walk(root).find(n => n.props['data-farm-action'] === 'levelUp').props.disabled, true, 'max level cannot level up')
+        assert.ok(textOf(root).includes('已满级'))
         devCommands.length = 0
         await click(water)
         assert.deepEqual(devCommands, [['trigger', 'water']], 'actual controller button calls the live IPC')
         assert.equal(routes.length, priorRoutes, 'controller cannot automatically open the farm')
         assert.ok(textOf(root).includes('出发气泡'))
         assert.ok(textOf(root).includes('尚未提交工作'))
-        for (const action of ['matureCrops', 'clearCrops', 'resetQuota'])
+        for (const action of ['matureCrops', 'clearCrops', 'resetQuota', 'resetFarmLevel', 'levelUp', 'addFarmExp'])
             assert.equal(walk(root).find(n => n.props['data-farm-action'] === action).props.disabled, true)
         assert.equal(walk(root).find(n => n.props['data-farm-action'] === 'addCoins').props.disabled, false)
         await click(button(root, '召回尤美'))
@@ -832,7 +1024,7 @@ try {
         console.log('Actual live controller Vue: real command dispatch, qualification display, phase and recall, no automatic farm opening: passed')
     } finally { liveApp.unmount() }
     console.log(
-        'Actual Vue + farm service: direct planting/watering/harvest, duplicate blocking, failed-save rollback, real trade/orders, illustrated panels, locales, backup errors and cleanup: passed'
+        'Actual Vue + farm service: single and batch actions, seed limits, mixed harvests, player achievements, duplicate blocking, failed-save rollback, trade/orders, locales, backup removal and cleanup: passed'
     )
 } finally {
     app.unmount()

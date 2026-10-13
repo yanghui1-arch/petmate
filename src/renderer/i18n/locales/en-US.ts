@@ -70,10 +70,15 @@ export default {
     sceneFailed: "Farm scene failed to load. Please retry.",
 
     selectSeed: 'Choose a seed',
+    batchActions: 'Farm batch actions', sowAll: 'Plant all', waterAll: 'Water all', harvestAll: 'Harvest all',
+    batchUnlockAt: 'Batch actions unlock at farm level {level}', batchTools: 'Plant all, water all, harvest all', batchUnlocked: 'Unlocked plant all, water all and harvest all',
+    batchSelectSeed: 'Choose a seed to plant in empty plots', canPlant: 'Plant {count} plots',
+    batchSown: 'Planted {count} plots', batchWatered: 'Watered {count} plots',
+    noEmptyPlots: 'No empty plots to plant', noWaterTargets: 'No crops need watering', noHarvestTargets: 'No crops are ripe yet',
     noSeeds: 'No seeds',
     tutorialRemaining: '{count} tutorial plantings left',
-    level:'Farm level',maxLevel:'Max level · experience bar full',plotCount:'{count} plots',
-    title:'Youmei Farm',back:'Back',empty:'Empty',orders:'Farm orders',orderNumber:'Order {number}',deliver:'Deliver',discard:'Discard',restocking:'Restocking',remaining:'Remaining',expectedYield:'Expected yield',harvest:'Harvest',water:'Water',watered:'Watered',seeds:'Seeds',store:'Shop',codex:'Crop journal',backup:'Backup & restore',produce:'Produce',minutes:'min',hours:'hr',sow:'Plant',sell:'Sell',each:'each',owned:'Owned',locked:'Locked',buy:'Buy',all:'All',confirm:'Confirm',notUnlocked:'Locked',lit:'Discovered',notHarvested:'Not harvested',harvested:'Harvested',backupScope:'Backups include the farm, companion, inventory, cash and activity progress.',exportBackup:'Export full backup',selectBackup:'Select backup',lastAutomatic:'Last pre-restore backup',restoreConfirm:'Restore this backup',restoreWarning:'This will roll back all game progress and save a backup of the current state. Continue?',exported:'Full backup exported',restarting:'Restored. Restarting…',loading:'Loading farm…',retry:'Retry',loadFailed:'Could not load farm',failed:'Action failed',ready:'Ready',stage0:'Sown',stage1:'Seedling',stage2:'Growing',stage3:'Mature',
+    level:'Farm level',maxLevel:'Max level · experience bar full',maxLevelLabel:'Max level',plotCount:'{count} plots',
+    title:'Youmei Farm',back:'Back',empty:'Empty',orders:'Farm orders',orderNumber:'Order {number}',deliver:'Deliver',discard:'Discard',restocking:'Restocking',remaining:'Remaining',expectedYield:'Expected yield',harvest:'Harvest',water:'Water',watered:'Watered',seeds:'Seeds',store:'Shop',codex:'Crop journal',produce:'Produce',minutes:'min',hours:'hr',sow:'Plant',sell:'Sell',each:'each',owned:'Owned',locked:'Locked',buy:'Buy',all:'All',confirm:'Confirm',notUnlocked:'Locked',lit:'Discovered',notHarvested:'Not harvested',harvested:'Harvested',loading:'Loading farm…',retry:'Retry',loadFailed:'Could not load farm',failed:'Action failed',ready:'Ready',stage0:'Sown',stage1:'Seedling',stage2:'Growing',stage3:'Mature',
     crops:{wheat:'Wheat',carrot:'Carrot',potato:'Potato',tomato:'Tomato',strawberry:'Strawberry',pumpkin:'Pumpkin'}
   },
   settings: {

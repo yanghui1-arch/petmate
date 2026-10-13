@@ -10,6 +10,9 @@
 </template>
 <script setup lang="ts">
 import backpack from '../../assets/farm-ui/backpack.png'
+import batchHarvest from '../../assets/farm-ui/batch-harvest.png'
+import batchSow from '../../assets/farm-ui/batch-sow.png'
+import batchWater from '../../assets/farm-ui/batch-water.png'
 import butterfly from '../../assets/farm-ui/butterfly.png'
 import check from '../../assets/farm-ui/check.png'
 import codex from '../../assets/farm-ui/codex.png'
@@ -25,6 +28,9 @@ import water from '../../assets/farm-ui/water.png'
 
 const images = {
     backpack,
+    batchHarvest,
+    batchSow,
+    batchWater,
     butterfly,
     check,
     codex,

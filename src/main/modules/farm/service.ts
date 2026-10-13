@@ -2,7 +2,7 @@ import { updateFarmAchievements } from '../../../shared/farmAchievements'
 import { ensureFarmLife, type FarmLifeData } from '../../../shared/farmLife'
 import { farmDevelopmentActions, type FarmDevelopmentAction } from '../../../shared/farmLifeDevelopment'
 import type { FarmAssistantMetadata, FarmCommand, FarmOperation, FarmPreview, FarmResult, FarmSnapshot, FarmState, FarmView } from '../../types/farm'
-import { farmCatalog, farmLevel, getCrop, unlockedPlots } from './catalog'
+import { farmCatalog, farmLevel, getCrop, getOrder, unlockedPlots } from './catalog'
 import { safeHelp } from './lifeRules'
 import { applyOperation, clone, createFarm, eligiblePlots, growFarm, plantStage, validateFarm } from './rules'
 
@@ -107,7 +107,7 @@ export class FarmService {
     if (!Object.hasOwn(farmDevelopmentActions, action)) throw new Error('未知操作。')
     const snapshot = this.project()
     if (action !== 'addCoins' && snapshot.farm!.life?.active)
-      throw new Error('尤美正在出行，请等待返回后再调整农田或额度。')
+      throw new Error('尤美正在出行，请等待返回后再调整农场。')
     if (action === 'addCoins') {
       const cash = snapshot.cash + 1000
       if (!Number.isSafeInteger(cash) || cash < 0) throw new Error('金币余额超出允许范围。')
@@ -116,6 +116,21 @@ export class FarmService {
       ensureFarmLife(snapshot.farm!, this.clock.wall()).daily = {
         trips: 0, work: 0, life: 0, watered: 0, harvested: 0
       }
+    } else if (action === 'resetFarmLevel') {
+      const farm = snapshot.farm!
+      const incompatibleCrop = farm.plots.some(plot => plot.plant && (plot.id >= unlockedPlots(0) || getCrop(plot.plant.cropId).level > 1))
+      const incompatibleOrder = farm.orders.some(order => 'templateId' in order && getOrder(order.templateId).level > 1)
+      if (incompatibleCrop || incompatibleOrder)
+        throw new Error('请先铲除高级作物或第 7～12 块地上的作物，并放弃高级订单，再重置农场等级。')
+      farm.exp = 0
+    } else if (action === 'levelUp') {
+      const nextExp = farmCatalog.levels[farmLevel(snapshot.farm!.exp)]
+      if (nextExp === undefined) throw new Error('农场已满级。')
+      snapshot.farm!.exp = nextExp
+    } else if (action === 'addFarmExp') {
+      const exp = snapshot.farm!.exp + 100
+      if (!Number.isSafeInteger(exp)) throw new Error('农场经验超出允许范围。')
+      snapshot.farm!.exp = exp
     } else {
       for (const plot of snapshot.farm!.plots) {
         if (!plot.plant) continue

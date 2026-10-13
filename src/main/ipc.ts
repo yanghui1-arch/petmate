@@ -1021,7 +1021,7 @@ ipcMain.handle("update-settings", (_: IpcMainInvokeEvent, settings: Partial<Sett
  * 会从服务器上拉数据下来，然后立即更新到文件和内存中，这意味着其实可以不需要从重新启动Petmate，但是为了保险起见，还是建议重新启动Petmate
  */
 ipcMain.handle("recover-data", async (_: IpcMainInvokeEvent): Promise<Response<void>> => {
-    return { code: 400, message: '旧服务数据缺少玩家资源与活动领取记录，不能作为完整存档恢复。请在农场使用本地完整备份。' };
+    return { code: 400, message: '旧服务数据缺少玩家资源与活动领取记录，不能作为完整存档恢复。该服务不支持完整存档恢复。' };
 });
 
 /* ============ 窗口相关IPC处理器 ============

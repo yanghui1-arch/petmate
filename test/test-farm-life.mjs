@@ -939,8 +939,61 @@ check('development setup persists coins, maturity and clearing without harvest r
     assert.equal(f.controller.developmentState().resources.planted, 0)
     assert.equal(f.controller.developmentState().resources.cash, before.cash + 2000)
 })
-check('development setup save failures roll back all three operations and can retry', () => {
-    for (const action of ['addCoins', 'matureCrops', 'clearCrops']) {
+check('development level controls persist real experience, retain progress and report per-level progress', () => {
+    const f = fixture()
+    f.run({ type: 'sow', cropId: 'carrot', plotIds: [0] })
+    const before = structuredClone(f.snapshot)
+    f.controller.editForDevelopment('levelUp')
+    assert.equal(f.snapshot.farm.exp, 40)
+    assert.equal(f.controller.developmentState().resources.level, 2)
+    assert.equal(f.controller.developmentState().resources.levelExp, 0)
+    assert.equal(f.controller.developmentState().resources.levelExpRequired, 120)
+    f.controller.editForDevelopment('addFarmExp')
+    assert.equal(f.snapshot.farm.exp, 140)
+    assert.equal(f.controller.developmentState().resources.levelExp, 100)
+    f.controller.editForDevelopment('addFarmExp')
+    assert.equal(f.snapshot.farm.exp, 240)
+    assert.equal(f.controller.developmentState().resources.level, 3)
+    assert.equal(f.controller.developmentState().resources.levelExp, 80)
+    const restarted = new FarmService(f.repo, f.clock, f.id)
+    assert.equal(restarted.getView().farm.exp, 240)
+    f.controller.editForDevelopment('resetFarmLevel')
+    assert.equal(f.snapshot.farm.exp, 0)
+    assert.equal(f.controller.developmentState().resources.level, 1)
+    assert.equal(f.controller.developmentState().resources.levelExpRequired, 40)
+    for (const field of ['plots', 'produce', 'seeds', 'harvests', 'achievements', 'tutorialRemaining', 'orders', 'life'])
+        assert.deepEqual(f.snapshot.farm[field], before.farm[field], 'level editing preserves ' + field)
+    assert.equal(f.snapshot.cash, before.cash)
+    assert.equal(f.snapshot.revision, before.revision + 4)
+    const resetRestarted = new FarmService(f.repo, f.clock, f.id)
+    assert.equal(resetRestarted.getView().farm.exp, 0)
+})
+check('development reset refuses crops and orders incompatible with level one, without losing progress', () => {
+    for (const incompatible of ['crop', 'plot', 'order']) {
+        const f = fixture()
+        f.snapshot.farm.exp = 900
+        if (incompatible === 'crop') f.plant(0, 'pumpkin', false)
+        if (incompatible === 'plot') f.plant(6, 'wheat', false)
+        if (incompatible === 'order') f.snapshot.farm.orders[0] = { instanceId: 'advanced-order', templateId: 'potato-small' }
+        const before = structuredClone(f.snapshot)
+        assert.throws(() => f.controller.editForDevelopment('resetFarmLevel'), /先铲除.*放弃高级订单/)
+        assert.deepEqual(f.snapshot, before)
+        assert.equal(f.service.storageError, null, 'qualification failure is not a disk error')
+    }
+})
+check('development level controls reject level-up at max level and unsafe experience values', () => {
+    const f = fixture()
+    f.snapshot.farm.exp = farmCatalog.levels.at(-1)
+    const before = structuredClone(f.snapshot)
+    assert.equal(f.controller.developmentState().resources.levelExpRequired, null)
+    assert.throws(() => f.controller.editForDevelopment('levelUp'), /已满级/)
+    assert.deepEqual(f.snapshot, before)
+    f.snapshot.farm.exp = Number.MAX_SAFE_INTEGER
+    assert.throws(() => f.controller.editForDevelopment('addFarmExp'), /允许范围/)
+    assert.equal(f.snapshot.farm.exp, Number.MAX_SAFE_INTEGER)
+})
+check('development setup save failures roll back edits and can retry', () => {
+    for (const action of ['addCoins', 'matureCrops', 'clearCrops', 'resetFarmLevel', 'levelUp', 'addFarmExp']) {
         const f = fixture()
         f.run({ type: 'sow', cropId: 'carrot', plotIds: [0] })
         const before = structuredClone(f.snapshot)
@@ -1152,7 +1205,7 @@ check('development crop edits cannot race active trips; coin edits retain trips 
     f.controller.triggerForDevelopment('water')
     const before = structuredClone(f.snapshot)
     assert.ok(f.controller.developmentState().setupReason)
-    for (const action of ['clearCrops', 'matureCrops', 'resetQuota']) {
+    for (const action of ['clearCrops', 'matureCrops', 'resetQuota', 'resetFarmLevel', 'levelUp', 'addFarmExp']) {
         assert.throws(() => f.controller.editForDevelopment(action), /正在出行/)
         assert.throws(() => f.service.editForDevelopment(action), /正在出行/)
     }
